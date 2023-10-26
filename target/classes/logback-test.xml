@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+
+<configuration scan="false" scanPeriod="30 seconds" debug="false">
+    <contextName>FreyaLogbackSystem</contextName>
+
+    <property name="log.path" value="log"/>
+    <property name="log.maxHistory" value="3"/>
+    <property name="log.maxFileSize" value="1MB"/>
+    <property name="log.totalSizeCap" value="10MB"/>
+    <property name="log.oldPattern" value="App: ${app_name}, v.${app_version}"/>
+    <property name="log.colorPattern"
+              value="%magenta(%d{dd.MM.yy HH:mm:ss}) %highlight([%level]) %red(th:%thread) %green(%logger{32})\\_%boldCyan(.%t\\(\\))\\_%(:%L) %1() %yellow(%msg%n)"/>
+
+    <!-- APPENDERS -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/trace.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>${log.maxHistory}</maxHistory>
+        </rollingPolicy>
+        <append>true</append>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>DENY</onMatch>
+        </filter>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>128</queueSize>
+        <maxFlushTime>15000</maxFlushTime>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <appender name="ERRORS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <maxFileSize>${log.maxFileSize}</maxFileSize>
+            <totalSizeCap>${log.totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <append>true</append>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>utf-8</charset>
+            <pattern>${log.colorPattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- HOOKS -->
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
+    <!-- ROOT -->
+    <root>
+        <appender-ref ref="STDOUT" level="DEBUG"/>
+        <appender-ref ref="ASYNC" level="INFO"/>
+        <appender-ref ref="ERRORS" level="ERROR"/>
+    </root>
+</configuration>
