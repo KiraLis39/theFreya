@@ -7,6 +7,8 @@ public class Launcher {
 
     public static void main(String[] args) {
         log.info("The game is started!");
+
+        new GameTest().start();
     }
 
     /*
