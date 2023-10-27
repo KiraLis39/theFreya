@@ -14,12 +14,11 @@ import java.util.UUID;
 public abstract class Storage implements iStorage {
     @Getter
     private final UUID suid;
-
+    private final short size = 16;
+    private final List<Storable> content = new ArrayList<>(size);
     @Getter
     @Setter
     private String name;
-    private final short size = 16;
-    private final List<Storable> content = new ArrayList<>(size);
 
     protected Storage(UUID suid) {
         this.suid = suid;

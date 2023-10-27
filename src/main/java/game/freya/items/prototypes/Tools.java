@@ -8,10 +8,10 @@ import java.util.UUID;
 
 public abstract class Tools extends Storable implements iTools {
 
+    private final short packSize = 32;
     @Setter
     private String name;
     private boolean isBroken;
-    private final short packSize = 32;
 
     public Tools(UUID suid) {
         super(suid);

@@ -14,6 +14,8 @@ server:
   error:
     whitelabel:
       enabled: false
+    include-message: always
+    path: /error
 
 spring:
   main:
@@ -93,21 +95,10 @@ spring:
           pool_size: 12
         dialect: org.hibernate.dialect.PostgreSQL10Dialect
 
-app:
-  notifyUrl: ${NOTIFY_SERVICE_URL:https://api-docs.dev01.russpass.dev/business/notification/send}
-  crmUrl: ${CRM_URL:https://b24-crm7.tesa-it.ru/business}
-  crmToken: ${CRM_TOKEN:7d5cecf7-e91c-4424-9bc9-c062eeb42259}
-
-  partnersListUrl: ${PARTNERS_LIST_SERVICE_URL:https://api-docs.dev01.russpass.dev/business/partners/partners_list}
-  storageUrl: ${PARTNER_STORAGE_SERVICE_URL:https://api-docs.dev01.russpass.dev/business/partners/file}
-  authServiceUrl: ${GET_DATA_FROM_NOTIFY_URL:https://api-docs.dev01.russpass.dev/business/partners/get-notification-data}
-  fullPartnerDataUrl: ${GET_FULL_PARTNER_DATA_URL:https://api-docs.dev01.russpass.dev/business/partners/info}
-  manageReaderRoleUrl: ${MANAGE_READER_ROLE_URL:https://api-docs.dev01.russpass.dev/business/partners/manage_survey_reader_role}
-  checkReadRoleUrl: ${CHECK_READ_ROLE_URL:https://api-docs.dev01.russpass.dev/business/partners/check_read_survey}
-  checkManageRoleUrl: ${CHECK_MANAGE_ROLE_URL:https://api-docs.dev01.russpass.dev/business/partners/check_create_survey}
-  checkModerateRoleUrl: ${CHECK_MODERATE_ROLE_URL:https://api-docs.dev01.russpass.dev/business/partners/check_moderate_survey}
-
-  eventsServiceUrl: ${EVENTS_SERVICE_URL:https://api-docs.dev01.russpass.dev/business/events}
+game:
+  gameTitle:    ${GAME_TITLE:Freya the game}
+  gameVersion:  ${GAME_VERSION:0.0.1}
+  gameOwner:    ${GAME_OWNER:KiraLis39}
 
 #springdoc:
 #  api-docs:

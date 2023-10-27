@@ -1,27 +1,30 @@
 package game.freya;
 
-import game.freya.items.LittleChest;
-import game.freya.items.Shovel;
+import game.freya.config.GameConfig;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 
-public class GameTest {
+import javax.swing.*;
+import java.awt.*;
 
-    public void start() {
-        Shovel myShovel = new Shovel();
-        myShovel.setName("Моя первая лопата");
+@Component
+@RequiredArgsConstructor
+public class GameTest extends JFrame {
+    private GameConfig config;
+    private GameTest frame;
 
-        LittleChest chest = new LittleChest();
-        System.out.println("Chest was created: " + chest.getName() + ". Content place: " + chest.size());
-        chest.put(myShovel);
-        System.out.println("Is chest has shovel: " + chest.has(myShovel));
+    public void open(GraphicsConfiguration gConf, GameConfig config) {
+        frame = new GameTest(gConf);
+        config = context.getBean("GameConfig", GameConfig.class);
 
-        System.out.println("Shovel can be packed by: " + myShovel.packSize());
-        System.out.println("Is broken: " + myShovel.isBroken());
-        myShovel.onBreak();
-        System.out.println("Is broken: " + myShovel.isBroken());
-        myShovel.repair();
-        System.out.println("Is broken: " + myShovel.isBroken());
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setTitle(config.getGameTitle() + " v." + config.getGameVersion());
 
-        myShovel.destroy(chest);
-        System.out.println("Is chest has shovel: " + chest.has(myShovel));
+        setPreferredSize(new Dimension(1440, 1280));
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
     }
 }

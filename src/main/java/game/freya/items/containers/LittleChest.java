@@ -1,4 +1,4 @@
-package game.freya.items;
+package game.freya.items.containers;
 
 import game.freya.items.prototypes.Storage;
 
