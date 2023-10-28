@@ -13,8 +13,16 @@ public abstract class Storable implements iStorable {
     @Getter
     private final UUID suid;
 
-    public Storable(UUID suid) {
+    @Getter
+    private final String name;
+
+    public Storable(String name) {
+        this(UUID.randomUUID(), name);
+    }
+
+    public Storable(UUID suid, String name) {
         this.suid = suid;
+        this.name = name;
     }
 
     @Override

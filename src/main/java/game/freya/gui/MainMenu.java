@@ -2,9 +2,6 @@ package game.freya.gui;
 
 import game.freya.GameStarter;
 import game.freya.config.GameConfig;
-import game.freya.engines.WorldsEngine;
-import game.freya.players.Player;
-import game.freya.worlds.World;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -25,14 +22,6 @@ public class MainMenu extends JFrame implements WindowListener {
 
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         addWindowListener(this);
-
-        WorldsEngine worldsEngine = new WorldsEngine();
-        World demoWorld = worldsEngine.create("some_new", null);
-        log.info("The world {} was created successfully!", demoWorld.getTitle());
-
-        Player player01 = new Player("KiraLis39", "angelicalis39@mail.ru", null);
-        demoWorld.addPlayer(player01);
-        log.info("The world {} has players: {}", demoWorld.getTitle(), demoWorld.getPlayers());
 
         setPreferredSize(LAUNCHER_DIM);
         pack();

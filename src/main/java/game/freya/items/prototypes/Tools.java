@@ -13,13 +13,8 @@ public abstract class Tools extends Storable implements iTools {
     private String name;
     private boolean isBroken;
 
-    public Tools(UUID suid) {
-        super(suid);
-    }
-
     public Tools(UUID suid, String name) {
-        super(suid);
-        this.setName(name);
+        super(suid, name);
     }
 
     @Override
@@ -55,5 +50,14 @@ public abstract class Tools extends Storable implements iTools {
     @Override
     public void destroy(Storage storage) {
         storage.get(this);
+    }
+
+    @Override
+    public String toString() {
+        return "Tools{"
+                + ", name='" + name + '\''
+                + "packSize=" + packSize
+                + ", isBroken=" + isBroken
+                + '}';
     }
 }

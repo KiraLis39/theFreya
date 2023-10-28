@@ -1,6 +1,6 @@
 package game.freya.players;
 
-import game.freya.items.containers.Backpack;
+import game.freya.containers.Backpack;
 import game.freya.players.interfaces.iEntity;
 import game.freya.players.interfaces.iPlayer;
 import game.freya.utils.ExceptionUtils;

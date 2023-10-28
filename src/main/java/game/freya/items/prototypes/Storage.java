@@ -4,8 +4,8 @@ import game.freya.items.interfaces.iStorage;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -15,7 +15,7 @@ public abstract class Storage implements iStorage {
     @Getter
     private final UUID suid;
     private final short size = 16;
-    private final List<Storable> content = new ArrayList<>(size);
+    private final Set<Storable> content = HashSet.newHashSet(size);
     @Getter
     @Setter
     private String name;
@@ -64,5 +64,27 @@ public abstract class Storage implements iStorage {
     @Override
     public boolean has(Storable storable) {
         return content.contains(storable);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return content.isEmpty();
+    }
+
+    @Override
+    public Set<Storable> clear() {
+        Set<Storable> result = new HashSet<>(content);
+        content.clear();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Storage{"
+                + "suid=" + suid
+                + ", size=" + size
+                + ", name='" + name + '\''
+                + ", content=" + content
+                + '}';
     }
 }
