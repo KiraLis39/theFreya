@@ -16,13 +16,20 @@ public class WorldsEngine {
         // fill the worlds map from DB...
     }
 
-    public World create(String title, String password) {
+    public World create(String title, HardnessLevel level) {
+        return this.create(title, null, level, new Dimension(128, 128));
+    }
+
+    public World create(String title, String password, HardnessLevel level) {
+        return this.create(title, password, level, new Dimension(128, 128));
+    }
+
+    public World create(String title, String password, HardnessLevel level, Dimension dimension) {
         if (worlds.containsKey(title)) {
             return worlds.get(title);
         }
         // return worldRepo.save(w);
-        return new World(UUID.randomUUID(), title, HardnessLevel.EASY, new Dimension(128, 128),
-                password == null ? -1 : password.hashCode());
+        return new World(UUID.randomUUID(), title, level, dimension, password == null ? -1 : password.hashCode());
     }
 
     public World save(World world) {

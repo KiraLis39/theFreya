@@ -43,7 +43,7 @@ public abstract class Storage implements iStorage {
     public Storable get(Storable storable) {
         if (has(storable)) {
             for (Storable srbl : content) {
-                if (srbl.getSuid().equals(storable.getSuid())) {
+                if (srbl.getUid().equals(storable.getUid())) {
                     try {
                         content.remove(storable);
                         return srbl;

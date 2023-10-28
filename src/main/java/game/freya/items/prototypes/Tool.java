@@ -6,14 +6,14 @@ import lombok.Setter;
 
 import java.util.UUID;
 
-public abstract class Tools extends Storable implements iTools {
+public abstract class Tool extends Storable implements iTools {
 
     private final short packSize = 32;
     @Setter
     private String name;
     private boolean isBroken;
 
-    public Tools(UUID suid, String name) {
+    public Tool(UUID suid, String name) {
         super(suid, name);
     }
 

@@ -11,7 +11,7 @@ import java.util.UUID;
 public abstract class Storable implements iStorable {
 
     @Getter
-    private final UUID suid;
+    private final UUID uid;
 
     @Getter
     private final String name;
@@ -20,8 +20,8 @@ public abstract class Storable implements iStorable {
         this(UUID.randomUUID(), name);
     }
 
-    public Storable(UUID suid, String name) {
-        this.suid = suid;
+    public Storable(UUID uid, String name) {
+        this.uid = uid;
         this.name = name;
     }
 

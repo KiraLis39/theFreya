@@ -16,8 +16,6 @@ import java.util.UUID;
 @Slf4j
 @Getter
 public class Player implements iPlayer {
-    private static final short MAX_PLAYER_HEALTH = 100;
-
     private final UUID uid;
     private final String nickName;
     private final String email;
@@ -27,9 +25,9 @@ public class Player implements iPlayer {
     private final float currentAttackPower = 1.0f;
 
     private float experience = 0f;
-    private short health;
+    private short health = MAX_PLAYER_HEALTH;
 
-    private HurtLevel hurtLevel;
+    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
     public Player(String nickName, String email, String avatarUrl) {
         this(UUID.randomUUID(), nickName, email, avatarUrl);
@@ -60,6 +58,10 @@ public class Player implements iPlayer {
 
     @Override
     public void heal(float healPoints) {
+        if (isDead()) {
+            log.warn("Can`t heal the dead corps of player {}!", getNickName());
+            return;
+        }
         this.health += healPoints;
         if (this.health > MAX_PLAYER_HEALTH) {
             this.health = MAX_PLAYER_HEALTH;
@@ -69,12 +71,17 @@ public class Player implements iPlayer {
 
     @Override
     public void attack(iEntity entity) {
-        entity.hurt(currentAttackPower);
+        if (!entity.equals(this)) {
+            entity.hurt(currentAttackPower);
+        } else {
+            log.warn("Player {} can`t attack itself!", getNickName());
+        }
     }
 
     private void recheckHurtLevel() {
         if (this.health <= 0) {
             this.hurtLevel = HurtLevel.DEAD;
+            decreaseExp(getExperience() - getExperience() * 0.1f); // -10% exp by death
         } else if (this.health <= MAX_PLAYER_HEALTH * 0.3f) {
             this.hurtLevel = HurtLevel.HARD_HURT;
         } else if (this.health <= MAX_PLAYER_HEALTH * 0.6f) {
@@ -101,6 +108,9 @@ public class Player implements iPlayer {
 
     @Override
     public void increaseExp(float increaseValue) {
+        if (isDead()) {
+            return;
+        }
         this.experience += increaseValue;
         recheckPlayerLevel();
     }
