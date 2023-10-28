@@ -31,6 +31,10 @@ public class Player implements iPlayer {
 
     private HurtLevel hurtLevel;
 
+    public Player(String nickName, String email, String avatarUrl) {
+        this(UUID.randomUUID(), nickName, email, avatarUrl);
+    }
+
     public Player(UUID uid, String nickName, String email, String avatarUrl) {
         this.uid = uid;
         this.nickName = nickName;
@@ -109,5 +113,14 @@ public class Player implements iPlayer {
 
     private void recheckPlayerLevel() {
         // level
+    }
+
+    @Override
+    public String toString() {
+        return "Player{"
+                + "nickName='" + nickName + '\''
+                + ", email='" + email + '\''
+                + ", level=" + level
+                + '}';
     }
 }

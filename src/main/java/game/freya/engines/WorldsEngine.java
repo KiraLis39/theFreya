@@ -1,28 +1,28 @@
 package game.freya.engines;
 
+import game.freya.worlds.HardnessLevel;
 import game.freya.worlds.World;
 
+import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class WorldsEngine {
 
-    private final Map<String, World> worlds = new HashMap<>(3);
+    private final Map<String, World> worlds = HashMap.newHashMap(3);
 
     public WorldsEngine() {
         // fill the worlds map from DB...
     }
 
-    public World create(String title) {
+    public World create(String title, String password) {
         if (worlds.containsKey(title)) {
             return worlds.get(title);
         }
-        World w = new World(UUID.randomUUID(), title);
-//      w.setLevel();
-//      w.setDimension();
-//      w.setPasswordHash();
-        return w; // return worldRepo.save(w);
+        // return worldRepo.save(w);
+        return new World(UUID.randomUUID(), title, HardnessLevel.EASY, new Dimension(128, 128),
+                password == null ? -1 : password.hashCode());
     }
 
     public World save(World world) {
