@@ -16,26 +16,28 @@ import java.util.UUID;
 @Slf4j
 @Getter
 public class Player implements iPlayer {
+    private static final short MAX_PLAYER_HEALTH = 100;
+
     private final UUID uid;
     private final String nickName;
-    private String email;
-    private String avatarUrl;
-    private float experience = 0f;
+    private final String email;
+    private final String avatarUrl;
+    private final Backpack inventory;
     private final short level = 1;
     private final float currentAttackPower = 1.0f;
 
+    private float experience = 0f;
     private short health;
 
-    private Backpack inventory;
     private HurtLevel hurtLevel;
 
-    public Player(String nickName) {
-        this(UUID.randomUUID(), nickName);
-    }
-
-    public Player(UUID uid, String nickName) {
+    public Player(UUID uid, String nickName, String email, String avatarUrl) {
         this.uid = uid;
         this.nickName = nickName;
+        this.email = email;
+        this.avatarUrl = avatarUrl;
+
+        inventory = new Backpack("The ".concat(this.nickName).concat("`s backpack"));
     }
 
     @Override
@@ -46,7 +48,7 @@ public class Player implements iPlayer {
     @Override
     public void hurt(float hurtPoints) {
         this.health -= hurtPoints;
-        if (this.health <= 0) {
+        if (this.health < 0) {
             this.health = 0;
         }
         recheckHurtLevel();
@@ -55,8 +57,8 @@ public class Player implements iPlayer {
     @Override
     public void heal(float healPoints) {
         this.health += healPoints;
-        if (this.health >= 100) {
-            this.health = 100;
+        if (this.health > MAX_PLAYER_HEALTH) {
+            this.health = MAX_PLAYER_HEALTH;
         }
         recheckHurtLevel();
     }
@@ -69,11 +71,11 @@ public class Player implements iPlayer {
     private void recheckHurtLevel() {
         if (this.health <= 0) {
             this.hurtLevel = HurtLevel.DEAD;
-        } else if (this.health <= 30) {
+        } else if (this.health <= MAX_PLAYER_HEALTH * 0.3f) {
             this.hurtLevel = HurtLevel.HARD_HURT;
-        } else if (this.health <= 60) {
+        } else if (this.health <= MAX_PLAYER_HEALTH * 0.6f) {
             this.hurtLevel = HurtLevel.MED_HURT;
-        } else if (this.health <= 90) {
+        } else if (this.health <= MAX_PLAYER_HEALTH * 0.9f) {
             this.hurtLevel = HurtLevel.LIGHT_HURT;
         } else {
             this.hurtLevel = HurtLevel.HEALTHFUL;

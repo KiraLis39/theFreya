@@ -3,46 +3,29 @@ package game.freya.worlds;
 import game.freya.players.Player;
 import game.freya.worlds.interfaces.iWorld;
 import lombok.Getter;
+
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 @Getter
 public class World implements iWorld {
     private final UUID uid;
+    private final Map<String, Player> players = HashMap.newHashMap(2);
 
-    private String title;
-    private Dimension dimension;
-    private HardnessLevel level;
+    private final String title;
+    private final int passwordHash;
 
-    private String passwordHash;
+    private final Dimension dimension;
+    private final HardnessLevel level;
 
-    private Map<String, Player> players = new HashMap<>(2);
-
-    public World(String title) {
-        this(UUID.randomUUID(), title);
-    }
-
-    public World(UUID uid, String title) {
+    public World(UUID uid, String title, HardnessLevel level, Dimension dimension, int passwordHash) {
         this.uid = uid;
         this.title = title;
-    }
-
-    @Override
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    @Override
-    public void setDimension(Dimension dimension) {
-        this.dimension = dimension;
-    }
-
-    @Override
-    public void setHardnessLevel(HardnessLevel level) {
+        this.passwordHash = passwordHash;
         this.level = level;
+        this.dimension = dimension;
     }
 
     @Override

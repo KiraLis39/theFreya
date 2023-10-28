@@ -16,5 +16,10 @@
       <option name="name" value="JBoss Community repository" />
       <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="local_store" />
+      <option name="name" value="local_store" />
+      <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame/lib" />
+    </remote-repository>
   </component>
 </project>
