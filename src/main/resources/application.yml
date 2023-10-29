@@ -1,8 +1,6 @@
 logging:
   level:
     root: INFO
-    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: WARN
-    org.hibernate.dialect.function.TemplateRenderer: ERROR
 
 server:
   port: 8080
@@ -28,10 +26,11 @@ spring:
     version: 0.0.1
 
   profiles:
-    default: dev
     group:
       dev: dev
       prod: prod
+    default: dev
+    active: dev
 
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
@@ -93,13 +92,16 @@ spring:
         connection:
           autocommit: false
           pool_size: 6
-        dialect: org.hibernate.community.dialect.SQLiteDialect
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
+#        dialect: org.hibernate.community.dialect.SQLiteDialect
+        dialect: org.sqlite.hibernate.dialect.SQLiteDialect
+#    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
 
 game:
   gameTitle:    ${GAME_TITLE:Freya the game}
   gameVersion:  ${GAME_VERSION:0.0.1}
   gameOwner:    ${GAME_OWNER:KiraLis39}
+  doubleBuffered:  ${DOUBLE_BUFFERED_ENABLED:false}
   dataBaseRootDir: ${DB_ROOT_DIRECTORY:./db/}
 
 springdoc:

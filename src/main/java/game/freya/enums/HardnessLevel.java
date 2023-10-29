@@ -1,4 +1,4 @@
-package game.freya.worlds;
+package game.freya.enums;
 
 public enum HardnessLevel {
     PEACEFUL,

@@ -1,15 +1,13 @@
-import game.freya.engines.WorldsEngine;
 import game.freya.items.Shovel;
 import game.freya.items.prototypes.Tool;
-import game.freya.players.Player;
-import game.freya.players.interfaces.iPlayer;
-import game.freya.worlds.HardnessLevel;
-import game.freya.worlds.World;
-import game.freya.worlds.interfaces.iWorld;
+import game.freya.entities.dto.PlayerDTO;
+import game.freya.entities.dto.interfaces.iPlayer;
+import game.freya.enums.HardnessLevel;
+import game.freya.entities.dto.WorldDTO;
+import game.freya.entities.dto.interfaces.iWorld;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -22,80 +20,73 @@ class GameTest {
     private final String password = "123";
     private final int passwordHash = password.hashCode();
     private final HardnessLevel level = HardnessLevel.EASY;
-    private static WorldsEngine worldsEngine;
-    private static World demoWorld;
-    private static Player player01;
-    private static Tool shovel;
-
-    @BeforeAll
-    static void initEngine() {
-        worldsEngine = new WorldsEngine();
-    }
+    private static WorldDTO demoWorldDTO;
+    private static PlayerDTO playerDTO01;
 
     @Test
     @Order(1)
     void createTheWorld() {
-        demoWorld = worldsEngine.create("some_new", password, level);
+        demoWorldDTO = new WorldDTO("some_new", level, password.hashCode());
 
-        Assertions.assertNotNull(demoWorld);
-        Assertions.assertNotNull(demoWorld.getUid());
-        Assertions.assertNotNull(demoWorld.getDimension());
-        Assertions.assertEquals("some_new", demoWorld.getTitle());
-        Assertions.assertEquals(0, demoWorld.getPlayers().size());
+        Assertions.assertNotNull(demoWorldDTO);
+        Assertions.assertNotNull(demoWorldDTO.getUid());
+        Assertions.assertNotNull(demoWorldDTO.getDimension());
+        Assertions.assertEquals("some_new", demoWorldDTO.getTitle());
+        Assertions.assertEquals(0, demoWorldDTO.getPlayers().size());
         Assertions.assertEquals(passwordHash, password.hashCode());
-        Assertions.assertEquals(level, demoWorld.getLevel());
-        Assertions.assertInstanceOf(iWorld.class, demoWorld);
+        Assertions.assertEquals(level, demoWorldDTO.getLevel());
+        Assertions.assertInstanceOf(iWorld.class, demoWorldDTO);
     }
 
     @SneakyThrows
     @Test
     @Order(2)
     void createThePlayer() {
-        player01 = new Player("KiraLis39", "angelicalis39@mail.ru", "./src/test/resources/avatars_test/ava.png");
-        demoWorld.addPlayer(player01);
+        playerDTO01 = new PlayerDTO("KiraLis39", "angelicalis39@mail.ru", "./src/test/resources/avatars_test/ava.png");
+        demoWorldDTO.addPlayer(playerDTO01);
 
-        Assertions.assertNotNull(player01);
-        Assertions.assertNotNull(player01.getUid());
-        Assertions.assertNotNull(player01.getInventory());
-        Assertions.assertEquals("KiraLis39", player01.getNickName());
-        Assertions.assertEquals("angelicalis39@mail.ru", player01.getEmail());
+        Assertions.assertNotNull(playerDTO01);
+        Assertions.assertNotNull(playerDTO01.getUid());
+        Assertions.assertNotNull(playerDTO01.getInventory());
+        Assertions.assertEquals("KiraLis39", playerDTO01.getNickName());
+        Assertions.assertEquals("angelicalis39@mail.ru", playerDTO01.getEmail());
 //        Assertions.assertEquals(
 //                ImageIO.read(new File("./src/test/resources/avatars_test/ava.png")).getData(), player01.getAvatar().getData());
-        Assertions.assertEquals(1, player01.getLevel());
-        Assertions.assertEquals(0, player01.getExperience());
-        Assertions.assertEquals(player01.MAX_PLAYER_HEALTH, player01.getHealth());
-        Assertions.assertInstanceOf(iPlayer.class, player01);
-        Assertions.assertFalse(player01.isDead());
+        Assertions.assertEquals(1, playerDTO01.getLevel());
+        Assertions.assertEquals(0, playerDTO01.getExperience());
+        Assertions.assertEquals(playerDTO01.MAX_HEALTH, playerDTO01.getHealth());
+        Assertions.assertInstanceOf(iPlayer.class, playerDTO01);
+        Assertions.assertFalse(playerDTO01.isDead());
 
-        player01.attack(player01);
-        Assertions.assertEquals(player01.MAX_PLAYER_HEALTH, player01.getHealth());
+        playerDTO01.attack(playerDTO01);
+        Assertions.assertEquals(playerDTO01.MAX_HEALTH, playerDTO01.getHealth());
 
-        player01.hurt(10);
-        Assertions.assertEquals(player01.MAX_PLAYER_HEALTH - 10, player01.getHealth());
+        playerDTO01.hurt(10);
+        Assertions.assertEquals(playerDTO01.MAX_HEALTH - 10, playerDTO01.getHealth());
 
-        player01.hurt(10);
-        player01.heal(100);
-        Assertions.assertEquals(player01.MAX_PLAYER_HEALTH, player01.getHealth());
+        playerDTO01.hurt(10);
+        playerDTO01.heal(100);
+        Assertions.assertEquals(playerDTO01.MAX_HEALTH, playerDTO01.getHealth());
 
-        player01.increaseExp(0.25f);
-        Assertions.assertEquals(0.25f, player01.getExperience());
+        playerDTO01.increaseExp(0.25f);
+        Assertions.assertEquals(0.25f, playerDTO01.getExperience());
 
-        player01.hurt(player01.MAX_PLAYER_HEALTH);
-        Assertions.assertEquals(0, player01.getHealth());
-        Assertions.assertTrue(player01.isDead());
+        playerDTO01.hurt(playerDTO01.MAX_HEALTH);
+        Assertions.assertEquals(0, playerDTO01.getHealth());
+        Assertions.assertTrue(playerDTO01.isDead());
 
-        player01.heal(999);
-        Assertions.assertEquals(0, player01.getHealth());
-        Assertions.assertTrue(player01.isDead());
+        playerDTO01.heal(999);
+        Assertions.assertEquals(0, playerDTO01.getHealth());
+        Assertions.assertTrue(playerDTO01.isDead());
 
-        player01.increaseExp(0.50f);
-        Assertions.assertEquals(0.25f * 0.1f, player01.getExperience(), 0.001f);
+        playerDTO01.increaseExp(0.50f);
+        Assertions.assertEquals(0.25f * 0.1f, playerDTO01.getExperience(), 0.001f);
     }
 
     @Test
     @Order(3)
     void createThePlayersStaff() {
-        shovel = new Shovel("Super shovel");
+        Tool shovel = new Shovel("Super shovel");
 
         Assertions.assertNotNull(shovel);
         Assertions.assertNotNull(shovel.getUid());
@@ -107,29 +98,29 @@ class GameTest {
         shovel.repair();
         Assertions.assertFalse(shovel.isBroken());
 
-        Assertions.assertEquals(16, player01.getInventory().size());
-        Assertions.assertTrue(player01.getInventory().isEmpty());
-        player01.getInventory().put(shovel);
-        Assertions.assertTrue(player01.getInventory().has(shovel));
-        player01.getInventory().get(shovel);
-        Assertions.assertFalse(player01.getInventory().has(shovel));
-        Assertions.assertTrue(player01.getInventory().isEmpty());
+        Assertions.assertEquals(16, playerDTO01.getInventory().size());
+        Assertions.assertTrue(playerDTO01.getInventory().isEmpty());
+        playerDTO01.getInventory().put(shovel);
+        Assertions.assertTrue(playerDTO01.getInventory().has(shovel));
+        playerDTO01.getInventory().get(shovel);
+        Assertions.assertFalse(playerDTO01.getInventory().has(shovel));
+        Assertions.assertTrue(playerDTO01.getInventory().isEmpty());
 
-        player01.getInventory().put(shovel);
-        Assertions.assertArrayEquals(Set.of(shovel).toArray(), player01.getInventory().clear().toArray());
-        Assertions.assertTrue(player01.getInventory().isEmpty());
+        playerDTO01.getInventory().put(shovel);
+        Assertions.assertArrayEquals(Set.of(shovel).toArray(), playerDTO01.getInventory().clear().toArray());
+        Assertions.assertTrue(playerDTO01.getInventory().isEmpty());
 
 
-        log.info("Removing the Player {} from the World {}...", player01.getNickName(), demoWorld.getTitle());
-        demoWorld.removePlayer(player01);
-        log.info("The world {} has players: {}", demoWorld.getTitle(), demoWorld.getPlayers());
+        log.info("Removing the Player {} from the World {}...", playerDTO01.getNickName(), demoWorldDTO.getTitle());
+        demoWorldDTO.removePlayer(playerDTO01);
+        log.info("The world {} has players: {}", demoWorldDTO.getTitle(), demoWorldDTO.getPlayers());
     }
 
     @Test
     @Order(4)
     void removeThePlayerFromWorld() {
-        demoWorld.removePlayer(player01);
+        demoWorldDTO.removePlayer(playerDTO01);
 
-        Assertions.assertEquals(0, demoWorld.getPlayers().size());
+        Assertions.assertEquals(0, demoWorldDTO.getPlayers().size());
     }
 }

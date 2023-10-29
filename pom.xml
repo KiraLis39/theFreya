@@ -32,22 +32,8 @@
         <!-- spring -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-            <version>2.7.12</version>
-        </dependency>
-
-        <!-- optional -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
-        </dependency>
-
-        <!-- json -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.15.3</version>
         </dependency>
 
         <!-- swagger -->
@@ -69,16 +55,10 @@
             <version>1.7.36</version>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.12</version>
-        </dependency>
-        <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
             <version>7.3</version>
         </dependency>
-
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -89,36 +69,35 @@
 
         <!-- db -->
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.43.2.1</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>5.6.15.Final</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-community-dialects</artifactId>
-            <version>6.3.1.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>5.0.1</version>
+            <groupId>com.github.gwenn</groupId>
+            <artifactId>sqlite-dialect</artifactId>
+            <version>0.1.4</version>
         </dependency>
 
-<!--        &lt;!&ndash; local &ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>ru.russpass</groupId>-->
-<!--            <artifactId>baseutilspack</artifactId>-->
-<!--            <version>0.0.3</version>-->
-<!--            <scope>system</scope>-->
-<!--            <systemPath>${project.basedir}/lib/baseLib.jar</systemPath>-->
-<!--        </dependency>-->
-<!--        &lt;!&ndash; or ${pom.basedir}&ndash;&gt;-->
+        <!-- local -->
+        <dependency>
+            <groupId>FoxLib39</groupId>
+            <artifactId>FoxGUI</artifactId>
+            <version>06.25.32</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/FoxGUI-06.25.32.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>FoxLib39</groupId>
+            <artifactId>FoxTools</artifactId>
+            <version>06.25.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/FoxTools-06.25.2.jar</systemPath>
+        </dependency>
 
         <!-- tests -->
         <dependency>
@@ -194,7 +173,7 @@
             <id>dev</id>
             <activation>
                 <property>
-                    <name>env</name>
+                    <name>dev</name>
                     <value>dev</value>
                 </property>
                 <activeByDefault>true</activeByDefault>

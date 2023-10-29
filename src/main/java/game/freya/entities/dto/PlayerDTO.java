@@ -1,8 +1,10 @@
-package game.freya.players;
+package game.freya.entities.dto;
 
-import game.freya.containers.Backpack;
-import game.freya.players.interfaces.iEntity;
-import game.freya.players.interfaces.iPlayer;
+import game.freya.entities.dto.interfaces.iPlayer;
+import game.freya.enums.HurtLevel;
+import game.freya.items.containers.Backpack;
+import game.freya.items.interfaces.iEntity;
+import game.freya.logic.Buff;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -11,29 +13,33 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
 @Getter
-public class Player implements iPlayer {
+public class PlayerDTO implements iPlayer {
     private final UUID uid;
     private final String nickName;
     private final String email;
     private final String avatarUrl;
     private final Backpack inventory;
-    private final short level = 1;
-    private final float currentAttackPower = 1.0f;
+    private final List<Buff> buffs = new ArrayList<>(9);
 
+    private float currentAttackPower = 1.0f;
     private float experience = 0f;
-    private short health = MAX_PLAYER_HEALTH;
+
+    private short level = 1;
+    private short health = MAX_HEALTH;
 
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
-    public Player(String nickName, String email, String avatarUrl) {
+    public PlayerDTO(String nickName, String email, String avatarUrl) {
         this(UUID.randomUUID(), nickName, email, avatarUrl);
     }
 
-    public Player(UUID uid, String nickName, String email, String avatarUrl) {
+    public PlayerDTO(UUID uid, String nickName, String email, String avatarUrl) {
         this.uid = uid;
         this.nickName = nickName;
         this.email = email;
@@ -63,8 +69,8 @@ public class Player implements iPlayer {
             return;
         }
         this.health += healPoints;
-        if (this.health > MAX_PLAYER_HEALTH) {
-            this.health = MAX_PLAYER_HEALTH;
+        if (this.health > MAX_HEALTH) {
+            this.health = MAX_HEALTH;
         }
         recheckHurtLevel();
     }
@@ -82,11 +88,11 @@ public class Player implements iPlayer {
         if (this.health <= 0) {
             this.hurtLevel = HurtLevel.DEAD;
             decreaseExp(getExperience() - getExperience() * 0.1f); // -10% exp by death
-        } else if (this.health <= MAX_PLAYER_HEALTH * 0.3f) {
+        } else if (this.health <= MAX_HEALTH * 0.3f) {
             this.hurtLevel = HurtLevel.HARD_HURT;
-        } else if (this.health <= MAX_PLAYER_HEALTH * 0.6f) {
+        } else if (this.health <= MAX_HEALTH * 0.6f) {
             this.hurtLevel = HurtLevel.MED_HURT;
-        } else if (this.health <= MAX_PLAYER_HEALTH * 0.9f) {
+        } else if (this.health <= MAX_HEALTH * 0.9f) {
             this.hurtLevel = HurtLevel.LIGHT_HURT;
         } else {
             this.hurtLevel = HurtLevel.HEALTHFUL;
@@ -121,8 +127,31 @@ public class Player implements iPlayer {
         recheckPlayerLevel();
     }
 
+    @Override
+    public void addBuff(Buff buff) {
+        buffs.add(buff);
+        for (Buff b : buffs) {
+            b.activate(this);
+        }
+    }
+
+    @Override
+    public void removeBuff(Buff buff) {
+        buffs.remove(buff);
+        buff.deactivate(this);
+    }
+
+    @Override
+    public void setLevel(short level) {
+        this.level = level;
+    }
+
     private void recheckPlayerLevel() {
         // level
+    }
+
+    public void setCurrentAttackPower(float currentAttackPower) {
+        this.currentAttackPower = currentAttackPower;
     }
 
     @Override

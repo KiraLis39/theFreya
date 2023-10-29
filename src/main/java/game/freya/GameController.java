@@ -2,16 +2,17 @@ package game.freya;
 
 import game.freya.config.GameConfig;
 import game.freya.gui.MainMenu;
+import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.sqlite.SQLiteConnection;
 
 import javax.annotation.PostConstruct;
-import java.awt.*;
+import javax.swing.*;
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,9 +21,9 @@ import java.sql.SQLException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GameStarter {
-    private final ApplicationContext context;
+public class GameController {
     private final GameConfig config;
+    private final MainMenu mainMenuFrame;
     private SQLiteConnection conn;
 
     @Autowired
@@ -32,13 +33,20 @@ public class GameStarter {
 
     @PostConstruct
     public void init() throws IOException {
+        log.info("The game is started!");
+
         Path dataBasePath = Path.of(config.getDatabaseRootDir());
         if (Files.notExists(dataBasePath)) {
             Files.createDirectory(dataBasePath);
         }
 
-        new MainMenu(GraphicsEnvironment.getLocalGraphicsEnvironment()
-                .getDefaultScreenDevice().getDefaultConfiguration(), context.getBean(GameConfig.class), this);
+        try {
+            UIManager.setLookAndFeel(new NimbusLookAndFeel());
+        } catch (Exception e) {
+            log.warn("Couldn't get specified look and feel, for reason: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+
+        mainMenuFrame.showMainMenu();
     }
 
     public void closeConnections() {

@@ -1,7 +1,6 @@
 package game.freya;
 
 import game.freya.config.GameConfig;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.SpringApplication;
@@ -16,18 +15,14 @@ import java.util.TimeZone;
 
 @Slf4j
 //@EnableAsync
-@AllArgsConstructor
 @SpringBootApplication
 @EnableConfigurationProperties({GameConfig.class})
 public class Launcher {
-
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(Launcher.class);
         app.setHeadless(false);
         logApplicationStartup(app.run(args).getEnvironment());
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-
-        log.info("The game is started!");
     }
 
     private static void logApplicationStartup(Environment env) {

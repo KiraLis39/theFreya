@@ -1,4 +1,4 @@
-package game.freya.players;
+package game.freya.enums;
 
 public enum HurtLevel {
     HEALTHFUL,

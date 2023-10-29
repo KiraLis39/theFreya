@@ -1,6 +1,12 @@
-package game.freya.players.interfaces;
+package game.freya.items.interfaces;
+
+import java.awt.image.BufferedImage;
 
 public interface iEntity {
+    short MAX_HEALTH = 100;
+
+    BufferedImage getAvatar();
+
     boolean isDead();
 
     void hurt(float hurtPoints);
