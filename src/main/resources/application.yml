@@ -2,6 +2,14 @@ logging:
   level:
     root: INFO
 
+    org.springframework.orm.jpa: WARN
+    org.springframework.data.repository.config: WARN
+
+    org.hibernate.dialect: WARN
+    org.hibernate.jpa.internal.util: WARN
+    org.hibernate.orm.connections.access: WARN
+    org.hibernate.engine.transaction.jta.platform.internal: WARN
+
 server:
   port: 8080
   shutdown: graceful

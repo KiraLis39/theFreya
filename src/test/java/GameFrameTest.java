@@ -16,7 +16,7 @@ import java.util.Set;
 
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class GameTest {
+class GameFrameTest {
     private final String password = "123";
     private final int passwordHash = password.hashCode();
     private final HardnessLevel level = HardnessLevel.EASY;

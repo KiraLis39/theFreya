@@ -3,10 +3,10 @@ package game.freya.gui;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
-import game.freya.entities.World;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.gui.panes.DemoCanvas;
-import game.freya.mappers.WorldMapper;
+import game.freya.gui.panes.FoxCanvas;
+import game.freya.gui.panes.GameCanvas;
+import game.freya.gui.panes.MenuCanvas;
 import game.freya.services.WorldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
@@ -23,38 +24,33 @@ import java.awt.event.WindowStateListener;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MainMenu implements WindowListener, WindowStateListener {
+public class GameFrame implements WindowListener, WindowStateListener {
     private static final Dimension LAUNCHER_DIM_MIN = new Dimension(1280, 768);
     private static final Dimension LAUNCHER_DIM = new Dimension(1440, 900);
 
-    private final WorldService worldService;
-    private final WorldMapper worldMapper;
     private final GameConfig config;
-    private GameController gameController;
 
+    private final WorldService worldService;
+    private GameController gameController;
     private WorldDTO world;
+    private JFrame frame;
 
     @Autowired
     public void setGameController(@Lazy GameController gameController) {
         this.gameController = gameController;
     }
 
-    @Autowired
+    @PostConstruct
     public void showMainMenu() {
-        JFrame frame = new JFrame(config.getGameTitle().concat(" v.")
-                .concat(config.getGameVersion()), Constants.getDefaultConfiguration());
+        frame = new JFrame(config.getGameTitle().concat(" v.")
+                .concat(config.getGameVersion()), Constants.getGraphicsConfiguration());
 
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(this);
         frame.addWindowStateListener(this);
 
-        if (worldService.count() > 0) {
-            world = worldMapper.toDto(worldService.findAll().stream().findAny().orElse(null));
-        } else {
-            world = worldMapper.toDto(worldService.save(World.builder().title("Demo world").build()));
-        }
-
-        frame.add(new DemoCanvas(frame.getGraphicsConfiguration(), world));
+        //loadMenuScreen();
+        loadGameScreen();
 
         frame.setMinimumSize(LAUNCHER_DIM_MIN);
         frame.setPreferredSize(LAUNCHER_DIM);
@@ -78,6 +74,30 @@ public class MainMenu implements WindowListener, WindowStateListener {
 
         // todo: доработать фулскрин:
         //Constants.MON.switchFullscreen(frame);
+    }
+
+    private void loadMenuScreen() {
+        clearFrame();
+        frame.add(new MenuCanvas());
+    }
+
+    private void loadGameScreen() {
+        if (worldService.count() > 0) {
+            world = worldService.findAll().stream().findAny().orElse(null);
+        } else {
+            world = worldService.save(new WorldDTO("Demo world"));
+        }
+        clearFrame();
+        frame.add(new GameCanvas(world));
+    }
+
+    private void clearFrame() {
+        for (java.awt.Component comp : frame.getComponents()) {
+            if (comp instanceof FoxCanvas fc) {
+                fc.stop();
+                frame.remove(fc);
+            }
+        }
     }
 
     @Override

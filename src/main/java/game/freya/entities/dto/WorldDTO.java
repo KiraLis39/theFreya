@@ -4,8 +4,9 @@ import fox.FoxRender;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iWorld;
 import game.freya.enums.HardnessLevel;
-import game.freya.gui.panes.DemoCanvas;
+import game.freya.gui.panes.FoxCanvas;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -25,33 +26,45 @@ import java.util.UUID;
 
 @Getter
 @Slf4j
+@RequiredArgsConstructor
 public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelListener, MouseMotionListener, MouseListener {
 
     private final UUID uid;
 
-    private final Map<String, PlayerDTO> players = HashMap.newHashMap(2);
-
     private final String title;
+
     private final int passwordHash;
 
     private final Dimension dimension;
+
     private final HardnessLevel level;
+
     private final double dragSpeed = 9D;
-    private DemoCanvas canvas;
+
+    private final Map<String, PlayerDTO> players = HashMap.newHashMap(2);
+
+    private FoxCanvas canvas;
+
     private BufferedImage gameMap;
+
     private Rectangle2D viewPort;
+
     private double scrollSpeedX, scrollSpeedY;
+
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
+
     private boolean initialized = false;
+
     private double delta;
+
     private Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
 
+    public WorldDTO(String title) {
+        this(UUID.randomUUID(), title, HardnessLevel.EASY, new Dimension(32, 64), -1);
+    }
+
     public WorldDTO(String title, HardnessLevel level, int passwordHash) {
-        this.uid = UUID.randomUUID();
-        this.title = title;
-        this.passwordHash = passwordHash;
-        this.level = level;
-        this.dimension = new Dimension(128, 128);
+        this(UUID.randomUUID(), title, level, new Dimension(32, 64), passwordHash);
     }
 
     public WorldDTO(UUID uid, String title, HardnessLevel level, Dimension dimension, int passwordHash) {
@@ -61,6 +74,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
         this.level = level;
         this.dimension = dimension;
     }
+
 
     @Override
     public void addPlayer(PlayerDTO playerDTO) {
@@ -140,40 +154,18 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
 
                     canvas);
         }
-
-        // отладочная информация:
-        drawDebugInfo(g2D);
-
-        // закрываем ресурс:
-        g2D.dispose();
     }
 
-    private void drawDebugInfo(Graphics2D g2D) {
-        g2D.setFont(Constants.DEBUG_FONT);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString("Мир: %s".formatted(getTitle()), 31, 49);
-        g2D.drawString("Частота кадров: лимит/монитор/реально (%s/%s/%s)"
-                .formatted(Constants.getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
-                        Constants.getRealFreshRate()), 31, 67);
-
-        g2D.setColor(Color.WHITE);
-        g2D.drawString("Мир: %s".formatted(getTitle()), 32, 48);
-        g2D.drawString("Частота кадров: лимит/монитор/реально (%s/%s/%s)"
-                .formatted(Constants.getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
-                        Constants.getRealFreshRate()), 32, 66);
-    }
-
-    public void draw(Graphics2D g2D, DemoCanvas demoCanvas) {
+    public void draw(Graphics2D g2D, FoxCanvas canvas) {
         if (!initialized) {
-            init(demoCanvas);
+            init(canvas);
         }
 
         Constants.RENDER.setRender(g2D, FoxRender.RENDER.HIGH);
         this.draw(g2D);
     }
 
-    private void init(DemoCanvas mainMenu) {
+    private void init(FoxCanvas mainMenu) {
         if (canvas != mainMenu) {
             canvas = mainMenu;
             canvas.addMouseWheelListener(this);
@@ -191,7 +183,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
 
     private void zoomIn() {
         if (canZoomIn()) {
-            log.info("Zoom in...");
+            log.debug("Zoom in...");
             viewPort.setRect(viewPort.getX() + scrollSpeedX, viewPort.getY() + scrollSpeedY,
                     viewPort.getWidth() - scrollSpeedX, viewPort.getHeight() - scrollSpeedY);
         } else {
@@ -201,7 +193,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
 
     private void zoomOut() {
         if (canZoomOut()) {
-            log.info("Zoom out...");
+            log.debug("Zoom out...");
             viewPort.setRect(
                     viewPort.getX() - scrollSpeedX, viewPort.getY() - scrollSpeedY,
                     viewPort.getWidth() + scrollSpeedX, viewPort.getHeight() + scrollSpeedY);

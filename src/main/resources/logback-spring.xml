@@ -15,10 +15,9 @@
     <property name="log.maxHistory" value="3"/>
     <property name="log.maxFileSize" value="3MB"/>
     <property name="log.totalSizeCap" value="1GB"/>
-    <property name="log.oldPattern"
-              value="%magenta(%d{yyyy-MM-dd HH:mm:ss}) %highlight(%-5level) %boldCyan([App: ${app_name}, v.${app_version}]) %yellow(%thread) %green(%logger{24}) %msg%n"/>
+    <property name="log.oldPattern" value="[App: ${app_name}, v.${app_version}]"/>
     <property name="log.colorPattern"
-              value="%magenta(%d{dd.MM.yy HH:mm:ss}) %highlight([%level]) %red(th:%thread) %green(%logger{32})\\_%boldCyan(.%t\\(\\))\\_%(:%L) %1() %yellow(%msg%n)"/>
+              value="%magenta(%d{dd.MM.yy HH:mm:ss.SSS}) %highlight([%level]) %red(th:%thread) %green(%logger{16})\\_%boldCyan(.%M\\(\\))\\_%(:%L) %1() %yellow(%msg%n)"/>
 
     <!-- APPENDERS -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">

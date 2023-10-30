@@ -7,24 +7,59 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
 @Slf4j
-public class DemoCanvas extends Canvas implements MouseListener, Runnable {
+public class GameCanvas extends FoxCanvas { // уже включает в себя MouseListener, Runnable
     private final transient WorldDTO worldDTO;
     private boolean isGameActive;
-    private int frames = 0;
-    private long timeStamp = System.currentTimeMillis();
 
-    public DemoCanvas(GraphicsConfiguration gConf, WorldDTO worldDTO) {
-        super(gConf);
+    public GameCanvas(WorldDTO worldDTO) {
+        super(Constants.getGraphicsConfiguration());
         this.worldDTO = worldDTO;
 
-        setBackground(Color.DARK_GRAY);
-
+        setBackground(Color.MAGENTA.darker().darker());
         addMouseListener(this);
 
         new Thread(this).start();
+    }
+
+    @Override
+    public void run() {
+        this.isGameActive = true;
+
+        while (isGameActive) {
+            if (getParent() == null || Constants.isPaused() || !isDisplayable()) {
+                Thread.yield();
+                continue;
+            }
+
+            try {
+                if (getBufferStrategy() == null) {
+                    createBufferStrategy(3);
+                }
+
+                do {
+                    do {
+                        Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
+                        worldDTO.draw(g2D, this);
+                        super.drawDebugInfo(g2D, worldDTO.getTitle()); // отладочная информация
+                        g2D.dispose();
+                    } while (getBufferStrategy().contentsRestored());
+                } while (getBufferStrategy().contentsLost());
+                getBufferStrategy().show();
+            } catch (Exception e) {
+                log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+            }
+
+            if (Constants.isFrameLimited()) {
+                try {
+                    Thread.sleep(Constants.getDiscreteDelay());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
     }
 
     @Override
@@ -53,51 +88,7 @@ public class DemoCanvas extends Canvas implements MouseListener, Runnable {
     }
 
     @Override
-    public void run() {
-        this.isGameActive = true;
-
-        while (isGameActive) {
-            if (getParent() == null || Constants.isPaused() || !isDisplayable()) {
-                Thread.yield();
-                continue;
-            }
-
-            try {
-                if (getBufferStrategy() == null) {
-                    createBufferStrategy(3);
-                }
-
-                do {
-                    do {
-                        Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                        worldDTO.draw(g2D, this);
-                        frames++;
-                        g2D.dispose();
-                    } while (getBufferStrategy().contentsRestored());
-                } while (getBufferStrategy().contentsLost());
-                getBufferStrategy().show();
-            } catch (Exception e) {
-                log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-            }
-
-            if (Constants.isFrameLimited()) {
-                try {
-                    Thread.sleep(Constants.getDiscreteDelay());
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            if (System.currentTimeMillis() - timeStamp >= 1000L) {
-                Constants.setRealFreshRate(frames);
-                timeStamp = System.currentTimeMillis();
-                frames = 0;
-            }
-        }
-    }
-
-    public void setGameActive(boolean gameActive) {
-        this.isGameActive = gameActive;
+    public void stop() {
+        this.isGameActive = false;
     }
 }

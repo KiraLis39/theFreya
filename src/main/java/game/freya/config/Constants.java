@@ -53,6 +53,8 @@ public final class Constants {
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
     @Getter
+    public static boolean isDebugInfoVisible = true;
+    @Getter
     @Setter
     private static UserConfig userConfig;
     @Getter
@@ -84,7 +86,7 @@ public final class Constants {
     private Constants() {
     }
 
-    public static GraphicsConfiguration getDefaultConfiguration() {
+    public static GraphicsConfiguration getGraphicsConfiguration() {
         return MON.getConfiguration();
     }
 

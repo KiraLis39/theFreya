@@ -70,7 +70,9 @@ public class GameController {
     public void saveTheGame(WorldDTO world) {
         log.info("Saving the game...");
         userConfigService.save();
-        worldService.save(worldMapper.toEntity(world));
+        if (world != null) {
+            worldService.save(world);
+        }
         log.info("The game is saved.");
     }
 }
