@@ -2,14 +2,14 @@ package game.freya.mappers;
 
 import game.freya.entities.World;
 import game.freya.entities.dto.WorldDTO;
+import org.springframework.stereotype.Component;
 
 import java.awt.*;
 
-public final class WorldMapper {
-    private WorldMapper() {
-    }
+@Component
+public class WorldMapper {
 
-    public static WorldDTO toDto(World entity) {
+    public WorldDTO toDto(World entity) {
         if (entity == null) {
             return null;
         }
@@ -21,7 +21,7 @@ public final class WorldMapper {
                 entity.getPasswordHash());
     }
 
-    public static World toEntity(WorldDTO dto) {
+    public World toEntity(WorldDTO dto) {
         if (dto == null) {
             return null;
         }

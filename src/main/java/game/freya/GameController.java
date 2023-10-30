@@ -1,12 +1,14 @@
 package game.freya;
 
+import game.freya.config.Constants;
 import game.freya.config.GameConfig;
-import game.freya.gui.MainMenu;
+import game.freya.entities.dto.WorldDTO;
+import game.freya.mappers.WorldMapper;
+import game.freya.services.UserConfigService;
+import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.sqlite.SQLiteConnection;
 
@@ -23,13 +25,10 @@ import java.sql.SQLException;
 @RequiredArgsConstructor
 public class GameController {
     private final GameConfig config;
-    private final MainMenu mainMenuFrame;
-    private SQLiteConnection conn;
-
-    @Autowired
-    public void setConn(@Lazy SQLiteConnection conn) {
-        this.conn = conn;
-    }
+    private final SQLiteConnection conn;
+    private final UserConfigService userConfigService;
+    private final WorldService worldService;
+    private final WorldMapper worldMapper;
 
     @PostConstruct
     public void init() throws IOException {
@@ -46,7 +45,7 @@ public class GameController {
             log.warn("Couldn't get specified look and feel, for reason: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
 
-        mainMenuFrame.showMainMenu();
+        userConfigService.load(Path.of(Constants.getUserSave()));
     }
 
     public void closeConnections() {
@@ -66,5 +65,12 @@ public class GameController {
     public void exitTheGame() {
         log.info("The game is finished!");
         System.exit(0);
+    }
+
+    public void saveTheGame(WorldDTO world) {
+        log.info("Saving the game...");
+        userConfigService.save();
+        worldService.save(worldMapper.toEntity(world));
+        log.info("The game is saved.");
     }
 }

@@ -43,11 +43,11 @@ public class World {
 
     @Builder.Default
     @Column(name = "dimension_w")
-    private int dimensionWidth = 128;
+    private int dimensionWidth = 64; // 64 = 2048 cells | 128 = 4096 cells
 
     @Builder.Default
     @Column(name = "dimension_h")
-    private int dimensionHeight = 128;
+    private int dimensionHeight = 32; // 32 = 1024 cells | 128 = 4096 cells
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
