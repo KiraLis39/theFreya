@@ -2,6 +2,7 @@ package game.freya.items.prototypes;
 
 import game.freya.items.interfaces.iStorable;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
@@ -16,6 +17,10 @@ public abstract class Storable implements iStorable {
     @Getter
     private final String name;
 
+    @Getter
+    @Setter
+    private short packSize = 32;
+
     public Storable(String name) {
         this(UUID.randomUUID(), name);
     }
@@ -28,10 +33,5 @@ public abstract class Storable implements iStorable {
     @Override
     public void drop() {
 
-    }
-
-    @Override
-    public short packSize() {
-        return 0;
     }
 }

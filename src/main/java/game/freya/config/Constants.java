@@ -37,6 +37,8 @@ public final class Constants {
     public static final InputAction INPUT_ACTION = new InputAction();
 
     public static final Font DEBUG_FONT = FFB.setFoxFont(FONT.ARIAL, 16, true, MON.getEnvironment());
+    public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 16, false, MON.getEnvironment());
+    public static final Font MENU_BUTTONS_FONT = FFB.setFoxFont(FONT.CANDARA, 24, true, MON.getEnvironment());
 
     public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
     public static final String IMAGE_EXTENSION = ""; // .png
@@ -53,6 +55,12 @@ public final class Constants {
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
     @Getter
+    private final static String gameName = "Freya the game";
+    @Getter
+    private final static String gameVersion = "0.0.1";
+    @Getter
+    private final static String gameAuthor = "KiraLis39";
+    @Getter
     public static boolean isDebugInfoVisible = true;
     @Getter
     @Setter
@@ -61,7 +69,7 @@ public final class Constants {
     @Setter
     private static boolean isPaused = false;
     @Getter
-    private static long screenDiscreteLimit = 75L;
+    private static long screenDiscreteLimit = 30L;
     @Getter
     @Setter
     private static int realFreshRate = 0;

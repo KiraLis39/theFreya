@@ -1,6 +1,5 @@
 package game.freya.entities.dto;
 
-import fox.FoxRender;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iWorld;
 import game.freya.enums.HardnessLevel;
@@ -160,8 +159,6 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
         if (!initialized) {
             init(canvas);
         }
-
-        Constants.RENDER.setRender(g2D, FoxRender.RENDER.HIGH);
         this.draw(g2D);
     }
 

@@ -42,11 +42,11 @@ public abstract class FoxCanvas extends Canvas implements iCanvas { // уже в
             }
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString("Частота кадров: лимит/монитор/реально (%s/%s/%s)"
+            g2D.drawString("FPS: лимит/монитор/реально (%s/%s/%s)"
                     .formatted(Constants.getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
                             Constants.getRealFreshRate()), 32, lineY);
             g2D.setColor(Color.WHITE);
-            g2D.drawString("Частота кадров: лимит/монитор/реально (%s/%s/%s)"
+            g2D.drawString("FPS: лимит/монитор/реально (%s/%s/%s)"
                     .formatted(Constants.getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
                             Constants.getRealFreshRate()), 31, lineY + 1);
 

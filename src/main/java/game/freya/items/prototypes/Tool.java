@@ -8,23 +8,12 @@ import java.util.UUID;
 
 public abstract class Tool extends Storable implements iTools {
 
-    private final short packSize = 32;
     @Setter
     private String name;
     private boolean isBroken;
 
     public Tool(UUID suid, String name) {
         super(suid, name);
-    }
-
-    @Override
-    public void drop() {
-
-    }
-
-    @Override
-    public short packSize() {
-        return this.packSize;
     }
 
     @Override
@@ -55,9 +44,9 @@ public abstract class Tool extends Storable implements iTools {
     @Override
     public String toString() {
         return "Tools{"
-                + ", name='" + name + '\''
-                + "packSize=" + packSize
-                + ", isBroken=" + isBroken
+                + ", name='" + getName() + '\''
+                + "packSize=" + getPackSize()
+                + ", isBroken=" + isBroken()
                 + '}';
     }
 }

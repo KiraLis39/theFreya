@@ -5,24 +5,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Getter
-//@Configuration
-@ConfigurationProperties(prefix = "game", ignoreUnknownFields = false)
+@ConfigurationProperties(prefix = "app", ignoreUnknownFields = false)
 public class GameConfig {
     @Value("${game.dataBaseRootDir}")
     private String databaseRootDir;
 
-    @Value("${game.gameTitle}")
-    private String gameTitle;
-
-    @Value("${game.gameVersion}")
-    private String gameVersion;
-
-    @Value("${game.gameOwner}")
-    private String gameOwner;
+    @Value("${game.doubleBuffered}")
+    private boolean isDoubleBuffered;
 
     @Value("${spring.datasource.url}")
     private String connectionUrl;
-
-    @Value("${game.doubleBuffered}")
-    private boolean isDoubleBuffered;
 }

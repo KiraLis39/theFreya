@@ -1,5 +1,6 @@
 package game.freya.gui.panes;
 
+import fox.FoxRender;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.utils.ExceptionUtils;
@@ -9,7 +10,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 
 @Slf4j
-public class GameCanvas extends FoxCanvas { // уже включает в себя MouseListener, Runnable
+public class GameCanvas extends FoxCanvas { // уже включает в себя MouseListener, MouseMotionListener, Runnable
     private final transient WorldDTO worldDTO;
     private boolean isGameActive;
 
@@ -41,6 +42,7 @@ public class GameCanvas extends FoxCanvas { // уже включает в себ
                 do {
                     do {
                         Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
+                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.HIGH);
                         worldDTO.draw(g2D, this);
                         super.drawDebugInfo(g2D, worldDTO.getTitle()); // отладочная информация
                         g2D.dispose();
@@ -90,5 +92,15 @@ public class GameCanvas extends FoxCanvas { // уже включает в себ
     @Override
     public void stop() {
         this.isGameActive = false;
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+
     }
 }

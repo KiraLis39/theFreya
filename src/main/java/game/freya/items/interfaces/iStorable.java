@@ -5,6 +5,4 @@ package game.freya.items.interfaces;
  */
 public interface iStorable {
     void drop(); // drop the item
-
-    short packSize(); // size of the pack of items
 }

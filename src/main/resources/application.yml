@@ -106,9 +106,6 @@ spring:
     database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
 
 game:
-  gameTitle:    ${GAME_TITLE:Freya the game}
-  gameVersion:  ${GAME_VERSION:0.0.1}
-  gameOwner:    ${GAME_OWNER:KiraLis39}
   doubleBuffered:  ${DOUBLE_BUFFERED_ENABLED:false}
   dataBaseRootDir: ${DB_ROOT_DIRECTORY:./db/}
 

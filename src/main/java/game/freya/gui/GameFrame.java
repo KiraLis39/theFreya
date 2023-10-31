@@ -2,7 +2,6 @@ package game.freya.gui;
 
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.config.GameConfig;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.FoxCanvas;
 import game.freya.gui.panes.GameCanvas;
@@ -28,8 +27,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
     private static final Dimension LAUNCHER_DIM_MIN = new Dimension(1280, 768);
     private static final Dimension LAUNCHER_DIM = new Dimension(1440, 900);
 
-    private final GameConfig config;
-
     private final WorldService worldService;
     private GameController gameController;
     private WorldDTO world;
@@ -42,15 +39,15 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     @PostConstruct
     public void showMainMenu() {
-        frame = new JFrame(config.getGameTitle().concat(" v.")
-                .concat(config.getGameVersion()), Constants.getGraphicsConfiguration());
+        frame = new JFrame(Constants.getGameName().concat(" v.")
+                .concat(Constants.getGameVersion()), Constants.getGraphicsConfiguration());
 
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(this);
         frame.addWindowStateListener(this);
 
-        //loadMenuScreen();
-        loadGameScreen();
+        loadMenuScreen();
+        //loadGameScreen();
 
         frame.setMinimumSize(LAUNCHER_DIM_MIN);
         frame.setPreferredSize(LAUNCHER_DIM);
@@ -78,7 +75,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     private void loadMenuScreen() {
         clearFrame();
-        frame.add(new MenuCanvas());
+        frame.add(new MenuCanvas(gameController));
     }
 
     private void loadGameScreen() {
@@ -107,9 +104,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     @Override
     public void windowClosing(WindowEvent e) {
-        gameController.saveTheGame(world);
-        gameController.closeConnections();
-        gameController.exitTheGame();
+        gameController.exitTheGame(world);
     }
 
     @Override

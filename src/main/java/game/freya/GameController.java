@@ -3,7 +3,6 @@ package game.freya;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.mappers.WorldMapper;
 import game.freya.services.UserConfigService;
 import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
@@ -28,7 +27,6 @@ public class GameController {
     private final SQLiteConnection conn;
     private final UserConfigService userConfigService;
     private final WorldService worldService;
-    private final WorldMapper worldMapper;
 
     @PostConstruct
     public void init() throws IOException {
@@ -48,7 +46,7 @@ public class GameController {
         userConfigService.load(Path.of(Constants.getUserSave()));
     }
 
-    public void closeConnections() {
+    private void closeConnections() {
         try {
             if (conn != null) {
                 log.info("Connection to SQLite is closing...");
@@ -62,12 +60,14 @@ public class GameController {
         }
     }
 
-    public void exitTheGame() {
+    public void exitTheGame(WorldDTO world) {
+        saveTheGame(world);
+        closeConnections();
         log.info("The game is finished!");
         System.exit(0);
     }
 
-    public void saveTheGame(WorldDTO world) {
+    private void saveTheGame(WorldDTO world) {
         log.info("Saving the game...");
         userConfigService.save();
         if (world != null) {

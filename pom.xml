@@ -87,9 +87,9 @@
         <dependency>
             <groupId>FoxLib39</groupId>
             <artifactId>FoxGUI</artifactId>
-            <version>06.25.32</version>
+            <version>06.25.33</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/FoxGUI-06.25.32.jar</systemPath>
+            <systemPath>${project.basedir}/lib/FoxGUI-06.25.33.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>FoxLib39</groupId>
