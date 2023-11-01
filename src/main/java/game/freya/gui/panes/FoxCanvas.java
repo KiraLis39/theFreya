@@ -9,12 +9,16 @@ import java.awt.*;
 
 @Getter
 @Setter
-public abstract class FoxCanvas extends Canvas implements iCanvas { // уже включает в себя MouseListener, Runnable
+// iCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, Runnable
+public abstract class FoxCanvas extends Canvas implements iCanvas {
+    private final String name;
     private int frames = 0;
     private long timeStamp = System.currentTimeMillis();
+    private Polygon leftGrayMenuPoly;
 
-    protected FoxCanvas(GraphicsConfiguration gConf) {
+    protected FoxCanvas(GraphicsConfiguration gConf, String name) {
         super(gConf);
+        this.name = name;
     }
 
     public void incrementFramesCounter() {
@@ -52,5 +56,12 @@ public abstract class FoxCanvas extends Canvas implements iCanvas { // уже в
 
             incrementFramesCounter();
         }
+    }
+
+    public void reloadShapes() {
+        setLeftGrayMenuPoly(new Polygon(
+                new int[]{0, (int) (getBounds().getWidth() * 0.25D), (int) (getBounds().getWidth() * 0.2D), 0},
+                new int[]{0, 0, getHeight(), getHeight()},
+                4));
     }
 }

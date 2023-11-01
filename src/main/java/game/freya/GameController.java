@@ -3,6 +3,8 @@ package game.freya;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
 import game.freya.entities.dto.WorldDTO;
+import game.freya.enums.ScreenType;
+import game.freya.gui.GameFrame;
 import game.freya.services.UserConfigService;
 import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
@@ -24,6 +26,7 @@ import java.sql.SQLException;
 @RequiredArgsConstructor
 public class GameController {
     private final GameConfig config;
+    private final GameFrame gameFrame;
     private final SQLiteConnection conn;
     private final UserConfigService userConfigService;
     private final WorldService worldService;
@@ -74,5 +77,14 @@ public class GameController {
             worldService.save(world);
         }
         log.info("The game is saved.");
+    }
+
+    public void loadScreen(ScreenType screenType) {
+        log.info("Try to load screen {}...", screenType);
+        switch (screenType) {
+            case MENU_SCREEN -> gameFrame.loadMenuScreen();
+            case GAME_SCREEN -> gameFrame.loadGameScreen();
+            default -> log.error("Unknown screen failed to load: {}", screenType);
+        }
     }
 }

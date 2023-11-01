@@ -4,29 +4,31 @@ import fox.FoxRender;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.enums.ScreenType;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
 @Slf4j
-public class MenuCanvas extends FoxCanvas { // уже включает в себя MouseListener, MouseMotionListener, Runnable
-    private final GameController gameController;
+// FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, Runnable
+public class MenuCanvas extends FoxCanvas {
+    private final transient GameController gameController;
     private boolean isMenuActive;
-    private Polygon leftGrayMenuPoly;
     private String downInfoString1, downInfoString2;
     private String newGameButtonText, coopPlayButtonText, optionsButtonText, exitButtonText;
     private boolean newGameButtonOver = false, coopPlayButtonOver = false, optionsButtonOver = false, exitButtonOver = false;
     private Rectangle newGameButtonRect, coopPlayButtonRect, optionsButtonRect, exitButtonRect;
-    private BufferedImage backMenuImage;
+    private transient BufferedImage backMenuImage;
     private boolean initialized = false;
 
     public MenuCanvas(GameController gameController) {
-        super(Constants.getGraphicsConfiguration());
+        super(Constants.getGraphicsConfiguration(), "MenuCanvas");
         this.gameController = gameController;
 
         setBackground(Color.DARK_GRAY.darker());
@@ -76,6 +78,7 @@ public class MenuCanvas extends FoxCanvas { // уже включает в себ
                 }
             }
         }
+        log.info("Thread of Menu canvas is finalized.");
     }
 
     private void drawBackground(Graphics2D g2D) {
@@ -88,7 +91,7 @@ public class MenuCanvas extends FoxCanvas { // уже включает в себ
 
         // fill left gray polygon:
         g2D.setColor(new Color(0.0f, 0.0f, 0.0f, 0.75f));
-        g2D.fillPolygon(leftGrayMenuPoly);
+        g2D.fillPolygon(getLeftGrayMenuPoly());
 
         // down text:
         g2D.setFont(Constants.INFO_FONT);
@@ -138,10 +141,7 @@ public class MenuCanvas extends FoxCanvas { // уже включает в себ
     }
 
     private void init() {
-        leftGrayMenuPoly = new Polygon(
-                new int[]{0, (int) (getBounds().getWidth() * 0.25D), (int) (getBounds().getWidth() * 0.2D), 0},
-                new int[]{0, 0, getHeight(), getHeight()},
-                4);
+        reloadShapes();
 
         try {
             Constants.CACHE.addIfAbsent("backMenuImage", ImageIO.read(new File("./resources/images/demo_menu.jpg")));
@@ -183,8 +183,7 @@ public class MenuCanvas extends FoxCanvas { // уже включает в себ
     @Override
     public void mouseReleased(MouseEvent e) {
         if (newGameButtonOver) {
-            new FOptionPane().buildFOptionPane("Не реализовано:",
-                    "Приносим свои извинения! Данный функционал ещё находится в разработке.");
+            gameController.loadScreen(ScreenType.GAME_SCREEN);
         }
         if (coopPlayButtonOver) {
             new FOptionPane().buildFOptionPane("Не реализовано:",
@@ -233,6 +232,26 @@ public class MenuCanvas extends FoxCanvas { // уже включает в себ
 
     @Override
     public void mouseClicked(MouseEvent e) {
+
+    }
+
+    @Override
+    public void componentResized(ComponentEvent e) {
+        reloadShapes();
+    }
+
+    @Override
+    public void componentMoved(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void componentShown(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void componentHidden(ComponentEvent e) {
 
     }
 }

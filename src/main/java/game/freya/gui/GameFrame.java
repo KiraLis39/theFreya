@@ -47,7 +47,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
         frame.addWindowStateListener(this);
 
         loadMenuScreen();
-        //loadGameScreen();
 
         frame.setMinimumSize(LAUNCHER_DIM_MIN);
         frame.setPreferredSize(LAUNCHER_DIM);
@@ -73,26 +72,45 @@ public class GameFrame implements WindowListener, WindowStateListener {
         //Constants.MON.switchFullscreen(frame);
     }
 
-    private void loadMenuScreen() {
+    public void loadMenuScreen() {
+        log.info("Try to load Menu screen...");
         clearFrame();
         frame.add(new MenuCanvas(gameController));
+        frame.revalidate();
     }
 
-    private void loadGameScreen() {
+    public void loadGameScreen() {
         if (worldService.count() > 0) {
             world = worldService.findAll().stream().findAny().orElse(null);
         } else {
             world = worldService.save(new WorldDTO("Demo world"));
         }
+
+        if (world == null) {
+            log.error("The World variable is null. Can`t loaded here!");
+            return;
+        }
+        log.info("Try to load World '{}' screen...", world.getTitle());
         clearFrame();
         frame.add(new GameCanvas(world));
+        frame.revalidate();
     }
 
     private void clearFrame() {
         for (java.awt.Component comp : frame.getComponents()) {
             if (comp instanceof FoxCanvas fc) {
+                log.info("Found to remove from frame: {}", fc.getName());
                 fc.stop();
                 frame.remove(fc);
+            }
+            if (comp instanceof JRootPane rp) {
+                for (java.awt.Component cmp : rp.getContentPane().getComponents()) {
+                    if (cmp instanceof FoxCanvas fc) {
+                        log.info("Found to remove from frame: {}", fc.getName());
+                        fc.stop();
+                        frame.remove(fc);
+                    }
+                }
             }
         }
     }
@@ -157,8 +175,9 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     private void onGameRestore() {
         if (Constants.PAUSE_ON_HIDDEN && Constants.isPaused()) {
-            Constants.setPaused(false);
-            log.info("Resume game...");
+            log.info("Auto resume the game on frame restore is temporary off.");
+//            Constants.setPaused(false);
+//            log.info("Resume game...");
         }
     }
 

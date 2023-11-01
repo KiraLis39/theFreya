@@ -131,17 +131,20 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
         // очищаем экран:
         g2D.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-        if (isMouseRightEdgeOver) {
-            dragLeft();
-        }
-        if (isMouseLeftEdgeOver) {
-            dragRight();
-        }
-        if (isMouseUpEdgeOver) {
-            dragDown();
-        }
-        if (isMouseDownEdgeOver) {
-            dragUp();
+        // not-pause events and changes:
+        if (!Constants.isPaused()) {
+            if (isMouseRightEdgeOver) {
+                dragLeft();
+            }
+            if (isMouseLeftEdgeOver) {
+                dragRight();
+            }
+            if (isMouseUpEdgeOver) {
+                dragDown();
+            }
+            if (isMouseDownEdgeOver) {
+                dragUp();
+            }
         }
 
         if (gameMap != null) {
@@ -287,6 +290,10 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
+        if (Constants.isPaused()) {
+            // not work into pause
+            return;
+        }
         switch (e.getWheelRotation()) {
             case 1 -> zoomOut();
             case -1 -> zoomIn();
