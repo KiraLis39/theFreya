@@ -1,51 +1,132 @@
 package game.freya.config;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
-@Getter
-@Setter
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+
 @Slf4j
 @Builder
-@AllArgsConstructor
-@RequiredArgsConstructor
-@Component
 public class UserConfig {
-    private String userName;
-    private String gameThemeName;
 
-    private boolean isShowStartLogo;
-    private boolean isNextFigureShow;
-    private boolean isSpecialBlocksEnabled;
-    private boolean isAutoChangeMelody;
-    private boolean isHardcoreMode;
-    private boolean useBackImage;
-    private boolean isFullscreen;
+    @Getter
+    @Setter
+    @Builder.Default
+    private static String userName = "<no_name_user>";
 
-    private boolean isSoundEnabled;
-    private int soundVolumePercent;
-    private boolean isMusicEnabled;
-    private int musicVolumePercent;
+    // audio:
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean isSoundEnabled = true;
 
-    private int keyLeft;
-    private int keyLeftMod;
-    private int keyRight;
-    private int keyRightMod;
-    private int keyDown;
-    private int keyDownMod;
-    private int keyStuck;
-    private int keyStuckMod;
-    private int keyRotate;
-    private int keyRotateMod;
-    private int keyPause;
-    private int keyPauseMod;
-    private int keyConsole;
-    private int keyConsoleMod;
-    private int keyFullscreen;
-    private int keyFullscreenMod;
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int soundVolumePercent = 75;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean isMusicEnabled = true;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int musicVolumePercent = 75;
+
+
+    // hotkeys:
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyLeft = KeyEvent.VK_LEFT;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyRight = KeyEvent.VK_RIGHT;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyDown = KeyEvent.VK_DOWN;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyRotateClockwise = KeyEvent.VK_E;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyRotateCounter = KeyEvent.VK_Q;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyPause = KeyEvent.VK_ESCAPE;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyConsole = KeyEvent.VK_BACK_QUOTE;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyConsoleMod = InputEvent.SHIFT_DOWN_MASK;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static int keyFullscreen = KeyEvent.VK_F11;
+
+
+    // booleans:
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean dragGameFieldOnFrameEdgeReached = true;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean isShowStartLogo = true;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean isHardcoreMode = false;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean isFullscreen = false;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean isUseSmoothing = true;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean isUseBicubic = false;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean pauseOnHidden = true;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private static long screenDiscreteLimit = 30L; // fps limit
+
+    private UserConfig() {
+    }
 }

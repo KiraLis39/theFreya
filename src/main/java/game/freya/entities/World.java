@@ -35,18 +35,18 @@ public class World {
     @Column(name = "id", nullable = false, insertable = false, updatable = false)
     private UUID uid = UUID.randomUUID();
 
-    @Column(name = "title", length = 64, unique = true)
+    @Column(name = "title", length = 64, unique = true, nullable = false)
     private String title;
 
     @Column(name = "password_hash")
     private int passwordHash;
 
     @Builder.Default
-    @Column(name = "dimension_w")
+    @Column(name = "dimension_w", nullable = false)
     private int dimensionWidth = 64; // 64 = 2048 cells | 128 = 4096 cells
 
     @Builder.Default
-    @Column(name = "dimension_h")
+    @Column(name = "dimension_h", nullable = false)
     private int dimensionHeight = 32; // 32 = 1024 cells | 128 = 4096 cells
 
     @Builder.Default

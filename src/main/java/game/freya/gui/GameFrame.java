@@ -2,6 +2,7 @@ package game.freya.gui;
 
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.config.UserConfig;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.FoxCanvas;
 import game.freya.gui.panes.GameCanvas;
@@ -68,7 +69,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 //            log.error("Logo thread was interrupted: {}", ExceptionUtils.getFullExceptionMessage(e));
 //        }
 
-        frame.setCursor(Constants.DEFAULT_CUR);
+        frame.setCursor(Constants.getDefaultCursor());
         frame.setVisible(true);
 
         // todo: доработать фулскрин:
@@ -177,7 +178,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
     }
 
     private void onGameRestore() {
-        if (Constants.PAUSE_ON_HIDDEN && Constants.isPaused()) {
+        if (UserConfig.isPauseOnHidden() && Constants.isPaused()) {
             log.info("Auto resume the game on frame restore is temporary off.");
 //            Constants.setPaused(false);
 //            log.info("Resume game...");
@@ -186,7 +187,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     private void onGameHide() {
         log.info("Hide or minimized");
-        if (!Constants.isPaused() && Constants.PAUSE_ON_HIDDEN) {
+        if (!Constants.isPaused() && UserConfig.isPauseOnHidden()) {
             Constants.setPaused(true);
             log.info("Paused...");
         }

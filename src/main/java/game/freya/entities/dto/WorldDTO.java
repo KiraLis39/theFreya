@@ -1,6 +1,7 @@
 package game.freya.entities.dto;
 
 import game.freya.config.Constants;
+import game.freya.config.UserConfig;
 import game.freya.entities.dto.interfaces.iWorld;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.FoxCanvas;
@@ -38,7 +39,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
 
     private final HardnessLevel level;
 
-    private final double dragSpeed = 9D;
+//    private final double dragSpeed = 9D;
 
     private final Map<String, PlayerDTO> players = HashMap.newHashMap(2);
 
@@ -59,11 +60,11 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
     private Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
 
     public WorldDTO(String title) {
-        this(UUID.randomUUID(), title, HardnessLevel.EASY, new Dimension(32, 64), -1);
+        this(UUID.randomUUID(), title, HardnessLevel.EASY, new Dimension(64, 32), -1);
     }
 
     public WorldDTO(String title, HardnessLevel level, int passwordHash) {
-        this(UUID.randomUUID(), title, level, new Dimension(32, 64), passwordHash);
+        this(UUID.randomUUID(), title, level, new Dimension(64, 32), passwordHash);
     }
 
     public WorldDTO(UUID uid, String title, HardnessLevel level, Dimension dimension, int passwordHash) {
@@ -182,64 +183,96 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
     }
 
     private void zoomIn() {
-        if (canZoomIn()) {
-            log.debug("Zoom in...");
-            viewPort.setRect(viewPort.getX() + scrollSpeedX, viewPort.getY() + scrollSpeedY,
-                    viewPort.getWidth() - scrollSpeedX, viewPort.getHeight() - scrollSpeedY);
+        log.debug("Zoom in...");
+
+        if (viewPort.getWidth() <= viewPort.getX() + Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
+                || viewPort.getHeight() <= viewPort.getY() + Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
+        ) {
+            log.warn("Can`t zoom in (1)");
+            return;
         } else {
-            log.warn("Can`t zoom in");
+            log.info("VP w/h: {}/{} but allowed size: {}", viewPort.getWidth(), viewPort.getHeight(),
+                    Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS);
         }
+
+        viewPort.setRect(viewPort.getX() + scrollSpeedX, viewPort.getY() + scrollSpeedY,
+                viewPort.getWidth() - scrollSpeedX, viewPort.getHeight() - scrollSpeedY);
+
+        log.warn("Can`t zoom in");
     }
 
     private void zoomOut() {
-        if (canZoomOut()) {
-            log.debug("Zoom out...");
-            viewPort.setRect(
-                    viewPort.getX() - scrollSpeedX, viewPort.getY() - scrollSpeedY,
-                    viewPort.getWidth() + scrollSpeedX, viewPort.getHeight() + scrollSpeedY);
-        } else {
-            log.warn("Can`t zoom out");
+        log.debug("Zoom out...");
+
+        double vpXSrc = viewPort.getX();
+        double vpXDst = viewPort.getWidth();
+        double vpWidth = vpXDst - vpXSrc;
+        double vpYSrc = viewPort.getY();
+        double vpYDst = viewPort.getHeight();
+        double vpHeight = vpYDst - vpYSrc;
+        int maxCellsSize = Constants.MAP_CELL_DIM * Constants.MAX_ZOOM_OUT_CELLS;
+
+        // если окно больше установленного лимита:
+        if (vpWidth >= maxCellsSize || vpHeight >= maxCellsSize) {
+            log.warn("Can`t zoom out: vpWidth = {} and vpHeight = {} but maxCellsSize is {}", vpWidth, vpHeight, maxCellsSize);
+            return;
         }
-    }
 
-    private boolean canZoomOut() {
-        return viewPort.getX() > 0
-                && viewPort.getY() > 0
-                && viewPort.getWidth() < gameMap.getWidth()
-                && viewPort.getHeight() < gameMap.getHeight()
-                && viewPort.getWidth() < gameMap.getWidth() / 1.5D;
-    }
+        // если окно уже максимального размера:
+        if (vpWidth >= gameMap.getWidth() && vpHeight >= gameMap.getHeight()) {
+            log.warn("Can`t zoom out: maximum size reached.");
+            return;
+        }
 
-    private boolean canZoomIn() {
-        return viewPort.getX() < gameMap.getWidth() / 2.2D
-                && viewPort.getY() < gameMap.getHeight() / 2.2D;
+        if (vpXSrc <= 0) {
+            if (vpYSrc <= 0) {
+                // камера сверху слева:
+                viewPort.setRect(0, 0, vpWidth + scrollSpeedX, vpHeight + scrollSpeedY);
+            } else if (vpYDst >= gameMap.getHeight()) {
+                // камера снизу слева:
+                viewPort.setRect(0, vpYSrc - scrollSpeedY, vpWidth + scrollSpeedX, vpYDst);
+            }
+        } else if (vpXDst >= gameMap.getWidth()) {
+            if (vpYSrc <= 0) {
+                // камера сверху справа:
+                viewPort.setRect(vpXSrc - scrollSpeedX, 0, gameMap.getWidth(), vpHeight + scrollSpeedY);
+            } else if (vpYDst >= gameMap.getHeight()) {
+                // камера снизу справа:
+                viewPort.setRect(vpXSrc - scrollSpeedX, vpYSrc - scrollSpeedY, gameMap.getWidth(), gameMap.getHeight());
+            }
+        }
     }
 
     private void dragLeft() {
         if (canDragLeft()) {
             log.debug("Drag left...");
-            viewPort.setRect(viewPort.getX() + dragSpeed, viewPort.getY(), viewPort.getWidth() + dragSpeed, viewPort.getHeight());
+            viewPort.setRect(
+                    viewPort.getX() + Constants.getDragSpeed(), viewPort.getY(),
+                    viewPort.getWidth() + Constants.getDragSpeed(), viewPort.getHeight());
         }
     }
 
     private void dragRight() {
         if (canDragRight()) {
             log.debug("Drag right...");
-            viewPort.setRect(viewPort.getX() - dragSpeed, viewPort.getY(), viewPort.getWidth() - dragSpeed, viewPort.getHeight());
+            viewPort.setRect(viewPort.getX() - Constants.getDragSpeed(), viewPort.getY(),
+                    viewPort.getWidth() - Constants.getDragSpeed(), viewPort.getHeight());
         }
     }
 
     private void dragUp() {
         if (canDragUp()) {
             log.debug("Drag up...");
-            viewPort.setRect(viewPort.getX(), viewPort.getY() + dragSpeed, viewPort.getWidth(), viewPort.getHeight() + dragSpeed);
+            viewPort.setRect(viewPort.getX(), viewPort.getY() + Constants.getDragSpeed(),
+                    viewPort.getWidth(), viewPort.getHeight() + Constants.getDragSpeed());
         }
     }
 
     private void dragDown() {
         if (canDragDown()) {
             log.debug("Drag down...");
-            viewPort.setRect(viewPort.getX(), viewPort.getY() - dragSpeed, viewPort.getWidth(), viewPort.getHeight() - dragSpeed);
+            viewPort.setRect(viewPort.getX(), viewPort.getY() - Constants.getDragSpeed(),
+                    viewPort.getWidth(), viewPort.getHeight() - Constants.getDragSpeed());
         }
     }
 
@@ -280,12 +313,14 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
     @Override
     public void mouseMoved(MouseEvent e) {
         Point p = e.getPoint();
-        isMouseLeftEdgeOver = p.getX() <= 10 && p.getX() > 0;
-        isMouseRightEdgeOver = p.getX() >= canvas.getWidth() - 10 && p.getX() < canvas.getWidth() - 1;
-        isMouseUpEdgeOver = p.getY() <= 10 && p.getY() > 0;
-        isMouseDownEdgeOver = p.getY() >= canvas.getHeight() - 10 && p.getY() < canvas.getHeight() - 1;
-        log.debug("isMouseLeftEdgeOver: {} | isMouseRightEdgeOver: {} | isMouseUpEdgeOver: {} | isMouseDownEdgeOver: {}",
-                isMouseLeftEdgeOver, isMouseRightEdgeOver, isMouseUpEdgeOver, isMouseDownEdgeOver);
+        if (UserConfig.isDragGameFieldOnFrameEdgeReached()) {
+            isMouseLeftEdgeOver = p.getX() <= 20 && p.getX() > 1;
+            isMouseRightEdgeOver = p.getX() >= canvas.getWidth() - 20 && p.getX() < canvas.getWidth() - 1;
+            isMouseUpEdgeOver = p.getY() <= 10 && p.getY() > 1;
+            isMouseDownEdgeOver = p.getY() >= canvas.getHeight() - 20 && p.getY() < canvas.getHeight() - 1;
+            log.debug("isMouseLeftEdgeOver: {} | isMouseRightEdgeOver: {} | isMouseUpEdgeOver: {} | isMouseDownEdgeOver: {}",
+                    isMouseLeftEdgeOver, isMouseRightEdgeOver, isMouseUpEdgeOver, isMouseDownEdgeOver);
+        }
     }
 
     @Override

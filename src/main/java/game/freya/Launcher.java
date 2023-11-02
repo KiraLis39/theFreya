@@ -1,6 +1,8 @@
 package game.freya;
 
+import game.freya.config.Constants;
 import game.freya.config.GameConfig;
+import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.SpringApplication;
@@ -8,8 +10,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.env.Environment;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.TimeZone;
 
@@ -21,8 +26,23 @@ public class Launcher {
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(Launcher.class);
         app.setHeadless(false);
+
+        globalPreInitialization();
+
         logApplicationStartup(app.run(args).getEnvironment());
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+    }
+
+    // устанавливаем всё, что должно быть готово к запуску:
+    private static void globalPreInitialization() {
+        try {
+            Path dataBasePath = Constants.getDatabaseRootDir();
+            if (Files.notExists(dataBasePath.getParent())) {
+                Files.createDirectory(dataBasePath.getParent());
+            }
+        } catch (IOException e) {
+            log.error("Init database creation error: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
     }
 
     private static void logApplicationStartup(Environment env) {

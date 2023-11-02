@@ -1,7 +1,6 @@
 package game.freya;
 
 import game.freya.config.Constants;
-import game.freya.config.GameConfig;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
 import game.freya.gui.GameFrame;
@@ -16,8 +15,6 @@ import org.sqlite.SQLiteConnection;
 import javax.annotation.PostConstruct;
 import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 
@@ -25,20 +22,14 @@ import java.sql.SQLException;
 @Component
 @RequiredArgsConstructor
 public class GameController {
-    private final GameConfig config;
     private final GameFrame gameFrame;
     private final SQLiteConnection conn;
     private final UserConfigService userConfigService;
     private final WorldService worldService;
 
     @PostConstruct
-    public void init() throws IOException {
+    public void init() {
         log.info("The game is started!");
-
-        Path dataBasePath = Path.of(config.getDatabaseRootDir());
-        if (Files.notExists(dataBasePath)) {
-            Files.createDirectory(dataBasePath);
-        }
 
         try {
             UIManager.setLookAndFeel(new NimbusLookAndFeel());
