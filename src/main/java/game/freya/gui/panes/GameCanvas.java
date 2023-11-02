@@ -30,9 +30,6 @@ public class GameCanvas extends FoxCanvas {
         this.gameController = gameController;
 
         setBackground(Color.MAGENTA.darker().darker());
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        addComponentListener(this);
 
         new Thread(this).start();
     }

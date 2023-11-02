@@ -185,14 +185,18 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
     private void zoomIn() {
         log.debug("Zoom in...");
 
-        if (viewPort.getWidth() <= viewPort.getX() + Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
-                || viewPort.getHeight() <= viewPort.getY() + Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
-        ) {
-            log.warn("Can`t zoom in (1)");
+//        double vpXSrc = viewPort.getX();
+//        double vpXDst = viewPort.getWidth();
+        double vpWidth = viewPort.getWidth() - viewPort.getX();
+//        double vpYSrc = viewPort.getY();
+//        double vpYDst = viewPort.getHeight();
+        double vpHeight = viewPort.getHeight() - viewPort.getY();
+        int minCellsSize = Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS;
+
+        // если окно меньше установленного лимита:
+        if (vpWidth <= minCellsSize || vpHeight <= minCellsSize) {
+            log.warn("Can`t zoom in: vpWidth = {} and vpHeight = {} but minCellsSize is {}", vpWidth, vpHeight, minCellsSize);
             return;
-        } else {
-            log.info("VP w/h: {}/{} but allowed size: {}", viewPort.getWidth(), viewPort.getHeight(),
-                    Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS);
         }
 
         viewPort.setRect(viewPort.getX() + scrollSpeedX, viewPort.getY() + scrollSpeedY,
@@ -240,6 +244,8 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
                 // камера снизу справа:
                 viewPort.setRect(vpXSrc - scrollSpeedX, vpYSrc - scrollSpeedY, gameMap.getWidth(), gameMap.getHeight());
             }
+        } else {
+            viewPort.setRect(vpXSrc - scrollSpeedX, vpYSrc - scrollSpeedY, vpXDst + scrollSpeedX, vpYDst + scrollSpeedY);
         }
     }
 
