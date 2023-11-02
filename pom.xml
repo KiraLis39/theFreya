@@ -29,6 +29,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <start-class>game.freya.Launcher</start-class>
 
         <checkstyle.version>10.3.2</checkstyle.version>
         <mapstruct.version>1.5.2.Final</mapstruct.version>
@@ -180,6 +181,8 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.7.8</version>
                 <configuration>
+                    <mainClass>game.freya.Launcher</mainClass>
+                    <layout>JAR</layout>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
@@ -187,6 +190,13 @@
                         </exclude>
                     </excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
