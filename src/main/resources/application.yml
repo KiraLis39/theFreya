@@ -80,9 +80,9 @@ spring:
       #   его тайм-аут из-за базы данных или сетевой инфраструктуры. Это значение должно быть меньше max-lifetime:
       keepalive-time: 180000
 
-#  liquibase:
-#    change-log: classpath:db/changelog/changelog.xml
-#    # drop-first: true
+  # liquibase:
+  #   change-log: classpath:db/changelog/changelog.xml
+  #   # drop-first: true
 
   jpa:
     hibernate:
@@ -100,13 +100,13 @@ spring:
         connection:
           autocommit: false
           pool_size: 6
-#        dialect: org.hibernate.community.dialect.SQLiteDialect
+        # dialect: org.hibernate.community.dialect.SQLiteDialect
         dialect: org.sqlite.hibernate.dialect.SQLiteDialect
-#    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    # database-platform: org.hibernate.community.dialect.SQLiteDialect
     database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
 
 game:
-  doubleBuffered:  ${DOUBLE_BUFFERED_ENABLED:false}
+  doubleBuffered: ${DOUBLE_BUFFERED_ENABLED:false}
   dataBaseRootDir: ${DB_ROOT_DIRECTORY:./db/}
 
 springdoc:

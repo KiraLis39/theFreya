@@ -1,5 +1,6 @@
 package game.freya.config;
 
+import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +25,7 @@ public final class Connect {
                 this.conn.setAutoCommit(false);
                 log.info("Connection to SQLite has been established.");
             } catch (SQLException e) {
-                log.error(e.getMessage());
+                log.error("Database connection fail: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
         }
         return conn;

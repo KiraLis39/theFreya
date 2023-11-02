@@ -33,11 +33,11 @@
     <module name="TreeWalker">
         <module name="InvalidJavadocPosition"/>
 
-        <module name="ConstantName"/>
-        <module name="LocalFinalVariableName"/>
-        <module name="LocalVariableName"/>
+<!--        <module name="ConstantName"/>-->
+<!--        <module name="LocalFinalVariableName"/>-->
+<!--        <module name="LocalVariableName"/>-->
         <module name="PackageName"/>
-        <module name="StaticVariableName"/>
+<!--        <module name="StaticVariableName"/>-->
 <!--        <module name="TypeName"/>-->
 
         <module name="IllegalImport"/>

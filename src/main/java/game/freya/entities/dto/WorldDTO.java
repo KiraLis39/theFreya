@@ -119,7 +119,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
         }
 
         g2D.setColor(Color.RED);
-        g2D.setStroke(new BasicStroke(1f));
+        g2D.setStroke(new BasicStroke(2f));
         g2D.drawLine(0, gameMap.getHeight() / 2, gameMap.getWidth(), gameMap.getHeight() / 2);
         g2D.drawLine(gameMap.getWidth() / 2, 0, gameMap.getWidth() / 2, gameMap.getHeight());
 
@@ -313,12 +313,14 @@ public class WorldDTO extends ComponentAdapter implements iWorld, MouseWheelList
         this.delta = comp.getBounds().getWidth() / comp.getBounds().getHeight();
         this.scrollSpeedY = scrollSpeedX / this.delta;
 
-        // пересоздаёем вьюпорт под новое окно:
-        this.viewPort = new Rectangle2D.Double(
-                gameMap.getWidth() / 2D - comp.getBounds().getWidth() / 2D,
-                gameMap.getHeight() / 2D - comp.getBounds().getHeight() / 2D,
-                gameMap.getWidth() / 2D + comp.getBounds().getWidth() / 2D,
-                gameMap.getHeight() / 2D + comp.getBounds().getHeight() / 2D);
+        if (gameMap != null) {
+            // пересоздаёем вьюпорт под новое окно:
+            this.viewPort = new Rectangle2D.Double(
+                    gameMap.getWidth() / 2D - comp.getBounds().getWidth() / 2D,
+                    gameMap.getHeight() / 2D - comp.getBounds().getHeight() / 2D,
+                    gameMap.getWidth() / 2D + comp.getBounds().getWidth() / 2D,
+                    gameMap.getHeight() / 2D + comp.getBounds().getHeight() / 2D);
+        }
     }
 
     @Override

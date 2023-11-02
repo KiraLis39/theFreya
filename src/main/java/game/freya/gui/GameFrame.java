@@ -56,6 +56,9 @@ public class GameFrame implements WindowListener, WindowStateListener {
         // todo: поднять на ноги:
 //        FoxLogo logo = new FoxLogo();
 //        try {
+//            InputStream is = Constants.class.getResourceAsStream("/cursors/default.png");
+//            defaultIcon = new ImageIcon(ImageIO.read(is));
+        // or
 //            BufferedImage[] logoImages = {ImageIO.read(new File(Constants.getLogoImageUrl()))};
 //            logo.start("12345", logoImages, FoxLogo.IMAGE_STYLE.FILL, FoxLogo.BACK_STYLE.ASIS, KeyEvent.VK_ESCAPE);
 //            logo.getEngine().join(6000);

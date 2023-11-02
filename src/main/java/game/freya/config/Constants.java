@@ -16,8 +16,8 @@ import org.apache.commons.lang3.SystemUtils;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 
 public final class Constants {
@@ -55,13 +55,13 @@ public final class Constants {
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
     @Getter
-    private final static String gameName = "Freya the game";
+    private static final String gameName = "Freya the game";
     @Getter
-    private final static String gameVersion = "0.0.1";
+    private static final String gameVersion = "0.0.1";
     @Getter
-    private final static String gameAuthor = "KiraLis39";
+    private static final String gameAuthor = "KiraLis39";
     @Getter
-    public static boolean isDebugInfoVisible = true;
+    private static boolean isDebugInfoVisible = true;
     @Getter
     @Setter
     private static UserConfig userConfig;
@@ -84,7 +84,8 @@ public final class Constants {
 
     static {
         try {
-            defaultIcon = new ImageIcon(ImageIO.read(new File("./resources/cursors/default.png")));
+            InputStream is = Constants.class.getResourceAsStream("/cursors/default.png");
+            defaultIcon = new ImageIcon(ImageIO.read(is));
             DEFAULT_CUR = FoxCursor.createCursor(defaultIcon, "default");
         } catch (IOException e) {
             throw new RuntimeException(e);
