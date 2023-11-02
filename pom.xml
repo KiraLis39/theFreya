@@ -8,6 +8,18 @@
     <artifactId>theFreya</artifactId>
     <version>0.0.1</version>
     <name>Freya the game</name>
+    <developers>
+        <developer>
+            <name>KiraLis39</name>
+            <email>angelicalis39@mail.ru</email>
+            <roles>
+                <role>owner</role>
+                <role>developer</role>
+            </roles>
+            <organization>Multiverse-39 Group</organization>
+            <url>https://vk.com/neverendingsky</url>
+        </developer>
+    </developers>
     <description>Freya the game</description>
     <url>https://vk.com/neverendingsky</url>
 
@@ -86,22 +98,6 @@
             <version>0.1.4</version>
         </dependency>
 
-        <!-- local -->
-        <dependency>
-            <groupId>FoxLib39</groupId>
-            <artifactId>FoxGUI</artifactId>
-            <version>06.25.33</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/FoxGUI-06.25.33.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>FoxLib39</groupId>
-            <artifactId>FoxTools</artifactId>
-            <version>06.25.2</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/FoxTools-06.25.2.jar</systemPath>
-        </dependency>
-
         <!-- tests -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -116,108 +112,188 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- local -->
+        <dependency>
+            <groupId>FoxLib39</groupId>
+            <artifactId>fox-gui</artifactId>
+            <version>6.2.6</version>
+            <!-- Run the 'install:install-file
+            -Dfile=H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-gui\fox-gui-6.2.6.jar
+            -DgroupId=FoxLib39 -DartifactId=fox-gui -Dversion=6.2.6 -Dpackaging=jar -DcreateChecksum=true' before -->
+        </dependency>
+        <dependency>
+            <groupId>FoxLib39</groupId>
+            <artifactId>fox-tools</artifactId>
+            <version>6.2.6</version>
+            <!-- Run the 'install:install-file
+            -Dfile=H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-tools\fox-tools-6.2.6.jar
+            -DgroupId=FoxLib39 -DartifactId=fox-tools -Dversion=6.2.6 -Dpackaging=jar -DcreateChecksum=true' before -->
+        </dependency>
+
     </dependencies>
 
-    <repositories>
-        <repository>
-            <id>local_store</id>
-            <url>file:////${project.basedir}/lib/</url>
-        </repository>
-    </repositories>
-
     <build>
-        <finalName>FreyaTheGame ${project.version}</finalName>
+        <finalName>FreyaTheGame_${project.version}</finalName>
+        <plugins>
 
-        <pluginManagement>
-            <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                    <excludeTransitive>false</excludeTransitive>
+                    <stripVersion>false</stripVersion>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <configuration>
-                        <excludes>
-                            <exclude>
-                                <groupId>org.projectlombok</groupId>
-                                <artifactId>lombok</artifactId>
-                            </exclude>
-                        </excludes>
-                    </configuration>
-                </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <packageName>game.freya</packageName>
+                            <mainClass>game.freya.Launcher</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>/lib/</classpathPrefix>
+                        </manifest>
+<!--                        <manifestEntries>-->
+<!--                            <Created-By>KiraLis39</Created-By>-->
+<!--                            <Some-Key>Some-Value</Some-Key>-->
+<!--                        </manifestEntries>-->
+                    </archive>
+                </configuration>
+            </plugin>
 
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>${maven-checkstyle-plugin.version}</version>
-                    <configuration>
-                        <configLocation>checkstyle.xml</configLocation>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>checkstyle</id>
-                            <phase>validate</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                            <configuration>
-                                <failOnViolation>true</failOnViolation>
-                            </configuration>
-                        </execution>
-                    </executions>
-                    <dependencies>
-                        <dependency>
-                            <groupId>com.puppycrawl.tools</groupId>
-                            <artifactId>checkstyle</artifactId>
-                            <version>${checkstyle.version}</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.7.8</version>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
 
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>single</goal>
-                            </goals>
-                            <configuration>
-                                <archive>
-                                    <manifest>
-                                        <mainClass>
-                                            game.freya.Launcher
-                                        </mainClass>
-                                    </manifest>
-                                </archive>
-                                <descriptorRefs>
-                                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                                </descriptorRefs>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
 
-            </plugins>
-        </pluginManagement>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <failOnViolation>true</failOnViolation>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+<!--            <plugin>-->
+<!--                <artifactId>maven-assembly-plugin</artifactId>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals><goal>single</goal></goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--                <configuration>-->
+<!--                    <descriptorRefs>-->
+<!--                        <descriptorRef>jar-with-dependencies</descriptorRef>-->
+<!--                    </descriptorRefs>-->
+<!--                    <archive>-->
+<!--                        <manifest>-->
+<!--                            <mainClass>-->
+<!--                                game.freya.Launcher-->
+<!--                            </mainClass>-->
+<!--                        </manifest>-->
+<!--                    </archive>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-assembly-plugin</artifactId>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>create-my-bundle</id>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>single</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            <appendAssemblyId>false</appendAssemblyId>-->
+<!--                            <descriptorRefs>-->
+<!--                                <descriptorRef>jar-with-dependencies</descriptorRef>-->
+<!--                            </descriptorRefs>-->
+<!--                            <archive>-->
+<!--                                <manifest>-->
+<!--                                    <mainClass>-->
+<!--                                        game.freya.Launcher-->
+<!--                                    </mainClass>-->
+<!--                                </manifest>-->
+<!--                            </archive>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+
+        </plugins>
 
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
+                <directory>${basedir}/src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/java</directory>
             </resource>
         </resources>
     </build>
 
-    <profiles>
-        <profile>
-            <id>dev</id>
-            <activation>
-                <property>
-                    <name>dev</name>
-                    <value>dev</value>
-                </property>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-    </profiles>
+    <repositories>
+        <repository>
+            <id>localRepo</id>
+            <name>Local repository</name>
+            <url>file://${pom.basedir}/lib</url>
+        </repository>
+    </repositories>
 
 </project>
