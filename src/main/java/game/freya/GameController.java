@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import org.sqlite.SQLiteConnection;
 
 import javax.annotation.PostConstruct;
-import javax.swing.*;
+import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.nio.file.Path;
 import java.sql.SQLException;

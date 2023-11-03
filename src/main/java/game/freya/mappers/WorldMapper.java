@@ -4,7 +4,7 @@ import game.freya.entities.World;
 import game.freya.entities.dto.WorldDTO;
 import org.springframework.stereotype.Component;
 
-import java.awt.*;
+import java.awt.Dimension;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;

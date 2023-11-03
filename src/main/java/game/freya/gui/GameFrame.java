@@ -1,5 +1,6 @@
 package game.freya.gui;
 
+import fox.FoxLogo;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
@@ -8,6 +9,7 @@ import game.freya.gui.panes.FoxCanvas;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.services.WorldService;
+import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +17,19 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.swing.*;
-import java.awt.*;
+import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.JFrame;
+import javax.swing.JRootPane;
+import javax.swing.WindowConstants;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.event.WindowStateListener;
+import java.io.IOException;
+import java.io.InputStream;
 
 @Slf4j
 @Component
@@ -32,6 +42,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
     private GameController gameController;
     private WorldDTO world;
     private JFrame frame;
+    private FoxLogo logo;
 
     @Autowired
     public void setGameController(@Lazy GameController gameController) {
@@ -43,37 +54,73 @@ public class GameFrame implements WindowListener, WindowStateListener {
         frame = new JFrame(Constants.getGameName().concat(" v.")
                 .concat(Constants.getGameVersion()), Constants.getGraphicsConfiguration());
 
+        if (Constants.isShowStartLogo()) {
+            try {
+                logo = new FoxLogo();
+                InputStream is = Constants.class.getResourceAsStream("/images/logo.png");
+                if (is != null) {
+                    logo.start(Constants.getGameVersion(), FoxLogo.IMAGE_STYLE.FILL, FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
+                    logo.getEngine().join(10_000);
+                }
+            } catch (IOException ex) {
+                log.error("Logo can not be displayed: {}", ExceptionUtils.getFullExceptionMessage(ex));
+            } catch (InterruptedException e) {
+                log.error("Logo thread was interrupted: {}", ExceptionUtils.getFullExceptionMessage(e));
+            }
+        }
+
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(this);
         frame.addWindowStateListener(this);
 
+        setInAc();
         loadMenuScreen();
 
         frame.setMinimumSize(LAUNCHER_DIM_MIN);
         frame.setPreferredSize(LAUNCHER_DIM);
         frame.pack();
         frame.setLocationRelativeTo(null);
-
-        // todo: поднять на ноги:
-//        FoxLogo logo = new FoxLogo();
-//        try {
-//            InputStream is = Constants.class.getResourceAsStream("/cursors/default.png");
-//            defaultIcon = new ImageIcon(ImageIO.read(is));
-        // or
-//            BufferedImage[] logoImages = {ImageIO.read(new File(Constants.getLogoImageUrl()))};
-//            logo.start("12345", logoImages, FoxLogo.IMAGE_STYLE.FILL, FoxLogo.BACK_STYLE.ASIS, KeyEvent.VK_ESCAPE);
-//            logo.getEngine().join(6000);
-//        } catch (IOException ex) {
-//            log.error("Logo can not be displayed: {}", ExceptionUtils.getFullExceptionMessage(ex));
-//        } catch (InterruptedException e) {
-//            log.error("Logo thread was interrupted: {}", ExceptionUtils.getFullExceptionMessage(e));
-//        }
-
         frame.setCursor(Constants.getDefaultCursor());
+
+        if (logo != null && logo.getEngine().isAlive()) {
+            try {
+                log.info("Logo finished await...");
+                logo.getEngine().join(10_000);
+            } catch (InterruptedException ie) {
+                log.warn("Logo thread joining was interrupted: {}", ExceptionUtils.getFullExceptionMessage(ie));
+            }
+        }
+
+        log.info("Show the MainFrame...");
         frame.setVisible(true);
 
-        // todo: доработать фулскрин:
-        //Constants.MON.switchFullscreen(frame);
+        if (UserConfig.isFullscreen()) {
+            // todo: доработать фулскрин:
+            log.info("Switch to fullscreen by UserConfig...");
+            Constants.MON.switchFullscreen(frame);
+        }
+    }
+
+    private void setInAc() {
+        final String frameName = "mainFrame";
+
+        Constants.INPUT_ACTION.add(frameName, frame);
+        Constants.INPUT_ACTION.set(frameName, "switchFullscreen", UserConfig.getKeyFullscreen(), 0, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                log.info("Try to switch fullscreen mode...");
+                UserConfig.setFullscreen(!UserConfig.isFullscreen());
+                Constants.MON.switchFullscreen(UserConfig.isFullscreen() ? frame : null);
+            }
+        });
+
+        Constants.INPUT_ACTION.set(frameName, "switchPause", UserConfig.getKeyPause(), 0, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                log.info("Try to switch pause mode...");
+                Constants.setPaused(!Constants.isPaused());
+            }
+        });
     }
 
     public void loadMenuScreen() {

@@ -9,14 +9,17 @@ import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
 @Slf4j
-// FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, Runnable
+// FoxCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, Runnable
 public class MenuCanvas extends FoxCanvas {
     private final transient GameController gameController;
     private boolean isMenuActive;
@@ -34,6 +37,8 @@ public class MenuCanvas extends FoxCanvas {
         setBackground(Color.DARK_GRAY.darker());
         addMouseListener(this);
         addMouseMotionListener(this);
+        addComponentListener(this);
+//        addMouseWheelListener(this); // если понадобится - можно включить.
 
         new Thread(this).start();
     }
@@ -112,24 +117,24 @@ public class MenuCanvas extends FoxCanvas {
         // buttons text:
         g2D.setFont(Constants.MENU_BUTTONS_FONT);
         g2D.setColor(Color.BLACK);
-        g2D.drawString(newGameButtonText, newGameButtonRect.x, newGameButtonRect.y + 17);
+        g2D.drawString(newGameButtonText, newGameButtonRect.x - 1, newGameButtonRect.y + 17);
         g2D.setColor(newGameButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(newGameButtonText, (int) (getWidth() * 0.035D), newGameButtonRect.y + 18);
+        g2D.drawString(newGameButtonText, newGameButtonRect.x, newGameButtonRect.y + 18);
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(coopPlayButtonText, coopPlayButtonRect.x, coopPlayButtonRect.y + 17);
+        g2D.drawString(coopPlayButtonText, coopPlayButtonRect.x - 1, coopPlayButtonRect.y + 17);
         g2D.setColor(coopPlayButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(coopPlayButtonText, (int) (getWidth() * 0.035D), coopPlayButtonRect.y + 18);
+        g2D.drawString(coopPlayButtonText, coopPlayButtonRect.x, coopPlayButtonRect.y + 18);
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(optionsButtonText, optionsButtonRect.x, optionsButtonRect.y + 17);
+        g2D.drawString(optionsButtonText, optionsButtonRect.x - 1, optionsButtonRect.y + 17);
         g2D.setColor(optionsButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(optionsButtonText, (int) (getWidth() * 0.035D), optionsButtonRect.y + 18);
+        g2D.drawString(optionsButtonText, optionsButtonRect.x, optionsButtonRect.y + 18);
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(exitButtonText, exitButtonRect.x, exitButtonRect.y + 17);
+        g2D.drawString(exitButtonText, exitButtonRect.x - 1, exitButtonRect.y + 17);
         g2D.setColor(exitButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(exitButtonText, (int) (getWidth() * 0.035D), exitButtonRect.y + 18);
+        g2D.drawString(exitButtonText, exitButtonRect.x, exitButtonRect.y + 18);
 
 //        if (Constants.isDebugInfoVisible()) {
 //            g2D.setColor(Color.DARK_GRAY);
@@ -141,7 +146,7 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     private void init() {
-        reloadShapes();
+        reloadShapes(this);
 
         try {
             Constants.CACHE.addIfAbsent("backMenuImage", ImageIO.read(new File("./resources/images/demo_menu.jpg")));
@@ -168,7 +173,7 @@ public class MenuCanvas extends FoxCanvas {
                 (int) (getHeight() * 0.25D),
                 (int) (getWidth() * 0.1D), 30);
         exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.30D),
+                (int) (getHeight() * 0.85D),
                 (int) (getWidth() * 0.1D), 30);
 
         initialized = true;
@@ -209,10 +214,10 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void mouseMoved(MouseEvent e) {
-        newGameButtonOver = newGameButtonRect.contains(e.getPoint());
-        coopPlayButtonOver = coopPlayButtonRect.contains(e.getPoint());
-        optionsButtonOver = optionsButtonRect.contains(e.getPoint());
-        exitButtonOver = exitButtonRect.contains(e.getPoint());
+        newGameButtonOver = newGameButtonRect != null && newGameButtonRect.contains(e.getPoint());
+        coopPlayButtonOver = coopPlayButtonRect != null && coopPlayButtonRect.contains(e.getPoint());
+        optionsButtonOver = optionsButtonRect != null && optionsButtonRect.contains(e.getPoint());
+        exitButtonOver = exitButtonRect != null && exitButtonRect.contains(e.getPoint());
     }
 
     @Override
@@ -237,7 +242,7 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void componentResized(ComponentEvent e) {
-        reloadShapes();
+        reloadShapes(this);
     }
 
     @Override
@@ -252,6 +257,11 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void componentHidden(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
 
     }
 }

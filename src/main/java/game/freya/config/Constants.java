@@ -16,8 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.ImageIcon;
+import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.GraphicsConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystems;
@@ -88,6 +90,8 @@ public final class Constants {
     @Getter
     @Setter
     private static int realFreshRate = 0;
+    @Getter
+    private static boolean isShowStartLogo = true;
 
     static {
         try {

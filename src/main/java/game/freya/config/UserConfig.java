@@ -10,7 +10,7 @@ import java.awt.event.KeyEvent;
 
 @Slf4j
 @Builder
-public class UserConfig {
+public final class UserConfig {
 
     @Getter
     @Setter
@@ -120,13 +120,27 @@ public class UserConfig {
     @Getter
     @Setter
     @Builder.Default
-    private static boolean pauseOnHidden = true;
+    private static boolean isPauseOnHidden = true;
 
     @Getter
     @Setter
     @Builder.Default
     private static long screenDiscreteLimit = 30L; // fps limit
 
+    // other:
+    @Getter
+    @Setter
+    @Builder.Default
+    private static boolean isMultiBufferEnabled = true;
+
+    @Setter
+    @Builder.Default
+    private static int bufferedDeep = 2;
+
     private UserConfig() {
+    }
+
+    public static int getBufferedDeep() {
+        return isMultiBufferEnabled ? bufferedDeep : 1;
     }
 }

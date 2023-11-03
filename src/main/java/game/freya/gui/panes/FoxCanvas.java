@@ -6,11 +6,15 @@ import game.freya.gui.panes.interfaces.iCanvas;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.awt.*;
+import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.Polygon;
 
 @Getter
 @Setter
-// iCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, Runnable
+// iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, Runnable
 public abstract class FoxCanvas extends Canvas implements iCanvas {
     private final String name;
     private int frames = 0;
@@ -59,10 +63,10 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         }
     }
 
-    public void reloadShapes() {
+    public void reloadShapes(FoxCanvas canvas) {
         setLeftGrayMenuPoly(new Polygon(
-                new int[]{0, (int) (getBounds().getWidth() * 0.25D), (int) (getBounds().getWidth() * 0.2D), 0},
-                new int[]{0, 0, getHeight(), getHeight()},
+                new int[]{0, (int) (canvas.getBounds().getWidth() * 0.25D), (int) (canvas.getBounds().getWidth() * 0.2D), 0},
+                new int[]{0, 0, canvas.getHeight(), canvas.getHeight()},
                 4));
     }
 }
