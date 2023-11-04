@@ -44,6 +44,8 @@ public final class Constants {
     public static final int MAX_ZOOM_OUT_CELLS = 19; // максимум отдаление карты ячеек.
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
     public static final int MAP_CELL_DIM = 64;
+    public static final int SERVER_PORT = 13958;
+    public static final int SOCKET_BUFFER_SIZE = 10240; // 65536
     // project:
     @Getter
     private static final String gameName = "Freya the game";
@@ -70,17 +72,26 @@ public final class Constants {
     private static final String logoImageUrl = "./resources/images/logo.png";
     @Getter
     private static Cursor defaultCursor;
+
+
     // user config:
     @Getter
     @Setter
     private static UserConfig userConfig;
+
+
     // dynamic game booleans:
     @Getter
     @Setter
     private static boolean isDebugInfoVisible = true;
+
     @Getter
     @Setter
     private static boolean isPaused = false;
+
+    @Getter
+    private static boolean isShowStartLogo = false;
+
     @Getter
     private static long screenDiscreteLimitMem = UserConfig.getScreenDiscreteLimit();
 
@@ -90,8 +101,6 @@ public final class Constants {
     @Getter
     @Setter
     private static int realFreshRate = 0;
-    @Getter
-    private static boolean isShowStartLogo = true;
 
     static {
         try {

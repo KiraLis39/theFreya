@@ -95,11 +95,6 @@ public final class UserConfig {
     @Getter
     @Setter
     @Builder.Default
-    private static boolean isShowStartLogo = true;
-
-    @Getter
-    @Setter
-    @Builder.Default
     private static boolean isHardcoreMode = false;
 
     @Getter

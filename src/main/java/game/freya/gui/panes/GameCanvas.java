@@ -25,16 +25,15 @@ import java.awt.geom.Rectangle2D;
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, Runnable
 public class GameCanvas extends FoxCanvas {
-    private final transient GameController gameController;
-    private final transient Rectangle2D viewPort;
-    private final transient WorldDTO worldDTO;
     private static final String backToGameButtonText = "Вернуться";
     private static final String optionsButtonText = "Настройки";
     private static final String saveButtonText = "Сохранить";
     private static final String exitButtonText = "Выйти в меню";
+    private final transient GameController gameController;
+    private final transient Rectangle2D viewPort;
+    private final transient WorldDTO worldDTO;
     private Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
     private Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
-    private boolean initialized = false;
     private boolean isGameActive = false;
     private boolean backToGameButtonOver = false, optionsButtonOver = false, saveButtonOver = false, exitButtonOver = false;
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
@@ -47,6 +46,7 @@ public class GameCanvas extends FoxCanvas {
         this.gameController = gameController;
 
         setBackground(Color.MAGENTA.darker().darker());
+        setFocusable(false);
 
         setScrollSpeed(20D);
 
@@ -73,13 +73,15 @@ public class GameCanvas extends FoxCanvas {
         setGameActive();
 
         while (isGameActive) {
+            // ждём пока компонент не станет виден:
             if (getParent() == null || !isDisplayable()) {
                 Thread.yield();
                 continue;
             }
 
-            if (!initialized) {
-                init();
+            // пересчитываем ректанглы меню, когда компонент наконец стал виден:
+            if (backToGameButtonRect == null) {
+                recalculateMenuRectangles();
             }
 
             try {
@@ -142,7 +144,7 @@ public class GameCanvas extends FoxCanvas {
         log.info("Thread of Game canvas is finalized.");
     }
 
-    private void init() {
+    private void recalculateMenuRectangles() {
         backToGameButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
                 (int) (getHeight() * 0.15D),
                 (int) (getWidth() * 0.1D), 30);
@@ -155,8 +157,6 @@ public class GameCanvas extends FoxCanvas {
         exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
                 (int) (getHeight() * 0.85D),
                 (int) (getWidth() * 0.1D), 30);
-
-        this.initialized = true;
     }
 
     private void drawWorld(Graphics2D g2D) {
@@ -387,11 +387,11 @@ public class GameCanvas extends FoxCanvas {
 //            tip.createFoxTip(FoxTip.TYPE.INFO, null, "1", "2", "3", (JComponent) getParent());
 //            tip.showTip();
             new FOptionPane().buildFOptionPane("Не реализовано:",
-                    "Приносим свои извинения! Данный функционал ещё находится в разработке.");
+                    "Приносим свои извинения! Данный функционал ещё находится в разработке.", FOptionPane.TYPE.INFO);
         }
         if (saveButtonOver) {
             new FOptionPane().buildFOptionPane("Не реализовано:",
-                    "Приносим свои извинения! Данный функционал ещё находится в разработке.");
+                    "Приносим свои извинения! Данный функционал ещё находится в разработке.", FOptionPane.TYPE.INFO);
         }
         if (exitButtonOver) {
             // saveTheGame() ?..
@@ -461,6 +461,8 @@ public class GameCanvas extends FoxCanvas {
 
         this.delta = comp.getBounds().getWidth() / comp.getBounds().getHeight();
         this.scrollSpeedY = scrollSpeedX / this.delta;
+
+        recalculateMenuRectangles();
     }
 
     @Override

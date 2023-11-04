@@ -35,6 +35,8 @@ public class MenuCanvas extends FoxCanvas {
         this.gameController = gameController;
 
         setBackground(Color.DARK_GRAY.darker());
+        setFocusable(false);
+
         addMouseListener(this);
         addMouseMotionListener(this);
         addComponentListener(this);
@@ -176,7 +178,7 @@ public class MenuCanvas extends FoxCanvas {
                 (int) (getHeight() * 0.85D),
                 (int) (getWidth() * 0.1D), 30);
 
-        initialized = true;
+        this.initialized = true;
     }
 
 
@@ -192,17 +194,19 @@ public class MenuCanvas extends FoxCanvas {
         }
         if (coopPlayButtonOver) {
             new FOptionPane().buildFOptionPane("Не реализовано:",
-                    "Приносим свои извинения! Данный функционал ещё находится в разработке.");
+                    "Приносим свои извинения! Данный функционал ещё находится в разработке.", FOptionPane.TYPE.INFO);
         }
         if (optionsButtonOver) {
-            // todo: доработать это говно
-//            FoxTip tip = new FoxTip(Constants.RENDER, (JComponent) getParent(), FoxTip.TYPE.INFO, null, null, null);
-//            tip.createFoxTip(FoxTip.TYPE.INFO, null, "1", "2", "3", (JComponent) getParent());
+            // FoxTip плохо подходит для Rectangle т.к. нет возможности получить абсолютные координаты:
+            // new Color(102, 242, 223), new Color(157, 159, 201)
+//            FoxTip tip = new FoxTip(FoxTip.TYPE.INFO, null, "Не реализовано",
+//                    "Данный функционал ещё находится\nв разработке.", "Приносим свои извинения", optionsButtonRect);
 //            tip.showTip();
             new FOptionPane().buildFOptionPane("Не реализовано:",
-                    "Приносим свои извинения! Данный функционал ещё находится в разработке.");
+                    "Приносим свои извинения! Данный функционал ещё находится в разработке.", FOptionPane.TYPE.INFO);
         }
-        if (exitButtonOver) {
+        if (exitButtonOver && (int) new FOptionPane().buildFOptionPane(
+                "Подтвердить:", "Выйти на рабочий стол?", FOptionPane.TYPE.YES_NO_TYPE).get() == 0) {
             gameController.exitTheGame(null);
         }
     }

@@ -8,6 +8,7 @@ import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.FoxCanvas;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.net.SocketService;
 import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
 import javax.swing.WindowConstants;
@@ -39,6 +41,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
     private static final Dimension LAUNCHER_DIM = new Dimension(1440, 900);
 
     private final WorldService worldService;
+    private final SocketService socketService;
     private GameController gameController;
     private WorldDTO world;
     private JFrame frame;
@@ -73,7 +76,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
         frame.addWindowListener(this);
         frame.addWindowStateListener(this);
 
-        setInAc();
         loadMenuScreen();
 
         frame.setMinimumSize(LAUNCHER_DIM_MIN);
@@ -91,11 +93,16 @@ public class GameFrame implements WindowListener, WindowStateListener {
             }
         }
 
+        // настройка фокуса для работы горячих клавиш:
+        frame.setFocusable(false);
+        frame.getRootPane().setFocusable(true);
+
         log.info("Show the MainFrame...");
         frame.setVisible(true);
+        setInAc();
+//        frame.requestFocusInWindow();
 
         if (UserConfig.isFullscreen()) {
-            // todo: доработать фулскрин:
             log.info("Switch to fullscreen by UserConfig...");
             Constants.MON.switchFullscreen(frame);
         }
@@ -104,8 +111,8 @@ public class GameFrame implements WindowListener, WindowStateListener {
     private void setInAc() {
         final String frameName = "mainFrame";
 
-        Constants.INPUT_ACTION.add(frameName, frame);
-        Constants.INPUT_ACTION.set(frameName, "switchFullscreen", UserConfig.getKeyFullscreen(), 0, new AbstractAction() {
+        Constants.INPUT_ACTION.add(frameName, frame.getRootPane());
+        Constants.INPUT_ACTION.set(JComponent.WHEN_FOCUSED, frameName, "switchFullscreen", UserConfig.getKeyFullscreen(), 0, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 log.info("Try to switch fullscreen mode...");
@@ -114,7 +121,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
             }
         });
 
-        Constants.INPUT_ACTION.set(frameName, "switchPause", UserConfig.getKeyPause(), 0, new AbstractAction() {
+        Constants.INPUT_ACTION.set(JComponent.WHEN_FOCUSED, frameName, "switchPause", UserConfig.getKeyPause(), 0, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 log.info("Try to switch pause mode...");
