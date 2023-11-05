@@ -128,7 +128,7 @@ public final class Constants {
     public static long getDiscreteDelay() {
         if (delay < 0 || screenDiscreteLimitMem != UserConfig.getScreenDiscreteLimit()) {
             screenDiscreteLimitMem = UserConfig.getScreenDiscreteLimit();
-            delay = Math.floorDiv(1000L, UserConfig.getScreenDiscreteLimit()) - 2L;
+            delay = Math.floorDiv(1000L, UserConfig.getScreenDiscreteLimit()) - 1L; // вычитаем погрешность на расчеты значений.
         }
         return delay;
     }

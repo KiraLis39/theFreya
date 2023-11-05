@@ -112,7 +112,7 @@ public class GameCanvas extends FoxCanvas {
                             super.drawDebugInfo(g2D, worldDTO.getTitle()); // отладочная информация
                         }
 
-                        g2D.dispose();
+                        // g2D.dispose();
                     } while (getBufferStrategy().contentsRestored());
                 } while (getBufferStrategy().contentsLost());
                 getBufferStrategy().show();
