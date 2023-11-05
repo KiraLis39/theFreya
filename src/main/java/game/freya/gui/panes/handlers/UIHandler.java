@@ -16,10 +16,10 @@ public final class UIHandler {
     public static void drawUI(Rectangle canvasRect, Graphics2D g2D) {
         g2D.setStroke(new BasicStroke(2f));
         g2D.setColor(Color.GREEN);
-        g2D.drawRect(1, 1, (int) (canvasRect.getWidth() * 0.3f), (int) (canvasRect.getHeight() * 0.1f));
+        g2D.drawRect(1, 1, (int) (canvasRect.getWidth() * 0.333f), (int) (canvasRect.getHeight() * 0.075f));
 
         g2D.setColor(Color.MAGENTA);
-        g2D.drawRect((int) (canvasRect.getWidth() * 0.3f), (int) (canvasRect.getHeight() * 0.1f),
-                canvasRect.width - 1, (int) (canvasRect.getHeight() * 0.1f));
+        g2D.drawRect((int) (canvasRect.getWidth() * 0.666f), 1,
+                (int) (canvasRect.getWidth() * 0.333f), (int) (canvasRect.getHeight() * 0.075f));
     }
 }

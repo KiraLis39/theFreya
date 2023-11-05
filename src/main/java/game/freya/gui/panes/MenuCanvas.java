@@ -165,6 +165,12 @@ public class MenuCanvas extends FoxCanvas {
         optionsButtonText = "Настройки";
         exitButtonText = "Выход";
 
+        recalculateMenuRectangles();
+
+        this.initialized = true;
+    }
+
+    private void recalculateMenuRectangles() {
         newGameButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
                 (int) (getHeight() * 0.15D),
                 (int) (getWidth() * 0.1D), 30);
@@ -177,8 +183,6 @@ public class MenuCanvas extends FoxCanvas {
         exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
                 (int) (getHeight() * 0.85D),
                 (int) (getWidth() * 0.1D), 30);
-
-        this.initialized = true;
     }
 
 
@@ -247,6 +251,7 @@ public class MenuCanvas extends FoxCanvas {
     @Override
     public void componentResized(ComponentEvent e) {
         reloadShapes(this);
+        recalculateMenuRectangles();
     }
 
     @Override

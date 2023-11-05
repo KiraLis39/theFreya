@@ -33,7 +33,6 @@ public class GameCanvas extends FoxCanvas {
     private final transient GameController gameController;
     private final transient Rectangle2D viewPort;
     private final transient WorldDTO worldDTO;
-    private final Color canvasBackgroundColor = Color.MAGENTA;
     private Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
     private Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
     private boolean isGameActive = false;
@@ -47,7 +46,7 @@ public class GameCanvas extends FoxCanvas {
         this.worldDTO = worldDTO;
         this.gameController = gameController;
 
-        setBackground(canvasBackgroundColor);
+        setBackground(Color.BLACK);
         setFocusable(false);
 
         setScrollSpeed(20D);
@@ -149,13 +148,13 @@ public class GameCanvas extends FoxCanvas {
 
     private void recalculateMenuRectangles() {
         backToGameButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.15D),
+                (int) (getHeight() * 0.17D),
                 (int) (getWidth() * 0.1D), 30);
         optionsButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.20D),
+                (int) (getHeight() * 0.22D),
                 (int) (getWidth() * 0.1D), 30);
         saveButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.25D),
+                (int) (getHeight() * 0.27D),
                 (int) (getWidth() * 0.1D), 30);
         exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
                 (int) (getHeight() * 0.85D),

@@ -31,18 +31,6 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     }
 
     public void drawDebugInfo(Graphics2D g2D, String worldTitle) {
-        short lineY = 35;
-
-        g2D.setFont(Constants.DEBUG_FONT);
-
-        if (worldTitle != null) {
-            g2D.setColor(Color.BLACK);
-            g2D.drawString("Мир: %s".formatted(worldTitle), 32, lineY);
-            g2D.setColor(Color.WHITE);
-            g2D.drawString("Мир: %s".formatted(worldTitle), 31, lineY + 1);
-            lineY += lineY;
-        }
-
         if (Constants.isDebugInfoVisible()) {
             if (System.currentTimeMillis() - this.timeStamp >= 1000L) {
                 Constants.setRealFreshRate(this.frames);
@@ -50,14 +38,27 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 setFrames(0);
             }
 
+            final float downShift = getHeight() * 0.085f;
+            final short rightShift = 21;
+            short linesSpace = 24;
+
+            g2D.setFont(Constants.DEBUG_FONT);
+            if (worldTitle != null) {
+                g2D.setColor(Color.BLACK);
+                g2D.drawString("Мир: %s".formatted(worldTitle), rightShift, downShift + linesSpace);
+                g2D.setColor(Color.GRAY);
+                g2D.drawString("Мир: %s".formatted(worldTitle), rightShift - 1f, downShift + linesSpace + 1);
+                linesSpace += linesSpace;
+            }
+
             g2D.setColor(Color.BLACK);
             g2D.drawString("FPS: лимит/монитор/реально (%s/%s/%s)"
                     .formatted(UserConfig.getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
-                            Constants.getRealFreshRate()), 32, lineY);
-            g2D.setColor(Color.WHITE);
+                            Constants.getRealFreshRate()), rightShift, downShift + linesSpace);
+            g2D.setColor(Color.GRAY);
             g2D.drawString("FPS: лимит/монитор/реально (%s/%s/%s)"
                     .formatted(UserConfig.getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
-                            Constants.getRealFreshRate()), 31, lineY + 1);
+                            Constants.getRealFreshRate()), rightShift - 1f, downShift + linesSpace + 1);
 
             incrementFramesCounter();
         }
