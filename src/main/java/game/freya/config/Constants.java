@@ -41,7 +41,7 @@ public final class Constants {
     public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 16, false, MON.getEnvironment());
     public static final Font MENU_BUTTONS_FONT = FFB.setFoxFont(FONT.CANDARA, 24, true, MON.getEnvironment());
     // other:
-    public static final int MAX_ZOOM_OUT_CELLS = 21; // максимум отдаление карты ячеек.
+    public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
     public static final int MAP_CELL_DIM = 64;
     public static final int SERVER_PORT = 13958;

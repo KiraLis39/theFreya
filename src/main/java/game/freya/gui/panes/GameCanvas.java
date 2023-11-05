@@ -258,54 +258,49 @@ public class GameCanvas extends FoxCanvas {
     private void zoomOut() {
         log.debug("Zoom out...");
 
-        double vpXSrc = viewPort.getX();
-        double vpXDst = viewPort.getWidth();
-        double vpWidth = vpXDst - vpXSrc;
-        double vpYSrc = viewPort.getY();
-        double vpYDst = viewPort.getHeight();
-        double vpHeight = vpYDst - vpYSrc;
-        int maxCellsSize = Constants.MAP_CELL_DIM * Constants.MAX_ZOOM_OUT_CELLS;
+        double mapWidth = this.worldDTO.getGameMap().getWidth();
+        double mapHeight = this.worldDTO.getGameMap().getHeight();
 
-        // если окно больше установленного лимита:
-        if (vpWidth >= maxCellsSize || vpHeight >= maxCellsSize) {
-            log.warn("Can`t zoom out: vpWidth = {} and vpHeight = {} but maxCellsSize is {}", vpWidth, vpHeight, maxCellsSize);
+        double viewXSrc = viewPort.getX();
+        double viewXDst = viewPort.getWidth();
+        double viewWidth = viewXDst - viewXSrc;
+
+        double viewYSrc = viewPort.getY();
+        double viewYDst = viewPort.getHeight();
+        double viewHeight = viewYDst - viewYSrc;
+
+        // если окно больше установленного лимита или и так максимального размера:
+        if (!canZoomOut(viewWidth, viewHeight, mapWidth, mapHeight)) {
             return;
         }
 
-        // если окно уже максимального размера:
-        if (vpWidth >= this.worldDTO.getGameMap().getWidth() && vpHeight >= this.worldDTO.getGameMap().getHeight()) {
-            log.warn("Can`t zoom out: maximum size reached.");
-            return;
-        }
-
-        if (vpXSrc <= 0) {
-            if (vpYSrc <= 0) {
+        if (viewXSrc <= 0) {
+            if (viewYSrc <= 0) {
                 // камера сверху слева:
-                viewPort.setRect(0, 0, vpWidth + scrollSpeedX, vpYDst + scrollSpeedY);
-            } else if (vpYDst >= this.worldDTO.getGameMap().getHeight()) {
+                viewPort.setRect(0, 0, viewWidth + scrollSpeedX, viewYDst + scrollSpeedY);
+            } else if (viewYDst >= mapHeight) {
                 // камера снизу слева:
-                viewPort.setRect(0, vpYSrc - scrollSpeedY, vpWidth + scrollSpeedX, vpYDst);
+                viewPort.setRect(0, viewYSrc - scrollSpeedY, viewWidth + scrollSpeedX, viewYDst);
             } else {
                 // камера камера слева по центру:
-                viewPort.setRect(0, vpYSrc - scrollSpeedY, vpWidth + scrollSpeedX * 2d, vpYDst + scrollSpeedY);
+                viewPort.setRect(0, viewYSrc - scrollSpeedY, viewWidth + scrollSpeedX * 2d, viewYDst + scrollSpeedY);
             }
-        } else if (vpXDst >= this.worldDTO.getGameMap().getWidth()) {
-            if (vpYSrc <= 0) {
+        } else if (viewXDst >= mapWidth) {
+            if (viewYSrc <= 0) {
                 // камера сверху справа:
-                viewPort.setRect(vpXSrc - scrollSpeedX, 0, this.worldDTO.getGameMap().getWidth(), vpHeight + scrollSpeedY);
-            } else if (vpYDst >= this.worldDTO.getGameMap().getHeight()) {
+                viewPort.setRect(viewXSrc - scrollSpeedX, 0, mapWidth, viewHeight + scrollSpeedY);
+            } else if (viewYDst >= mapHeight) {
                 // камера снизу справа:
-                viewPort.setRect(vpXSrc - scrollSpeedX, vpYSrc - scrollSpeedY,
-                        this.worldDTO.getGameMap().getWidth(), this.worldDTO.getGameMap().getHeight());
+                viewPort.setRect(viewXSrc - scrollSpeedX, viewYSrc - scrollSpeedY, mapWidth, mapHeight);
             } else {
                 // камера камера справа по центру:
-                viewPort.setRect(vpXSrc - scrollSpeedX * 2d, vpYSrc - scrollSpeedY, this.worldDTO.getGameMap().getWidth(), vpYDst + scrollSpeedY);
+                viewPort.setRect(viewXSrc - scrollSpeedX * 2d, viewYSrc - scrollSpeedY, mapWidth, viewYDst + scrollSpeedY);
             }
         } else {
-            double xSrc = vpXSrc - scrollSpeedX;
-            double ySrc = vpYSrc - scrollSpeedY;
-            double xDst = vpXDst + scrollSpeedX;
-            double yDst = vpYDst + scrollSpeedY;
+            double xSrc = viewXSrc - scrollSpeedX;
+            double ySrc = viewYSrc - scrollSpeedY;
+            double xDst = viewXDst + scrollSpeedX;
+            double yDst = viewYDst + scrollSpeedY;
 
             if (xSrc <= 0) {
                 xDst += xSrc - xSrc * 2;
@@ -315,17 +310,35 @@ public class GameCanvas extends FoxCanvas {
                 yDst += ySrc - ySrc * 2;
                 ySrc = 0;
             }
-            if (xDst >= this.worldDTO.getGameMap().getWidth()) {
-                xSrc -= xDst - this.worldDTO.getGameMap().getWidth();
-                xDst = this.worldDTO.getGameMap().getWidth();
+            if (xDst >= mapWidth) {
+                xSrc -= xDst - mapWidth;
+                xDst = mapWidth;
             }
-            if (yDst >= this.worldDTO.getGameMap().getHeight()) {
-                ySrc -= yDst - this.worldDTO.getGameMap().getHeight();
-                yDst = this.worldDTO.getGameMap().getHeight();
+            if (yDst >= mapHeight) {
+                ySrc -= yDst - mapHeight;
+                yDst = mapHeight;
             }
 
             viewPort.setRect(xSrc, ySrc, xDst, yDst);
         }
+    }
+
+    private boolean canZoomOut(double viewWidth, double viewHeight, double mapWidth, double mapHeight) {
+        int maxCellsSize = Constants.MAP_CELL_DIM * Constants.MAX_ZOOM_OUT_CELLS;
+
+        // если окно больше установленного лимита:
+        if (viewWidth >= maxCellsSize || viewHeight >= maxCellsSize) {
+            log.warn("Can`t zoom out: viewWidth = {} and viewHeight = {} but maxCellsSize is {}", viewWidth, viewHeight, maxCellsSize);
+            return false;
+        }
+
+        // если окно уже максимального размера:
+        if (viewWidth >= mapWidth && viewHeight >= mapHeight) {
+            log.warn("Can`t zoom out: maximum size reached.");
+            return false;
+        }
+
+        return true;
     }
 
     private void dragLeft() {
