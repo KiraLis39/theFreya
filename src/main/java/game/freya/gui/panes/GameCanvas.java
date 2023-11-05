@@ -7,6 +7,7 @@ import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
+import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,6 +33,7 @@ public class GameCanvas extends FoxCanvas {
     private final transient GameController gameController;
     private final transient Rectangle2D viewPort;
     private final transient WorldDTO worldDTO;
+    private Color canvasBackgroundColor = Color.MAGENTA;
     private Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
     private Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
     private boolean isGameActive = false;
@@ -45,7 +47,7 @@ public class GameCanvas extends FoxCanvas {
         this.worldDTO = worldDTO;
         this.gameController = gameController;
 
-        setBackground(Color.MAGENTA.darker().darker());
+        setBackground(canvasBackgroundColor);
         setFocusable(false);
 
         setScrollSpeed(20D);
@@ -94,8 +96,8 @@ public class GameCanvas extends FoxCanvas {
                         Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
                         Constants.RENDER.setRender(g2D, FoxRender.RENDER.HIGH);
 
-                        // очищаем экран:
-                        g2D.clearRect(0, 0, getWidth(), getHeight());
+                        // очищаем экран (понижает fps):
+                        // g2D.clearRect(0, 0, getWidth(), getHeight());
 
                         // draw all World`s graphic:
                         drawWorld(g2D);
@@ -160,13 +162,20 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void drawWorld(Graphics2D g2D) {
-        worldDTO.draw(g2D);
+        worldDTO.draw(g2D, viewPort.getBounds());
 
         // рисуем заготовленный имедж:
         g2D.drawImage(this.worldDTO.getGameMap(), 0, 0, getWidth(), getHeight(),
                 viewPort.getBounds().x, viewPort.getBounds().y,
                 viewPort.getBounds().width, viewPort.getBounds().height,
                 this);
+
+        // рисуем UI:
+        drawUI(g2D);
+    }
+
+    private void drawUI(Graphics2D g2D) {
+        UIHandler.drawUI(getBounds(), g2D);
     }
 
     private void setGameActive() {
@@ -303,7 +312,8 @@ public class GameCanvas extends FoxCanvas {
     private void dragRight() {
         if (canDragRight()) {
             log.debug("Drag right...");
-            viewPort.setRect(viewPort.getX() - Constants.getDragSpeed(), viewPort.getY(),
+            double newX = viewPort.getX() - Constants.getDragSpeed() > 0 ? viewPort.getX() - Constants.getDragSpeed() : 0;
+            viewPort.setRect(newX, viewPort.getY(),
                     viewPort.getWidth() - Constants.getDragSpeed(), viewPort.getHeight());
         }
     }
@@ -319,7 +329,8 @@ public class GameCanvas extends FoxCanvas {
     private void dragDown() {
         if (canDragDown()) {
             log.debug("Drag down...");
-            viewPort.setRect(viewPort.getX(), viewPort.getY() - Constants.getDragSpeed(),
+            double newY = viewPort.getY() - Constants.getDragSpeed() > 0 ? viewPort.getY() - Constants.getDragSpeed() : 0;
+            viewPort.setRect(viewPort.getX(), newY,
                     viewPort.getWidth(), viewPort.getHeight() - Constants.getDragSpeed());
         }
     }
