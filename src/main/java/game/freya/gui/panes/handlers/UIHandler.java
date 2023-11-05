@@ -10,6 +10,9 @@ import java.awt.Rectangle;
 @Slf4j
 public final class UIHandler {
 
+    private UIHandler() {
+    }
+
     public static void drawUI(Rectangle canvasRect, Graphics2D g2D) {
         g2D.setStroke(new BasicStroke(2f));
         g2D.setColor(Color.GREEN);
@@ -18,8 +21,5 @@ public final class UIHandler {
         g2D.setColor(Color.MAGENTA);
         g2D.drawRect((int) (canvasRect.getWidth() * 0.3f), (int) (canvasRect.getHeight() * 0.1f),
                 canvasRect.width - 1, (int) (canvasRect.getHeight() * 0.1f));
-    }
-
-    private UIHandler() {
     }
 }

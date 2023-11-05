@@ -33,7 +33,7 @@ public class GameCanvas extends FoxCanvas {
     private final transient GameController gameController;
     private final transient Rectangle2D viewPort;
     private final transient WorldDTO worldDTO;
-    private Color canvasBackgroundColor = Color.MAGENTA;
+    private final Color canvasBackgroundColor = Color.MAGENTA;
     private Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
     private Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
     private boolean isGameActive = false;
@@ -281,10 +281,13 @@ public class GameCanvas extends FoxCanvas {
         if (vpXSrc <= 0) {
             if (vpYSrc <= 0) {
                 // камера сверху слева:
-                viewPort.setRect(0, 0, vpWidth + scrollSpeedX, vpHeight + scrollSpeedY);
+                viewPort.setRect(0, 0, vpWidth + scrollSpeedX, vpYDst + scrollSpeedY);
             } else if (vpYDst >= this.worldDTO.getGameMap().getHeight()) {
                 // камера снизу слева:
                 viewPort.setRect(0, vpYSrc - scrollSpeedY, vpWidth + scrollSpeedX, vpYDst);
+            } else {
+                // камера камера слева по центру:
+                viewPort.setRect(0, vpYSrc - scrollSpeedY, vpWidth + scrollSpeedX * 2d, vpYDst + scrollSpeedY);
             }
         } else if (vpXDst >= this.worldDTO.getGameMap().getWidth()) {
             if (vpYSrc <= 0) {
@@ -294,18 +297,45 @@ public class GameCanvas extends FoxCanvas {
                 // камера снизу справа:
                 viewPort.setRect(vpXSrc - scrollSpeedX, vpYSrc - scrollSpeedY,
                         this.worldDTO.getGameMap().getWidth(), this.worldDTO.getGameMap().getHeight());
+            } else {
+                // камера камера справа по центру:
+                viewPort.setRect(vpXSrc - scrollSpeedX * 2d, vpYSrc - scrollSpeedY, this.worldDTO.getGameMap().getWidth(), vpYDst + scrollSpeedY);
             }
         } else {
-            viewPort.setRect(vpXSrc - scrollSpeedX, vpYSrc - scrollSpeedY, vpXDst + scrollSpeedX, vpYDst + scrollSpeedY);
+            double xSrc = vpXSrc - scrollSpeedX;
+            double ySrc = vpYSrc - scrollSpeedY;
+            double xDst = vpXDst + scrollSpeedX;
+            double yDst = vpYDst + scrollSpeedY;
+
+            if (xSrc <= 0) {
+                xDst += xSrc - xSrc * 2;
+                xSrc = 0;
+            }
+            if (ySrc <= 0) {
+                yDst += ySrc - ySrc * 2;
+                ySrc = 0;
+            }
+            if (xDst >= this.worldDTO.getGameMap().getWidth()) {
+                xSrc -= xDst - this.worldDTO.getGameMap().getWidth();
+                xDst = this.worldDTO.getGameMap().getWidth();
+            }
+            if (yDst >= this.worldDTO.getGameMap().getHeight()) {
+                ySrc -= yDst - this.worldDTO.getGameMap().getHeight();
+                yDst = this.worldDTO.getGameMap().getHeight();
+            }
+
+            viewPort.setRect(xSrc, ySrc, xDst, yDst);
         }
     }
 
     private void dragLeft() {
         if (canDragLeft()) {
             log.debug("Drag left...");
-            viewPort.setRect(
-                    viewPort.getX() + Constants.getDragSpeed(), viewPort.getY(),
-                    viewPort.getWidth() + Constants.getDragSpeed(), viewPort.getHeight());
+            double mapWidth = this.worldDTO.getGameMap().getWidth();
+            double newWidth = Math.min(viewPort.getWidth() + Constants.getDragSpeed(), mapWidth);
+            viewPort.setRect(viewPort.getX() + Constants.getDragSpeed() - (newWidth == mapWidth
+                            ? Math.abs(viewPort.getWidth() + Constants.getDragSpeed() - mapWidth) : 0),
+                    viewPort.getY(), newWidth, viewPort.getHeight());
         }
     }
 
@@ -314,15 +344,19 @@ public class GameCanvas extends FoxCanvas {
             log.debug("Drag right...");
             double newX = viewPort.getX() - Constants.getDragSpeed() > 0 ? viewPort.getX() - Constants.getDragSpeed() : 0;
             viewPort.setRect(newX, viewPort.getY(),
-                    viewPort.getWidth() - Constants.getDragSpeed(), viewPort.getHeight());
+                    viewPort.getWidth() - Constants.getDragSpeed() + (newX == 0 ? Math.abs(viewPort.getX() - Constants.getDragSpeed()) : 0),
+                    viewPort.getHeight());
         }
     }
 
     private void dragUp() {
         if (canDragUp()) {
             log.debug("Drag up...");
-            viewPort.setRect(viewPort.getX(), viewPort.getY() + Constants.getDragSpeed(),
-                    viewPort.getWidth(), viewPort.getHeight() + Constants.getDragSpeed());
+            double mapHeight = this.worldDTO.getGameMap().getHeight();
+            double newHeight = Math.min(viewPort.getHeight() + Constants.getDragSpeed(), mapHeight);
+            viewPort.setRect(viewPort.getX(), viewPort.getY() + Constants.getDragSpeed() - (newHeight == mapHeight
+                            ? Math.abs(viewPort.getHeight() + Constants.getDragSpeed() - mapHeight) : 0),
+                    viewPort.getWidth(), newHeight);
         }
     }
 
@@ -331,7 +365,8 @@ public class GameCanvas extends FoxCanvas {
             log.debug("Drag down...");
             double newY = viewPort.getY() - Constants.getDragSpeed() > 0 ? viewPort.getY() - Constants.getDragSpeed() : 0;
             viewPort.setRect(viewPort.getX(), newY,
-                    viewPort.getWidth(), viewPort.getHeight() - Constants.getDragSpeed());
+                    viewPort.getWidth(),
+                    viewPort.getHeight() - Constants.getDragSpeed() + (newY == 0 ? Math.abs(viewPort.getY() - Constants.getDragSpeed()) : 0));
         }
     }
 

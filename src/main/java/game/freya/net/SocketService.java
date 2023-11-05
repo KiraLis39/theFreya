@@ -17,8 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Service
 public class SocketService {
-    private volatile boolean isOpen = false;
     private final Map<String, ClientHandler> clients = new ConcurrentHashMap<>(3);
+    private volatile boolean isOpen = false;
 
     public void openServer() throws IOException {
         if (!isOpen) {
