@@ -96,9 +96,6 @@ public class GameCanvas extends FoxCanvas {
                         Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
                         Constants.RENDER.setRender(g2D, FoxRender.RENDER.HIGH);
 
-                        // очищаем экран (понижает fps):
-                        // g2D.clearRect(0, 0, getWidth(), getHeight());
-
                         // draw all World`s graphic:
                         drawWorld(g2D);
 
@@ -107,18 +104,7 @@ public class GameCanvas extends FoxCanvas {
                             // is needs to draw the Menu:
                             drawPauseMode(g2D);
                         } else {
-                            if (isMouseRightEdgeOver) {
-                                dragLeft();
-                            }
-                            if (isMouseLeftEdgeOver) {
-                                dragRight();
-                            }
-                            if (isMouseUpEdgeOver) {
-                                dragDown();
-                            }
-                            if (isMouseDownEdgeOver) {
-                                dragUp();
-                            }
+                            dragViewIfNeeds();
                         }
 
                         // draw debug info corner if debug mode on:
@@ -144,6 +130,21 @@ public class GameCanvas extends FoxCanvas {
             }
         }
         log.info("Thread of Game canvas is finalized.");
+    }
+
+    private void dragViewIfNeeds() {
+        if (isMouseRightEdgeOver) {
+            dragLeft(null);
+        }
+        if (isMouseLeftEdgeOver) {
+            dragRight(null);
+        }
+        if (isMouseUpEdgeOver) {
+            dragDown(null);
+        }
+        if (isMouseDownEdgeOver) {
+            dragUp(null);
+        }
     }
 
     private void recalculateMenuRectangles() {
@@ -263,63 +264,32 @@ public class GameCanvas extends FoxCanvas {
 
         double viewXSrc = viewPort.getX();
         double viewXDst = viewPort.getWidth();
-        double viewWidth = viewXDst - viewXSrc;
 
         double viewYSrc = viewPort.getY();
         double viewYDst = viewPort.getHeight();
-        double viewHeight = viewYDst - viewYSrc;
 
         // если окно больше установленного лимита или и так максимального размера:
-        if (!canZoomOut(viewWidth, viewHeight, mapWidth, mapHeight)) {
+        if (!canZoomOut(viewXDst - viewXSrc, viewYDst - viewYSrc, mapWidth, mapHeight)) {
             return;
         }
 
-        if (viewXSrc <= 0) {
-            if (viewYSrc <= 0) {
-                // камера сверху слева:
-                viewPort.setRect(0, 0, viewWidth + scrollSpeedX, viewYDst + scrollSpeedY);
-            } else if (viewYDst >= mapHeight) {
-                // камера снизу слева:
-                viewPort.setRect(0, viewYSrc - scrollSpeedY, viewWidth + scrollSpeedX, viewYDst);
-            } else {
-                // камера камера слева по центру:
-                viewPort.setRect(0, viewYSrc - scrollSpeedY, viewWidth + scrollSpeedX * 2d, viewYDst + scrollSpeedY);
-            }
-        } else if (viewXDst >= mapWidth) {
-            if (viewYSrc <= 0) {
-                // камера сверху справа:
-                viewPort.setRect(viewXSrc - scrollSpeedX, 0, mapWidth, viewHeight + scrollSpeedY);
-            } else if (viewYDst >= mapHeight) {
-                // камера снизу справа:
-                viewPort.setRect(viewXSrc - scrollSpeedX, viewYSrc - scrollSpeedY, mapWidth, mapHeight);
-            } else {
-                // камера камера справа по центру:
-                viewPort.setRect(viewXSrc - scrollSpeedX * 2d, viewYSrc - scrollSpeedY, mapWidth, viewYDst + scrollSpeedY);
-            }
-        } else {
-            double xSrc = viewXSrc - scrollSpeedX;
-            double ySrc = viewYSrc - scrollSpeedY;
-            double xDst = viewXDst + scrollSpeedX;
-            double yDst = viewYDst + scrollSpeedY;
+        viewPort.setRect(viewXSrc - scrollSpeedX, viewYSrc - scrollSpeedY, viewXDst + scrollSpeedX, viewYDst + scrollSpeedY);
 
-            if (xSrc <= 0) {
-                xDst += xSrc - xSrc * 2;
-                xSrc = 0;
-            }
-            if (ySrc <= 0) {
-                yDst += ySrc - ySrc * 2;
-                ySrc = 0;
-            }
-            if (xDst >= mapWidth) {
-                xSrc -= xDst - mapWidth;
-                xDst = mapWidth;
-            }
-            if (yDst >= mapHeight) {
-                ySrc -= yDst - mapHeight;
-                yDst = mapHeight;
-            }
+        // проверка на выход за края игрового поля:
+        while (viewPort.getX() < 0) {
+            dragLeft(1d);
+        }
 
-            viewPort.setRect(xSrc, ySrc, xDst, yDst);
+        while (viewPort.getWidth() > mapWidth) {
+            dragRight(1d);
+        }
+
+        while (viewPort.getY() < 0) {
+            dragUp(1d);
+        }
+
+        while (viewPort.getHeight() > mapHeight) {
+            dragDown(1d);
         }
     }
 
@@ -333,7 +303,7 @@ public class GameCanvas extends FoxCanvas {
         }
 
         // если окно уже максимального размера:
-        if (viewWidth >= mapWidth && viewHeight >= mapHeight) {
+        if (viewWidth >= mapWidth || viewHeight >= mapHeight) {
             log.warn("Can`t zoom out: maximum size reached.");
             return false;
         }
@@ -341,45 +311,46 @@ public class GameCanvas extends FoxCanvas {
         return true;
     }
 
-    private void dragLeft() {
+    private void dragLeft(Double pixels) {
         if (canDragLeft()) {
             log.debug("Drag left...");
+            double per = pixels != null ? pixels : Constants.getDragSpeed();
             double mapWidth = this.worldDTO.getGameMap().getWidth();
-            double newWidth = Math.min(viewPort.getWidth() + Constants.getDragSpeed(), mapWidth);
-            viewPort.setRect(viewPort.getX() + Constants.getDragSpeed() - (newWidth == mapWidth
-                            ? Math.abs(viewPort.getWidth() + Constants.getDragSpeed() - mapWidth) : 0),
+            double newWidth = Math.min(viewPort.getWidth() + per, mapWidth);
+            viewPort.setRect(viewPort.getX() + per - (newWidth == mapWidth ? Math.abs(viewPort.getWidth() + per - mapWidth) : 0),
                     viewPort.getY(), newWidth, viewPort.getHeight());
         }
     }
 
-    private void dragRight() {
+    private void dragRight(Double pixels) {
         if (canDragRight()) {
             log.debug("Drag right...");
-            double newX = viewPort.getX() - Constants.getDragSpeed() > 0 ? viewPort.getX() - Constants.getDragSpeed() : 0;
+            double per = pixels != null ? pixels : Constants.getDragSpeed();
+            double newX = viewPort.getX() - per > 0 ? viewPort.getX() - per : 0;
             viewPort.setRect(newX, viewPort.getY(),
-                    viewPort.getWidth() - Constants.getDragSpeed() + (newX == 0 ? Math.abs(viewPort.getX() - Constants.getDragSpeed()) : 0),
-                    viewPort.getHeight());
+                    viewPort.getWidth() - per + (newX == 0 ? Math.abs(viewPort.getX() - per) : 0), viewPort.getHeight());
         }
     }
 
-    private void dragUp() {
+    private void dragUp(Double pixels) {
         if (canDragUp()) {
             log.debug("Drag up...");
+            double per = pixels != null ? pixels : Constants.getDragSpeed();
             double mapHeight = this.worldDTO.getGameMap().getHeight();
-            double newHeight = Math.min(viewPort.getHeight() + Constants.getDragSpeed(), mapHeight);
-            viewPort.setRect(viewPort.getX(), viewPort.getY() + Constants.getDragSpeed() - (newHeight == mapHeight
-                            ? Math.abs(viewPort.getHeight() + Constants.getDragSpeed() - mapHeight) : 0),
+            double newHeight = Math.min(viewPort.getHeight() + per, mapHeight);
+            viewPort.setRect(viewPort.getX(), viewPort.getY() + per - (newHeight == mapHeight
+                            ? Math.abs(viewPort.getHeight() + per - mapHeight) : 0),
                     viewPort.getWidth(), newHeight);
         }
     }
 
-    private void dragDown() {
+    private void dragDown(Double pixels) {
         if (canDragDown()) {
             log.debug("Drag down...");
-            double newY = viewPort.getY() - Constants.getDragSpeed() > 0 ? viewPort.getY() - Constants.getDragSpeed() : 0;
-            viewPort.setRect(viewPort.getX(), newY,
-                    viewPort.getWidth(),
-                    viewPort.getHeight() - Constants.getDragSpeed() + (newY == 0 ? Math.abs(viewPort.getY() - Constants.getDragSpeed()) : 0));
+            double per = pixels != null ? pixels : Constants.getDragSpeed();
+            double newY = viewPort.getY() - per > 0 ? viewPort.getY() - per : 0;
+            viewPort.setRect(viewPort.getX(), newY, viewPort.getWidth(),
+                    viewPort.getHeight() - per + (newY == 0 ? Math.abs(viewPort.getY() - per) : 0));
         }
     }
 
