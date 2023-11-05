@@ -4,6 +4,7 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
 import game.freya.gui.GameFrame;
+import game.freya.net.SocketService;
 import game.freya.services.UserConfigService;
 import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
@@ -26,6 +27,7 @@ public class GameController {
     private final SQLiteConnection conn;
     private final UserConfigService userConfigService;
     private final WorldService worldService;
+    private final SocketService socketService;
 
     @PostConstruct
     public void init() {
@@ -55,6 +57,7 @@ public class GameController {
     }
 
     public void exitTheGame(WorldDTO world) {
+        socketService.close();
         saveTheGame(world);
         closeConnections();
         log.info("The game is finished!");

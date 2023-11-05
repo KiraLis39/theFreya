@@ -52,6 +52,7 @@ public class SocketService {
     }
 
     public void close() {
+        log.info("Закрытие сервиса сетевой игры...");
         for (ClientHandler handler : clients.values()) {
             handler.kill();
         }
