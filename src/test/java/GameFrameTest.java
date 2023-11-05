@@ -54,24 +54,24 @@ class GameFrameTest {
 //                ImageIO.read(new File("./src/test/resources/avatars_test/ava.png")).getData(), player01.getAvatar().getData());
         Assertions.assertEquals(1, playerDTO01.getLevel());
         Assertions.assertEquals(0, playerDTO01.getExperience());
-        Assertions.assertEquals(playerDTO01.MAX_HEALTH, playerDTO01.getHealth());
+        Assertions.assertEquals(playerDTO01.getMaxHealth(), playerDTO01.getHealth());
         Assertions.assertInstanceOf(iPlayer.class, playerDTO01);
         Assertions.assertFalse(playerDTO01.isDead());
 
         playerDTO01.attack(playerDTO01);
-        Assertions.assertEquals(playerDTO01.MAX_HEALTH, playerDTO01.getHealth());
+        Assertions.assertEquals(playerDTO01.getMaxHealth(), playerDTO01.getHealth());
 
         playerDTO01.hurt(10);
-        Assertions.assertEquals(playerDTO01.MAX_HEALTH - 10, playerDTO01.getHealth());
+        Assertions.assertEquals(playerDTO01.getMaxHealth() - 10, playerDTO01.getHealth());
 
         playerDTO01.hurt(10);
         playerDTO01.heal(100);
-        Assertions.assertEquals(playerDTO01.MAX_HEALTH, playerDTO01.getHealth());
+        Assertions.assertEquals(playerDTO01.getMaxHealth(), playerDTO01.getHealth());
 
         playerDTO01.increaseExp(0.25f);
         Assertions.assertEquals(0.25f, playerDTO01.getExperience());
 
-        playerDTO01.hurt(playerDTO01.MAX_HEALTH);
+        playerDTO01.hurt(playerDTO01.getMaxHealth());
         Assertions.assertEquals(0, playerDTO01.getHealth());
         Assertions.assertTrue(playerDTO01.isDead());
 
