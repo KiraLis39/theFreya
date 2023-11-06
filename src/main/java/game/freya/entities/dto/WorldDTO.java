@@ -34,7 +34,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     private final HardnessLevel level;
 
-    private final Map<String, PlayerDTO> players = HashMap.newHashMap(2);
+    private final Map<String, PlayerDTO> players = HashMap.newHashMap(3);
 
     private FoxCanvas canvas;
 
@@ -122,11 +122,17 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
             init(this.canvas);
         }
 
-        // рисуем окружение:
-        drawEnvironment(g2D, visibleRect);
+        // рисуем окружение на карте:
+        drawEnvironment((Graphics2D) this.gameMap.getGraphics(), visibleRect);
 
-        // рисуем игроков:
-        drawPlayers(g2D, visibleRect);
+        // рисуем игроков на карте:
+        drawPlayers((Graphics2D) this.gameMap.getGraphics(), visibleRect);
+
+        // рисуем готовый кадр карты:
+        g2D.drawImage(this.gameMap, 0, 0, canvas.getWidth(), canvas.getHeight(),
+                visibleRect.x, visibleRect.y,
+                visibleRect.width, visibleRect.height,
+                canvas);
     }
 
     private void drawEnvironment(Graphics2D g2D, Rectangle visibleRect) {
@@ -134,6 +140,10 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     }
 
     private void drawPlayers(Graphics2D g2D, Rectangle visibleRect) {
-
+        for (PlayerDTO player : players.values()) {
+            if (player.isOnline() && visibleRect.contains(player.getPosition())) {
+                player.draw(g2D);
+            }
+        }
     }
 }

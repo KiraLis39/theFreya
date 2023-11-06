@@ -1,7 +1,6 @@
 package game.freya.gui.panes;
 
 import game.freya.config.Constants;
-import game.freya.config.UserConfig;
 import game.freya.gui.panes.interfaces.iCanvas;
 import lombok.Getter;
 import lombok.Setter;
@@ -53,11 +52,11 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
             g2D.setColor(Color.BLACK);
             g2D.drawString("FPS: лимит/монитор/реально (%s/%s/%s)"
-                    .formatted(UserConfig.getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
+                    .formatted(Constants.getUserConfig().getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
                             Constants.getRealFreshRate()), rightShift, downShift + linesSpace);
             g2D.setColor(Color.GRAY);
             g2D.drawString("FPS: лимит/монитор/реально (%s/%s/%s)"
-                    .formatted(UserConfig.getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
+                    .formatted(Constants.getUserConfig().getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
                             Constants.getRealFreshRate()), rightShift - 1f, downShift + linesSpace + 1);
 
             incrementFramesCounter();

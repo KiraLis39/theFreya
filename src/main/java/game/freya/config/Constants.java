@@ -40,12 +40,16 @@ public final class Constants {
     public static final Font DEBUG_FONT = FFB.setFoxFont(FONT.ARIAL, 16, true, MON.getEnvironment());
     public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 16, false, MON.getEnvironment());
     public static final Font MENU_BUTTONS_FONT = FFB.setFoxFont(FONT.CANDARA, 24, true, MON.getEnvironment());
+    public static final Font GAME_FONT_01 = FFB.setFoxFont(FONT.CANDARA, 21, false, MON.getEnvironment());
+
     // other:
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
     public static final int MAP_CELL_DIM = 64;
     public static final int SERVER_PORT = 13958;
     public static final int SOCKET_BUFFER_SIZE = 10240; // 65536
+    public static final String DEFAULT_AVATAR_URL = "/images/defaultAvatar.png";
+
     // project:
     @Getter
     private static final String gameName = "Freya the game";
@@ -59,6 +63,7 @@ public final class Constants {
     private static final String imageExtension = ""; // .png
     @Getter
     private static final String audioExtension = ".ogg"; // .ogg | .mp3 | .wav
+
     // audio:
     @Getter
     private static final FoxPlayer soundPlayer = new FoxPlayer("soundPlayer");
@@ -93,7 +98,7 @@ public final class Constants {
     private static boolean isShowStartLogo = false;
 
     @Getter
-    private static long screenDiscreteLimitMem = UserConfig.getScreenDiscreteLimit();
+    private static long screenDiscreteLimitMem;
 
     @Getter
     private static long delay = -1;
@@ -122,13 +127,13 @@ public final class Constants {
     }
 
     public static boolean isFrameLimited() {
-        return UserConfig.getScreenDiscreteLimit() > 0;
+        return Constants.getUserConfig().getScreenDiscreteLimit() > 0;
     }
 
     public static long getDiscreteDelay() {
-        if (delay < 0 || screenDiscreteLimitMem != UserConfig.getScreenDiscreteLimit()) {
-            screenDiscreteLimitMem = UserConfig.getScreenDiscreteLimit();
-            delay = Math.floorDiv(1000L, UserConfig.getScreenDiscreteLimit()) - 1L; // вычитаем погрешность на расчеты значений.
+        if (delay < 0 || screenDiscreteLimitMem != Constants.getUserConfig().getScreenDiscreteLimit()) {
+            screenDiscreteLimitMem = Constants.getUserConfig().getScreenDiscreteLimit();
+            delay = Math.floorDiv(1000L, Constants.getUserConfig().getScreenDiscreteLimit()) - 1L; // вычитаем погрешность на расчеты значений.
         }
         return delay;
     }

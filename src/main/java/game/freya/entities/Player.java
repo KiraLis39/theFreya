@@ -28,7 +28,7 @@ public class Player {
     @Id
     @Builder.Default
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false, insertable = false, updatable = false)
+    @Column(name = "id", nullable = false, insertable = false, updatable = false, unique = true)
     private UUID uid = UUID.randomUUID();
 
     @Column(name = "nick_name", length = 16, unique = true)
@@ -57,7 +57,7 @@ public class Player {
 
     @Builder.Default
     @Column(name = "health")
-    private float health = 100f;
+    private short health = 100;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -65,4 +65,10 @@ public class Player {
 
     @Column(name = "buffs_json", length = 1024)
     private String buffsJson;
+
+    @Column(name = "position_x", columnDefinition = "double precision DEFAULT 256")
+    private double positionX;
+
+    @Column(name = "position_y", columnDefinition = "double precision DEFAULT 256")
+    private double positionY;
 }

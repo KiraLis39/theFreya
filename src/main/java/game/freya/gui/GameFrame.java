@@ -3,8 +3,8 @@ package game.freya.gui;
 import fox.FoxLogo;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.config.UserConfig;
 import game.freya.entities.dto.WorldDTO;
+import game.freya.enums.ScreenType;
 import game.freya.gui.panes.FoxCanvas;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
@@ -13,11 +13,8 @@ import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
@@ -43,17 +40,13 @@ public class GameFrame implements WindowListener, WindowStateListener {
     private final WorldService worldService;
     private final SocketService socketService;
     private GameController gameController;
-    private WorldDTO world;
+    private WorldDTO worldDto;
     private JFrame frame;
     private FoxLogo logo;
 
-    @Autowired
-    public void setGameController(@Lazy GameController gameController) {
+    public void showMainMenu(GameController gameController) {
         this.gameController = gameController;
-    }
 
-    @PostConstruct
-    public void showMainMenu() {
         frame = new JFrame(Constants.getGameName().concat(" v.")
                 .concat(Constants.getGameVersion()), Constants.getGraphicsConfiguration());
 
@@ -76,7 +69,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
         frame.addWindowListener(this);
         frame.addWindowStateListener(this);
 
-        loadMenuScreen();
+        gameController.loadScreen(ScreenType.MENU_SCREEN);
 
         frame.setMinimumSize(LAUNCHER_DIM_MIN);
         frame.setPreferredSize(LAUNCHER_DIM);
@@ -102,7 +95,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
         setInAc();
 //        frame.requestFocusInWindow();
 
-        if (UserConfig.isFullscreen()) {
+        if (Constants.getUserConfig().isFullscreen()) {
             log.info("Switch to fullscreen by UserConfig...");
             Constants.MON.switchFullscreen(frame);
         }
@@ -112,16 +105,16 @@ public class GameFrame implements WindowListener, WindowStateListener {
         final String frameName = "mainFrame";
 
         Constants.INPUT_ACTION.add(frameName, frame.getRootPane());
-        Constants.INPUT_ACTION.set(JComponent.WHEN_FOCUSED, frameName, "switchFullscreen", UserConfig.getKeyFullscreen(), 0, new AbstractAction() {
+        Constants.INPUT_ACTION.set(JComponent.WHEN_FOCUSED, frameName, "switchFullscreen", Constants.getUserConfig().getKeyFullscreen(), 0, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 log.info("Try to switch fullscreen mode...");
-                UserConfig.setFullscreen(!UserConfig.isFullscreen());
-                Constants.MON.switchFullscreen(UserConfig.isFullscreen() ? frame : null);
+                Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
+                Constants.MON.switchFullscreen(Constants.getUserConfig().isFullscreen() ? frame : null);
             }
         });
 
-        Constants.INPUT_ACTION.set(JComponent.WHEN_FOCUSED, frameName, "switchPause", UserConfig.getKeyPause(), 0, new AbstractAction() {
+        Constants.INPUT_ACTION.set(JComponent.WHEN_FOCUSED, frameName, "switchPause", Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 log.info("Try to switch pause mode...");
@@ -139,18 +132,22 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     public void loadGameScreen() {
         if (worldService.count() > 0) {
-            world = worldService.findAll().stream().findAny().orElse(null);
+            worldDto = worldService.findAll().stream().findAny().orElse(null);
         } else {
-            world = worldService.save(new WorldDTO("Demo world"));
+            worldDto = worldService.save(new WorldDTO("Demo world"));
         }
 
-        if (world == null) {
+        if (worldDto == null) {
             log.error("The World variable is null. Can`t loaded here!");
             return;
         }
-        log.info("Try to load World '{}' screen...", world.getTitle());
+        if (worldDto.getPlayers().values().stream().noneMatch(pl -> pl.getUid().equals(gameController.getCurrentPlayer().getUid()))) {
+            worldDto = worldService.addPlayerToWorld(worldDto, gameController.getCurrentPlayer());
+        }
+
+        log.info("Try to load World '{}' screen...", worldDto.getTitle());
         clearFrame();
-        frame.add(new GameCanvas(world, gameController));
+        frame.add(new GameCanvas(worldDto, gameController)); // мир уже должен быть с игроком (-ами)!
         frame.revalidate();
     }
 
@@ -180,7 +177,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     @Override
     public void windowClosing(WindowEvent e) {
-        gameController.exitTheGame(world);
+        gameController.exitTheGame(worldDto);
     }
 
     @Override
@@ -232,7 +229,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
     }
 
     private void onGameRestore() {
-        if (UserConfig.isPauseOnHidden() && Constants.isPaused()) {
+        if (Constants.getUserConfig().isPauseOnHidden() && Constants.isPaused()) {
             log.info("Auto resume the game on frame restore is temporary off.");
 //            Constants.setPaused(false);
 //            log.info("Resume game...");
@@ -241,7 +238,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     private void onGameHide() {
         log.info("Hide or minimized");
-        if (!Constants.isPaused() && UserConfig.isPauseOnHidden()) {
+        if (!Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
             Constants.setPaused(true);
             log.info("Paused...");
         }

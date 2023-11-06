@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -15,7 +17,7 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
@@ -54,6 +56,12 @@ public class World {
     private HardnessLevel level = HardnessLevel.EASY;
 
     @Builder.Default
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Player> players = HashSet.newHashSet(2);
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    private Set<Player> players = HashSet.newHashSet(3);
+
+    public World addPlayer(Player p) {
+        players.add(p);
+        return this;
+    }
 }

@@ -13,7 +13,8 @@ public enum ErrorMessages {
     JSON_PARSE_ERR("ER04", "Ошибка при парсинге JSON"),
     SYNC_ERROR("ER05", "Ошибка синхронизации между сервисами"),
     NOT_ENOUGH_PERMISSIONS("ER06", "У вас нет прав на выполнение данного метода"),
-    NO_CONNECTION_REACHED("ER07", "Не было получено ни одного соединения за отведённое время");
+    NO_CONNECTION_REACHED("ER07", "Не было получено ни одного соединения за отведённое время"),
+    WORLD_NOT_FOUND("ER08", "Не обнаружен в базе денных мир");
 
     private final String errorCode;
     private final String errorCause;

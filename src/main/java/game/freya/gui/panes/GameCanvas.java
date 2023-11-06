@@ -4,9 +4,11 @@ import fox.FoxRender;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.config.UserConfig;
+import game.freya.entities.dto.PlayerDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Rectangle2D;
+import java.util.Optional;
 
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, Runnable
@@ -43,8 +46,9 @@ public class GameCanvas extends FoxCanvas {
 
     public GameCanvas(WorldDTO worldDTO, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "GameCanvas");
-        this.worldDTO = worldDTO;
         this.gameController = gameController;
+
+        this.worldDTO = worldDTO;
 
         setBackground(Color.BLACK);
         setFocusable(false);
@@ -55,6 +59,10 @@ public class GameCanvas extends FoxCanvas {
         addMouseMotionListener(this);
         addComponentListener(this);
         addMouseListener(this);
+
+        if (this.worldDTO.getPlayers().isEmpty()) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "this.worldDTO.getPlayers()");
+        }
 
         // проводим основную инициализацию класса мира:
         this.worldDTO.init(this);
@@ -87,7 +95,7 @@ public class GameCanvas extends FoxCanvas {
 
             try {
                 if (getBufferStrategy() == null) {
-                    createBufferStrategy(UserConfig.getBufferedDeep());
+                    createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
                 }
 
                 do {
@@ -162,13 +170,8 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void drawWorld(Graphics2D g2D) {
+        // рисуем мир:
         worldDTO.draw(g2D, viewPort.getBounds());
-
-        // рисуем заготовленный имедж:
-        g2D.drawImage(this.worldDTO.getGameMap(), 0, 0, getWidth(), getHeight(),
-                viewPort.getBounds().x, viewPort.getBounds().y,
-                viewPort.getBounds().width, viewPort.getBounds().height,
-                this);
 
         // рисуем UI:
         drawUI(g2D);
@@ -179,6 +182,12 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void setGameActive() {
+        Optional<PlayerDTO> currentPlayer = this.worldDTO.getPlayers().values().stream()
+                .filter(p -> p.getNickName().equals(Constants.getUserConfig().getUserName())).findFirst();
+        if (currentPlayer.isEmpty()) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, currentPlayer);
+        }
+        currentPlayer.get().setOnline(true);
         this.isGameActive = true;
         Constants.setPaused(false);
     }
@@ -391,11 +400,11 @@ public class GameCanvas extends FoxCanvas {
             saveButtonOver = saveButtonRect.contains(p);
             exitButtonOver = exitButtonRect.contains(p);
         } else { // иначе мониторим наведение на край окна для прокрутки поля:
-            if (UserConfig.isDragGameFieldOnFrameEdgeReached()) {
-                isMouseLeftEdgeOver = p.getX() <= 20 && (UserConfig.isFullscreen() || p.getX() > 1);
-                isMouseRightEdgeOver = p.getX() >= getWidth() - 20 && (UserConfig.isFullscreen() || p.getX() < getWidth() - 1);
-                isMouseUpEdgeOver = p.getY() <= 10 && (UserConfig.isFullscreen() || p.getY() > 1);
-                isMouseDownEdgeOver = p.getY() >= getHeight() - 20 && (UserConfig.isFullscreen() || p.getY() < getHeight() - 1);
+            if (Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
+                isMouseLeftEdgeOver = p.getX() <= 20 && (Constants.getUserConfig().isFullscreen() || p.getX() > 1);
+                isMouseRightEdgeOver = p.getX() >= getWidth() - 20 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1);
+                isMouseUpEdgeOver = p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1);
+                isMouseDownEdgeOver = p.getY() >= getHeight() - 20 && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1);
             }
         }
     }

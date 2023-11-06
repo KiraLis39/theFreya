@@ -1,5 +1,6 @@
 package game.freya.items.prototypes;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.items.interfaces.iStorage;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,15 +15,14 @@ import java.util.UUID;
 public abstract class Storage implements iStorage {
     @Getter
     private final UUID suid;
+
     private final short size = 16;
+
     private final Set<Storable> content = HashSet.newHashSet(size);
+
     @Getter
     @Setter
     private String name;
-
-    protected Storage(UUID suid) {
-        this.suid = suid;
-    }
 
     protected Storage(UUID suid, String name) {
         this.suid = suid;
@@ -67,6 +67,7 @@ public abstract class Storage implements iStorage {
     }
 
     @Override
+    @JsonIgnore
     public boolean isEmpty() {
         return content.isEmpty();
     }

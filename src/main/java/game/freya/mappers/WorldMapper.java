@@ -2,6 +2,7 @@ package game.freya.mappers;
 
 import game.freya.entities.World;
 import game.freya.entities.dto.WorldDTO;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.awt.Dimension;
@@ -10,19 +11,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+@AllArgsConstructor
 @Component
 public class WorldMapper {
+    private final PlayerMapper playerMapper;
 
     public WorldDTO toDto(World entity) {
         if (entity == null) {
             return null;
         }
-        return new WorldDTO(
+        WorldDTO result = new WorldDTO(
                 entity.getUid(),
                 entity.getTitle(),
                 entity.getLevel(),
                 new Dimension(entity.getDimensionWidth(), entity.getDimensionHeight()),
                 entity.getPasswordHash());
+        entity.getPlayers().forEach(player -> result.addPlayer(playerMapper.toDto(player)));
+        return result;
     }
 
     public List<WorldDTO> toDto(List<World> entities) {
@@ -43,7 +48,7 @@ public class WorldMapper {
                 .dimensionWidth(dto.getDimension().width)
                 .dimensionHeight(dto.getDimension().height)
                 .level(dto.getLevel())
-                .players(PlayerMapper.toEntity(dto.getPlayers()))
+                .players(playerMapper.toEntities(dto.getPlayers()))
                 .build();
     }
 }

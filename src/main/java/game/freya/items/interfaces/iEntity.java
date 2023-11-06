@@ -1,10 +1,9 @@
 package game.freya.items.interfaces;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 public interface iEntity {
-    short MAX_HEALTH = 100;
-
     BufferedImage getAvatar();
 
     boolean isDead();
@@ -14,4 +13,8 @@ public interface iEntity {
     void heal(float healPoints);
 
     void attack(iEntity entity);
+
+    void draw(Graphics2D g2D);
+
+//    Graphics2D getGraphics();
 }

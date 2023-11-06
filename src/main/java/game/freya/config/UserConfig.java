@@ -1,141 +1,105 @@
 package game.freya.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.util.UUID;
 
 @Slf4j
+@Getter
+@Setter
 @Builder
-public final class UserConfig {
-
-    @Getter
-    @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserConfig {
     @Builder.Default
-    private static String userName = "<no_name_user>";
+    private UUID userId = UUID.randomUUID();
+
+    @Builder.Default
+    private String userName = "User-Hyuser";
+
+    @Builder.Default
+    private String userMail = "demo@test.ru";
 
     // audio:
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean isSoundEnabled = true;
+    private boolean isSoundEnabled = true;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int soundVolumePercent = 75;
+    private int soundVolumePercent = 75;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean isMusicEnabled = true;
+    private boolean isMusicEnabled = true;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int musicVolumePercent = 75;
+    private int musicVolumePercent = 75;
 
 
     // hotkeys:
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyLeft = KeyEvent.VK_LEFT;
+    private int keyLeft = KeyEvent.VK_LEFT;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyRight = KeyEvent.VK_RIGHT;
+    private int keyRight = KeyEvent.VK_RIGHT;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyDown = KeyEvent.VK_DOWN;
+    private int keyDown = KeyEvent.VK_DOWN;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyRotateClockwise = KeyEvent.VK_E;
+    private int keyRotateClockwise = KeyEvent.VK_E;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyRotateCounter = KeyEvent.VK_Q;
+    private int keyRotateCounter = KeyEvent.VK_Q;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyPause = KeyEvent.VK_ESCAPE;
+    private int keyPause = KeyEvent.VK_ESCAPE;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyConsole = KeyEvent.VK_BACK_QUOTE;
+    private int keyConsole = KeyEvent.VK_BACK_QUOTE;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyConsoleMod = InputEvent.SHIFT_DOWN_MASK;
+    private int keyConsoleMod = InputEvent.SHIFT_DOWN_MASK;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static int keyFullscreen = KeyEvent.VK_F11;
+    private int keyFullscreen = KeyEvent.VK_F11;
 
 
     // booleans:
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean dragGameFieldOnFrameEdgeReached = true;
+    private boolean dragGameFieldOnFrameEdgeReached = true;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean isHardcoreMode = false;
+    private boolean isHardcoreMode = false;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean isFullscreen = false;
+    private boolean isFullscreen = false;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean isUseSmoothing = true;
+    private boolean isUseSmoothing = true;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean isUseBicubic = false;
+    private boolean isUseBicubic = false;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean isPauseOnHidden = true;
+    private boolean isPauseOnHidden = true;
 
-    @Getter
-    @Setter
     @Builder.Default
-    private static long screenDiscreteLimit = 30L; // fps limit
+    private long screenDiscreteLimit = 30L; // fps limit
 
     // other:
-    @Getter
-    @Setter
     @Builder.Default
-    private static boolean isMultiBufferEnabled = true;
+    private boolean isMultiBufferEnabled = true;
 
-    @Setter
     @Builder.Default
-    private static int bufferedDeep = 2;
+    private int bufferedDeep = 2;
 
-    private UserConfig() {
-    }
-
-    public static int getBufferedDeep() {
+    public int getBufferedDeep() {
         return isMultiBufferEnabled ? bufferedDeep : 1;
     }
 }
