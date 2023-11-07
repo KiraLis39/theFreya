@@ -1,7 +1,7 @@
 package game.freya.entities.dto.interfaces;
 
 import game.freya.items.interfaces.iEntity;
-import game.freya.logic.Buff;
+import game.freya.items.logic.Buff;
 
 public interface iPlayer extends iEntity {
     void increaseExp(float increaseValue);

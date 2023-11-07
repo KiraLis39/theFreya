@@ -1,5 +1,6 @@
 package game.freya.entities.dto;
 
+import fox.FoxRender;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iWorld;
 import game.freya.enums.HardnessLevel;
@@ -14,7 +15,7 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
-import java.awt.image.BufferedImage;
+import java.awt.image.VolatileImage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -38,7 +39,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     private FoxCanvas canvas;
 
-    private BufferedImage gameMap;
+    private VolatileImage gameMap;
 
     public WorldDTO(String title) {
         this(UUID.randomUUID(), title, HardnessLevel.EASY, new Dimension(64, 32), -1);
@@ -68,19 +69,21 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @Override
     public void init(FoxCanvas canvas) {
-        this.canvas = canvas;
+        if (canvas != null) {
+            this.canvas = canvas;
+        }
 
-        // если ещё не нарисована карта - рисуем:
-        if (this.gameMap == null) {
-            this.gameMap = new BufferedImage(
-                    dimension.width * Constants.MAP_CELL_DIM,
-                    dimension.height * Constants.MAP_CELL_DIM,
-                    BufferedImage.TYPE_INT_RGB);
+        do {
+            // validate the map image:
+            if (this.gameMap == null || this.gameMap.validate(Constants.getGraphicsConfiguration()) == VolatileImage.IMAGE_INCOMPATIBLE) {
+                this.gameMap = this.canvas.createVolatileImage(
+                        dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM);
+            }
 
-            Graphics2D g2D = (Graphics2D) gameMap.getGraphics();
+            // re-draw map:
+            Graphics2D g2D = gameMap.createGraphics();
             g2D.setColor(new Color(52, 2, 52));
             g2D.fillRect(0, 0, gameMap.getWidth(), gameMap.getHeight());
-
 
             int n = 1;
             g2D.setStroke(new BasicStroke(2f));
@@ -105,7 +108,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
             g2D.drawLine(gameMap.getWidth() / 2, 0, gameMap.getWidth() / 2, gameMap.getHeight());
 
             g2D.dispose();
-        }
+        } while (this.gameMap.contentsLost());
     }
 
     /**
@@ -122,11 +125,16 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
             init(this.canvas);
         }
 
+        validateImage();
+
+        Graphics2D mapGraphics2D = (Graphics2D) this.gameMap.getGraphics();
+        Constants.RENDER.setRender(mapGraphics2D, FoxRender.RENDER.MED);
+
         // рисуем окружение на карте:
-        drawEnvironment((Graphics2D) this.gameMap.getGraphics(), visibleRect);
+        drawEnvironment(mapGraphics2D, visibleRect);
 
         // рисуем игроков на карте:
-        drawPlayers((Graphics2D) this.gameMap.getGraphics(), visibleRect);
+        drawPlayers(mapGraphics2D, visibleRect);
 
         // рисуем готовый кадр карты:
         g2D.drawImage(this.gameMap, 0, 0, canvas.getWidth(), canvas.getHeight(),
@@ -140,10 +148,16 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     }
 
     private void drawPlayers(Graphics2D g2D, Rectangle visibleRect) {
-        for (PlayerDTO player : players.values()) {
+        players.values().forEach(player -> {
             if (player.isOnline() && visibleRect.contains(player.getPosition())) {
                 player.draw(g2D);
             }
+        });
+    }
+
+    private void validateImage() {
+        if (this.gameMap.validate(Constants.getGraphicsConfiguration()) != VolatileImage.IMAGE_OK) {
+            init(null);
         }
     }
 }

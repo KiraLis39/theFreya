@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import game.freya.entities.Player;
 import game.freya.entities.dto.PlayerDTO;
 import game.freya.items.containers.Backpack;
-import game.freya.logic.Buff;
+import game.freya.items.logic.Buff;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class PlayerMapper {
-    private final ObjectMapper MAPPER = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     private PlayerMapper() {
     }
@@ -39,8 +39,8 @@ public class PlayerMapper {
                     .experience(dto.getExperience())
                     .health(dto.getHealth())
                     .level(dto.getLevel())
-                    .inventoryJson(MAPPER.writeValueAsString(dto.getInventory()))
-                    .buffsJson(MAPPER.writeValueAsString(dto.getBuffs()))
+                    .inventoryJson(mapper.writeValueAsString(dto.getInventory()))
+                    .buffsJson(mapper.writeValueAsString(dto.getBuffs()))
                     .positionX(dto.getPosition().x)
                     .positionY(dto.getPosition().y)
                     .build();
@@ -71,11 +71,11 @@ public class PlayerMapper {
                     .experience(entity.getExperience())
                     .health(entity.getHealth())
                     .level(entity.getLevel())
-                    .inventory(MAPPER.readValue(entity.getInventoryJson(), Backpack.class))
+                    .inventory(mapper.readValue(entity.getInventoryJson(), Backpack.class))
                     .position(new Point2D.Double(entity.getPositionX(), entity.getPositionY()))
                     .build();
             result.getBuffs().clear();
-            for (Buff buff : MAPPER.readValue(entity.getBuffsJson(), Buff[].class)) {
+            for (Buff buff : mapper.readValue(entity.getBuffsJson(), Buff[].class)) {
                 result.addBuff(buff);
             }
         } catch (JsonProcessingException e) {

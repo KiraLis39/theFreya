@@ -13,6 +13,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.ComponentEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
@@ -103,12 +104,8 @@ public class MenuCanvas extends FoxCanvas {
         // down text:
         g2D.setFont(Constants.INFO_FONT);
         g2D.setColor(Color.WHITE);
-        g2D.drawString(downInfoString1, 16, getHeight() - 41);
-        g2D.drawString(downInfoString2, 16, getHeight() - 21);
-
-        g2D.setColor(Color.GRAY);
-        g2D.drawString(downInfoString1, 15, getHeight() - 40);
-        g2D.drawString(downInfoString2, 15, getHeight() - 20);
+        g2D.drawString(downInfoString1, 16, getHeight() - 40);
+        g2D.drawString(downInfoString2, 16, getHeight() - 22);
     }
 
     private void drawMenu(Graphics2D g2D) {
@@ -137,14 +134,6 @@ public class MenuCanvas extends FoxCanvas {
         g2D.drawString(exitButtonText, exitButtonRect.x - 1, exitButtonRect.y + 17);
         g2D.setColor(exitButtonOver ? Color.GREEN : Color.WHITE);
         g2D.drawString(exitButtonText, exitButtonRect.x, exitButtonRect.y + 18);
-
-//        if (Constants.isDebugInfoVisible()) {
-//            g2D.setColor(Color.DARK_GRAY);
-//            g2D.drawRoundRect(newGameButtonRect.x, newGameButtonRect.y, newGameButtonRect.width, newGameButtonRect.height, 3, 3);
-//            g2D.drawRoundRect(coopPlayButtonRect.x, coopPlayButtonRect.y, coopPlayButtonRect.width, coopPlayButtonRect.height, 3, 3);
-//            g2D.drawRoundRect(optionsButtonRect.x, optionsButtonRect.y, optionsButtonRect.width, optionsButtonRect.height, 3, 3);
-//            g2D.drawRoundRect(exitButtonRect.x, exitButtonRect.y, exitButtonRect.width, exitButtonRect.height, 3, 3);
-//        }
     }
 
     private void init() {
@@ -271,6 +260,21 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
+
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
 
     }
 }

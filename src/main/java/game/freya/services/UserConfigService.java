@@ -59,33 +59,13 @@ public class UserConfigService {
         try {
             if (!Files.exists(Path.of(Constants.getUserSave()).getParent())) {
                 Files.createDirectories(Path.of(Constants.getUserSave()).getParent());
+                mapper.writeValue(new File(Constants.getUserSave()), UserConfig.builder().build());
             }
-            mapper.writeValue(new File(Constants.getUserSave()), UserConfig.builder().build());
+            mapper.writeValue(new File(Constants.getUserSave()), Constants.getUserConfig());
         } catch (InvalidDefinitionException ide) {
             log.error("#d012 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(ide));
         } catch (Exception e) {
             log.error("#d013 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
-
-//    public void resetControlKeys() {
-//        Constants.getConfig().setKeyLeft(KeyEvent.VK_LEFT);
-//        Constants.getConfig().setKeyLeftMod(0);
-//        Constants.getConfig().setKeyRight(KeyEvent.VK_RIGHT);
-//        Constants.getConfig().setKeyRightMod(0);
-//        Constants.getConfig().setKeyDown(KeyEvent.VK_DOWN);
-//        Constants.getConfig().setKeyDownMod(0);
-//        Constants.getConfig().setKeyStuck(KeyEvent.VK_UP);
-//        Constants.getConfig().setKeyStuckMod(0);
-//        Constants.getConfig().setKeyRotate(KeyEvent.VK_Z);
-//        Constants.getConfig().setKeyRotateMod(0);
-//        Constants.getConfig().setKeyConsole(KeyEvent.VK_BACK_QUOTE);
-//        Constants.getConfig().setKeyConsoleMod(0);
-//        Constants.getConfig().setKeyFullscreen(KeyEvent.VK_F);
-//        Constants.getConfig().setKeyFullscreenMod(0);
-//        Constants.getConfig().setKeyPause(KeyEvent.VK_ESCAPE);
-//        Constants.getConfig().setKeyPauseMod(0);
-//
-//        saveAll();
-//    }
 }

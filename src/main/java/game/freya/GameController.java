@@ -67,6 +67,11 @@ public class GameController {
         Optional<Player> curPlayer = playerService.findByUid(Constants.getUserConfig().getUserId());
         if (curPlayer.isEmpty()) {
             curPlayer = playerService.findByMail(Constants.getUserConfig().getUserMail());
+            if (curPlayer.isPresent()) {
+                log.warn("Не был найден в базе данных игрок по uuid {}, но он найден по почте {}.",
+                        Constants.getUserConfig().getUserId(), Constants.getUserConfig().getUserMail());
+                Constants.getUserConfig().setUserId(curPlayer.get().getUid());
+            }
         }
         if (curPlayer.isEmpty()) {
             log.error("Не был найден в базе данных игрок с uuid {}.", Constants.getUserConfig().getUserId());
@@ -91,10 +96,6 @@ public class GameController {
                 log.error("Can`t set the avatar to player {} by url '{}'", aNewbie.getNickName(), Constants.DEFAULT_AVATAR_URL);
             }
             curPlayer = Optional.of(playerService.save(playerMapper.toEntity(aNewbie)));
-        } else {
-            log.warn("Не был найден в базе данных игрок по uuid {}, но он найден по почте {}. Странно, но его uuid будет перезаписан в файле сохранения...",
-                    Constants.getUserConfig().getUserId(), Constants.getUserConfig().getUserMail());
-            Constants.getUserConfig().setUserId(curPlayer.get().getUid());
         }
         this.currentPlayer = playerMapper.toDto(curPlayer.get());
     }
@@ -137,9 +138,5 @@ public class GameController {
             case GAME_SCREEN -> gameFrame.loadGameScreen();
             default -> log.error("Unknown screen failed to load: {}", screenType);
         }
-    }
-
-    public WorldDTO saveWorld(WorldDTO worldDTO) {
-        return worldService.save(worldDTO);
     }
 }

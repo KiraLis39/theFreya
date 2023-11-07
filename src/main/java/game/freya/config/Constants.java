@@ -38,9 +38,9 @@ public final class Constants {
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     // fonts:
     public static final Font DEBUG_FONT = FFB.setFoxFont(FONT.ARIAL, 16, true, MON.getEnvironment());
-    public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 16, false, MON.getEnvironment());
+    public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 14, false, MON.getEnvironment());
     public static final Font MENU_BUTTONS_FONT = FFB.setFoxFont(FONT.CANDARA, 24, true, MON.getEnvironment());
-    public static final Font GAME_FONT_01 = FFB.setFoxFont(FONT.CANDARA, 21, false, MON.getEnvironment());
+    public static final Font GAME_FONT_01 = FFB.setFoxFont(FONT.ARIAL_NARROW, 12, true, MON.getEnvironment());
 
     // other:
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
@@ -133,7 +133,7 @@ public final class Constants {
     public static long getDiscreteDelay() {
         if (delay < 0 || screenDiscreteLimitMem != Constants.getUserConfig().getScreenDiscreteLimit()) {
             screenDiscreteLimitMem = Constants.getUserConfig().getScreenDiscreteLimit();
-            delay = Math.floorDiv(1000L, Constants.getUserConfig().getScreenDiscreteLimit()) - 1L; // вычитаем погрешность на расчеты значений.
+            delay = Math.floorDiv(1000L, Constants.getUserConfig().getScreenDiscreteLimit());
         }
         return delay;
     }
