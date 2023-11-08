@@ -17,6 +17,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.VolatileImage;
 import java.io.File;
 
 @Slf4j
@@ -28,7 +29,7 @@ public class MenuCanvas extends FoxCanvas {
     private String newGameButtonText, coopPlayButtonText, optionsButtonText, exitButtonText;
     private boolean newGameButtonOver = false, coopPlayButtonOver = false, optionsButtonOver = false, exitButtonOver = false;
     private Rectangle newGameButtonRect, coopPlayButtonRect, optionsButtonRect, exitButtonRect;
-    private transient BufferedImage backMenuImage;
+    private transient VolatileImage backMenuImage;
     private boolean initialized = false;
 
     public MenuCanvas(GameController gameController) {
@@ -64,11 +65,13 @@ public class MenuCanvas extends FoxCanvas {
                 do {
                     do {
                         Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                        g2D.clearRect(0, 0, getWidth(), getHeight());
+                        // g2D.clearRect(0, 0, getWidth(), getHeight());
                         Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED);
                         drawBackground(g2D);
                         drawMenu(g2D);
-                        super.drawDebugInfo(g2D, null);
+                        if (Constants.isDebugInfoVisible()) {
+                            super.drawDebugInfo(g2D, null);
+                        }
                         g2D.dispose();
                     } while (getBufferStrategy().contentsRestored());
                 } while (getBufferStrategy().contentsLost());
@@ -94,25 +97,14 @@ public class MenuCanvas extends FoxCanvas {
             init();
         }
 
+        if (backMenuImage.validate(Constants.getGraphicsConfiguration()) != VolatileImage.IMAGE_OK) {
+            recreateBackImage();
+        }
         // draw background image:
         g2D.drawImage(backMenuImage, 0, 0, getWidth(), getHeight(), this);
-
-        // fill left gray polygon:
-        g2D.setColor(new Color(0.0f, 0.0f, 0.0f, 0.75f));
-        g2D.fillPolygon(getLeftGrayMenuPoly());
-
-        // down text:
-        g2D.setFont(Constants.INFO_FONT);
-        g2D.setColor(Color.WHITE);
-        g2D.drawString(downInfoString1, 16, getHeight() - 40);
-        g2D.drawString(downInfoString2, 16, getHeight() - 22);
     }
 
     private void drawMenu(Graphics2D g2D) {
-        if (!initialized) {
-            init();
-        }
-
         // buttons text:
         g2D.setFont(Constants.MENU_BUTTONS_FONT);
         g2D.setColor(Color.BLACK);
@@ -141,7 +133,7 @@ public class MenuCanvas extends FoxCanvas {
 
         try {
             Constants.CACHE.addIfAbsent("backMenuImage", ImageIO.read(new File("./resources/images/demo_menu.jpg")));
-            backMenuImage = (BufferedImage) Constants.CACHE.get("backMenuImage");
+            recreateBackImage();
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
@@ -157,6 +149,25 @@ public class MenuCanvas extends FoxCanvas {
         recalculateMenuRectangles();
 
         this.initialized = true;
+    }
+
+    private void recreateBackImage() {
+        backMenuImage = createVolatileImage(getWidth(), getHeight());
+        Graphics2D g2D = backMenuImage.createGraphics();
+        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED);
+        g2D.drawImage((BufferedImage) Constants.CACHE.get("backMenuImage"), 0, 0, getWidth(), getHeight(), this);
+
+        // fill left gray polygon:
+        g2D.setColor(Constants.getMainMenuBackgroundColor());
+        g2D.fillPolygon(getLeftGrayMenuPoly());
+
+        // down text:
+        g2D.setFont(Constants.INFO_FONT);
+        g2D.setColor(Color.WHITE);
+        g2D.drawString(downInfoString1, 16, getHeight() - 40);
+        g2D.drawString(downInfoString2, 16, getHeight() - 22);
+
+        g2D.dispose();
     }
 
     private void recalculateMenuRectangles() {

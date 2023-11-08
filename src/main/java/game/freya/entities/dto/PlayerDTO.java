@@ -5,7 +5,7 @@ import game.freya.entities.dto.interfaces.iPlayer;
 import game.freya.enums.HurtLevel;
 import game.freya.items.containers.Backpack;
 import game.freya.items.interfaces.iEntity;
-import game.freya.logic.Buff;
+import game.freya.items.logic.Buff;
 import game.freya.utils.ExceptionUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,12 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
 import javax.validation.constraints.NotNull;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +65,7 @@ public class PlayerDTO implements iPlayer {
     private short maxHealth = 100;
 
     @Builder.Default
-    private Point2D.Double position = new Point2D.Double(256d, 256d);
+    private Point2D.Double position = new Point2D.Double(384d, 384d);
 
     @Builder.Default
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
@@ -144,26 +144,32 @@ public class PlayerDTO implements iPlayer {
 
     @Override
     public void draw(Graphics2D g2D) {
-        g2D.setFont(Constants.GAME_FONT_01);
-        Rectangle2D nickBounds = FFB.getStringBounds(g2D, getNickName());
-
-        Shape playerShape = new Ellipse2D.Double((int) getPosition().x, (int) getPosition().y, Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
+        Shape playerShape = new Ellipse2D.Double(
+                (int) getPosition().x - Constants.MAP_CELL_DIM / 2d,
+                (int) getPosition().y - Constants.MAP_CELL_DIM / 2d,
+                Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
 
         // draw shadow:
-        g2D.setColor(new Color(0, 0, 0, 31));
-        g2D.fillOval(playerShape.getBounds().x - 1, playerShape.getBounds().y + 1,
-                playerShape.getBounds().width - 1, playerShape.getBounds().height + 1);
+        g2D.setColor(new Color(0, 0, 0, 36));
+        g2D.fillOval(playerShape.getBounds().x + 3, playerShape.getBounds().y + 6,
+                playerShape.getBounds().width, playerShape.getBounds().height);
+
         // draw border:
+        g2D.setStroke(new BasicStroke(2f));
         g2D.setColor(Color.ORANGE);
         g2D.draw(playerShape);
+
         // fill body:
         g2D.setColor(Color.GREEN);
         g2D.fillOval(playerShape.getBounds().x + 1, playerShape.getBounds().y + 1,
                 playerShape.getBounds().width - 2, playerShape.getBounds().height - 2);
+
         // draw nickname:
+        g2D.setColor(Color.BLACK);
+        g2D.setFont(Constants.GAME_FONT_01);
         g2D.drawString(getNickName(),
-                (int) (playerShape.getBounds2D().getCenterX() - nickBounds.getWidth() / 2d),
-                (int) (playerShape.getBounds2D().getCenterY() - 15d));
+                (int) (playerShape.getBounds2D().getCenterX() - FFB.getStringBounds(g2D, getNickName()).getWidth() / 2d),
+                (int) (playerShape.getBounds2D().getCenterY() + FFB.getStringBounds(g2D, getNickName()).getHeight() / 3d));
     }
 
     private void recheckHurtLevel() {

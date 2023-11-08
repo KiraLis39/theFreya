@@ -34,11 +34,10 @@ import java.io.InputStream;
 @Component
 @RequiredArgsConstructor
 public class GameFrame implements WindowListener, WindowStateListener {
-    private static final Dimension LAUNCHER_DIM_MIN = new Dimension(1280, 768);
-    private static final Dimension LAUNCHER_DIM = new Dimension(1440, 900);
-
     private final WorldService worldService;
     private final SocketService socketService;
+    private Dimension monitorSize;
+    private Dimension windowSize;
     private GameController gameController;
     private WorldDTO worldDto;
     private JFrame frame;
@@ -46,6 +45,12 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     public void showMainMenu(GameController gameController) {
         this.gameController = gameController;
+
+        monitorSize = Constants.MON.getConfiguration().getBounds().getSize();
+        double delta = monitorSize.getWidth() / monitorSize.getHeight();
+        double newWidth = monitorSize.getWidth() * 0.75d;
+        double newHeight = newWidth / delta;
+        windowSize = new Dimension((int) newWidth, (int) newHeight);
 
         frame = new JFrame(Constants.getGameName().concat(" v.")
                 .concat(Constants.getGameVersion()), Constants.getGraphicsConfiguration());
@@ -66,13 +71,14 @@ public class GameFrame implements WindowListener, WindowStateListener {
         }
 
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        frame.setResizable(false);
+
         frame.addWindowListener(this);
         frame.addWindowStateListener(this);
 
         gameController.loadScreen(ScreenType.MENU_SCREEN);
 
-        frame.setMinimumSize(LAUNCHER_DIM_MIN);
-        frame.setPreferredSize(LAUNCHER_DIM);
+        frame.setPreferredSize(windowSize);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setCursor(Constants.getDefaultCursor());
@@ -105,22 +111,24 @@ public class GameFrame implements WindowListener, WindowStateListener {
         final String frameName = "mainFrame";
 
         Constants.INPUT_ACTION.add(frameName, frame.getRootPane());
-        Constants.INPUT_ACTION.set(JComponent.WHEN_FOCUSED, frameName, "switchFullscreen", Constants.getUserConfig().getKeyFullscreen(), 0, new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                log.info("Try to switch fullscreen mode...");
-                Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-                Constants.MON.switchFullscreen(Constants.getUserConfig().isFullscreen() ? frame : null);
-            }
-        });
+        Constants.INPUT_ACTION.set(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT, frameName, "switchFullscreen",
+                Constants.getUserConfig().getKeyFullscreen(), 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        log.info("Try to switch fullscreen mode...");
+                        Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
+                        Constants.MON.switchFullscreen(Constants.getUserConfig().isFullscreen() ? frame : null);
+                    }
+                });
 
-        Constants.INPUT_ACTION.set(JComponent.WHEN_FOCUSED, frameName, "switchPause", Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                log.info("Try to switch pause mode...");
-                Constants.setPaused(!Constants.isPaused());
-            }
-        });
+        Constants.INPUT_ACTION.set(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT, frameName, "switchPause",
+                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        log.info("Try to switch pause mode...");
+                        Constants.setPaused(!Constants.isPaused());
+                    }
+                });
     }
 
     public void loadMenuScreen() {

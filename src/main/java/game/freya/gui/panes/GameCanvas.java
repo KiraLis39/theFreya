@@ -13,36 +13,38 @@ import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Graphics2D;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ComponentEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.Optional;
 
 @Slf4j
-// FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, Runnable
+// FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
 public class GameCanvas extends FoxCanvas {
     private static final String backToGameButtonText = "Вернуться";
     private static final String optionsButtonText = "Настройки";
     private static final String saveButtonText = "Сохранить";
     private static final String exitButtonText = "Выйти в меню";
     private final transient GameController gameController;
-    private final transient Rectangle2D viewPort;
     private final transient WorldDTO worldDTO;
+    private transient Rectangle2D viewPort;
     private Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
     private Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
     private boolean isGameActive = false;
+    private boolean isControlsMapped = false;
+    private boolean isMovingKeyActive = false;
     private boolean backToGameButtonOver = false, optionsButtonOver = false, saveButtonOver = false, exitButtonOver = false;
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
-    private double scrollSpeedX = 20, scrollSpeedY;
-    private double delta;
 
     public GameCanvas(WorldDTO worldDTO, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "GameCanvas");
@@ -51,48 +53,108 @@ public class GameCanvas extends FoxCanvas {
         this.worldDTO = worldDTO;
 
         setBackground(Color.BLACK);
-        setFocusable(false);
 
-        setScrollSpeed(20D);
-
-        addMouseWheelListener(this);
         addMouseMotionListener(this);
+        addMouseWheelListener(this);
         addComponentListener(this);
         addMouseListener(this);
+        addKeyListener(this);
 
         if (this.worldDTO.getPlayers().isEmpty()) {
             throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "this.worldDTO.getPlayers()");
         }
 
-        // проводим основную инициализацию класса мира:
-        this.worldDTO.init(this);
-
-        // если не создан вьюпорт - создаём:
-        this.viewPort = new Rectangle2D.Double(
-                this.worldDTO.getGameMap().getWidth() / 2D - getWidth() / 2D,
-                this.worldDTO.getGameMap().getHeight() / 2D - getHeight() / 2D,
-                this.worldDTO.getGameMap().getWidth() / 2D + getWidth() / 2D,
-                this.worldDTO.getGameMap().getHeight() / 2D + getHeight() / 2D);
-
         new Thread(this).start();
+    }
+
+    private void setInAc() {
+        // KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_MASK)
+        Constants.INPUT_ACTION.add("game_canvas", (JComponent) getParent());
+
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_left",
+//                Constants.getUserConfig().getKeyLeft(), 0, new AbstractAction() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        isMouseLeftEdgeOver = true;
+//                    }
+//                });
+//
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_right",
+//                Constants.getUserConfig().getKeyRight(), 0, new AbstractAction() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        isMouseRightEdgeOver = true;
+//                    }
+//                });
+//
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_up",
+//                Constants.getUserConfig().getKeyUp(), 0, new AbstractAction() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        isMouseUpEdgeOver = true;
+//                    }
+//                });
+//
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_down",
+//                Constants.getUserConfig().getKeyDown(), 0, new AbstractAction() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        isMouseDownEdgeOver = true;
+//                    }
+//                });
+//
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_left_release",
+//                Constants.getUserConfig().getKeyLeft(), 0, true, new AbstractAction() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        isMouseLeftEdgeOver = false;
+//                    }
+//                });
+//
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_right_release",
+//                Constants.getUserConfig().getKeyRight(), 0, true, new AbstractAction() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        isMouseRightEdgeOver = false;
+//                    }
+//                });
+//
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_up_release",
+//                Constants.getUserConfig().getKeyUp(), 0, true, new AbstractAction() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        isMouseUpEdgeOver = false;
+//                    }
+//                });
+//
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_down_release",
+//                Constants.getUserConfig().getKeyDown(), 0, true, new AbstractAction() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        isMouseDownEdgeOver = false;
+//                    }
+//                });
+
+        this.isControlsMapped = true;
     }
 
     @Override
     public void run() {
         setGameActive();
 
+        // ждём пока компонент не станет виден:
+        long timeout = System.currentTimeMillis();
+        while (getParent() == null || !isDisplayable()) {
+            Thread.yield();
+
+            if (System.currentTimeMillis() - timeout > 10_000) {
+                throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
+            }
+        }
+
+        init();
+
         while (isGameActive) {
-            // ждём пока компонент не станет виден:
-            if (getParent() == null || !isDisplayable()) {
-                Thread.yield();
-                continue;
-            }
-
-            // пересчитываем ректанглы меню, когда компонент наконец стал виден:
-            if (backToGameButtonRect == null) {
-                recalculateMenuRectangles();
-            }
-
             try {
                 if (getBufferStrategy() == null) {
                     createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
@@ -137,6 +199,36 @@ public class GameCanvas extends FoxCanvas {
             }
         }
         log.info("Thread of Game canvas is finalized.");
+    }
+
+    private void init() {
+        log.info("Do canvas re-initialization...");
+
+        // проводим основную инициализацию класса мира:
+        this.worldDTO.init(this);
+
+        // если не создан вьюпорт - создаём:
+        if (this.viewPort == null) {
+            this.viewPort = new Rectangle(
+                    (int) (this.worldDTO.getGameMap().getWidth() / 2D - getWidth() / 2D),
+                    (int) (this.worldDTO.getGameMap().getHeight() / 2D - getHeight() / 2D),
+                    (int) (this.worldDTO.getGameMap().getWidth() / 2D + getWidth() / 2D),
+                    (int) (this.worldDTO.getGameMap().getHeight() / 2D + getHeight() / 2D));
+        }
+
+        // пересчитываем ректанглы пунктов меню:
+        if (backToGameButtonRect == null) {
+            recalculateMenuRectangles();
+        }
+
+        if (!isControlsMapped) {
+            // назначаем горячие клавиши управления:
+            setInAc();
+        }
+
+        moveViewToPlayer(0, 0);
+
+        requestFocus();
     }
 
     private void dragViewIfNeeds() {
@@ -200,10 +292,7 @@ public class GameCanvas extends FoxCanvas {
                 getHeight() / 2);
 
         // fill left gray menu polygon:
-        g2D.setColor(new Color(0.0f, 0.0f, 0.0f, 0.75f));
-        if (getLeftGrayMenuPoly() == null) {
-            reloadShapes(this);
-        }
+        g2D.setColor(Constants.getMainMenuBackgroundColor());
         g2D.fillPolygon(getLeftGrayMenuPoly());
 
         drawEscMenu(g2D);
@@ -242,53 +331,74 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void zoomIn() {
+        // todo: при приближении - камера должна оставаться на игроке. Доработать!
         log.debug("Zoom in...");
 
-//        double vpXSrc = viewPort.getX();
-//        double vpXDst = viewPort.getWidth();
-        double vpWidth = viewPort.getWidth() - viewPort.getX();
-//        double vpYSrc = viewPort.getY();
-//        double vpYDst = viewPort.getHeight();
-        double vpHeight = viewPort.getHeight() - viewPort.getY();
-        int minCellsSize = Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS;
-
         // если окно меньше установленного лимита:
-        if (vpWidth <= minCellsSize || vpHeight <= minCellsSize) {
-            log.warn("Can`t zoom in: vpWidth = {} and vpHeight = {} but minCellsSize is {}", vpWidth, vpHeight, minCellsSize);
+        if (viewPort.getWidth() - viewPort.getX() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
+                || viewPort.getHeight() - viewPort.getY() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
+        ) {
+            log.debug("Can`t zoom in: vpWidth = {}, vpHeight = {} but minSize = {}",
+                    viewPort.getWidth() - viewPort.getX(), viewPort.getHeight() - viewPort.getY(), Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS);
             return;
         }
 
-        viewPort.setRect(viewPort.getX() + scrollSpeedX, viewPort.getY() + scrollSpeedY,
-                viewPort.getWidth() - scrollSpeedX, viewPort.getHeight() - scrollSpeedY);
+        moveViewToPlayer(Constants.getScrollSpeed(), (int) (Constants.getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
 
-        log.warn("Can`t zoom in");
+//        double delta = getBounds().getWidth() / getBounds().getHeight();
+////        double widthPercent = getBounds().getWidth() * Constants.getScrollSpeed();
+////        double heightPercent = getBounds().getHeight() * Constants.getScrollSpeed();
+//
+////        double factor = getBounds().getWidth() % getBounds().getHeight();
+////        double resultX = getBounds().getWidth() / factor * 10;
+////        double resultY = getBounds().getHeight() / factor * 10;
+//        double sdf = (viewPort.getWidth() - viewPort.getX()) / 100d;
+//        double sdf2 = (viewPort.getHeight() - viewPort.getY()) / (100d / delta);
+//        viewPort.setRect(
+//                viewPort.getX() + sdf,
+//                viewPort.getY() + sdf2,
+//                viewPort.getWidth() - sdf,
+//                viewPort.getHeight() - sdf2);
+////        log.info("f): {}, r1): {}, r2): {}", factor, resultX, resultY);
     }
 
     private void zoomOut() {
         log.debug("Zoom out...");
 
-        double mapWidth = this.worldDTO.getGameMap().getWidth();
-        double mapHeight = this.worldDTO.getGameMap().getHeight();
-
-        double viewXSrc = viewPort.getX();
-        double viewXDst = viewPort.getWidth();
-
-        double viewYSrc = viewPort.getY();
-        double viewYDst = viewPort.getHeight();
-
         // если окно больше установленного лимита или и так максимального размера:
-        if (!canZoomOut(viewXDst - viewXSrc, viewYDst - viewYSrc, mapWidth, mapHeight)) {
+        if (!canZoomOut(viewPort.getWidth() - viewPort.getX(), viewPort.getHeight() - viewPort.getY(),
+                this.worldDTO.getGameMap().getWidth(), this.worldDTO.getGameMap().getHeight())) {
             return;
         }
 
-        viewPort.setRect(viewXSrc - scrollSpeedX, viewYSrc - scrollSpeedY, viewXDst + scrollSpeedX, viewYDst + scrollSpeedY);
+        moveViewToPlayer(-Constants.getScrollSpeed(), -(int) (Constants.getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
+
+//        double delta = getBounds().getWidth() / getBounds().getHeight();
+////        double widthPercent = getBounds().getWidth() * Constants.getScrollSpeed();
+////        double heightPercent = getBounds().getHeight() * Constants.getScrollSpeed();
+//
+////        double factor = getBounds().getWidth() % getBounds().getHeight();
+////        double resultX = getBounds().getWidth() / factor * 10;
+////        double resultY = getBounds().getHeight() / factor * 10;
+//        double sdf = (viewPort.getWidth() - viewPort.getX()) / 100d;
+//        double sdf2 = (viewPort.getHeight() - viewPort.getY()) / (100d / delta);
+//        viewPort.setRect(
+//                viewPort.getX() - sdf,
+//                viewPort.getY() - sdf2,
+//                viewPort.getWidth() + sdf,
+//                viewPort.getHeight() + sdf2);
+////        log.info("f): {}, r1): {}, r2): {}", factor, resultX, resultY);
 
         // проверка на выход за края игрового поля:
+        checkOutOfFieldCorrection();
+    }
+
+    private void checkOutOfFieldCorrection() {
         while (viewPort.getX() < 0) {
             dragLeft(1d);
         }
 
-        while (viewPort.getWidth() > mapWidth) {
+        while (viewPort.getWidth() > this.worldDTO.getGameMap().getWidth()) {
             dragRight(1d);
         }
 
@@ -296,7 +406,7 @@ public class GameCanvas extends FoxCanvas {
             dragUp(1d);
         }
 
-        while (viewPort.getHeight() > mapHeight) {
+        while (viewPort.getHeight() > this.worldDTO.getGameMap().getHeight()) {
             dragDown(1d);
         }
     }
@@ -306,13 +416,13 @@ public class GameCanvas extends FoxCanvas {
 
         // если окно больше установленного лимита:
         if (viewWidth >= maxCellsSize || viewHeight >= maxCellsSize) {
-            log.warn("Can`t zoom out: viewWidth = {} and viewHeight = {} but maxCellsSize is {}", viewWidth, viewHeight, maxCellsSize);
+            log.debug("Can`t zoom out: viewWidth = {} and viewHeight = {} but maxCellsSize is {}", viewWidth, viewHeight, maxCellsSize);
             return false;
         }
 
         // если окно уже максимального размера:
         if (viewWidth >= mapWidth || viewHeight >= mapHeight) {
-            log.warn("Can`t zoom out: maximum size reached.");
+            log.debug("Can`t zoom out: maximum size reached.");
             return false;
         }
 
@@ -378,12 +488,6 @@ public class GameCanvas extends FoxCanvas {
         return viewPort.getX() > 0;
     }
 
-    public void setScrollSpeed(double scrollSpeed) {
-        this.delta = getBounds().getWidth() / getBounds().getHeight();
-        this.scrollSpeedX = scrollSpeed;
-        this.scrollSpeedY = scrollSpeedX / this.delta;
-    }
-
     @Override
     public void stop() {
         this.isGameActive = false;
@@ -400,7 +504,7 @@ public class GameCanvas extends FoxCanvas {
             saveButtonOver = saveButtonRect.contains(p);
             exitButtonOver = exitButtonRect.contains(p);
         } else { // иначе мониторим наведение на край окна для прокрутки поля:
-            if (Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
+            if (!isMovingKeyActive && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
                 isMouseLeftEdgeOver = p.getX() <= 20 && (Constants.getUserConfig().isFullscreen() || p.getX() > 1);
                 isMouseRightEdgeOver = p.getX() >= getWidth() - 20 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1);
                 isMouseUpEdgeOver = p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1);
@@ -485,22 +589,24 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void componentResized(ComponentEvent e) {
-        Component comp = e.getComponent();
-        if (this.worldDTO.getGameMap() != null) {
-            // перекраиваем вьюпорт под новое окно:
-            this.viewPort.setRect(
-                    this.worldDTO.getGameMap().getWidth() / 2D - comp.getBounds().getWidth() / 2D,
-                    this.worldDTO.getGameMap().getHeight() / 2D - comp.getBounds().getHeight() / 2D,
-                    this.worldDTO.getGameMap().getWidth() / 2D + comp.getBounds().getWidth() / 2D,
-                    this.worldDTO.getGameMap().getHeight() / 2D + comp.getBounds().getHeight() / 2D);
-        }
-
         reloadShapes(this);
-
-        this.delta = comp.getBounds().getWidth() / comp.getBounds().getHeight();
-        this.scrollSpeedY = scrollSpeedX / this.delta;
-
         recalculateMenuRectangles();
+        moveViewToPlayer(0, 0);
+    }
+
+    private void moveViewToPlayer(double x, double y) {
+        if (this.worldDTO.getGameMap() != null && this.viewPort != null) {
+
+            Point2D.Double p = gameController.getCurrentPlayer().getPosition();
+            Rectangle viewRect = this.viewPort.getBounds();
+            this.viewPort.setRect(
+                    p.x - (viewRect.getWidth() - viewRect.getX()) / 2D + x,
+                    p.y - (viewRect.getHeight() - viewRect.getY()) / 2D + y,
+                    p.x + (viewRect.getWidth() - viewRect.getX()) / 2D - x,
+                    p.y + (viewRect.getHeight() - viewRect.getY()) / 2D - y);
+
+            checkOutOfFieldCorrection();
+        }
     }
 
     @Override
@@ -510,11 +616,55 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void componentShown(ComponentEvent e) {
-
+        log.info("Возврат фокуса на холст...");
+        requestFocus();
     }
 
     @Override
     public void componentHidden(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyUp()) {
+            isMovingKeyActive = true;
+            isMouseUpEdgeOver = true;
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyDown()) {
+            isMovingKeyActive = true;
+            isMouseDownEdgeOver = true;
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyLeft()) {
+            isMovingKeyActive = true;
+            isMouseLeftEdgeOver = true;
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyRight()) {
+            isMovingKeyActive = true;
+            isMouseRightEdgeOver = true;
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyUp()) {
+            isMovingKeyActive = false;
+            isMouseUpEdgeOver = false;
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyDown()) {
+            isMovingKeyActive = false;
+            isMouseDownEdgeOver = false;
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyLeft()) {
+            isMovingKeyActive = false;
+            isMouseLeftEdgeOver = false;
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyRight()) {
+            isMovingKeyActive = false;
+            isMouseRightEdgeOver = false;
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
 
     }
 }

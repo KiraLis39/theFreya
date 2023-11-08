@@ -17,6 +17,7 @@ import org.apache.commons.lang3.SystemUtils;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
+import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.GraphicsConfiguration;
@@ -72,37 +73,32 @@ public final class Constants {
     @Getter
     private static final double dragSpeed = 12D;
     @Getter
+    private static final double scrollSpeed = 20D;
+    @Getter
     private static final String userSave = "./saves/".concat(SystemUtils.getUserName()).concat("/save.json");
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
     @Getter
+    public static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.75f);
+    @Getter
     private static Cursor defaultCursor;
-
-
     // user config:
     @Getter
     @Setter
     private static UserConfig userConfig;
-
-
     // dynamic game booleans:
     @Getter
     @Setter
     private static boolean isDebugInfoVisible = true;
-
     @Getter
     @Setter
     private static boolean isPaused = false;
-
     @Getter
     private static boolean isShowStartLogo = false;
-
     @Getter
     private static long screenDiscreteLimitMem;
-
     @Getter
     private static long delay = -1;
-
     @Getter
     @Setter
     private static int realFreshRate = 0;

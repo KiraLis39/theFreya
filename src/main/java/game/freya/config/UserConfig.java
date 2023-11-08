@@ -43,6 +43,9 @@ public class UserConfig {
 
     // hotkeys:
     @Builder.Default
+    private int keyUp = KeyEvent.VK_UP;
+
+    @Builder.Default
     private int keyLeft = KeyEvent.VK_LEFT;
 
     @Builder.Default
@@ -75,9 +78,6 @@ public class UserConfig {
     private boolean dragGameFieldOnFrameEdgeReached = true;
 
     @Builder.Default
-    private boolean isHardcoreMode = false;
-
-    @Builder.Default
     private boolean isFullscreen = false;
 
     @Builder.Default
@@ -90,7 +90,7 @@ public class UserConfig {
     private boolean isPauseOnHidden = true;
 
     @Builder.Default
-    private long screenDiscreteLimit = 30L; // fps limit
+    private long screenDiscreteLimit = 60L; // fps limit
 
     // other:
     @Builder.Default
@@ -101,5 +101,18 @@ public class UserConfig {
 
     public int getBufferedDeep() {
         return isMultiBufferEnabled ? bufferedDeep : 1;
+    }
+
+    public void resetControlKeys() {
+        setKeyUp(KeyEvent.VK_UP);
+        setKeyLeft(KeyEvent.VK_LEFT);
+        setKeyRight(KeyEvent.VK_RIGHT);
+        setKeyDown(KeyEvent.VK_DOWN);
+        setKeyConsole(KeyEvent.VK_BACK_QUOTE);
+        setKeyConsoleMod(InputEvent.SHIFT_DOWN_MASK);
+        setKeyFullscreen(KeyEvent.VK_F11);
+        setKeyPause(KeyEvent.VK_ESCAPE);
+        setKeyRotateClockwise(KeyEvent.VK_E);
+        setKeyRotateCounter(KeyEvent.VK_Q);
     }
 }

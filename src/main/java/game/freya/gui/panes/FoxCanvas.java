@@ -13,7 +13,7 @@ import java.awt.Polygon;
 
 @Getter
 @Setter
-// iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, Runnable
+// iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, KeyListener, Runnable
 public abstract class FoxCanvas extends Canvas implements iCanvas {
     private final String name;
     private int frames = 0;
