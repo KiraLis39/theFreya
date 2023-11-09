@@ -30,7 +30,7 @@ public class Launcher {
         globalPreInitialization();
 
         logApplicationStartup(app.run(args).getEnvironment());
-        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
     }
 
     // устанавливаем всё, что должно быть готово к запуску:

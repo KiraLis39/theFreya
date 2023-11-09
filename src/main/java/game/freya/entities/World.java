@@ -52,6 +52,10 @@ public class World {
     private int dimensionHeight = 32; // 32 = 1024 cells | 128 = 4096 cells
 
     @Builder.Default
+    @Column(name = "in_game_time", columnDefinition = "bigint default 0")
+    private long inGameTime = 0;
+
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     private HardnessLevel level = HardnessLevel.EASY;
 
@@ -63,5 +67,9 @@ public class World {
     public World addPlayer(Player p) {
         players.add(p);
         return this;
+    }
+
+    public Player getPlayer(String nickName) {
+        return players.stream().filter(p -> p.getNickName().equals(nickName)).findFirst().orElse(null);
     }
 }

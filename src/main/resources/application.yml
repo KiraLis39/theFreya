@@ -48,7 +48,7 @@ spring:
     driver-class-name: org.sqlite.JDBC
     hikari:
       poolName: Hikari
-      auto-commit: false
+      auto-commit: true
 
       # Максимальное количество миллисекунд, в течение которых клиент (то есть вы) будет ожидать соединения из пула.
       #   Если это время превышено, а соединение не становится доступным, будет выдано исключение SQLException.
@@ -98,7 +98,7 @@ spring:
           batch_versioned_data: true
         order_updates: true
         connection:
-          autocommit: false
+          autocommit: true
           pool_size: 6
         # dialect: org.hibernate.community.dialect.SQLiteDialect
         dialect: org.sqlite.hibernate.dialect.SQLiteDialect

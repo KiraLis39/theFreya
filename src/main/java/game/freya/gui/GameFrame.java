@@ -1,6 +1,7 @@
 package game.freya.gui;
 
 import fox.FoxLogo;
+import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
@@ -8,6 +9,7 @@ import game.freya.enums.ScreenType;
 import game.freya.gui.panes.FoxCanvas;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.net.SocketService;
 import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
@@ -35,6 +37,7 @@ import java.io.InputStream;
 @RequiredArgsConstructor
 public class GameFrame implements WindowListener, WindowStateListener {
     private final WorldService worldService;
+    private final UIHandler uIHandler;
     private final SocketService socketService;
     private Dimension monitorSize;
     private Dimension windowSize;
@@ -71,17 +74,20 @@ public class GameFrame implements WindowListener, WindowStateListener {
         }
 
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-        frame.setResizable(false);
 
         frame.addWindowListener(this);
         frame.addWindowStateListener(this);
 
-        gameController.loadScreen(ScreenType.MENU_SCREEN);
+        frame.setCursor(Constants.getDefaultCursor());
+
+        // настройка фокуса для работы горячих клавиш:
+        frame.setFocusable(false);
+        frame.getRootPane().setFocusable(true);
 
         frame.setPreferredSize(windowSize);
+        frame.setResizable(false);
         frame.pack();
         frame.setLocationRelativeTo(null);
-        frame.setCursor(Constants.getDefaultCursor());
 
         if (logo != null && logo.getEngine().isAlive()) {
             try {
@@ -92,14 +98,11 @@ public class GameFrame implements WindowListener, WindowStateListener {
             }
         }
 
-        // настройка фокуса для работы горячих клавиш:
-        frame.setFocusable(false);
-        frame.getRootPane().setFocusable(true);
-
         log.info("Show the MainFrame...");
         frame.setVisible(true);
+
+        gameController.loadScreen(ScreenType.MENU_SCREEN);
         setInAc();
-//        frame.requestFocusInWindow();
 
         if (Constants.getUserConfig().isFullscreen()) {
             log.info("Switch to fullscreen by UserConfig...");
@@ -118,6 +121,9 @@ public class GameFrame implements WindowListener, WindowStateListener {
                         log.info("Try to switch fullscreen mode...");
                         Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
                         Constants.MON.switchFullscreen(Constants.getUserConfig().isFullscreen() ? frame : null);
+                        if (!Constants.getUserConfig().isFullscreen()) {
+                            frame.setPreferredSize(windowSize);
+                        }
                     }
                 });
 
@@ -125,7 +131,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        log.info("Try to switch pause mode...");
+                        log.debug("Try to switch pause mode...");
                         Constants.setPaused(!Constants.isPaused());
                     }
                 });
@@ -141,35 +147,34 @@ public class GameFrame implements WindowListener, WindowStateListener {
     public void loadGameScreen() {
         if (worldService.count() > 0) {
             worldDto = worldService.findAll().stream().findAny().orElse(null);
+            if (worldDto == null) {
+                log.error("The World variable is null. Can`t loaded here!");
+                return;
+            } else {
+                // todo: выводить список доступных миров
+            }
         } else {
             worldDto = worldService.save(new WorldDTO("Demo world"));
-        }
-
-        if (worldDto == null) {
-            log.error("The World variable is null. Can`t loaded here!");
-            return;
-        }
-        if (worldDto.getPlayers().values().stream().noneMatch(pl -> pl.getUid().equals(gameController.getCurrentPlayer().getUid()))) {
             worldDto = worldService.addPlayerToWorld(worldDto, gameController.getCurrentPlayer());
         }
 
         log.info("Try to load World '{}' screen...", worldDto.getTitle());
         clearFrame();
-        frame.add(new GameCanvas(worldDto, gameController)); // мир уже должен быть с игроком (-ами)!
+        frame.add(new GameCanvas(worldDto, uIHandler, gameController)); // мир уже должен быть с игроком (-ами)!
         frame.revalidate();
     }
 
     private void clearFrame() {
         for (java.awt.Component comp : frame.getComponents()) {
             if (comp instanceof FoxCanvas fc) {
-                log.info("Found to remove from frame: {}", fc.getName());
+                log.debug("Found to remove from frame: {}", fc.getName());
                 fc.stop();
                 frame.remove(fc);
             }
             if (comp instanceof JRootPane rp) {
                 for (java.awt.Component cmp : rp.getContentPane().getComponents()) {
                     if (cmp instanceof FoxCanvas fc) {
-                        log.info("Found to remove from frame: {}", fc.getName());
+                        log.debug("Found to remove from frame: {}", fc.getName());
                         fc.stop();
                         frame.remove(fc);
                     }
@@ -185,7 +190,10 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     @Override
     public void windowClosing(WindowEvent e) {
-        gameController.exitTheGame(worldDto);
+        if ((int) new FOptionPane().buildFOptionPane(
+                "Подтвердить:", "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE).get() == 0) {
+            gameController.exitTheGame(worldDto);
+        }
     }
 
     @Override
@@ -237,10 +245,10 @@ public class GameFrame implements WindowListener, WindowStateListener {
     }
 
     private void onGameRestore() {
-        if (Constants.getUserConfig().isPauseOnHidden() && Constants.isPaused()) {
-            log.info("Auto resume the game on frame restore is temporary off.");
-//            Constants.setPaused(false);
-//            log.info("Resume game...");
+        if (Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
+//            log.info("Auto resume the game on frame restore is temporary off.");
+            Constants.setPaused(false);
+            log.info("Resume game...");
         }
     }
 

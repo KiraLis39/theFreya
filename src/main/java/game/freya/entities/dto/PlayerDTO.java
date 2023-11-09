@@ -42,6 +42,7 @@ public class PlayerDTO implements iPlayer {
     @NotNull
     private final String email;
     @NotNull
+    @Setter
     private UUID uid;
     @Builder.Default
     private String avatarUrl = "/images/defaultAvatar.png";
@@ -63,6 +64,9 @@ public class PlayerDTO implements iPlayer {
 
     @Builder.Default
     private short maxHealth = 100;
+
+    @Builder.Default
+    private short speed = 6;
 
     @Builder.Default
     private Point2D.Double position = new Point2D.Double(384d, 384d);
@@ -247,6 +251,22 @@ public class PlayerDTO implements iPlayer {
         isOnline = online;
     }
 
+    public void moveUp() {
+        position.setLocation(position.x, position.y - 1);
+    }
+
+    public void moveDown() {
+        position.setLocation(position.x, position.y + 1);
+    }
+
+    public void moveLeft() {
+        position.setLocation(position.x - 1, position.y);
+    }
+
+    public void moveRight() {
+        position.setLocation(position.x + 1, position.y);
+    }
+
     @Override
     public String toString() {
         return "Player{"
@@ -254,5 +274,12 @@ public class PlayerDTO implements iPlayer {
                 + ", email='" + email + '\''
                 + ", level=" + level
                 + '}';
+    }
+
+    public enum MovingVector {
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT
     }
 }

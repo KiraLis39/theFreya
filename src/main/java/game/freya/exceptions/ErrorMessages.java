@@ -15,7 +15,8 @@ public enum ErrorMessages {
     NOT_ENOUGH_PERMISSIONS("ER06", "У вас нет прав на выполнение данного метода"),
     NO_CONNECTION_REACHED("ER07", "Не было получено ни одного соединения за отведённое время"),
     WORLD_NOT_FOUND("ER08", "Не обнаружен в базе денных мир"),
-    DRAW_TIMEOUT("ER09", "Не удалось отрисовать компонент за отведённое время");
+    DRAW_TIMEOUT("ER09", "Не удалось отрисовать компонент за отведённое время"),
+    PLAYER_NOT_FOUND("ER10", "Не обнаружен в базе денных игрок");
 
     private final String errorCode;
     private final String errorCause;

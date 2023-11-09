@@ -15,12 +15,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @AllArgsConstructor
 @Service
 public class WorldService {
     private final WorldRepository worldRepository;
+    private final PlayerService playerService;
     private final PlayerMapper playerMapper;
     private final WorldMapper worldMapper;
 
@@ -47,5 +49,9 @@ public class WorldService {
         w = w.addPlayer(p);
         w = worldRepository.save(w);
         return worldMapper.toDto(w);
+    }
+
+    public Optional<World> findByUid(UUID uid) {
+        return worldRepository.findByUid(uid);
     }
 }

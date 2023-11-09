@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -138,5 +139,14 @@ public class GameController {
             case GAME_SCREEN -> gameFrame.loadGameScreen();
             default -> log.error("Unknown screen failed to load: {}", screenType);
         }
+    }
+
+    public void updateCurrentPlayer() {
+        playerService.updatePlayer(currentPlayer);
+    }
+
+    public void updateWorld(WorldDTO worldDTO, Duration duration) {
+        worldDTO.setInGameTime(duration.toMillis());
+        worldService.save(worldDTO);
     }
 }

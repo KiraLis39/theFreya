@@ -43,16 +43,30 @@ public class UserConfig {
 
     // hotkeys:
     @Builder.Default
-    private int keyUp = KeyEvent.VK_UP;
+    private int keyLookUp = KeyEvent.VK_UP;
 
     @Builder.Default
-    private int keyLeft = KeyEvent.VK_LEFT;
+    private int keyLookLeft = KeyEvent.VK_LEFT;
 
     @Builder.Default
-    private int keyRight = KeyEvent.VK_RIGHT;
+    private int keyLookRight = KeyEvent.VK_RIGHT;
 
     @Builder.Default
-    private int keyDown = KeyEvent.VK_DOWN;
+    private int keyLookDown = KeyEvent.VK_DOWN;
+
+
+    @Builder.Default
+    private int keyMoveUp = KeyEvent.VK_W;
+
+    @Builder.Default
+    private int keyMoveLeft = KeyEvent.VK_A;
+
+    @Builder.Default
+    private int keyMoveRight = KeyEvent.VK_D;
+
+    @Builder.Default
+    private int keyMoveDown = KeyEvent.VK_S;
+
 
     @Builder.Default
     private int keyRotateClockwise = KeyEvent.VK_E;
@@ -104,10 +118,14 @@ public class UserConfig {
     }
 
     public void resetControlKeys() {
-        setKeyUp(KeyEvent.VK_UP);
-        setKeyLeft(KeyEvent.VK_LEFT);
-        setKeyRight(KeyEvent.VK_RIGHT);
-        setKeyDown(KeyEvent.VK_DOWN);
+        setKeyLookUp(KeyEvent.VK_UP);
+        setKeyLookLeft(KeyEvent.VK_LEFT);
+        setKeyLookRight(KeyEvent.VK_RIGHT);
+        setKeyLookDown(KeyEvent.VK_DOWN);
+        setKeyMoveUp(KeyEvent.VK_W);
+        setKeyMoveLeft(KeyEvent.VK_A);
+        setKeyMoveRight(KeyEvent.VK_D);
+        setKeyMoveDown(KeyEvent.VK_S);
         setKeyConsole(KeyEvent.VK_BACK_QUOTE);
         setKeyConsoleMod(InputEvent.SHIFT_DOWN_MASK);
         setKeyFullscreen(KeyEvent.VK_F11);

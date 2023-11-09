@@ -11,6 +11,7 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JComponent;
@@ -20,10 +21,12 @@ import java.awt.Graphics2D;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Shape;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.Optional;
@@ -36,6 +39,7 @@ public class GameCanvas extends FoxCanvas {
     private static final String saveButtonText = "Сохранить";
     private static final String exitButtonText = "Выйти в меню";
     private final transient GameController gameController;
+    private final transient UIHandler uiHandler;
     private final transient WorldDTO worldDTO;
     private transient Rectangle2D viewPort;
     private Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
@@ -45,10 +49,13 @@ public class GameCanvas extends FoxCanvas {
     private boolean isMovingKeyActive = false;
     private boolean backToGameButtonOver = false, optionsButtonOver = false, saveButtonOver = false, exitButtonOver = false;
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
+    @Getter
+    private boolean isPlayerMovingUp = false, isPlayerMovingDown = false, isPlayerMovingLeft = false, isPlayerMovingRight = false;
 
-    public GameCanvas(WorldDTO worldDTO, GameController gameController) {
+    public GameCanvas(WorldDTO worldDTO, UIHandler uiHandler, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "GameCanvas");
         this.gameController = gameController;
+        this.uiHandler = uiHandler;
 
         this.worldDTO = worldDTO;
 
@@ -146,7 +153,6 @@ public class GameCanvas extends FoxCanvas {
         long timeout = System.currentTimeMillis();
         while (getParent() == null || !isDisplayable()) {
             Thread.yield();
-
             if (System.currentTimeMillis() - timeout > 10_000) {
                 throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
             }
@@ -157,16 +163,18 @@ public class GameCanvas extends FoxCanvas {
         while (isGameActive) {
             try {
                 if (getBufferStrategy() == null) {
+                    log.info("Game canvas create the bs...");
                     createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
                 }
 
                 do {
                     do {
                         Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.HIGH);
+                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED);
 
                         // draw all World`s graphic:
                         drawWorld(g2D);
+                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED);
 
                         // not-pause events and changes:
                         if (Constants.isPaused()) {
@@ -177,11 +185,13 @@ public class GameCanvas extends FoxCanvas {
                         }
 
                         // draw debug info corner if debug mode on:
-                        if (Constants.isDebugInfoVisible()) {
-                            super.drawDebugInfo(g2D, worldDTO.getTitle()); // отладочная информация
+                        drawLocalDebugInfo(g2D);
+
+                        if (Constants.isFpsInfoVisible()) {
+                            super.drawFps(g2D);
                         }
 
-                        // g2D.dispose();
+                        g2D.dispose();
                     } while (getBufferStrategy().contentsRestored());
                 } while (getBufferStrategy().contentsLost());
                 getBufferStrategy().show();
@@ -189,16 +199,44 @@ public class GameCanvas extends FoxCanvas {
                 log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
 
-            if (Constants.isFrameLimited()) {
+//            log.debug("Game canvas drawing cycle end. Waiting...");
+            if (Constants.isFrameLimited() && Constants.getDiscreteDelay() > 1) {
                 try {
                     Thread.sleep(Constants.getDiscreteDelay());
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
                     Thread.currentThread().interrupt();
                 }
             }
+//            log.debug("Game canvas waiting done.");
         }
         log.info("Thread of Game canvas is finalized.");
+    }
+
+    private void drawLocalDebugInfo(Graphics2D g2D) {
+        if (Constants.isDebugInfoVisible()) {
+            super.drawDebugInfo(g2D, worldDTO.getTitle(), worldDTO.getInGameTime()); // отладочная информация
+
+            int leftShift = 320;
+            Point2D.Double playerPos = gameController.getCurrentPlayer().getPosition();
+            Shape playerShape = new Ellipse2D.Double(
+                    (int) playerPos.x - Constants.MAP_CELL_DIM / 2d,
+                    (int) playerPos.y - Constants.MAP_CELL_DIM / 2d,
+                    Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
+            g2D.drawString("Player pos: " + playerShape.getBounds2D().getCenterX() + "x" + playerShape.getBounds2D().getCenterY(),
+                    getWidth() - leftShift, getHeight() - 110);
+
+            g2D.drawString("Player speed: " + gameController.getCurrentPlayer().getSpeed(),
+                    getWidth() - leftShift, getHeight() - 90);
+
+            g2D.drawString("GameMap WxH: " + worldDTO.getGameMap().getWidth() + "x" + worldDTO.getGameMap().getHeight(),
+                    getWidth() - leftShift, getHeight() - 70);
+
+            g2D.drawString("Canvas XxY-WxH: " + getBounds().x + "x" + getBounds().y + "-"
+                    + getBounds().width + "x" + getBounds().height, getWidth() - leftShift, getHeight() - 50);
+
+            g2D.drawString("ViewPort XxY-WxH: " + viewPort.getBounds().x + "x" + viewPort.getBounds().y + "-"
+                    + viewPort.getBounds().width + "x" + viewPort.getBounds().height, getWidth() - leftShift, getHeight() - 30);
+        }
     }
 
     private void init() {
@@ -209,11 +247,7 @@ public class GameCanvas extends FoxCanvas {
 
         // если не создан вьюпорт - создаём:
         if (this.viewPort == null) {
-            this.viewPort = new Rectangle(
-                    (int) (this.worldDTO.getGameMap().getWidth() / 2D - getWidth() / 2D),
-                    (int) (this.worldDTO.getGameMap().getHeight() / 2D - getHeight() / 2D),
-                    (int) (this.worldDTO.getGameMap().getWidth() / 2D + getWidth() / 2D),
-                    (int) (this.worldDTO.getGameMap().getHeight() / 2D + getHeight() / 2D));
+            recreateViewPort();
         }
 
         // пересчитываем ректанглы пунктов меню:
@@ -229,6 +263,10 @@ public class GameCanvas extends FoxCanvas {
         moveViewToPlayer(0, 0);
 
         requestFocus();
+    }
+
+    private void recreateViewPort() {
+        this.viewPort = new Rectangle(0, 0, getWidth(), getHeight());
     }
 
     private void dragViewIfNeeds() {
@@ -270,7 +308,7 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void drawUI(Graphics2D g2D) {
-        UIHandler.drawUI(getBounds(), g2D);
+        uiHandler.drawUI(this, g2D);
     }
 
     private void setGameActive() {
@@ -282,10 +320,11 @@ public class GameCanvas extends FoxCanvas {
         currentPlayer.get().setOnline(true);
         this.isGameActive = true;
         Constants.setPaused(false);
+        Constants.setGameStartedIn(System.currentTimeMillis());
     }
 
     private void drawPauseMode(Graphics2D g2D) {
-        g2D.setFont(Constants.MENU_BUTTONS_FONT);
+        g2D.setFont(Constants.GAME_FONT_02);
         g2D.setColor(Color.DARK_GRAY);
         g2D.drawString("- PAUSED -",
                 (int) (getWidth() / 2D - Constants.FFB.getStringBounds(g2D, "- PAUSED -").getWidth() / 2),
@@ -393,6 +432,20 @@ public class GameCanvas extends FoxCanvas {
         checkOutOfFieldCorrection();
     }
 
+    public void moveViewToPlayer(double x, double y) {
+        if (this.worldDTO.getGameMap() != null && this.viewPort != null) {
+            Point2D.Double p = gameController.getCurrentPlayer().getPosition();
+            Rectangle viewRect = this.viewPort.getBounds();
+            this.viewPort.setRect(
+                    p.x - (viewRect.getWidth() - viewRect.getX()) / 2D + x,
+                    p.y - (viewRect.getHeight() - viewRect.getY()) / 2D + y,
+                    p.x + (viewRect.getWidth() - viewRect.getX()) / 2D - x,
+                    p.y + (viewRect.getHeight() - viewRect.getY()) / 2D - y);
+
+            checkOutOfFieldCorrection();
+        }
+    }
+
     private void checkOutOfFieldCorrection() {
         while (viewPort.getX() < 0) {
             dragLeft(1d);
@@ -429,7 +482,7 @@ public class GameCanvas extends FoxCanvas {
         return true;
     }
 
-    private void dragLeft(Double pixels) {
+    public void dragLeft(Double pixels) {
         if (canDragLeft()) {
             log.debug("Drag left...");
             double per = pixels != null ? pixels : Constants.getDragSpeed();
@@ -440,7 +493,7 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    private void dragRight(Double pixels) {
+    public void dragRight(Double pixels) {
         if (canDragRight()) {
             log.debug("Drag right...");
             double per = pixels != null ? pixels : Constants.getDragSpeed();
@@ -450,7 +503,7 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    private void dragUp(Double pixels) {
+    public void dragUp(Double pixels) {
         if (canDragUp()) {
             log.debug("Drag up...");
             double per = pixels != null ? pixels : Constants.getDragSpeed();
@@ -462,7 +515,7 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    private void dragDown(Double pixels) {
+    public void dragDown(Double pixels) {
         if (canDragDown()) {
             log.debug("Drag down...");
             double per = pixels != null ? pixels : Constants.getDragSpeed();
@@ -536,7 +589,9 @@ public class GameCanvas extends FoxCanvas {
                     "Приносим свои извинения! Данный функционал ещё находится в разработке.", FOptionPane.TYPE.INFO);
         }
         if (exitButtonOver) {
-            // saveTheGame() ?..
+            stop();
+            gameController.updateWorld(worldDTO, getDuration());
+            gameController.updateCurrentPlayer();
             gameController.loadScreen(ScreenType.MENU_SCREEN);
         }
     }
@@ -591,22 +646,8 @@ public class GameCanvas extends FoxCanvas {
     public void componentResized(ComponentEvent e) {
         reloadShapes(this);
         recalculateMenuRectangles();
+        recreateViewPort();
         moveViewToPlayer(0, 0);
-    }
-
-    private void moveViewToPlayer(double x, double y) {
-        if (this.worldDTO.getGameMap() != null && this.viewPort != null) {
-
-            Point2D.Double p = gameController.getCurrentPlayer().getPosition();
-            Rectangle viewRect = this.viewPort.getBounds();
-            this.viewPort.setRect(
-                    p.x - (viewRect.getWidth() - viewRect.getX()) / 2D + x,
-                    p.y - (viewRect.getHeight() - viewRect.getY()) / 2D + y,
-                    p.x + (viewRect.getWidth() - viewRect.getX()) / 2D - x,
-                    p.y + (viewRect.getHeight() - viewRect.getY()) / 2D - y);
-
-            checkOutOfFieldCorrection();
-        }
     }
 
     @Override
@@ -627,18 +668,30 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyUp()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
+            isPlayerMovingUp = true;
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
+            isPlayerMovingDown = true;
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
+            isPlayerMovingLeft = true;
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
+            isPlayerMovingRight = true;
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {
             isMovingKeyActive = true;
             isMouseUpEdgeOver = true;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyDown()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookDown()) {
             isMovingKeyActive = true;
             isMouseDownEdgeOver = true;
         }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyLeft()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookLeft()) {
             isMovingKeyActive = true;
             isMouseLeftEdgeOver = true;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyRight()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookRight()) {
             isMovingKeyActive = true;
             isMouseRightEdgeOver = true;
         }
@@ -646,18 +699,30 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyUp()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
+            isPlayerMovingUp = false;
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
+            isPlayerMovingDown = false;
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
+            isPlayerMovingLeft = false;
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
+            isPlayerMovingRight = false;
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {
             isMovingKeyActive = false;
             isMouseUpEdgeOver = false;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyDown()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookDown()) {
             isMovingKeyActive = false;
             isMouseDownEdgeOver = false;
         }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyLeft()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookLeft()) {
             isMovingKeyActive = false;
             isMouseLeftEdgeOver = false;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyRight()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookRight()) {
             isMovingKeyActive = false;
             isMouseRightEdgeOver = false;
         }
@@ -666,5 +731,13 @@ public class GameCanvas extends FoxCanvas {
     @Override
     public void keyTyped(KeyEvent e) {
 
+    }
+
+    public PlayerDTO getCurrentPlayer() {
+        return gameController.getCurrentPlayer();
+    }
+
+    public WorldDTO getCurrentWorld() {
+        return this.worldDTO;
     }
 }

@@ -58,19 +58,26 @@ public class MenuCanvas extends FoxCanvas {
             }
 
             try {
+                if (!initialized) {
+                    init();
+                }
+
                 if (getBufferStrategy() == null) {
-                    createBufferStrategy(2);
+                    createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
                 }
 
                 do {
                     do {
                         Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
                         // g2D.clearRect(0, 0, getWidth(), getHeight());
-                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED);
+                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.HIGH);
                         drawBackground(g2D);
                         drawMenu(g2D);
                         if (Constants.isDebugInfoVisible()) {
-                            super.drawDebugInfo(g2D, null);
+                            super.drawDebugInfo(g2D, null, 0);
+                        }
+                        if (Constants.isFpsInfoVisible()) {
+                            super.drawFps(g2D);
                         }
                         g2D.dispose();
                     } while (getBufferStrategy().contentsRestored());
@@ -80,11 +87,10 @@ public class MenuCanvas extends FoxCanvas {
                 log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
 
-            if (Constants.isFrameLimited()) {
+            if (Constants.isFrameLimited() && Constants.getDiscreteDelay() > 1) {
                 try {
                     Thread.sleep(Constants.getDiscreteDelay());
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
                     Thread.currentThread().interrupt();
                 }
             }
@@ -93,10 +99,6 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     private void drawBackground(Graphics2D g2D) {
-        if (!initialized) {
-            init();
-        }
-
         if (backMenuImage.validate(Constants.getGraphicsConfiguration()) != VolatileImage.IMAGE_OK) {
             recreateBackImage();
         }
@@ -131,13 +133,6 @@ public class MenuCanvas extends FoxCanvas {
     private void init() {
         reloadShapes(this);
 
-        try {
-            Constants.CACHE.addIfAbsent("backMenuImage", ImageIO.read(new File("./resources/images/demo_menu.jpg")));
-            recreateBackImage();
-        } catch (Exception e) {
-            log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
-
         downInfoString1 = Constants.getGameName().concat(" v.").concat(Constants.getGameVersion());
         downInfoString2 = Constants.getGameAuthor().concat("(%s)".formatted(2023));
 
@@ -145,6 +140,13 @@ public class MenuCanvas extends FoxCanvas {
         coopPlayButtonText = "Игра по сети";
         optionsButtonText = "Настройки";
         exitButtonText = "Выход";
+
+        try {
+            Constants.CACHE.addIfAbsent("backMenuImage", ImageIO.read(new File("./resources/images/demo_menu.jpg")));
+            recreateBackImage();
+        } catch (Exception e) {
+            log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
 
         recalculateMenuRectangles();
 

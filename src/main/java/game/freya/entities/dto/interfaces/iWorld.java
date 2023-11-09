@@ -1,14 +1,14 @@
 package game.freya.entities.dto.interfaces;
 
 import game.freya.entities.dto.PlayerDTO;
-import game.freya.gui.panes.FoxCanvas;
+import game.freya.gui.panes.GameCanvas;
 
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
 public interface iWorld {
 
-    void init(FoxCanvas canvas);
+    void init(GameCanvas canvas);
 
     void addPlayer(PlayerDTO playerDTO);
 
