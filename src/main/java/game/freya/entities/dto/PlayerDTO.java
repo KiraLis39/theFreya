@@ -103,7 +103,10 @@ public class PlayerDTO implements iPlayer {
             this.avatar = null;
         }
 
+        this.maxHealth = 100;
         this.health = maxHealth;
+        this.level = 1;
+        this.hurtLevel = HurtLevel.HEALTHFUL;
 
         buffs = new ArrayList<>(9);
         position = new Point2D.Double(128d, 128d);

@@ -50,8 +50,6 @@ class GameFrameTest {
         Assertions.assertNotNull(playerDTO01.getInventory());
         Assertions.assertEquals("KiraLis39", playerDTO01.getNickName());
         Assertions.assertEquals("angelicalis39@mail.ru", playerDTO01.getEmail());
-//        Assertions.assertEquals(
-//                ImageIO.read(new File("./src/test/resources/avatars_test/ava.png")).getData(), player01.getAvatar().getData());
         Assertions.assertEquals(1, playerDTO01.getLevel());
         Assertions.assertEquals(0, playerDTO01.getExperience());
         Assertions.assertEquals(playerDTO01.getMaxHealth(), playerDTO01.getHealth());
