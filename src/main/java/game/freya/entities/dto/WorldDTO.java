@@ -61,6 +61,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         this.passwordHash = passwordHash;
         this.level = level;
         this.dimension = dimension;
+        this.inGameTime = 0;
     }
 
     @Override

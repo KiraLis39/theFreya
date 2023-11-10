@@ -152,6 +152,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 return;
             } else {
                 // todo: выводить список доступных миров
+                log.debug("Not realized");
             }
         } else {
             worldDto = worldService.save(new WorldDTO("Demo world"));

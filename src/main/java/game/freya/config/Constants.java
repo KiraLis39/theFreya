@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
@@ -83,12 +82,12 @@ public final class Constants {
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
     @Getter
-    public static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.75f);
+    private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.75f);
     @Getter
     @Setter
-    public static long gameStartedIn;
+    private static long gameStartedIn;
     @Getter
-    public static String notRealizedString = "Не реализовано ещё";
+    private static String notRealizedString = "Не реализовано ещё";
     @Getter
     private static Cursor defaultCursor;
     // user config:

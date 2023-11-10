@@ -45,7 +45,9 @@ public class UserConfigService {
         } catch (Exception e) {
             log.error("#011 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(e));
             new FOptionPane().buildFOptionPane("Сохранение повреждено:",
-                    "Что-то не так с файлом сохранения. Он еще может быть работоспособным, но требует анализа для выявления проблемы. Будет создан новый файл сохранение, передайте старый, переименованный файл (corrupted_*) разработчику для решения проблемы.", FOptionPane.TYPE.INFO);
+                    "Что-то не так с файлом сохранения. Он еще может быть работоспособным, но требует анализа для "
+                            + "выявления проблемы. Будет создан новый файл сохранение, передайте старый, переименованный файл "
+                            + "(corrupted_*) разработчику для решения проблемы.", FOptionPane.TYPE.INFO);
             Path corrSave = Path.of(url.getParent().toString() + "/corrupted_" + url.getFileName());
             Files.deleteIfExists(corrSave);
             Files.copy(url, corrSave);
@@ -60,8 +62,9 @@ public class UserConfigService {
             if (!Files.exists(Path.of(Constants.getUserSave()).getParent())) {
                 Files.createDirectories(Path.of(Constants.getUserSave()).getParent());
                 mapper.writeValue(new File(Constants.getUserSave()), UserConfig.builder().build());
+            } else {
+                mapper.writeValue(new File(Constants.getUserSave()), Constants.getUserConfig());
             }
-            mapper.writeValue(new File(Constants.getUserSave()), Constants.getUserConfig());
         } catch (InvalidDefinitionException ide) {
             log.error("#d012 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(ide));
         } catch (Exception e) {

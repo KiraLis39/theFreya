@@ -378,7 +378,8 @@ public class GameCanvas extends FoxCanvas {
                 || viewPort.getHeight() - viewPort.getY() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
         ) {
             log.debug("Can`t zoom in: vpWidth = {}, vpHeight = {} but minSize = {}",
-                    viewPort.getWidth() - viewPort.getX(), viewPort.getHeight() - viewPort.getY(), Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS);
+                    viewPort.getWidth() - viewPort.getX(), viewPort.getHeight() - viewPort.getY(),
+                    Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS);
             return;
         }
 

@@ -18,4 +18,13 @@ Freya the game
     <groupId>FoxLib39</groupId>
     <artifactId>fox-gui</artifactId>
     <version>6.2.82</version>
-</dependency>```
+</dependency>
+```
+
+###
+Содание исполняемого jar:
+
+Выполнить команду maven
+```source:jar-no-fork install```
+
+Все необходимые зависимости-плагины есть в pox.xml

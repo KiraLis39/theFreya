@@ -61,7 +61,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
             if (worldTitle != null) {
                 duration = Duration.ofMillis(inGamePlayed + (System.currentTimeMillis() - Constants.getGameStartedIn()));
-                String pass = LocalDateTime.of(0, 1, 1,
+                String pass = LocalDateTime.of(0, 1, (int) (duration.toDaysPart() + 1),
                                 duration.toHoursPart(), duration.toMinutesPart(), 0, 0)
                         .format(Constants.DATE_FORMAT_2);
 

@@ -26,7 +26,7 @@ public class WorldMapper {
                 entity.getLevel(),
                 new Dimension(entity.getDimensionWidth(), entity.getDimensionHeight()),
                 entity.getPasswordHash());
-        result.setInGameTime(entity.getInGameTime() == 0 ? System.currentTimeMillis() : entity.getInGameTime());
+        result.setInGameTime(entity.getInGameTime());
         entity.getPlayers().forEach(player -> result.addPlayer(playerMapper.toDto(player)));
         return result;
     }
@@ -48,7 +48,7 @@ public class WorldMapper {
                 .passwordHash(dto.getPasswordHash())
                 .dimensionWidth(dto.getDimension().width)
                 .dimensionHeight(dto.getDimension().height)
-                .inGameTime(dto.getInGameTime() == 0 ? System.currentTimeMillis() : dto.getInGameTime())
+                .inGameTime(dto.getInGameTime())
                 .level(dto.getLevel())
                 .players(playerMapper.toEntities(dto.getPlayers()))
                 .build();

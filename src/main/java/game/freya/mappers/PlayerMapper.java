@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class PlayerMapper {
+public final class PlayerMapper {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private PlayerMapper() {
