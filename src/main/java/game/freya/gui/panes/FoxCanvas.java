@@ -23,6 +23,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private int frames = 0;
     private long timeStamp = System.currentTimeMillis();
     private Polygon leftGrayMenuPoly;
+    private Polygon headerPoly;
     private Duration duration;
 
     protected FoxCanvas(GraphicsConfiguration gConf, String name) {
@@ -78,9 +79,16 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     }
 
     public void reloadShapes(FoxCanvas canvas) {
+        downShift = getHeight() * 0.14f;
+
         setLeftGrayMenuPoly(new Polygon(
                 new int[]{0, (int) (canvas.getBounds().getWidth() * 0.25D), (int) (canvas.getBounds().getWidth() * 0.2D), 0},
                 new int[]{0, 0, canvas.getHeight(), canvas.getHeight()},
                 4));
+
+        setHeaderPoly(new Polygon(
+                new int[]{0, (int) (canvas.getWidth() * 0.3D), (int) (canvas.getWidth() * 0.29D), (int) (canvas.getWidth() * 0.3D), 0},
+                new int[]{3, 3, (int) (canvas.getHeight() * 0.025D), (int) (canvas.getHeight() * 0.05D), (int) (canvas.getHeight() * 0.05D)},
+                5));
     }
 }

@@ -6,12 +6,12 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.FoxCanvas;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
-import game.freya.net.SocketService;
-import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,13 +36,10 @@ import java.io.InputStream;
 @Component
 @RequiredArgsConstructor
 public class GameFrame implements WindowListener, WindowStateListener {
-    private final WorldService worldService;
     private final UIHandler uIHandler;
-    private final SocketService socketService;
     private Dimension monitorSize;
     private Dimension windowSize;
     private GameController gameController;
-    private WorldDTO worldDto;
     private JFrame frame;
     private FoxLogo logo;
 
@@ -55,19 +52,20 @@ public class GameFrame implements WindowListener, WindowStateListener {
         double newHeight = newWidth / delta;
         windowSize = new Dimension((int) newWidth, (int) newHeight);
 
-        frame = new JFrame(Constants.getGameName().concat(" v.")
-                .concat(Constants.getGameVersion()), Constants.getGraphicsConfiguration());
+        frame = new JFrame(gameController.getGameConfig().getAppName().concat(" v.")
+                .concat(gameController.getGameConfig().getAppVersion()), Constants.getGraphicsConfiguration());
 
         if (Constants.isShowStartLogo()) {
             try {
                 logo = new FoxLogo();
                 InputStream is = Constants.class.getResourceAsStream("/images/logo.png");
                 if (is != null) {
-                    logo.start(Constants.getGameVersion(), FoxLogo.IMAGE_STYLE.FILL, FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
+                    logo.start(gameController.getGameConfig().getAppVersion(),
+                            FoxLogo.IMAGE_STYLE.FILL, FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
                     logo.getEngine().join(10_000);
                 }
-            } catch (IOException ex) {
-                log.error("Logo can not be displayed: {}", ExceptionUtils.getFullExceptionMessage(ex));
+            } catch (IOException e) {
+                throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/defaultAvatar.png");
             } catch (InterruptedException e) {
                 log.error("Logo thread was interrupted: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
@@ -101,7 +99,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
         log.info("Show the MainFrame...");
         frame.setVisible(true);
 
-        gameController.loadScreen(ScreenType.MENU_SCREEN);
+        gameController.loadScreen(ScreenType.MENU_SCREEN, null);
         setInAc();
 
         if (Constants.getUserConfig().isFullscreen()) {
@@ -144,19 +142,9 @@ public class GameFrame implements WindowListener, WindowStateListener {
         frame.revalidate();
     }
 
-    public void loadGameScreen() {
-        if (worldService.count() > 0) {
-            worldDto = worldService.findAll().stream().findAny().orElse(null);
-            if (worldDto == null) {
-                log.error("The World variable is null. Can`t loaded here!");
-                return;
-            } else {
-                // todo: выводить список доступных миров
-                log.debug("Not realized");
-            }
-        } else {
-            worldDto = worldService.save(new WorldDTO("Demo world"));
-            worldDto = worldService.addPlayerToWorld(worldDto, gameController.getCurrentPlayer());
+    public void loadGameScreen(WorldDTO worldDto) {
+        if (worldDto == null) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "worldDto is NULL");
         }
 
         log.info("Try to load World '{}' screen...", worldDto.getTitle());
@@ -191,9 +179,10 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     @Override
     public void windowClosing(WindowEvent e) {
-        if ((int) new FOptionPane().buildFOptionPane(
-                "Подтвердить:", "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE).get() == 0) {
-            gameController.exitTheGame(worldDto);
+        if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
+                "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+        ) {
+            gameController.exitTheGame(null);
         }
     }
 

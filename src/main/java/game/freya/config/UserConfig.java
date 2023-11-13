@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SystemUtils;
 
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -22,7 +23,7 @@ public class UserConfig {
     private UUID userId = UUID.randomUUID();
 
     @Builder.Default
-    private String userName = "User-Hyuser";
+    private String userName = SystemUtils.getUserName();
 
     @Builder.Default
     private String userMail = "demo@test.ru";

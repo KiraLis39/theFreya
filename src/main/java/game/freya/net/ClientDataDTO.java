@@ -1,8 +1,7 @@
 package game.freya.net;
 
-import lombok.Builder;
+import java.util.UUID;
 
-@Builder
-public class ClientDataDTO {
+public record ClientDataDTO(UUID puid) {
 
 }

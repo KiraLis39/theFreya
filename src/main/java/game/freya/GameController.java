@@ -1,13 +1,15 @@
 package game.freya;
 
 import game.freya.config.Constants;
+import game.freya.config.GameConfig;
 import game.freya.entities.Player;
+import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.PlayerDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
 import game.freya.gui.GameFrame;
-import game.freya.items.containers.Backpack;
 import game.freya.mappers.PlayerMapper;
+import game.freya.mappers.WorldMapper;
 import game.freya.net.SocketService;
 import game.freya.services.PlayerService;
 import game.freya.services.UserConfigService;
@@ -15,22 +17,20 @@ import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.sqlite.SQLiteConnection;
 
 import javax.annotation.PostConstruct;
-import javax.imageio.ImageIO;
 import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import java.awt.geom.Point2D;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -41,11 +41,22 @@ public class GameController {
     private final SQLiteConnection conn;
     private final UserConfigService userConfigService;
     private final WorldService worldService;
+    private final WorldMapper worldMapper;
     private final SocketService socketService;
     private final GameFrame gameFrame;
 
     @Getter
+    private final GameConfig gameConfig;
+
+    @Getter
     private PlayerDTO currentPlayer;
+
+    @Getter
+    private HeroDTO currentHero;
+
+    @Getter
+    @Setter
+    private UUID lastPlayedWorldUuid;
 
     @PostConstruct
     public void init() throws IOException {
@@ -58,13 +69,13 @@ public class GameController {
         userConfigService.load(Path.of(Constants.getUserSave()));
 
         log.info("Check the current user in DB created...");
-        checkCurrentUserExists();
+        checkCurrentPlayerExists();
 
         log.info("The game is started!");
         this.gameFrame.showMainMenu(this);
     }
 
-    private void checkCurrentUserExists() {
+    private void checkCurrentPlayerExists() {
         Optional<Player> curPlayer = playerService.findByUid(Constants.getUserConfig().getUserId());
         if (curPlayer.isEmpty()) {
             curPlayer = playerService.findByMail(Constants.getUserConfig().getUserMail());
@@ -75,30 +86,24 @@ public class GameController {
             }
         }
         if (curPlayer.isEmpty()) {
-            log.error("Не был найден в базе данных игрок с uuid {}.", Constants.getUserConfig().getUserId());
-            PlayerDTO aNewbie = PlayerDTO.builder()
-                    .uid(Constants.getUserConfig().getUserId())
-                    .nickName(Constants.getUserConfig().getUserName())
-                    .email(Constants.getUserConfig().getUserMail())
-//                    .position(new Point2D.Double(this.worldDTO.getDimension().getWidth() * Constants.MAP_CELL_DIM / 2,
-//                            this.worldDTO.getDimension().getHeight() * Constants.MAP_CELL_DIM / 2))
-                    .position(new Point2D.Double(128, 128))
-                    .buffs(List.of())
-                    .inventory(new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack")))
-                    .build();
-            try {
-                InputStream ris = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL);
-                if (ris != null) {
-                    aNewbie.setAvatar(ImageIO.read(ris));
-                } else {
-                    throw new IOException();
-                }
-            } catch (IOException e) {
-                log.error("Can`t set the avatar to player {} by url '{}'", aNewbie.getNickName(), Constants.DEFAULT_AVATAR_URL);
-            }
-            curPlayer = Optional.of(playerService.save(playerMapper.toEntity(aNewbie)));
+            log.error("Не был найден в базе данных игрок с uuid {}. Создание нового...", Constants.getUserConfig().getUserId());
+            curPlayer = Optional.of(playerService.createPlayer());
         }
+
         this.currentPlayer = playerMapper.toDto(curPlayer.get());
+        this.lastPlayedWorldUuid = currentPlayer.getLastPlayedWorld();
+
+        // если мир был удалён:
+        if (this.lastPlayedWorldUuid != null && !worldService.existsByUuid(this.lastPlayedWorldUuid)) {
+            this.lastPlayedWorldUuid = null;
+            currentPlayer.setLastPlayedWorld(null);
+        }
+
+        // если сменили никнейм в конфиге:
+        if (!this.currentPlayer.getNickName().equals(Constants.getUserConfig().getUserName())) {
+            playerService.updateNickName(this.currentPlayer.getUid(), Constants.getUserConfig().getUserName());
+            this.currentPlayer = playerMapper.toDto(playerService.findByUid(this.currentPlayer.getUid()).get());
+        }
     }
 
     private void closeConnections() {
@@ -126,27 +131,63 @@ public class GameController {
     private void saveTheGame(WorldDTO world) {
         log.info("Saving the game...");
         userConfigService.save();
+        playerService.updatePlayer(currentPlayer);
         if (world != null) {
             worldService.save(world);
         }
         log.info("The game is saved.");
     }
 
-    public void loadScreen(ScreenType screenType) {
+    public void loadScreen(ScreenType screenType, WorldDTO worldDTO) {
         log.info("Try to load screen {}...", screenType);
         switch (screenType) {
             case MENU_SCREEN -> gameFrame.loadMenuScreen();
-            case GAME_SCREEN -> gameFrame.loadGameScreen();
+            case GAME_SCREEN -> gameFrame.loadGameScreen(worldDTO);
             default -> log.error("Unknown screen failed to load: {}", screenType);
         }
     }
 
-    public void updateCurrentPlayer() {
+    public void updateCurrentPlayer(Duration duration) {
+        currentPlayer.setInGameTime(duration.toMillis());
         playerService.updatePlayer(currentPlayer);
     }
 
-    public void updateWorld(WorldDTO worldDTO, Duration duration) {
-        worldDTO.setInGameTime(duration.toMillis());
+    public void updateWorld(WorldDTO worldDTO) {
         worldService.save(worldDTO);
     }
+
+//    public void resetCurrentPlayer() {
+//        log.info("Удаление старого персонажа, создание нового...");
+//        playerService.delete(currentPlayer);
+//        this.currentPlayer = playerMapper.toDto(playerService.createPlayer());
+//    }
+
+    public WorldDTO getLastPlayedWorld() {
+        if (lastPlayedWorldUuid == null) {
+            return null;
+        } else if (worldService.existsByUuid(lastPlayedWorldUuid) && worldService.findByUid(lastPlayedWorldUuid).isPresent()) {
+            return worldMapper.toDto(worldService.findByUid(lastPlayedWorldUuid).get());
+        }
+        return null;
+    }
+
+    public void createTheWorldIfAbsent() {
+        if (lastPlayedWorldUuid == null || !worldService.existsByUuid(lastPlayedWorldUuid)) {
+            // create a new world:
+            WorldDTO createdWorld = worldService.createDefaultWorld(this.currentPlayer);
+            this.lastPlayedWorldUuid = createdWorld.getUid();
+        }
+    }
+
+    /*
+        if (worldService.count() > 0) {
+            List<WorldDTO> worldDtos = worldService.findAll();
+            // выводить список доступных миров:
+            log.debug("Not realized");
+        } else {
+            // создаём первый, дефолтный мир:
+            worldDto = worldService.save(new WorldDTO("Demo world"));
+            worldDto = worldService.addPlayerToWorld(worldDto, gameController.getCurrentPlayer());
+        }
+     */
 }

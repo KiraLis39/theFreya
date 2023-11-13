@@ -18,6 +18,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
@@ -52,10 +53,6 @@ public class World {
     private int dimensionHeight = 32; // 32 = 1024 cells | 128 = 4096 cells
 
     @Builder.Default
-    @Column(name = "in_game_time", columnDefinition = "bigint default 0")
-    private long inGameTime = 0;
-
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     private HardnessLevel level = HardnessLevel.EASY;
 
@@ -64,6 +61,11 @@ public class World {
     @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     private Set<Player> players = HashSet.newHashSet(3);
 
+    @Builder.Default
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, orphanRemoval = true)
+    private Set<Hero> heroes = HashSet.newHashSet(3);
+
     public World addPlayer(Player p) {
         players.add(p);
         return this;
@@ -71,5 +73,14 @@ public class World {
 
     public Player getPlayer(String nickName) {
         return players.stream().filter(p -> p.getNickName().equals(nickName)).findFirst().orElse(null);
+    }
+
+    public World addHero(Hero hero) {
+        heroes.add(hero);
+        return this;
+    }
+
+    public Hero getHero(String heroName) {
+        return heroes.stream().filter(h -> h.getHeroName().equals(heroName)).findFirst().orElse(null);
     }
 }

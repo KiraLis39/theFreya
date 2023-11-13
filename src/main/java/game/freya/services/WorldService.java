@@ -4,6 +4,7 @@ import game.freya.entities.Player;
 import game.freya.entities.World;
 import game.freya.entities.dto.PlayerDTO;
 import game.freya.entities.dto.WorldDTO;
+import game.freya.enums.HardnessLevel;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.PlayerMapper;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 
 @Slf4j
@@ -44,8 +46,12 @@ public class WorldService {
         if (worldOpt.isEmpty()) {
             throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, worldDTO.getUid());
         }
+
         World w = worldOpt.get();
+
         Player p = playerMapper.toEntity(currentPlayer);
+        p.setLastPlayedWorld(w.getUid());
+
         w = w.addPlayer(p);
         w = worldRepository.save(w);
         return worldMapper.toDto(w);
@@ -53,5 +59,31 @@ public class WorldService {
 
     public Optional<World> findByUid(UUID uid) {
         return worldRepository.findByUid(uid);
+    }
+
+    public boolean existsByUuid(UUID lpw) {
+        if (lpw == null) {
+            return false;
+        }
+        return worldRepository.existsById(lpw);
+    }
+
+    public WorldDTO createDefaultWorld(PlayerDTO player) {
+        World w = World.builder()
+                .uid(UUID.randomUUID())
+                .title("A new world " + new Random().nextInt(100))
+                .level(HardnessLevel.EASY)
+                .dimensionWidth(32)
+                .dimensionHeight(32)
+                .passwordHash(-1)
+                .build();
+
+        w = worldRepository.save(w);
+        player.setLastPlayedWorld(w.getUid());
+
+        w.addPlayer(playerMapper.toEntity(player));
+        w = worldRepository.saveAndFlush(w);
+
+        return worldMapper.toDto(worldRepository.findByUid(w.getUid()).get());
     }
 }

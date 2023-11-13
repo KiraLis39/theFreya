@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @Component
 public class WorldMapper {
     private final PlayerMapper playerMapper;
+    private final HeroMapper heroMapper;
 
     public WorldDTO toDto(World entity) {
         if (entity == null) {
@@ -26,8 +27,8 @@ public class WorldMapper {
                 entity.getLevel(),
                 new Dimension(entity.getDimensionWidth(), entity.getDimensionHeight()),
                 entity.getPasswordHash());
-        result.setInGameTime(entity.getInGameTime());
-        entity.getPlayers().forEach(player -> result.addPlayer(playerMapper.toDto(player)));
+//        entity.getPlayers().forEach(player -> result.addPlayer(playerMapper.toDto(player)));
+        entity.getHeroes().forEach(hero -> result.addHero(heroMapper.toDto(hero)));
         return result;
     }
 
@@ -48,9 +49,9 @@ public class WorldMapper {
                 .passwordHash(dto.getPasswordHash())
                 .dimensionWidth(dto.getDimension().width)
                 .dimensionHeight(dto.getDimension().height)
-                .inGameTime(dto.getInGameTime())
                 .level(dto.getLevel())
-                .players(playerMapper.toEntities(dto.getPlayers()))
+//                .players(playerMapper.toEntities(dto.getPlayers()))
+                .heroes(heroMapper.toEntities(dto.getHeroes()))
                 .build();
     }
 }

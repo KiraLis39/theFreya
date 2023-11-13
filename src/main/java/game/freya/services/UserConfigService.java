@@ -47,7 +47,7 @@ public class UserConfigService {
             new FOptionPane().buildFOptionPane("Сохранение повреждено:",
                     "Что-то не так с файлом сохранения. Он еще может быть работоспособным, но требует анализа для "
                             + "выявления проблемы. Будет создан новый файл сохранение, передайте старый, переименованный файл "
-                            + "(corrupted_*) разработчику для решения проблемы.", FOptionPane.TYPE.INFO);
+                            + "(corrupted_*) разработчику для решения проблемы.", FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
             Path corrSave = Path.of(url.getParent().toString() + "/corrupted_" + url.getFileName());
             Files.deleteIfExists(corrSave);
             Files.copy(url, corrSave);

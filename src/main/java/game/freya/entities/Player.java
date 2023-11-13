@@ -1,20 +1,22 @@
 package game.freya.entities;
 
-import game.freya.enums.HurtLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -40,35 +42,14 @@ public class Player {
     @Column(name = "avatar_url", length = 128)
     private String avatarUrl;
 
-    @Column(name = "inventory_json", length = 1024)
-    private String inventoryJson;
+    @Builder.Default
+    @Column(name = "in_game_time", columnDefinition = "bigint default 0")
+    private long inGameTime = 0;
+
+    @Column(name = "last_played_world")
+    private UUID lastPlayedWorld;
 
     @Builder.Default
-    @Column(name = "level")
-    private short level = 1;
-
-    @Builder.Default
-    @Column(name = "attack")
-    private float currentAttackPower = 1.0f;
-
-    @Builder.Default
-    @Column(name = "experience")
-    private float experience = 0f;
-
-    @Builder.Default
-    @Column(name = "health")
-    private short health = 100;
-
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
-
-    @Column(name = "buffs_json", length = 1024)
-    private String buffsJson;
-
-    @Column(name = "position_x", columnDefinition = "double precision DEFAULT 256")
-    private double positionX;
-
-    @Column(name = "position_y", columnDefinition = "double precision DEFAULT 256")
-    private double positionY;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    private Set<Hero> heroes = HashSet.newHashSet(3);
 }

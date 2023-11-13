@@ -24,7 +24,7 @@ import java.awt.image.BufferedImage;
 @Component
 @RequiredArgsConstructor
 public final class UIHandler {
-    private final int minimapDim = 256;
+    private static final int minimapDim = 256;
     private GameController gameController;
     private BufferedImage minimapImage;
 
@@ -70,9 +70,8 @@ public final class UIHandler {
         g2D.setComposite(cw);
     }
 
-    // todo: доделать карту
     private void updateMiniMap(WorldDTO currentWorld) {
-        Point2D.Double plPos = gameController.getCurrentPlayer().getPosition();
+        Point2D.Double heroPos = gameController.getCurrentHero().getPosition();
 
         Graphics2D g2D = (Graphics2D) minimapImage.getGraphics();
         Constants.RENDER.setRender(g2D, FoxRender.RENDER.OFF);
@@ -82,7 +81,7 @@ public final class UIHandler {
 
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.drawString(Constants.getNotRealizedString(),
-                (int) (minimapDim / 2 - Constants.FFB.getStringBounds(g2D, Constants.getNotRealizedString()).getWidth() / 2),
+                (int) (minimapDim / 2d - Constants.FFB.getStringBounds(g2D, Constants.getNotRealizedString()).getWidth() / 2),
                 minimapDim / 2);
 
         g2D.dispose();

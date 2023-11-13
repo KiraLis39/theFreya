@@ -15,4 +15,16 @@ public class GameConfig {
 
     @Value("${spring.datasource.url}")
     private String connectionUrl;
+
+    @Value("${spring.application.version}")
+    private String appVersion;
+
+    @Value("${spring.application.name}")
+    private String appName;
+
+    @Value("${spring.application.author}")
+    private String appAuthor;
+
+    @Value("${spring.application.company}")
+    private String appCompany;
 }

@@ -1,9 +1,9 @@
 package game.freya.gui.panes;
 
 import fox.FoxRender;
-import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.PlayerDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
@@ -67,8 +67,8 @@ public class GameCanvas extends FoxCanvas {
         addMouseListener(this);
         addKeyListener(this);
 
-        if (this.worldDTO.getPlayers().isEmpty()) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "this.worldDTO.getPlayers()");
+        if (this.worldDTO.getHeroes().isEmpty()) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "this.worldDTO.getHeroes()");
         }
 
         new Thread(this).start();
@@ -214,10 +214,10 @@ public class GameCanvas extends FoxCanvas {
 
     private void drawLocalDebugInfo(Graphics2D g2D) {
         if (Constants.isDebugInfoVisible()) {
-            super.drawDebugInfo(g2D, worldDTO.getTitle(), worldDTO.getInGameTime()); // отладочная информация
+            super.drawDebugInfo(g2D, worldDTO.getTitle(), gameController.getCurrentPlayer().getInGameTime()); // отладочная информация
 
             int leftShift = 320;
-            Point2D.Double playerPos = gameController.getCurrentPlayer().getPosition();
+            Point2D.Double playerPos = gameController.getCurrentHero().getPosition();
             Shape playerShape = new Ellipse2D.Double(
                     (int) playerPos.x - Constants.MAP_CELL_DIM / 2d,
                     (int) playerPos.y - Constants.MAP_CELL_DIM / 2d,
@@ -225,7 +225,7 @@ public class GameCanvas extends FoxCanvas {
             g2D.drawString("Player pos: " + playerShape.getBounds2D().getCenterX() + "x" + playerShape.getBounds2D().getCenterY(),
                     getWidth() - leftShift, getHeight() - 110);
 
-            g2D.drawString("Player speed: " + gameController.getCurrentPlayer().getSpeed(),
+            g2D.drawString("Player speed: " + gameController.getCurrentHero().getSpeed(),
                     getWidth() - leftShift, getHeight() - 90);
 
             g2D.drawString("GameMap WxH: " + worldDTO.getGameMap().getWidth() + "x" + worldDTO.getGameMap().getHeight(),
@@ -312,12 +312,12 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void setGameActive() {
-        Optional<PlayerDTO> currentPlayer = this.worldDTO.getPlayers().values().stream()
-                .filter(p -> p.getNickName().equals(Constants.getUserConfig().getUserName())).findFirst();
-        if (currentPlayer.isEmpty()) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, currentPlayer);
+        Optional<HeroDTO> currentHero = this.worldDTO.getHeroes().values().stream()
+                .filter(h -> h.getHeroName().equals(Constants.getUserConfig().getUserName())).findFirst();
+        if (currentHero.isEmpty()) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, currentHero);
         }
-        currentPlayer.get().setOnline(true);
+        gameController.getCurrentPlayer().setOnline(true);
         this.isGameActive = true;
         Constants.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
@@ -339,7 +339,7 @@ public class GameCanvas extends FoxCanvas {
 
     private void drawEscMenu(Graphics2D g2D) {
         // buttons text:
-        g2D.setFont(Constants.MENU_BUTTONS_FONT);
+        g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
         g2D.setColor(Color.BLACK);
         g2D.drawString(backToGameButtonText, backToGameButtonRect.x - 1, backToGameButtonRect.y + 17);
         g2D.setColor(backToGameButtonOver ? Color.GREEN : Color.WHITE);
@@ -370,7 +370,6 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void zoomIn() {
-        // todo: при приближении - камера должна оставаться на игроке. Доработать!
         log.debug("Zoom in...");
 
         // если окно меньше установленного лимита:
@@ -435,7 +434,7 @@ public class GameCanvas extends FoxCanvas {
 
     public void moveViewToPlayer(double x, double y) {
         if (this.worldDTO.getGameMap() != null && this.viewPort != null) {
-            Point2D.Double p = gameController.getCurrentPlayer().getPosition();
+            Point2D.Double p = gameController.getCurrentHero().getPosition();
             Rectangle viewRect = this.viewPort.getBounds();
             this.viewPort.setRect(
                     p.x - (viewRect.getWidth() - viewRect.getX()) / 2D + x,
@@ -578,22 +577,19 @@ public class GameCanvas extends FoxCanvas {
             Constants.setPaused(false);
         }
         if (optionsButtonOver) {
-            // todo: доработать это говно
 //            FoxTip tip = new FoxTip(Constants.RENDER, (JComponent) getParent(), FoxTip.TYPE.INFO, null, null, null);
 //            tip.createFoxTip(FoxTip.TYPE.INFO, null, "1", "2", "3", (JComponent) getParent());
 //            tip.showTip();
-            new FOptionPane().buildFOptionPane("Не реализовано:",
-                    "Приносим свои извинения! Данный функционал ещё находится в разработке.", FOptionPane.TYPE.INFO);
+            Constants.showNFP();
         }
         if (saveButtonOver) {
-            new FOptionPane().buildFOptionPane("Не реализовано:",
-                    "Приносим свои извинения! Данный функционал ещё находится в разработке.", FOptionPane.TYPE.INFO);
+            Constants.showNFP();
         }
         if (exitButtonOver) {
             stop();
-            gameController.updateWorld(worldDTO, getDuration());
-            gameController.updateCurrentPlayer();
-            gameController.loadScreen(ScreenType.MENU_SCREEN);
+            gameController.updateWorld(worldDTO);
+            gameController.updateCurrentPlayer(getDuration());
+            gameController.loadScreen(ScreenType.MENU_SCREEN, null);
         }
     }
 
@@ -736,6 +732,10 @@ public class GameCanvas extends FoxCanvas {
 
     public PlayerDTO getCurrentPlayer() {
         return gameController.getCurrentPlayer();
+    }
+
+    public HeroDTO getCurrentHero() {
+        return gameController.getCurrentHero();
     }
 
     public WorldDTO getCurrentWorld() {
