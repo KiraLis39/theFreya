@@ -164,15 +164,12 @@ public class HeroDTO implements iHero {
     public BufferedImage getAvatar() {
         try (InputStream avatarResource = getClass().getResourceAsStream("/images/defaultAvatar.png")) {
             if (avatarResource != null) {
-                try {
-                    return ImageIO.read(avatarResource);
-                } catch (IOException ioe) {
-                    log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(ioe));
-                }
+                return ImageIO.read(avatarResource);
             }
-            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+            throw new IOException("/images/defaultAvatar.png");
         } catch (IOException e) {
-            throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/defaultAvatar.png");
+            log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
         }
     }
 

@@ -2,8 +2,10 @@ package game.freya.gui.panes;
 
 import fox.FoxRender;
 import fox.components.FOptionPane;
+import fox.components.tools.VerticalFlowLayout;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.config.UserConfig;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -11,14 +13,24 @@ import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.io.File;
@@ -27,6 +39,7 @@ import java.io.File;
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, Runnable
 public class MenuCanvas extends FoxCanvas {
     private final transient GameController gameController;
+    private final transient JFrame parentFrame;
     private boolean isMenuActive;
     private String downInfoString1, downInfoString2;
     private String startGameButtonText, startNewGameButtonText, coopPlayButtonText, optionsButtonText, exitButtonText, backButtonText,
@@ -39,11 +52,21 @@ public class MenuCanvas extends FoxCanvas {
     private transient BufferedImage pAvatar;
     private boolean initialized = false;
     private boolean isStartGameMenuSetVisible = false, isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false;
+    private boolean isAudioSettingsMenuVisible = false, isVideoSettingsMenuVisible = false,
+            isHotkeysSettingsMenuVisible = false, isGameplaySettingsMenuVisible = false;
 
-    public MenuCanvas(GameController gameController) {
+    private Area area;
+    private JPanel hotkeysPane;
+    private double parentHeightMemory = 0;
+    private byte drawErrorCount = 0;
+
+
+    public MenuCanvas(JFrame parentFrame, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "MenuCanvas");
         this.gameController = gameController;
+        this.parentFrame = parentFrame;
 
+        setSize(parentFrame.getLayeredPane().getSize());
         setBackground(Color.DARK_GRAY.darker());
         setFocusable(false);
 
@@ -70,6 +93,13 @@ public class MenuCanvas extends FoxCanvas {
                     init();
                 }
 
+                // если изменился размер фрейма:
+                if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
+                    log.info("Resizing by parent frame...");
+                    onResize();
+                    parentHeightMemory = parentFrame.getBounds().getHeight();
+                }
+
                 if (getBufferStrategy() == null) {
                     createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
                 }
@@ -86,12 +116,20 @@ public class MenuCanvas extends FoxCanvas {
                     if (Constants.isFpsInfoVisible()) {
                         super.drawFps(g2D);
                     }
+
                     g2D.dispose();
                 } while (getBufferStrategy().contentsRestored() || getBufferStrategy().contentsLost());
                 getBufferStrategy().show();
             } catch (Exception e) {
                 log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-                throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
+                drawErrorCount++;
+                if (drawErrorCount > 100) {
+                    new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
+                            "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
+                            FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+                    gameController.exitTheGame(null);
+                    throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
+                }
             }
 
             if (Constants.isFrameLimited() && Constants.getDiscreteDelay() > 1) {
@@ -203,6 +241,48 @@ public class MenuCanvas extends FoxCanvas {
                 ? backButtonText : exitButtonText, exitButtonRect.x, exitButtonRect.y + 18);
     }
 
+    private void drawSettingsPart(Graphics2D g2D, int partIndex) {
+        Font font = g2D.getFont();
+
+        if (area == null || area.getBounds().getHeight() != getBounds().getHeight()) {
+            area = new Area(getBounds());
+            area.subtract(new Area(super.getLeftGrayMenuPoly()));
+        }
+
+//        g2D.setColor(Color.RED);
+//        g2D.setStroke(new BasicStroke(2f));
+
+        switch (partIndex) {
+            case 0 -> {
+                // audio:
+                hotkeysPane.setVisible(false);
+            }
+            case 1 -> {
+                // video:
+                hotkeysPane.setVisible(false);
+            }
+            case 2 -> {
+                // hotkeys:
+                hotkeysPane.setVisible(true);
+            }
+            case 3 -> {
+                // gameplay:
+                hotkeysPane.setVisible(false);
+            }
+            default -> {
+                hotkeysPane.setVisible(false);
+            }
+        }
+
+        if (Constants.isDebugInfoVisible()) {
+            g2D.setColor(Color.RED);
+            g2D.draw(area);
+        }
+
+        // restore font:
+        g2D.setFont(font);
+    }
+
     private void drawHeader(Graphics2D g2D, String headerTitle) {
         g2D.setColor(Color.DARK_GRAY.darker());
         g2D.fill(getHeaderPoly());
@@ -252,7 +332,55 @@ public class MenuCanvas extends FoxCanvas {
 
         recalculateMenuRectangles();
 
+        recalculateSettingsPanes();
+
         this.initialized = true;
+    }
+
+    private void recalculateSettingsPanes() {
+        try {
+            parentFrame.getLayeredPane().remove(hotkeysPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма панель, которой там нет.");
+        }
+        hotkeysPane = new JPanel() {
+            private BufferedImage shap;
+
+            {
+                setVisible(false);
+                setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 2));
+                setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 0);
+                setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 6, 6));
+
+                for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
+                    add(new JLabel(key.getDescription()) {{
+                        setSize(120, 30);
+                        setLocation(9, 10);
+                        setForeground(Color.WHITE);
+                    }});
+                    add(new JTextField(key.getMask() != 0 ? (KeyEvent.getModifiersExText(key.getMask()) + "+")
+                            : KeyEvent.getKeyText(key.getEvent()), 10) {{
+                        setHorizontalAlignment(CENTER);
+                        setFocusable(false);
+                        setEditable(false);
+                        addMouseListener(MenuCanvas.this);
+                    }});
+                    add(new JSeparator(SwingConstants.HORIZONTAL));
+                }
+            }
+
+            @Override
+            public void paintComponent(Graphics g) {
+                if (shap == null) {
+                    shap = backMenuImage.getSnapshot().getSubimage(
+                            (int) (backMenuImage.getWidth() * 0.335d), 0,
+                            (int) (backMenuImage.getWidth() - backMenuImage.getWidth() * 0.3345d), backMenuImage.getHeight());
+                }
+                g.drawImage(shap, 0, 0, getWidth(), getHeight(), this);
+            }
+        };
+        parentFrame.getLayeredPane().add(hotkeysPane, Integer.valueOf(1));
+        parentFrame.getLayeredPane().moveToFront(hotkeysPane);
     }
 
     private void recreateBackImage() {
@@ -288,6 +416,21 @@ public class MenuCanvas extends FoxCanvas {
             g2D.drawString(gameController.getCurrentPlayer().getNickName(),
                     (int) (getWidth() - 66 - Constants.FFB.getStringBounds(g2D, gameController.getCurrentPlayer().getNickName()).getWidth() / 2),
                     152);
+        }
+
+        if (isAudioSettingsMenuVisible) {
+            drawSettingsPart(g2D, 0);
+        } else if (isVideoSettingsMenuVisible) {
+            drawSettingsPart(g2D, 1);
+        } else if (isHotkeysSettingsMenuVisible) {
+            drawSettingsPart(g2D, 2);
+        } else if (isGameplaySettingsMenuVisible) {
+            drawSettingsPart(g2D, 3);
+        }
+
+        if (Constants.isDebugInfoVisible()) {
+            g2D.setColor(Color.CYAN);
+            g2D.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
         }
 
         g2D.dispose();
@@ -333,7 +476,14 @@ public class MenuCanvas extends FoxCanvas {
                     gameController.loadScreen(ScreenType.GAME_SCREEN, gameController.getLastPlayedWorld());
                 }
             } else if (isOptionsMenuSetVisible) {
-                Constants.showNFP();
+                if (!isAudioSettingsMenuVisible) {
+                    isAudioSettingsMenuVisible = true;
+                    isVideoSettingsMenuVisible = false;
+                    isHotkeysSettingsMenuVisible = false;
+                    isGameplaySettingsMenuVisible = false;
+                } else {
+                    Constants.showNFP();
+                }
             } else if (isCreatingNewHeroSetVisible) {
                 Constants.showNFP();
             } else {
@@ -360,7 +510,14 @@ public class MenuCanvas extends FoxCanvas {
                 }
             } else if (isOptionsMenuSetVisible) {
                 // нажато Настройки графики:
-                Constants.showNFP();
+                if (!isVideoSettingsMenuVisible) {
+                    isVideoSettingsMenuVisible = true;
+                    isAudioSettingsMenuVisible = false;
+                    isHotkeysSettingsMenuVisible = false;
+                    isGameplaySettingsMenuVisible = false;
+                } else {
+                    Constants.showNFP();
+                }
             } else if (isCreatingNewHeroSetVisible) {
                 // нажато Сбросить героя:
                 Constants.showNFP();
@@ -372,10 +529,18 @@ public class MenuCanvas extends FoxCanvas {
         if (thirdButtonOver) {
             if (!isOptionsMenuSetVisible && !isStartGameMenuSetVisible && !isCreatingNewHeroSetVisible) {
                 isOptionsMenuSetVisible = true;
+                isAudioSettingsMenuVisible = true;
             } else if (isCreatingNewHeroSetVisible) {
                 Constants.showNFP();
-            } else {
-                Constants.showNFP();
+            } else if (isOptionsMenuSetVisible) {
+                if (!isHotkeysSettingsMenuVisible) {
+                    isHotkeysSettingsMenuVisible = true;
+                    isVideoSettingsMenuVisible = false;
+                    isAudioSettingsMenuVisible = false;
+                    isGameplaySettingsMenuVisible = false;
+                } else {
+                    Constants.showNFP();
+                }
             }
             // FoxTip плохо подходит для Rectangle т.к. нет возможности получить абсолютные координаты:
             // new Color(102, 242, 223), new Color(157, 159, 201)
@@ -385,12 +550,27 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         if (fourthButtonOver) {
-            Constants.showNFP();
+            if (isOptionsMenuSetVisible) {
+                if (!isGameplaySettingsMenuVisible) {
+                    isGameplaySettingsMenuVisible = true;
+                    isHotkeysSettingsMenuVisible = false;
+                    isVideoSettingsMenuVisible = false;
+                    isAudioSettingsMenuVisible = false;
+                } else {
+                    Constants.showNFP();
+                }
+            } else {
+                Constants.showNFP();
+            }
         }
 
         if (exitButtonOver) {
             if (isOptionsMenuSetVisible || isStartGameMenuSetVisible) {
                 isOptionsMenuSetVisible = false;
+                isAudioSettingsMenuVisible = false;
+                isVideoSettingsMenuVisible = false;
+                isHotkeysSettingsMenuVisible = false;
+                isGameplaySettingsMenuVisible = false;
                 isStartGameMenuSetVisible = false;
             } else if (isCreatingNewHeroSetVisible) {
                 isCreatingNewHeroSetVisible = false;
@@ -400,6 +580,9 @@ public class MenuCanvas extends FoxCanvas {
             ) {
                 gameController.exitTheGame(null);
             }
+
+            // в любом случае, любая панель тут скрывается:
+            hotkeysPane.setVisible(false);
         }
     }
 
@@ -439,8 +622,29 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void componentResized(ComponentEvent e) {
+        onResize();
+    }
+
+    private void onResize() {
+        log.debug("Resizing of menu canvas...");
+        parentFrame.revalidate();
+
+        if (Constants.getUserConfig().isFullscreen()) {
+            setSize(parentFrame.getSize());
+        } else {
+            setSize(parentFrame.getRootPane().getSize());
+        }
+        setLocation(0, 0);
+        revalidate();
+
         reloadShapes(this);
         recalculateMenuRectangles();
+
+        boolean rectIsVisible = hotkeysPane.isVisible();
+        recalculateSettingsPanes();
+        hotkeysPane.setVisible(rectIsVisible);
+        isHotkeysSettingsMenuVisible = rectIsVisible;
+        log.info("*** Frame in fullscreen mode: {}, Settings pane visible: {}", Constants.getUserConfig().isFullscreen(), hotkeysPane.isVisible());
     }
 
     @Override

@@ -73,16 +73,25 @@ public final class UIHandler {
     private void updateMiniMap(WorldDTO currentWorld) {
         Point2D.Double heroPos = gameController.getCurrentHero().getPosition();
 
+        BufferedImage drawed = currentWorld.getGameMap().getSubimage(
+                (int) (heroPos.x - minimapDim / 2d),
+                (int) (heroPos.y - minimapDim / 2d),
+                (int) (heroPos.x + minimapDim / 2d),
+                (int) (heroPos.y + minimapDim / 2d)
+        );
+
         Graphics2D g2D = (Graphics2D) minimapImage.getGraphics();
         Constants.RENDER.setRender(g2D, FoxRender.RENDER.OFF);
 
         g2D.setColor(Color.WHITE);
         g2D.drawRect(16, 16, 224, 224);
 
-        g2D.setFont(Constants.DEBUG_FONT);
-        g2D.drawString(Constants.getNotRealizedString(),
-                (int) (minimapDim / 2d - Constants.FFB.getStringBounds(g2D, Constants.getNotRealizedString()).getWidth() / 2),
-                minimapDim / 2);
+        g2D.drawImage(drawed, 0, 0, 225, 225, null);
+
+//        g2D.setFont(Constants.DEBUG_FONT);
+//        g2D.drawString(Constants.getNotRealizedString(),
+//                (int) (minimapDim / 2d - Constants.FFB.getStringBounds(g2D, Constants.getNotRealizedString()).getWidth() / 2),
+//                minimapDim / 2);
 
         g2D.dispose();
     }

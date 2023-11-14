@@ -38,6 +38,11 @@ public class UserConfigService {
                 save();
             }
             Constants.setUserConfig(mapper.readValue(Files.readString(url), UserConfig.class));
+            if (Constants.getUserConfig() == null) {
+                Files.deleteIfExists(url);
+                save();
+                Constants.setUserConfig(mapper.readValue(Files.readString(url), UserConfig.class));
+            }
         } catch (MismatchedInputException mie) {
             log.error("#010 Is the save file empty? Ex.: {}", ExceptionUtils.getFullExceptionMessage(mie));
             save();
@@ -61,6 +66,8 @@ public class UserConfigService {
         try {
             if (!Files.exists(Path.of(Constants.getUserSave()).getParent())) {
                 Files.createDirectories(Path.of(Constants.getUserSave()).getParent());
+                mapper.writeValue(new File(Constants.getUserSave()), UserConfig.builder().build());
+            } else if (!Files.exists(Path.of(Constants.getUserSave()))) {
                 mapper.writeValue(new File(Constants.getUserSave()), UserConfig.builder().build());
             } else {
                 mapper.writeValue(new File(Constants.getUserSave()), Constants.getUserConfig());

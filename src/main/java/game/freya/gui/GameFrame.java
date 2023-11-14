@@ -83,7 +83,9 @@ public class GameFrame implements WindowListener, WindowStateListener {
         frame.getRootPane().setFocusable(true);
 
         frame.setPreferredSize(windowSize);
+        frame.setMaximumSize(windowSize);
         frame.setResizable(false);
+
         frame.pack();
         frame.setLocationRelativeTo(null);
 
@@ -96,40 +98,44 @@ public class GameFrame implements WindowListener, WindowStateListener {
             }
         }
 
+        frame.setLayout(null);
+
         log.info("Show the MainFrame...");
         frame.setVisible(true);
 
-        gameController.loadScreen(ScreenType.MENU_SCREEN, null);
         setInAc();
 
         if (Constants.getUserConfig().isFullscreen()) {
             log.info("Switch to fullscreen by UserConfig...");
             Constants.MON.switchFullscreen(frame);
         }
+
+        gameController.loadScreen(ScreenType.MENU_SCREEN, null);
     }
 
     private void setInAc() {
         final String frameName = "mainFrame";
 
         Constants.INPUT_ACTION.add(frameName, frame.getRootPane());
-        Constants.INPUT_ACTION.set(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT, frameName, "switchFullscreen",
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFullscreen",
                 Constants.getUserConfig().getKeyFullscreen(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        log.info("Try to switch fullscreen mode...");
+                        log.info("Try to switch the fullscreen mode...");
                         Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
                         Constants.MON.switchFullscreen(Constants.getUserConfig().isFullscreen() ? frame : null);
                         if (!Constants.getUserConfig().isFullscreen()) {
                             frame.setPreferredSize(windowSize);
+                            frame.setSize(windowSize);
                         }
                     }
                 });
 
-        Constants.INPUT_ACTION.set(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT, frameName, "switchPause",
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchPause",
                 Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        log.debug("Try to switch pause mode...");
+                        log.debug("Try to switch the pause mode...");
                         Constants.setPaused(!Constants.isPaused());
                     }
                 });
@@ -138,7 +144,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
     public void loadMenuScreen() {
         log.info("Try to load Menu screen...");
         clearFrame();
-        frame.add(new MenuCanvas(gameController));
+        frame.getLayeredPane().add(new MenuCanvas(frame, gameController), Integer.valueOf(0));
         frame.revalidate();
     }
 
