@@ -21,6 +21,7 @@ import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLayeredPane;
 import javax.swing.JRootPane;
 import javax.swing.WindowConstants;
 import java.awt.Dimension;
@@ -144,6 +145,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
     public void loadMenuScreen() {
         log.info("Try to load Menu screen...");
         clearFrame();
+        frame.getLayeredPane().isOptimizedDrawingEnabled();
         frame.getLayeredPane().add(new MenuCanvas(frame, gameController), Integer.valueOf(0));
         frame.revalidate();
     }

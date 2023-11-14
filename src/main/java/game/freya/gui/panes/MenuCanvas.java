@@ -380,7 +380,8 @@ public class MenuCanvas extends FoxCanvas {
             }
         };
         parentFrame.getLayeredPane().add(hotkeysPane, Integer.valueOf(1));
-        parentFrame.getLayeredPane().moveToFront(hotkeysPane);
+        parentFrame.getLayeredPane().setPosition(hotkeysPane, 2);
+        parentFrame.getLayeredPane().setPosition(parentFrame, -1);
     }
 
     private void recreateBackImage() {
@@ -626,25 +627,33 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     private void onResize() {
-        log.debug("Resizing of menu canvas...");
-        parentFrame.revalidate();
+        new Thread(() -> {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                // ...
+            }
+            log.debug("Resizing of menu canvas...");
+            parentFrame.revalidate();
 
-        if (Constants.getUserConfig().isFullscreen()) {
-            setSize(parentFrame.getSize());
-        } else {
-            setSize(parentFrame.getRootPane().getSize());
-        }
-        setLocation(0, 0);
-        revalidate();
+            if (Constants.getUserConfig().isFullscreen()) {
+                setSize(parentFrame.getSize());
+            } else {
+                setSize(parentFrame.getRootPane().getSize());
+            }
+            setLocation(0, 0);
+            revalidate();
 
-        reloadShapes(this);
-        recalculateMenuRectangles();
+            reloadShapes(this);
+            recalculateMenuRectangles();
 
-        boolean rectIsVisible = hotkeysPane.isVisible();
-        recalculateSettingsPanes();
-        hotkeysPane.setVisible(rectIsVisible);
-        isHotkeysSettingsMenuVisible = rectIsVisible;
-        log.info("*** Frame in fullscreen mode: {}, Settings pane visible: {}", Constants.getUserConfig().isFullscreen(), hotkeysPane.isVisible());
+            boolean rectIsVisible = hotkeysPane.isVisible();
+            recalculateSettingsPanes();
+            hotkeysPane.setVisible(rectIsVisible);
+            isHotkeysSettingsMenuVisible = rectIsVisible;
+            log.info("*** Frame in fullscreen mode: {}, Settings pane visible: {}, Optimode: {}",
+                    Constants.getUserConfig().isFullscreen(), hotkeysPane.isVisible(), parentFrame.getLayeredPane().isOptimizedDrawingEnabled());
+        }).start();
     }
 
     @Override
