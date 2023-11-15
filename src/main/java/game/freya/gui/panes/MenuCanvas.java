@@ -16,6 +16,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
 import javax.swing.JTextField;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -330,15 +331,31 @@ public class MenuCanvas extends FoxCanvas {
 
     private void recalculateSettingsPanes() {
         try {
+            parentFrame.getLayeredPane().remove(audiosPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма audiosPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(videosPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма videosPane, которой там нет.");
+        }
+        try {
             parentFrame.getLayeredPane().remove(hotkeysPane);
         } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма панель, которой там нет.");
+            log.debug("Не удастся удалить из фрейма hotkeysPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(gameplayPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма gameplayPane, которой там нет.");
         }
 
         audiosPane = new JPanel() {
             private BufferedImage shap;
 
             {
+                setName("Audio settings pane");
                 setVisible(false);
                 setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 4));
                 setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 2);
@@ -347,16 +364,45 @@ public class MenuCanvas extends FoxCanvas {
 
                 add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
                     setOpaque(false);
-                    add(new JLabel("Some audio`s option") {{
+                    add(new JLabel("Звук") {{
                         setForeground(Color.WHITE);
                     }});
-                    add(new JTextField("some_value", 12) {{
-                        setHorizontalAlignment(CENTER);
+                    add(new JSlider(0, 100, Constants.getUserConfig().getSoundVolumePercent()) {{
                         setFocusable(false);
-                        setEditable(false);
                         setBackground(Color.DARK_GRAY);
                         setForeground(Color.WHITE);
-                        setFont(Constants.DEBUG_FONT);
+                        setFont(Constants.GAME_FONT_01);
+
+                        setPaintTicks(true);
+                        setMinorTickSpacing(5);
+                        setMajorTickSpacing(25);
+                        setSnapToTicks(true);
+
+                        setPaintLabels(true);
+                        setPaintTrack(true);
+
+//                        addMouseListener(MenuCanvas.this);
+                    }});
+                }});
+
+                add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
+                    setOpaque(false);
+                    add(new JLabel("Музыка") {{
+                        setForeground(Color.WHITE);
+                    }});
+                    add(new JSlider(0, 100, Constants.getUserConfig().getMusicVolumePercent()) {{
+                        setFocusable(false);
+                        setBackground(Color.DARK_GRAY);
+                        setForeground(Color.WHITE);
+                        setFont(Constants.GAME_FONT_01);
+
+                        setPaintTicks(true);
+                        setMinorTickSpacing(5);
+                        setMajorTickSpacing(25);
+                        setSnapToTicks(true);
+
+                        setPaintLabels(true);
+                        setPaintTrack(true);
 
 //                        addMouseListener(MenuCanvas.this);
                     }});
@@ -377,6 +423,7 @@ public class MenuCanvas extends FoxCanvas {
             private BufferedImage shap;
 
             {
+                setName("Video settings pane");
                 setVisible(false);
                 setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 4));
                 setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 2);
@@ -415,6 +462,7 @@ public class MenuCanvas extends FoxCanvas {
             private BufferedImage shap;
 
             {
+                setName("Hotkeys settings pane");
                 setVisible(false);
                 setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 4));
                 setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 2);
@@ -456,6 +504,7 @@ public class MenuCanvas extends FoxCanvas {
             private BufferedImage shap;
 
             {
+                setName("Gameplay settings pane");
                 setVisible(false);
                 setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 4));
                 setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 2);
@@ -682,8 +731,7 @@ public class MenuCanvas extends FoxCanvas {
                 isCreatingNewHeroSetVisible = false;
                 isStartGameMenuSetVisible = true;
             } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
-                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-            ) {
+                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
                 gameController.exitTheGame(null);
             }
 
@@ -692,6 +740,9 @@ public class MenuCanvas extends FoxCanvas {
             videosPane.setVisible(false);
             hotkeysPane.setVisible(false);
             gameplayPane.setVisible(false);
+
+            log.info("Аудио видна: {}, Видео видна: {}, Управление: {}, Геймплей: {}",
+                    audiosPane.isVisible(), videosPane.isVisible(), hotkeysPane.isVisible(), gameplayPane.isVisible());
         }
     }
 
