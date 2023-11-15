@@ -145,60 +145,11 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     private void drawPlayers(Graphics2D g2D, Rectangle visibleRect) {
         HeroDTO currentHeroDto = canvas.getCurrentHero();
-        Point2D.Double plPos = currentHeroDto.getPosition();
 
         heroes.values().forEach(hero -> {
             if (hero.getHeroName().equals(currentHeroDto.getHeroName())) {
                 if (!Constants.isPaused()) {
-                    // check player moving:
-                    boolean isViewMovableX = plPos.x > canvas.getWidth() / 2d
-                            && plPos.x < gameMap.getWidth() - canvas.getWidth() / 2d;
-                    boolean isViewMovableY = plPos.y > canvas.getHeight() / 2d
-                            && plPos.y < gameMap.getHeight() - canvas.getHeight() / 2d;
-
-                    if (canvas.isPlayerMovingUp()) {
-                        for (int i = 0; i < currentHeroDto.getSpeed(); i++) {
-                            if (!isPlayerCanGo(visibleRect, MovingVector.UP)) {
-                                break;
-                            }
-                            currentHeroDto.moveUp();
-                        }
-                        if (isViewMovableY) {
-                            canvas.dragDown((double) currentHeroDto.getSpeed());
-                        }
-                    } else if (canvas.isPlayerMovingDown()) {
-                        for (int i = 0; i < currentHeroDto.getSpeed(); i++) {
-                            if (!isPlayerCanGo(visibleRect, MovingVector.DOWN)) {
-                                break;
-                            }
-                            currentHeroDto.moveDown();
-                        }
-                        if (isViewMovableY) {
-                            canvas.dragUp((double) currentHeroDto.getSpeed());
-                        }
-                    }
-
-                    if (canvas.isPlayerMovingRight()) {
-                        for (int i = 0; i < currentHeroDto.getSpeed(); i++) {
-                            if (!isPlayerCanGo(visibleRect, MovingVector.RIGHT)) {
-                                break;
-                            }
-                            currentHeroDto.moveRight();
-                        }
-                        if (isViewMovableX) {
-                            canvas.dragLeft((double) currentHeroDto.getSpeed());
-                        }
-                    } else if (canvas.isPlayerMovingLeft()) {
-                        for (int i = 0; i < currentHeroDto.getSpeed(); i++) {
-                            if (!isPlayerCanGo(visibleRect, MovingVector.LEFT)) {
-                                break;
-                            }
-                            currentHeroDto.moveLeft();
-                        }
-                        if (isViewMovableX) {
-                            canvas.dragRight((double) currentHeroDto.getSpeed());
-                        }
-                    }
+                    checkPlayerMoving(currentHeroDto, visibleRect);
                 }
 
                 currentHeroDto.draw(g2D);
@@ -206,6 +157,59 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
                 hero.draw(g2D);
             }
         });
+    }
+
+    private void checkPlayerMoving(HeroDTO currentHeroDto, Rectangle visibleRect) {
+        Point2D.Double plPos = currentHeroDto.getPosition();
+
+        boolean isViewMovableX = plPos.x > canvas.getWidth() / 2d
+                && plPos.x < gameMap.getWidth() - canvas.getWidth() / 2d;
+        boolean isViewMovableY = plPos.y > canvas.getHeight() / 2d
+                && plPos.y < gameMap.getHeight() - canvas.getHeight() / 2d;
+
+        if (canvas.isPlayerMovingUp()) {
+            for (int i = 0; i < currentHeroDto.getSpeed(); i++) {
+                if (!isPlayerCanGo(visibleRect, MovingVector.UP)) {
+                    break;
+                }
+                currentHeroDto.moveUp();
+            }
+            if (isViewMovableY) {
+                canvas.dragDown((double) currentHeroDto.getSpeed());
+            }
+        } else if (canvas.isPlayerMovingDown()) {
+            for (int i = 0; i < currentHeroDto.getSpeed(); i++) {
+                if (!isPlayerCanGo(visibleRect, MovingVector.DOWN)) {
+                    break;
+                }
+                currentHeroDto.moveDown();
+            }
+            if (isViewMovableY) {
+                canvas.dragUp((double) currentHeroDto.getSpeed());
+            }
+        }
+
+        if (canvas.isPlayerMovingRight()) {
+            for (int i = 0; i < currentHeroDto.getSpeed(); i++) {
+                if (!isPlayerCanGo(visibleRect, MovingVector.RIGHT)) {
+                    break;
+                }
+                currentHeroDto.moveRight();
+            }
+            if (isViewMovableX) {
+                canvas.dragLeft((double) currentHeroDto.getSpeed());
+            }
+        } else if (canvas.isPlayerMovingLeft()) {
+            for (int i = 0; i < currentHeroDto.getSpeed(); i++) {
+                if (!isPlayerCanGo(visibleRect, MovingVector.LEFT)) {
+                    break;
+                }
+                currentHeroDto.moveLeft();
+            }
+            if (isViewMovableX) {
+                canvas.dragRight((double) currentHeroDto.getSpeed());
+            }
+        }
     }
 
     private boolean isPlayerCanGo(Rectangle visibleRect, MovingVector vector) {

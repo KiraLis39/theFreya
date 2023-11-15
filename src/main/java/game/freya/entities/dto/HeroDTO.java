@@ -116,9 +116,9 @@ public class HeroDTO implements iHero {
     @Override
     public void draw(Graphics2D g2D) {
         Shape playerShape = new Ellipse2D.Double(
-                (int) getPosition().x - Constants.MAP_CELL_DIM / 2d,
-                (int) getPosition().y - Constants.MAP_CELL_DIM / 2d,
-                Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
+                (int) getPosition().x - Constants.MAP_CELL_DIM / 4d,
+                (int) getPosition().y - Constants.MAP_CELL_DIM / 4d,
+                Constants.MAP_CELL_DIM / 2d, Constants.MAP_CELL_DIM / 2d);
 
         // draw shadow:
         g2D.setColor(new Color(0, 0, 0, 36));

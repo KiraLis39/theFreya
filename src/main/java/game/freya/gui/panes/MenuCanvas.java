@@ -2,31 +2,29 @@ package game.freya.gui.panes;
 
 import fox.FoxRender;
 import fox.components.FOptionPane;
-import fox.components.tools.VerticalFlowLayout;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.config.UserConfig;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
+import game.freya.gui.panes.sub.AudioSettingsPane;
+import game.freya.gui.panes.sub.GameplaySettingsPane;
+import game.freya.gui.panes.sub.HeroCreatingPane;
+import game.freya.gui.panes.sub.HotkeysSettingsPane;
+import game.freya.gui.panes.sub.VideoSettingsPane;
+import game.freya.gui.panes.sub.WorldCreatingPane;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.JTextField;
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.ComponentEvent;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -53,12 +51,13 @@ public class MenuCanvas extends FoxCanvas {
     private transient VolatileImage backMenuImage;
     private transient BufferedImage pAvatar;
     private boolean initialized = false;
-    private boolean isStartGameMenuSetVisible = false, isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false;
+    private boolean isStartGameMenuSetVisible = false, isOptionsMenuSetVisible = false,
+            isCreatingNewHeroSetVisible = false, isCreatingNewWorldSetVisible = false;
     private boolean isAudioSettingsMenuVisible = false, isVideoSettingsMenuVisible = false,
             isHotkeysSettingsMenuVisible = false, isGameplaySettingsMenuVisible = false;
 
     private Area area;
-    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane;
+    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane;
     private double parentHeightMemory = 0;
     private byte drawErrorCount = 0;
 
@@ -265,6 +264,8 @@ public class MenuCanvas extends FoxCanvas {
         videosPane.setVisible(partIndex == 1);
         hotkeysPane.setVisible(partIndex == 2);
         gameplayPane.setVisible(partIndex == 3);
+        heroCreatingPane.setVisible(partIndex == 4);
+        worldCreatingPane.setVisible(partIndex == 5);
 
         if (Constants.isDebugInfoVisible()) {
             g2D.setColor(Color.RED);
@@ -324,12 +325,31 @@ public class MenuCanvas extends FoxCanvas {
 
         recalculateMenuRectangles();
 
-        recalculateSettingsPanes();
-
         this.initialized = true;
     }
 
     private void recalculateSettingsPanes() {
+        // удаляем старые панели с фрейма:
+        dropOldPanesFromLayer();
+
+        // создаём новые панели:
+        audiosPane = new AudioSettingsPane(this);
+        videosPane = new VideoSettingsPane(this);
+        hotkeysPane = new HotkeysSettingsPane(this);
+        gameplayPane = new GameplaySettingsPane(this);
+        heroCreatingPane = new HeroCreatingPane(this);
+        worldCreatingPane = new WorldCreatingPane(this);
+
+        // добавляем панели на слой:
+        parentFrame.getLayeredPane().add(audiosPane, PALETTE_LAYER);
+        parentFrame.getLayeredPane().add(videosPane, PALETTE_LAYER);
+        parentFrame.getLayeredPane().add(hotkeysPane, PALETTE_LAYER);
+        parentFrame.getLayeredPane().add(gameplayPane, PALETTE_LAYER);
+        parentFrame.getLayeredPane().add(heroCreatingPane, PALETTE_LAYER);
+        parentFrame.getLayeredPane().add(worldCreatingPane, PALETTE_LAYER);
+    }
+
+    private void dropOldPanesFromLayer() {
         try {
             parentFrame.getLayeredPane().remove(audiosPane);
         } catch (NullPointerException npe) {
@@ -350,200 +370,16 @@ public class MenuCanvas extends FoxCanvas {
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма gameplayPane, которой там нет.");
         }
-
-        audiosPane = new JPanel() {
-            private BufferedImage shap;
-
-            {
-                setName("Audio settings pane");
-                setVisible(false);
-                setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 4));
-                setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 2);
-                setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
-
-
-                add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
-                    setOpaque(false);
-                    add(new JLabel("Звук") {{
-                        setForeground(Color.WHITE);
-                    }});
-                    add(new JSlider(0, 100, Constants.getUserConfig().getSoundVolumePercent()) {{
-                        setFocusable(false);
-                        setBackground(Color.DARK_GRAY);
-                        setForeground(Color.WHITE);
-                        setFont(Constants.GAME_FONT_01);
-
-                        setPaintTicks(true);
-                        setMinorTickSpacing(5);
-                        setMajorTickSpacing(25);
-                        setSnapToTicks(true);
-
-                        setPaintLabels(true);
-                        setPaintTrack(true);
-
-//                        addMouseListener(MenuCanvas.this);
-                    }});
-                }});
-
-                add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
-                    setOpaque(false);
-                    add(new JLabel("Музыка") {{
-                        setForeground(Color.WHITE);
-                    }});
-                    add(new JSlider(0, 100, Constants.getUserConfig().getMusicVolumePercent()) {{
-                        setFocusable(false);
-                        setBackground(Color.DARK_GRAY);
-                        setForeground(Color.WHITE);
-                        setFont(Constants.GAME_FONT_01);
-
-                        setPaintTicks(true);
-                        setMinorTickSpacing(5);
-                        setMajorTickSpacing(25);
-                        setSnapToTicks(true);
-
-                        setPaintLabels(true);
-                        setPaintTrack(true);
-
-//                        addMouseListener(MenuCanvas.this);
-                    }});
-                }});
-            }
-
-            @Override
-            public void paintComponent(Graphics g) {
-                if (shap == null) {
-                    shap = backMenuImage.getSnapshot().getSubimage(
-                            (int) (backMenuImage.getWidth() * 0.335d), 0,
-                            (int) (backMenuImage.getWidth() - backMenuImage.getWidth() * 0.3345d), backMenuImage.getHeight());
-                }
-                g.drawImage(shap, 0, 0, getWidth(), getHeight(), this);
-            }
-        };
-        videosPane = new JPanel() {
-            private BufferedImage shap;
-
-            {
-                setName("Video settings pane");
-                setVisible(false);
-                setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 4));
-                setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 2);
-                setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
-
-
-                add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
-                    setOpaque(false);
-                    add(new JLabel("Some video`s option") {{
-                        setForeground(Color.WHITE);
-                    }});
-                    add(new JTextField("some_value", 12) {{
-                        setHorizontalAlignment(CENTER);
-                        setFocusable(false);
-                        setEditable(false);
-                        setBackground(Color.DARK_GRAY);
-                        setForeground(Color.WHITE);
-                        setFont(Constants.DEBUG_FONT);
-
-//                        addMouseListener(MenuCanvas.this);
-                    }});
-                }});
-            }
-
-            @Override
-            public void paintComponent(Graphics g) {
-                if (shap == null) {
-                    shap = backMenuImage.getSnapshot().getSubimage(
-                            (int) (backMenuImage.getWidth() * 0.335d), 0,
-                            (int) (backMenuImage.getWidth() - backMenuImage.getWidth() * 0.3345d), backMenuImage.getHeight());
-                }
-                g.drawImage(shap, 0, 0, getWidth(), getHeight(), this);
-            }
-        };
-        hotkeysPane = new JPanel() {
-            private BufferedImage shap;
-
-            {
-                setName("Hotkeys settings pane");
-                setVisible(false);
-                setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 4));
-                setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 2);
-                setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
-
-                for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
-                    add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
-                        setOpaque(false);
-                        add(new JLabel(key.getDescription()) {{
-                            setForeground(Color.WHITE);
-                        }});
-                        add(new JTextField((key.getMask() != 0
-                                ? (InputEvent.getModifiersExText(key.getMask()) + " + ") : "")
-                                + KeyEvent.getKeyText(key.getEvent()), 12) {{
-                            setHorizontalAlignment(CENTER);
-                            setFocusable(false);
-                            setEditable(false);
-                            setBackground(Color.DARK_GRAY);
-                            setForeground(Color.WHITE);
-                            setFont(Constants.DEBUG_FONT);
-
-                            addMouseListener(MenuCanvas.this);
-                        }});
-                    }});
-                }
-            }
-
-            @Override
-            public void paintComponent(Graphics g) {
-                if (shap == null) {
-                    shap = backMenuImage.getSnapshot().getSubimage(
-                            (int) (backMenuImage.getWidth() * 0.335d), 0,
-                            (int) (backMenuImage.getWidth() - backMenuImage.getWidth() * 0.3345d), backMenuImage.getHeight());
-                }
-                g.drawImage(shap, 0, 0, getWidth(), getHeight(), this);
-            }
-        };
-        gameplayPane = new JPanel() {
-            private BufferedImage shap;
-
-            {
-                setName("Gameplay settings pane");
-                setVisible(false);
-                setSize(new Dimension((int) (MenuCanvas.this.getWidth() * 0.66d), MenuCanvas.this.getHeight() - 4));
-                setLocation((int) (MenuCanvas.this.getWidth() * 0.34d), 2);
-                setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
-
-
-                add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
-                    setOpaque(false);
-                    add(new JLabel("Some gameplay`s option") {{
-                        setForeground(Color.WHITE);
-                    }});
-                    add(new JTextField("some_value", 12) {{
-                        setHorizontalAlignment(CENTER);
-                        setFocusable(false);
-                        setEditable(false);
-                        setBackground(Color.DARK_GRAY);
-                        setForeground(Color.WHITE);
-                        setFont(Constants.DEBUG_FONT);
-
-//                        addMouseListener(MenuCanvas.this);
-                    }});
-                }});
-            }
-
-            @Override
-            public void paintComponent(Graphics g) {
-                if (shap == null) {
-                    shap = backMenuImage.getSnapshot().getSubimage(
-                            (int) (backMenuImage.getWidth() * 0.335d), 0,
-                            (int) (backMenuImage.getWidth() - backMenuImage.getWidth() * 0.3345d), backMenuImage.getHeight());
-                }
-                g.drawImage(shap, 0, 0, getWidth(), getHeight(), this);
-            }
-        };
-
-        parentFrame.getLayeredPane().add(audiosPane, PALETTE_LAYER);
-        parentFrame.getLayeredPane().add(videosPane, PALETTE_LAYER);
-        parentFrame.getLayeredPane().add(hotkeysPane, PALETTE_LAYER);
-        parentFrame.getLayeredPane().add(gameplayPane, PALETTE_LAYER);
+        try {
+            parentFrame.getLayeredPane().remove(heroCreatingPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма heroCreatingPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(worldCreatingPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма worldCreatingPane, которой там нет.");
+        }
     }
 
     private void recreateBackImage() {
@@ -589,6 +425,10 @@ public class MenuCanvas extends FoxCanvas {
             drawSettingsPart(g2D, 2);
         } else if (isGameplaySettingsMenuVisible) {
             drawSettingsPart(g2D, 3);
+        } else if (isCreatingNewHeroSetVisible) {
+            drawSettingsPart(g2D, 4);
+        } else if (isCreatingNewWorldSetVisible) {
+            drawSettingsPart(g2D, 5);
         }
 
         if (Constants.isDebugInfoVisible()) {
@@ -726,9 +566,14 @@ public class MenuCanvas extends FoxCanvas {
                 isVideoSettingsMenuVisible = false;
                 isHotkeysSettingsMenuVisible = false;
                 isGameplaySettingsMenuVisible = false;
+                isCreatingNewWorldSetVisible = false;
+                isCreatingNewHeroSetVisible = false;
                 isStartGameMenuSetVisible = false;
             } else if (isCreatingNewHeroSetVisible) {
                 isCreatingNewHeroSetVisible = false;
+                isStartGameMenuSetVisible = true;
+            } else if (isCreatingNewWorldSetVisible) {
+                isCreatingNewWorldSetVisible = false;
                 isStartGameMenuSetVisible = true;
             } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
                     FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
@@ -740,9 +585,8 @@ public class MenuCanvas extends FoxCanvas {
             videosPane.setVisible(false);
             hotkeysPane.setVisible(false);
             gameplayPane.setVisible(false);
-
-            log.info("Аудио видна: {}, Видео видна: {}, Управление: {}, Геймплей: {}",
-                    audiosPane.isVisible(), videosPane.isVisible(), hotkeysPane.isVisible(), gameplayPane.isVisible());
+            heroCreatingPane.setVisible(false);
+            worldCreatingPane.setVisible(false);
         }
     }
 
@@ -806,10 +650,10 @@ public class MenuCanvas extends FoxCanvas {
             reloadShapes(this);
             recalculateMenuRectangles();
 
-            boolean rect0IsVisible = audiosPane.isVisible();
-            boolean rect1IsVisible = videosPane.isVisible();
-            boolean rect2IsVisible = hotkeysPane.isVisible();
-            boolean rect3IsVisible = gameplayPane.isVisible();
+            boolean rect0IsVisible = audiosPane != null && audiosPane.isVisible();
+            boolean rect1IsVisible = videosPane != null && videosPane.isVisible();
+            boolean rect2IsVisible = hotkeysPane != null && hotkeysPane.isVisible();
+            boolean rect3IsVisible = gameplayPane != null && gameplayPane.isVisible();
 
             recalculateSettingsPanes();
 
@@ -861,5 +705,9 @@ public class MenuCanvas extends FoxCanvas {
     @Override
     public void keyTyped(KeyEvent e) {
 
+    }
+
+    public VolatileImage getBackMenuImage() {
+        return this.backMenuImage;
     }
 }
