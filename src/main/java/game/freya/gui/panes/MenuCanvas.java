@@ -17,6 +17,8 @@ import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
@@ -24,6 +26,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -60,7 +63,7 @@ public class MenuCanvas extends FoxCanvas {
     private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane;
     private double parentHeightMemory = 0;
     private byte drawErrorCount = 0;
-
+    private transient Thread resizeThread = null;
 
     public MenuCanvas(JFrame parentFrame, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "MenuCanvas");
@@ -76,7 +79,21 @@ public class MenuCanvas extends FoxCanvas {
         addComponentListener(this);
 //        addMouseWheelListener(this); // если понадобится - можно включить.
 
+        inAc();
+
         new Thread(this).start();
+    }
+
+    private void inAc() {
+        final String frameName = "mainFrame";
+
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "backFunction",
+                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        onExitBack();
+                    }
+                });
     }
 
     @Override
@@ -129,7 +146,7 @@ public class MenuCanvas extends FoxCanvas {
                     new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
                             "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
                             FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-                    gameController.exitTheGame(null);
+//                    gameController.exitTheGame(null);
                     throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
                 }
             } finally {
@@ -155,11 +172,13 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     private void drawBackground(Graphics2D g2D) {
-        if (backMenuImage.validate(Constants.getGraphicsConfiguration()) != VolatileImage.IMAGE_OK) {
-            recreateBackImage();
+        if (backMenuImage != null) {
+            if (backMenuImage.validate(Constants.getGraphicsConfiguration()) != VolatileImage.IMAGE_OK) {
+                recreateBackImage();
+            }
+            // draw background image:
+            g2D.drawImage(backMenuImage, 0, 0, getWidth(), getHeight(), this);
         }
-        // draw background image:
-        g2D.drawImage(backMenuImage, 0, 0, getWidth(), getHeight(), this);
     }
 
     private void drawMenu(Graphics2D g2D) {
@@ -282,9 +301,11 @@ public class MenuCanvas extends FoxCanvas {
         g2D.setColor(Color.BLACK);
         g2D.draw(getHeaderPoly());
 
-        g2D.setColor(Color.BLACK);
         g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
-        g2D.drawString(headerTitle, getWidth() / 10, (int) (getHeight() * 0.034D));
+        g2D.setColor(Color.DARK_GRAY);
+        g2D.drawString(headerTitle, getWidth() / 11 - 1, (int) (getHeight() * 0.041D) + 1);
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(headerTitle, getWidth() / 11, (int) (getHeight() * 0.041D));
     }
 
     private void init() {
@@ -341,12 +362,17 @@ public class MenuCanvas extends FoxCanvas {
         worldCreatingPane = new WorldCreatingPane(this);
 
         // добавляем панели на слой:
-        parentFrame.getLayeredPane().add(audiosPane, PALETTE_LAYER);
-        parentFrame.getLayeredPane().add(videosPane, PALETTE_LAYER);
-        parentFrame.getLayeredPane().add(hotkeysPane, PALETTE_LAYER);
-        parentFrame.getLayeredPane().add(gameplayPane, PALETTE_LAYER);
-        parentFrame.getLayeredPane().add(heroCreatingPane, PALETTE_LAYER);
-        parentFrame.getLayeredPane().add(worldCreatingPane, PALETTE_LAYER);
+        try {
+            parentFrame.getLayeredPane().add(audiosPane, PALETTE_LAYER);
+            parentFrame.getLayeredPane().add(videosPane, PALETTE_LAYER);
+            parentFrame.getLayeredPane().add(hotkeysPane, PALETTE_LAYER);
+            parentFrame.getLayeredPane().add(gameplayPane, PALETTE_LAYER);
+            parentFrame.getLayeredPane().add(heroCreatingPane, PALETTE_LAYER);
+            parentFrame.getLayeredPane().add(worldCreatingPane, PALETTE_LAYER);
+        } catch (Exception e) {
+            log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
+            recalculateSettingsPanes();
+        }
     }
 
     private void dropOldPanesFromLayer() {
@@ -459,7 +485,6 @@ public class MenuCanvas extends FoxCanvas {
                 buttonsRectsWidth, 30);
     }
 
-
     @Override
     public void mousePressed(MouseEvent e) {
 
@@ -560,34 +585,38 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         if (exitButtonOver) {
-            if (isOptionsMenuSetVisible || isStartGameMenuSetVisible) {
-                isOptionsMenuSetVisible = false;
-                isAudioSettingsMenuVisible = false;
-                isVideoSettingsMenuVisible = false;
-                isHotkeysSettingsMenuVisible = false;
-                isGameplaySettingsMenuVisible = false;
-                isCreatingNewWorldSetVisible = false;
-                isCreatingNewHeroSetVisible = false;
-                isStartGameMenuSetVisible = false;
-            } else if (isCreatingNewHeroSetVisible) {
-                isCreatingNewHeroSetVisible = false;
-                isStartGameMenuSetVisible = true;
-            } else if (isCreatingNewWorldSetVisible) {
-                isCreatingNewWorldSetVisible = false;
-                isStartGameMenuSetVisible = true;
-            } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
-                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
-                gameController.exitTheGame(null);
-            }
-
-            // в любом случае, любая панель тут скрывается:
-            audiosPane.setVisible(false);
-            videosPane.setVisible(false);
-            hotkeysPane.setVisible(false);
-            gameplayPane.setVisible(false);
-            heroCreatingPane.setVisible(false);
-            worldCreatingPane.setVisible(false);
+            onExitBack();
         }
+    }
+
+    private void onExitBack() {
+        if (isOptionsMenuSetVisible || isStartGameMenuSetVisible) {
+            isOptionsMenuSetVisible = false;
+            isAudioSettingsMenuVisible = false;
+            isVideoSettingsMenuVisible = false;
+            isHotkeysSettingsMenuVisible = false;
+            isGameplaySettingsMenuVisible = false;
+            isCreatingNewWorldSetVisible = false;
+            isCreatingNewHeroSetVisible = false;
+            isStartGameMenuSetVisible = false;
+        } else if (isCreatingNewHeroSetVisible) {
+            isCreatingNewHeroSetVisible = false;
+            isStartGameMenuSetVisible = true;
+        } else if (isCreatingNewWorldSetVisible) {
+            isCreatingNewWorldSetVisible = false;
+            isStartGameMenuSetVisible = true;
+        } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
+                FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
+            gameController.exitTheGame(null);
+        }
+
+        // в любом случае, любая панель тут скрывается:
+        audiosPane.setVisible(false);
+        videosPane.setVisible(false);
+        hotkeysPane.setVisible(false);
+        gameplayPane.setVisible(false);
+        heroCreatingPane.setVisible(false);
+        worldCreatingPane.setVisible(false);
     }
 
     @Override
@@ -630,22 +659,24 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     private void onResize() {
-        new Thread(() -> {
+        if (resizeThread != null && resizeThread.isAlive()) {
+            return;
+        }
+
+        resizeThread = new Thread(() -> {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 // ...
             }
+
             log.debug("Resizing of menu canvas...");
-            parentFrame.revalidate();
 
             if (Constants.getUserConfig().isFullscreen()) {
                 setSize(parentFrame.getSize());
-            } else {
+            } else if (!getSize().equals(parentFrame.getRootPane().getSize())) {
                 setSize(parentFrame.getRootPane().getSize());
             }
-            setLocation(0, 0);
-            revalidate();
 
             reloadShapes(this);
             recalculateMenuRectangles();
@@ -657,19 +688,12 @@ public class MenuCanvas extends FoxCanvas {
 
             recalculateSettingsPanes();
 
-            audiosPane.setVisible(rect0IsVisible);
-            videosPane.setVisible(rect1IsVisible);
-            hotkeysPane.setVisible(rect2IsVisible);
-            gameplayPane.setVisible(rect3IsVisible);
-
             isAudioSettingsMenuVisible = rect0IsVisible;
             isVideoSettingsMenuVisible = rect1IsVisible;
             isHotkeysSettingsMenuVisible = rect2IsVisible;
             isGameplaySettingsMenuVisible = rect3IsVisible;
-
-            log.info("*** Frame in fullscreen mode: {}, Settings pane visible: {}, Optimode: {}",
-                    Constants.getUserConfig().isFullscreen(), hotkeysPane.isVisible(), parentFrame.getLayeredPane().isOptimizedDrawingEnabled());
-        }).start();
+        });
+        resizeThread.start();
     }
 
     @Override
@@ -693,21 +717,14 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     @Override
-    public void keyPressed(KeyEvent e) {
+    public void keyTyped(KeyEvent e) {
+    }
 
+    @Override
+    public void keyPressed(KeyEvent e) {
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-
-    }
-
-    public VolatileImage getBackMenuImage() {
-        return this.backMenuImage;
     }
 }

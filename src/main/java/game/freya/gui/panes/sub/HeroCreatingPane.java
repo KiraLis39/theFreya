@@ -23,13 +23,18 @@ public class HeroCreatingPane extends JPanel {
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
+        setDoubleBuffered(false);
+        setIgnoreRepaint(true);
 
         add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
             setOpaque(false);
+            setDoubleBuffered(false);
             add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
                 setOpaque(false);
+                setDoubleBuffered(false);
                 add(new JLabel("Some hero`s option") {{
                     setForeground(Color.WHITE);
+                    setDoubleBuffered(false);
                 }});
                 add(new JTextField("some_value", 12) {{
                     setHorizontalAlignment(CENTER);
@@ -38,7 +43,7 @@ public class HeroCreatingPane extends JPanel {
                     setBackground(Color.DARK_GRAY);
                     setForeground(Color.WHITE);
                     setFont(Constants.DEBUG_FONT);
-
+                    setDoubleBuffered(false);
 //                        addMouseListener(MenuCanvas.this);
                 }});
             }});

@@ -26,12 +26,16 @@ public class HotkeysSettingsPane extends JPanel {
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
+        setDoubleBuffered(false);
+        setIgnoreRepaint(true);
 
         for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
             add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
                 setOpaque(false);
+                setDoubleBuffered(false);
                 add(new JLabel(key.getDescription()) {{
                     setForeground(Color.WHITE);
+                    setDoubleBuffered(false);
                 }});
                 add(new JTextField((key.getMask() != 0
                         ? (InputEvent.getModifiersExText(key.getMask()) + " + ") : "")
@@ -42,7 +46,7 @@ public class HotkeysSettingsPane extends JPanel {
                     setBackground(Color.DARK_GRAY);
                     setForeground(Color.WHITE);
                     setFont(Constants.DEBUG_FONT);
-
+                    setDoubleBuffered(false);
 //                    addMouseListener(this);
                 }});
             }});
@@ -51,13 +55,11 @@ public class HotkeysSettingsPane extends JPanel {
 
     @Override
     public void paintComponent(Graphics g) {
-        if (snap == null || snap.getHeight() != getHeight()) {
+        if (snap == null) {
             log.info("Reload hotkeys snap...");
-            BufferedImage back = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
-            snap = back.getSubimage(
-                    (int) (back.getWidth() * 0.335d), 0,
-                    (int) (back.getWidth() - back.getWidth() * 0.3345d),
-                    back.getHeight());
+            BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
+            snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
+                    (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }
         g.drawImage(snap, 0, 0, getWidth(), getHeight(), this);
     }

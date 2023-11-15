@@ -88,7 +88,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
         setHeaderPoly(new Polygon(
                 new int[]{0, (int) (canvas.getWidth() * 0.3D), (int) (canvas.getWidth() * 0.29D), (int) (canvas.getWidth() * 0.3D), 0},
-                new int[]{3, 3, (int) (canvas.getHeight() * 0.025D), (int) (canvas.getHeight() * 0.05D), (int) (canvas.getHeight() * 0.05D)},
+                new int[]{3, 3, (int) (canvas.getHeight() * 0.031D), (int) (canvas.getHeight() * 0.061D), (int) (canvas.getHeight() * 0.061D)},
                 5));
     }
 }

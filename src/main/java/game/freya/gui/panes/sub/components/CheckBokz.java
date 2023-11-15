@@ -1,0 +1,20 @@
+package game.freya.gui.panes.sub.components;
+
+import game.freya.config.Constants;
+
+import javax.swing.JCheckBox;
+import java.awt.Color;
+import java.awt.Dimension;
+
+public class CheckBokz extends JCheckBox {
+
+    public CheckBokz(int canvasWidth, String name) {
+        setName(name);
+        setDoubleBuffered(false);
+        setFocusable(false);
+        setPreferredSize(new Dimension(32, 20));
+        setBackground(Color.DARK_GRAY);
+        setForeground(Color.WHITE);
+        setFont(Constants.GAME_FONT_01);
+    }
+}
