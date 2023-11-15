@@ -3,8 +3,6 @@ package game.freya.entities.dto;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iHero;
 import game.freya.enums.HurtLevel;
-import game.freya.exceptions.ErrorMessages;
-import game.freya.exceptions.GlobalServiceException;
 import game.freya.items.containers.Backpack;
 import game.freya.items.interfaces.iEntity;
 import game.freya.items.logic.Buff;

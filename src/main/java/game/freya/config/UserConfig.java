@@ -142,6 +142,11 @@ public final class UserConfig {
     @Getter
     @Setter
     @Builder.Default
+    private FullscreenType fullscreenType = FullscreenType.MAXIMIZE_WINDOW; // .EXCLUSIVE
+
+    @Getter
+    @Setter
+    @Builder.Default
     private boolean isFullscreen = false;
 
     @Getter
@@ -225,5 +230,10 @@ public final class UserConfig {
             this.event = event;
             this.mask = mask;
         }
+    }
+
+    public enum FullscreenType {
+        MAXIMIZE_WINDOW,
+        EXCLUSIVE
     }
 }

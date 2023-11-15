@@ -4,6 +4,7 @@ import fox.FoxLogo;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.config.UserConfig;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
@@ -21,10 +22,10 @@ import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JLayeredPane;
 import javax.swing.JRootPane;
 import javax.swing.WindowConstants;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
@@ -53,9 +54,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
         double newHeight = newWidth / delta;
         windowSize = new Dimension((int) newWidth, (int) newHeight);
 
-        frame = new JFrame(gameController.getGameConfig().getAppName().concat(" v.")
-                .concat(gameController.getGameConfig().getAppVersion()), Constants.getGraphicsConfiguration());
-
         if (Constants.isShowStartLogo()) {
             try {
                 logo = new FoxLogo();
@@ -72,23 +70,21 @@ public class GameFrame implements WindowListener, WindowStateListener {
             }
         }
 
+        frame = new JFrame(gameController.getGameConfig().getAppName().concat(" v.")
+                .concat(gameController.getGameConfig().getAppVersion()), Constants.getGraphicsConfiguration());
+
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-
-        frame.addWindowListener(this);
-        frame.addWindowStateListener(this);
-
+        frame.setLayout(null);
         frame.setCursor(Constants.getDefaultCursor());
 
         // настройка фокуса для работы горячих клавиш:
         frame.setFocusable(false);
         frame.getRootPane().setFocusable(true);
 
-        frame.setPreferredSize(windowSize);
-        frame.setMaximumSize(windowSize);
-        frame.setResizable(false);
+        frame.addWindowListener(this);
+        frame.addWindowStateListener(this);
 
-        frame.pack();
-        frame.setLocationRelativeTo(null);
+        setInAc();
 
         if (logo != null && logo.getEngine().isAlive()) {
             try {
@@ -99,19 +95,43 @@ public class GameFrame implements WindowListener, WindowStateListener {
             }
         }
 
-        frame.setLayout(null);
-
         log.info("Show the MainFrame...");
-        frame.setVisible(true);
-
-        setInAc();
-
-        if (Constants.getUserConfig().isFullscreen()) {
-            log.info("Switch to fullscreen by UserConfig...");
-            Constants.MON.switchFullscreen(frame);
-        }
+        checkFullscreenMode();
 
         gameController.loadScreen(ScreenType.MENU_SCREEN, null);
+    }
+
+    private void checkFullscreenMode() {
+        if (Constants.getUserConfig().isFullscreen()) {
+            if (Constants.getUserConfig().getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
+                log.info("Switch to fullscreen by UserConfig...");
+                Constants.MON.switchFullscreen(Constants.getUserConfig().isFullscreen() ? frame : null);
+            } else if (Constants.getUserConfig().getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
+                frame.dispose();
+
+                frame.setResizable(true);
+                frame.setUndecorated(true);
+
+                frame.setExtendedState(frame.getExtendedState() | Frame.MAXIMIZED_BOTH);
+            }
+        } else {
+            frame.dispose();
+
+            frame.setResizable(true);
+            frame.setUndecorated(false);
+
+            frame.setExtendedState(Frame.NORMAL);
+
+            frame.setPreferredSize(windowSize);
+            frame.setMaximumSize(windowSize);
+            frame.setSize(windowSize);
+
+            // frame.pack();
+            frame.setLocationRelativeTo(null);
+        }
+
+        frame.setVisible(true);
+        frame.setResizable(false);
     }
 
     private void setInAc() {
@@ -124,11 +144,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                     public void actionPerformed(ActionEvent e) {
                         log.info("Try to switch the fullscreen mode...");
                         Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-                        Constants.MON.switchFullscreen(Constants.getUserConfig().isFullscreen() ? frame : null);
-                        if (!Constants.getUserConfig().isFullscreen()) {
-                            frame.setPreferredSize(windowSize);
-                            frame.setSize(windowSize);
-                        }
+                        checkFullscreenMode();
                     }
                 });
 
@@ -196,7 +212,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     @Override
     public void windowClosed(WindowEvent e) {
-        log.warn("fail closing 2..");
+        log.warn("Окно закрыто!");
     }
 
     @Override
