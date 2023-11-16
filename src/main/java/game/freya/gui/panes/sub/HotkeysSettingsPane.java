@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -28,6 +29,7 @@ public class HotkeysSettingsPane extends JPanel {
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
 
         for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
             add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
@@ -60,6 +62,8 @@ public class HotkeysSettingsPane extends JPanel {
             BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
+            setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
+
         }
         g.drawImage(snap, 0, 0, getWidth(), getHeight(), this);
     }

@@ -78,6 +78,7 @@ public final class Constants {
     private static final String userSave = "./saves/".concat(SystemUtils.getUserName()).concat("/save.json");
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
+    public static Font LITTLE_UNICODE_FONT;
     public static Font MENU_BUTTONS_FONT;
     public static Font PROPAGANDA_FONT;
     public static Font PROPAGANDA_BIG_FONT;
@@ -121,7 +122,7 @@ public final class Constants {
                 BufferedImage curImage = ImageIO.read(is);
                 BufferedImage curResult = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D c2D = curResult.createGraphics();
-                RENDER.setRender(c2D, FoxRender.RENDER.ULTRA);
+                RENDER.setRender(c2D, FoxRender.RENDER.ULTRA); // todo: будет ли тут иметь вообще значение рендер?
                 c2D.drawImage(curImage, 0, 0, 64, 64, null);
                 c2D.dispose();
                 defaultCursor = FoxCursor.createCursor(curResult, "default");
@@ -132,6 +133,7 @@ public final class Constants {
         }
 
         int ruf = FFB.addNewFont("Lucida Sans Unicode");
+        LITTLE_UNICODE_FONT = FFB.setFoxFont(ruf, 18, false, MON.getEnvironment());
         MENU_BUTTONS_FONT = FFB.setFoxFont(ruf, 20, true, MON.getEnvironment());
         MENU_BUTTONS_BIG_FONT = FFB.setFoxFont(ruf, 28, true, MON.getEnvironment());
 

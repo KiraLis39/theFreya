@@ -102,7 +102,8 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         Graphics2D m2D = (Graphics2D) this.gameMap.getGraphics();
         // m2D.clearRect(visibleRect.x, visibleRect.y, visibleRect.width, visibleRect.height);
         m2D.clip(visibleRect);
-        Constants.RENDER.setRender(m2D, FoxRender.RENDER.MED);
+        Constants.RENDER.setRender(m2D, FoxRender.RENDER.MED, // todo: будет ли тут иметь вообще значение рендер?
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
         m2D.setColor(new Color(52, 2, 52));
         m2D.fillRect(0, 0, gameMap.getWidth(), gameMap.getHeight());

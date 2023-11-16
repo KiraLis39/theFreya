@@ -3,13 +3,14 @@ package game.freya.gui.panes.sub.components;
 import game.freya.config.Constants;
 
 import javax.swing.JSlider;
+import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 
 public class JZlider extends JSlider {
 
-    public JZlider(int canvasWidth, String name) {
+    public JZlider(String name) {
         setName(name);
-//        setPreferredSize(new Dimension(canvasWidth / 3, 35));
+        setBorder(new EmptyBorder(0, 0, 0, 3));
 
         setDoubleBuffered(false);
         setFocusable(false);
@@ -17,9 +18,9 @@ public class JZlider extends JSlider {
         setForeground(Color.WHITE);
         setFont(Constants.GAME_FONT_01);
 
-        setPaintTicks(true);
         setMinorTickSpacing(5);
-        setMajorTickSpacing(25);
+        setMajorTickSpacing(15);
+        setPaintTicks(true);
         setSnapToTicks(true);
 
         setPaintLabels(true);

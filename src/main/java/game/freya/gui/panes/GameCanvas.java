@@ -170,11 +170,13 @@ public class GameCanvas extends FoxCanvas {
                 do {
                     do {
                         Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED);
+                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
+                                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
                         // draw all World`s graphic:
                         drawWorld(g2D);
-                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED);
+                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
+                                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
                         // not-pause events and changes:
                         if (Constants.isPaused()) {

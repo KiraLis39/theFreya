@@ -3,12 +3,13 @@ package game.freya.gui.panes.sub.components;
 import game.freya.config.Constants;
 
 import javax.swing.JCheckBox;
+import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Dimension;
 
 public class CheckBokz extends JCheckBox {
 
-    public CheckBokz(int canvasWidth, String name) {
+    public CheckBokz(String name) {
         setName(name);
         setDoubleBuffered(false);
         setFocusable(false);
@@ -16,5 +17,7 @@ public class CheckBokz extends JCheckBox {
         setBackground(Color.DARK_GRAY);
         setForeground(Color.WHITE);
         setFont(Constants.GAME_FONT_01);
+        setVerticalAlignment(TOP);
+        setBorder(new EmptyBorder(3, 3, 3, 3));
     }
 }

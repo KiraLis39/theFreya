@@ -125,7 +125,8 @@ public class MenuCanvas extends FoxCanvas {
 
                 do {
                     g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                    Constants.RENDER.setRender(g2D, FoxRender.RENDER.HIGH);
+                    Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
+                            Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
                     drawBackground(g2D);
                     drawMenu(g2D);
@@ -336,9 +337,9 @@ public class MenuCanvas extends FoxCanvas {
 
         try {
             Constants.CACHE.addIfAbsent("backMenuImage",
-                    ImageIO.read(new File("./resources/images/demo_menu.jpg")));
+                    ImageIO.read(new File("./resources/images/menu.png")));
             Constants.CACHE.addIfAbsent("backMenuImageShadowed",
-                    ImageIO.read(new File("./resources/images/demo_menu_shadowed.jpg")));
+                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
             recreateBackImage();
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
@@ -411,7 +412,8 @@ public class MenuCanvas extends FoxCanvas {
     private void recreateBackImage() {
         backMenuImage = createVolatileImage(getWidth(), getHeight());
         Graphics2D g2D = backMenuImage.createGraphics();
-        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED);
+        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED, // todo: будет ли тут иметь вообще значение рендер?
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
         g2D.drawImage((BufferedImage) (isOptionsMenuSetVisible || isCreatingNewHeroSetVisible
                         ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
                 0, 0, getWidth(), getHeight(), this);

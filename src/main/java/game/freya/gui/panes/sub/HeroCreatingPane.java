@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -25,6 +26,7 @@ public class HeroCreatingPane extends JPanel {
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
 
         add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
             setOpaque(false);

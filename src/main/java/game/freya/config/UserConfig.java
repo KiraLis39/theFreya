@@ -20,6 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public final class UserConfig {
 
+    // player:
     @Getter
     @Setter
     @Builder.Default
@@ -35,8 +36,8 @@ public final class UserConfig {
     @Builder.Default
     private String userMail = "demo@test.ru";
 
-    // audio:
 
+    // audio:
     @Getter
     @Setter
     @Builder.Default
@@ -79,7 +80,6 @@ public final class UserConfig {
     @Builder.Default
     private int keyLookDown = KeyEvent.VK_DOWN;
 
-
     @Setter
     @Getter
     @Builder.Default
@@ -99,7 +99,6 @@ public final class UserConfig {
     @Getter
     @Builder.Default
     private int keyMoveDown = KeyEvent.VK_S;
-
 
     @Setter
     @Getter
@@ -132,8 +131,7 @@ public final class UserConfig {
     private int keyFullscreen = KeyEvent.VK_F11;
 
 
-    // booleans:
-
+    // gameplay:
     @Getter
     @Setter
     @Builder.Default
@@ -152,6 +150,13 @@ public final class UserConfig {
     @Getter
     @Setter
     @Builder.Default
+    private boolean isPauseOnHidden = true;
+
+
+    // graphics:
+    @Getter
+    @Setter
+    @Builder.Default
     private boolean isUseSmoothing = true;
 
     @Getter
@@ -162,14 +167,7 @@ public final class UserConfig {
     @Getter
     @Setter
     @Builder.Default
-    private boolean isPauseOnHidden = true;
-
-    @Getter
-    @Setter
-    @Builder.Default
     private long screenDiscreteLimit = 60L; // fps limit
-
-    // other:
 
     @Getter
     @Setter
@@ -180,6 +178,8 @@ public final class UserConfig {
     @Builder.Default
     private int bufferedDeep = 2;
 
+
+    // other:
     public int getBufferedDeep() {
         return isMultiBufferEnabled ? bufferedDeep : 1;
     }

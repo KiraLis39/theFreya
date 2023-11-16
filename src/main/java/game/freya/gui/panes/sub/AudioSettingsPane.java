@@ -12,8 +12,10 @@ import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
@@ -31,10 +33,11 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
 
         add(new SubPane("Звук") {{
-            add(new SubPane("Вкл") {{
-                add(new CheckBokz(canvas.getWidth(), "soundCheck") {{
+            add(new SubPane("◑") {{
+                add(new CheckBokz("soundCheck") {{
                     setSelected(Constants.getUserConfig().isSoundEnabled());
                     setAction(new AbstractAction() {
                         @Override
@@ -43,16 +46,16 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
                         }
                     });
                 }});
-            }});
-            add(new JZlider(canvas.getWidth(), "soundSlider") {{
+            }}, BorderLayout.WEST);
+            add(new JZlider("soundSlider") {{
                 setValue(Constants.getUserConfig().getSoundVolumePercent());
                 addChangeListener(AudioSettingsPane.this);
-            }});
+            }}, BorderLayout.CENTER);
         }});
 
         add(new SubPane("Музыка") {{
-            add(new SubPane("Вкл") {{
-                add(new CheckBokz(canvas.getWidth(), "musicCheck") {{
+            add(new SubPane("◑") {{
+                add(new CheckBokz("musicCheck") {{
                     setSelected(Constants.getUserConfig().isMusicEnabled());
                     setAction(new AbstractAction() {
                         @Override
@@ -61,11 +64,11 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
                         }
                     });
                 }});
-            }});
-            add(new JZlider(canvas.getWidth(), "musicSlider") {{
+            }}, BorderLayout.WEST);
+            add(new JZlider("musicSlider") {{
                 setValue(Constants.getUserConfig().getMusicVolumePercent());
                 addChangeListener(AudioSettingsPane.this);
-            }});
+            }}, BorderLayout.CENTER);
         }});
     }
 
