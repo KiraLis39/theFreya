@@ -51,6 +51,11 @@ public final class Constants {
     public static final Font GAME_FONT_02 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 26, true, MON.getEnvironment());
     public static final Font GAME_FONT_03 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 32, true, MON.getEnvironment());
     public static final Font MENU_BUTTONS_BIG_FONT;
+    public static final Font LITTLE_UNICODE_FONT;
+    public static final Font MENU_BUTTONS_FONT;
+    public static final Font PROPAGANDA_FONT;
+    public static final Font PROPAGANDA_BIG_FONT;
+
     // other:
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
@@ -92,11 +97,6 @@ public final class Constants {
 
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
-
-    public static Font LITTLE_UNICODE_FONT;
-    public static Font MENU_BUTTONS_FONT;
-    public static Font PROPAGANDA_FONT;
-    public static Font PROPAGANDA_BIG_FONT;
 
     @Getter
     private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.95f);

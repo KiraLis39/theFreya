@@ -54,10 +54,15 @@ public class Player {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Player player = (Player) o;
-        return Objects.equals(getUid(), player.getUid()) && Objects.equals(getNickName(), player.getNickName()) && Objects.equals(getEmail(), player.getEmail());
+        return Objects.equals(getUid(), player.getUid())
+                && Objects.equals(getNickName(), player.getNickName()) && Objects.equals(getEmail(), player.getEmail());
     }
 
     @Override

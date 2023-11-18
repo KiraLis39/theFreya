@@ -63,7 +63,7 @@ public class WorldsListPane extends JPanel {
             i++;
             add(new SubPane("World 0" + i) {{
                 add(new JPanel() {
-                    transient BufferedImage wImage = null;
+                    private transient BufferedImage wImage = null;
 
                     @Override
                     protected void paintComponent(Graphics g) {

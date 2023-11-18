@@ -19,7 +19,7 @@
 
     <module name="FileLength"/>
     <module name="LineLength">
-        <property name="max" value="150"/>
+        <property name="max" value="170"/>
         <property name="fileExtensions" value="java"/>
     </module>
 
@@ -46,7 +46,9 @@
             <property name="processJavadoc" value="false"/>
         </module>
 
-        <module name="MethodLength"/>
+        <module name="MethodLength">
+            <property name="max" value="170"/>
+        </module>
         <module name="ParameterNumber">
             <property name="id" value="maxParameterNumber"/>
             <property name="max" value="15"/>

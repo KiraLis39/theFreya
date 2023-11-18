@@ -23,7 +23,7 @@ public final class UserConfig {
     @Getter
     @Setter
     @Builder.Default
-    public float miniMapOpacity = 0.7f;
+    private float miniMapOpacity = 0.7f;
     // player:
     @Getter
     @Setter
