@@ -10,9 +10,9 @@ public interface iWorld {
 
     void init(GameCanvas canvas);
 
-    void addHero(HeroDTO playerDTO);
+    void addHero(HeroDTO heroDTO);
 
-    void removeHero(HeroDTO playerDTO);
+    void removeHero(HeroDTO heroDTO);
 
     void draw(Graphics2D g2D, Rectangle visibleRect);
 }

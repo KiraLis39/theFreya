@@ -5,6 +5,7 @@ import game.freya.config.UserConfig;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.JTexztArea;
+import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +87,21 @@ public class GameplaySettingsPane extends JPanel {
                     setForeground(Color.WHITE);
                     setFont(Constants.DEBUG_FONT);
                 }}, BorderLayout.CENTER);
+            }});
+
+            add(Box.createVerticalStrut(6));
+            add(new SubPane("Видимость миникарты") {{
+                setPreferredSize(new Dimension(canvas.getWidth() / 4, 64));
+                add(new JZlider("minimapOpacitySlider") {{
+                    setMinimum(25);
+                    setMaximum(100);
+                    setValue((int) (Constants.getUserConfig().getMiniMapOpacity() * 100));
+
+                    setMinorTickSpacing(5);
+                    setMajorTickSpacing(10);
+
+                    addChangeListener(e -> Constants.getUserConfig().setMiniMapOpacity(getValue() / 100f));
+                }});
             }});
 
             add(Box.createVerticalStrut(canvas.getHeight()));

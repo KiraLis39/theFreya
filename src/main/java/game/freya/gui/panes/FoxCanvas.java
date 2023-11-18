@@ -35,22 +35,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         this.frames++;
     }
 
-    public void drawFps(Graphics2D g2D) {
-        if (downShift == 0) {
-            downShift = getHeight() * 0.14f;
-        }
-        g2D.setFont(Constants.DEBUG_FONT);
-        g2D.setColor(Color.BLACK);
-        g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-                .formatted(Constants.getUserConfig().getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
-                        Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
-        g2D.setColor(Color.GRAY);
-        g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-                .formatted(Constants.getUserConfig().getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
-                        Constants.getRealFreshRate()), rightShift, downShift);
-    }
-
-    public void drawDebugInfo(Graphics2D g2D, String worldTitle, long inGamePlayed) {
+    public void drawDebugInfo(Graphics2D g2D, String worldTitle) {
         if (Constants.isDebugInfoVisible()) {
             incrementFramesCounter();
 
@@ -61,7 +46,6 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
             }
 
             if (worldTitle != null) {
-                duration = Duration.ofMillis(inGamePlayed + (System.currentTimeMillis() - Constants.getGameStartedIn()));
                 String pass = LocalDateTime.of(0, 1, (int) (duration.toDaysPart() + 1),
                                 duration.toHoursPart(), duration.toMinutesPart(), 0, 0)
                         .format(Constants.DATE_FORMAT_2);
@@ -75,6 +59,24 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 g2D.drawString("Мир: %s".formatted(worldTitle), rightShift, downShift + 21);
                 g2D.drawString("В игре: %s".formatted(pass), rightShift, downShift + 42);
             }
+
+            if (downShift == 0) {
+                downShift = getHeight() * 0.14f;
+            }
+            g2D.setFont(Constants.DEBUG_FONT);
+            g2D.setColor(Color.BLACK);
+            g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
+                    .formatted(Constants.getUserConfig().getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
+                            Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
+
+            if (Constants.isLowFpsAlarm()) {
+                g2D.setColor(Color.RED);
+            } else {
+                g2D.setColor(Color.GRAY);
+            }
+            g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
+                    .formatted(Constants.getUserConfig().getScreenDiscreteLimit(), Constants.MON.getRefreshRate(),
+                            Constants.getRealFreshRate()), rightShift, downShift);
         }
     }
 
@@ -90,5 +92,9 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 new int[]{0, (int) (canvas.getWidth() * 0.3D), (int) (canvas.getWidth() * 0.29D), (int) (canvas.getWidth() * 0.3D), 0},
                 new int[]{3, 3, (int) (canvas.getHeight() * 0.031D), (int) (canvas.getHeight() * 0.061D), (int) (canvas.getHeight() * 0.061D)},
                 5));
+    }
+
+    public void checkGameplayDuration(long inGamePlayed) {
+        this.duration = Duration.ofMillis(inGamePlayed + (System.currentTimeMillis() - Constants.getGameStartedIn()));
     }
 }

@@ -1,23 +1,45 @@
 package game.freya.utils;
 
+import game.freya.config.Constants;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.imageio.ImageIO;
+import java.awt.AWTException;
+import java.awt.Rectangle;
+import java.awt.Robot;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Path;
+
+@Slf4j
 public final class Screenshoter {
-//    try {
-//        Robot robot = new Robot(getGraphicsConfiguration().getDevice());
-//        BufferedImage capture = robot.createScreenCapture(new Rectangle(windowRect.x, windowRect.y, windowRect.width + extra,
-//                windowRect.height + extra));
-//        g2.drawImage(capture, null, 0, 0);
-//    } catch (AWTException e) {
-//    }
 
-//    try {
-//        // "Вырезаем" часть изображения "рабочего стола"
-//        Robot robot = new Robot();
-//        capture = robot.createScreenCapture(
-//                new Rectangle(5, 5, window_w, window_h));
-//    } catch (Exception ex) { ex.printStackTrace(); }
+    public BufferedImage doScreenshot(Rectangle bounds) {
+        BufferedImage capture = null;
+        try {
+            Robot robot = new Robot(Constants.MON.getDevice());
+            capture = robot.createScreenCapture(new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height));
+        } catch (AWTException e) {
+            log.error("Ошибка сриншотера: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
 
-//		Out.Print("\nДанная программа использует " +
-//				(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576 +
-//				"мб из " + Runtime.getRuntime().totalMemory() / 1048576 +
-//				"мб выделенных под неё. \nСпасибо за использование утилиты компании MultyVerse39 Group!");
+//        Out.Print("\nДанная программа использует " +
+//                (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576 +
+//                "мб из " + Runtime.getRuntime().totalMemory() / 1048576 +
+//                "мб выделенных под неё. \nСпасибо за использование утилиты компании MultyVerse39 Group!");
+
+        return capture;
+    }
+
+    public void doScreenshot(Rectangle bounds, String fileToWrite) {
+        try {
+            BufferedImage toWrite = doScreenshot(bounds);
+            Path aimFile = Path.of(fileToWrite + Constants.getImageExtension());
+            if (!ImageIO.write(toWrite, Constants.getImageExtension().replace(".", ""), aimFile.toFile())) {
+                log.warn("Проблема при сохранении миниатюры мира: {}", "no appropriate writer is found");
+            }
+        } catch (IOException e) {
+            log.error("Ошибка сриншотера: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+    }
 }

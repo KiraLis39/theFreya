@@ -22,6 +22,7 @@ import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLayeredPane;
 import javax.swing.JRootPane;
 import javax.swing.WindowConstants;
 import java.awt.Dimension;
@@ -64,7 +65,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                     logo.getEngine().join(10_000);
                 }
             } catch (IOException e) {
-                throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/defaultAvatar.png");
+                throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/logo.png");
             } catch (InterruptedException e) {
                 log.error("Logo thread was interrupted: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
@@ -139,7 +140,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
         Constants.INPUT_ACTION.add(frameName, frame.getRootPane());
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFullscreen",
-                Constants.getUserConfig().getKeyFullscreen(), 0, new AbstractAction() {
+                UserConfig.HotKeys.FULLSCREEN.getEvent(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         log.info("Try to switch the fullscreen mode...");
@@ -149,11 +150,20 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 });
 
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchPause",
-                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
+                UserConfig.HotKeys.PAUSE.getEvent(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         log.debug("Try to switch the pause mode...");
                         Constants.setPaused(!Constants.isPaused());
+                    }
+                });
+
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchDebug",
+                UserConfig.HotKeys.DEBUG.getEvent(), 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        log.debug("Try to switch the debug mode...");
+                        Constants.setDebugInfoVisible(!Constants.isDebugInfoVisible());
                     }
                 });
     }
@@ -161,7 +171,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
     public void loadMenuScreen() {
         log.info("Try to load Menu screen...");
         clearFrame();
-        frame.getLayeredPane().isOptimizedDrawingEnabled();
         frame.getLayeredPane().add(new MenuCanvas(frame, gameController), Integer.valueOf(0));
         frame.revalidate();
     }
@@ -173,16 +182,18 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
         log.info("Try to load World '{}' screen...", worldDto.getTitle());
         clearFrame();
-        frame.add(new GameCanvas(worldDto, uIHandler, gameController)); // мир уже должен быть с игроком (-ами)!
+        frame.add(new GameCanvas(worldDto, uIHandler, frame, gameController)); // мир уже должен быть с игроком (-ами)!
         frame.revalidate();
     }
 
     private void clearFrame() {
+        boolean success = false;
         for (java.awt.Component comp : frame.getComponents()) {
             if (comp instanceof FoxCanvas fc) {
                 log.debug("Found to remove from frame: {}", fc.getName());
                 fc.stop();
                 frame.remove(fc);
+                success = true;
             }
             if (comp instanceof JRootPane rp) {
                 for (java.awt.Component cmp : rp.getContentPane().getComponents()) {
@@ -190,9 +201,32 @@ public class GameFrame implements WindowListener, WindowStateListener {
                         log.debug("Found to remove from frame: {}", fc.getName());
                         fc.stop();
                         frame.remove(fc);
+                        success = true;
+                    }
+                }
+                for (java.awt.Component cmp : rp.getLayeredPane().getComponents()) {
+                    if (cmp instanceof FoxCanvas fc) {
+                        log.debug("Found to remove from frame: {}", fc.getName());
+                        fc.stop();
+                        frame.remove(fc);
+                        success = true;
                     }
                 }
             }
+            if (comp instanceof JLayeredPane lp) {
+                for (java.awt.Component cmp : lp.getComponents()) {
+                    if (cmp instanceof FoxCanvas fc) {
+                        log.debug("Found to remove from frame: {}", fc.getName());
+                        fc.stop();
+                        frame.remove(fc);
+                        success = true;
+                    }
+                }
+            }
+        }
+
+        if (!success) {
+            log.error("Nor cleared frame!");
         }
     }
 

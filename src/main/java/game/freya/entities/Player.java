@@ -6,17 +6,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Objects;
 import java.util.UUID;
 
 @Getter
@@ -42,14 +38,30 @@ public class Player {
     @Column(name = "avatar_url", length = 128)
     private String avatarUrl;
 
-    @Builder.Default
-    @Column(name = "in_game_time", columnDefinition = "bigint default 0")
-    private long inGameTime = 0;
+    @Column(name = "last_played_world_uid")
+    private UUID lastPlayedWorldUid;
 
-    @Column(name = "last_played_world")
-    private UUID lastPlayedWorld;
+    @Override
+    public String toString() {
+        return "Player{"
+                + "uid=" + uid
+                + ", nickName='" + nickName + '\''
+                + ", email='" + email + '\''
+                + ", avatarUrl='" + avatarUrl + '\''
+                + ", lastPlayedWorldUid=" + lastPlayedWorldUid
+                + '}';
+    }
 
-    @Builder.Default
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    private Set<Hero> heroes = HashSet.newHashSet(3);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Player player = (Player) o;
+        return Objects.equals(getUid(), player.getUid()) && Objects.equals(getNickName(), player.getNickName()) && Objects.equals(getEmail(), player.getEmail());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getUid(), getNickName(), getEmail());
+    }
 }

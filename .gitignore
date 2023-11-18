@@ -5,6 +5,7 @@ target/
 db/*
 saves/
 resources/
+worlds/
 
 # Log file
 *.log

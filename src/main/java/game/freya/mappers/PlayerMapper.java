@@ -2,6 +2,7 @@ package game.freya.mappers;
 
 import game.freya.entities.Player;
 import game.freya.entities.dto.PlayerDTO;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -10,11 +11,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public final class PlayerMapper {
-
-    private PlayerMapper() {
-    }
 
     public Player toEntity(PlayerDTO dto) {
         if (dto == null) {
@@ -25,9 +24,7 @@ public final class PlayerMapper {
                 .nickName(dto.getNickName())
                 .email(dto.getEmail())
                 .avatarUrl(dto.getAvatarUrl())
-                .inGameTime(dto.getInGameTime())
-                .lastPlayedWorld(dto.getLastPlayedWorld())
-                .heroes(dto.getHeroes())
+                .lastPlayedWorldUid(dto.getLastPlayedWorldUid())
                 .build();
     }
 
@@ -44,9 +41,7 @@ public final class PlayerMapper {
                 .nickName(entity.getNickName())
                 .email(entity.getEmail())
                 .avatarUrl(entity.getAvatarUrl())
-                .inGameTime(entity.getInGameTime())
-                .lastPlayedWorld(entity.getLastPlayedWorld())
-                .heroes(entity.getHeroes())
+                .lastPlayedWorldUid(entity.getLastPlayedWorldUid())
                 .build();
     }
 }

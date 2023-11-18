@@ -1,10 +1,11 @@
 package game.freya.gui.panes;
 
+import fox.FoxPointConverter;
 import fox.FoxRender;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.config.UserConfig.HotKeys;
 import game.freya.entities.dto.HeroDTO;
-import game.freya.entities.dto.PlayerDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
@@ -15,6 +16,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -29,21 +31,23 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.Optional;
+import java.util.Set;
+
+import static game.freya.config.Constants.FFB;
 
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
 public class GameCanvas extends FoxCanvas {
-    private static final String backToGameButtonText = "Вернуться";
-    private static final String optionsButtonText = "Настройки";
-    private static final String saveButtonText = "Сохранить";
-    private static final String exitButtonText = "Выйти в меню";
-    private final transient GameController gameController;
+    private static final String backToGameButtonText = "Вернуться", optionsButtonText = "Настройки", saveButtonText = "Сохранить",
+            exitButtonText = "Выйти в меню";
+    private final transient JFrame parentFrame;
     private final transient UIHandler uiHandler;
+    private final transient GameController gameController;
     private final transient WorldDTO worldDTO;
+    private final String pausedString = "- PAUSED -";
     private transient Rectangle2D viewPort;
-    private Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
-    private Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
+    private transient Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
+    private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
     private boolean isGameActive = false;
     private boolean isControlsMapped = false;
     private boolean isMovingKeyActive = false;
@@ -51,14 +55,17 @@ public class GameCanvas extends FoxCanvas {
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
     @Getter
     private boolean isPlayerMovingUp = false, isPlayerMovingDown = false, isPlayerMovingLeft = false, isPlayerMovingRight = false;
+    private double parentHeightMemory = 0;
+    private transient Thread resizeThread = null;
 
-    public GameCanvas(WorldDTO worldDTO, UIHandler uiHandler, GameController gameController) {
+    public GameCanvas(WorldDTO worldDTO, UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "GameCanvas");
         this.gameController = gameController;
         this.uiHandler = uiHandler;
-
+        this.parentFrame = parentFrame;
         this.worldDTO = worldDTO;
 
+        setSize(parentFrame.getLayeredPane().getSize());
         setBackground(Color.BLACK);
 
         addMouseMotionListener(this);
@@ -67,73 +74,16 @@ public class GameCanvas extends FoxCanvas {
         addMouseListener(this);
         addKeyListener(this);
 
-        if (this.worldDTO.getHeroes().isEmpty()) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "this.worldDTO.getHeroes()");
-        }
-
         new Thread(this).start();
     }
 
     private void setInAc() {
-        // KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_MASK)
-        Constants.INPUT_ACTION.add("game_canvas", (JComponent) getParent());
+//        final String frameName = "mainFrame";
+        final String frameName = "game_canvas";
 
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_left",
-//                Constants.getUserConfig().getKeyLeft(), 0, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        isMouseLeftEdgeOver = true;
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_right",
-//                Constants.getUserConfig().getKeyRight(), 0, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        isMouseRightEdgeOver = true;
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_up",
-//                Constants.getUserConfig().getKeyUp(), 0, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        isMouseUpEdgeOver = true;
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_down",
-//                Constants.getUserConfig().getKeyDown(), 0, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        isMouseDownEdgeOver = true;
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_left_release",
-//                Constants.getUserConfig().getKeyLeft(), 0, true, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        isMouseLeftEdgeOver = false;
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_right_release",
-//                Constants.getUserConfig().getKeyRight(), 0, true, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        isMouseRightEdgeOver = false;
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_up_release",
-//                Constants.getUserConfig().getKeyUp(), 0, true, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        isMouseUpEdgeOver = false;
-//                    }
-//                });
-//
+        // KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_MASK)
+        Constants.INPUT_ACTION.add(frameName, (JComponent) getParent());
+
 //        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_down_release",
 //                Constants.getUserConfig().getKeyDown(), 0, true, new AbstractAction() {
 //                    @Override
@@ -161,15 +111,27 @@ public class GameCanvas extends FoxCanvas {
         init();
 
         while (isGameActive) {
+            if (getParent() == null || !isDisplayable()) {
+                Thread.yield();
+                continue;
+            }
+
+            // если изменился размер фрейма:
+            if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
+                log.info("Resizing by parent frame...");
+                onResize();
+                parentHeightMemory = parentFrame.getBounds().getHeight();
+            }
+
+            Graphics2D g2D;
             try {
                 if (getBufferStrategy() == null) {
-                    log.info("Game canvas create the bs...");
                     createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
                 }
 
                 do {
                     do {
-                        Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
+                        g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
                         Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
                                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
@@ -186,12 +148,11 @@ public class GameCanvas extends FoxCanvas {
                             dragViewIfNeeds();
                         }
 
+                        // check gameplay duration:
+                        checkGameplayDuration(gameController.getCurrentHero().getInGameTime());
+
                         // draw debug info corner if debug mode on:
                         drawLocalDebugInfo(g2D);
-
-                        if (Constants.isFpsInfoVisible()) {
-                            super.drawFps(g2D);
-                        }
 
                         g2D.dispose();
                     } while (getBufferStrategy().contentsRestored());
@@ -201,7 +162,6 @@ public class GameCanvas extends FoxCanvas {
                 log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
 
-//            log.debug("Game canvas drawing cycle end. Waiting...");
             if (Constants.isFrameLimited() && Constants.getDiscreteDelay() > 1) {
                 try {
                     Thread.sleep(Constants.getDiscreteDelay());
@@ -209,14 +169,13 @@ public class GameCanvas extends FoxCanvas {
                     Thread.currentThread().interrupt();
                 }
             }
-//            log.debug("Game canvas waiting done.");
         }
         log.info("Thread of Game canvas is finalized.");
     }
 
     private void drawLocalDebugInfo(Graphics2D g2D) {
         if (Constants.isDebugInfoVisible()) {
-            super.drawDebugInfo(g2D, worldDTO.getTitle(), gameController.getCurrentPlayer().getInGameTime()); // отладочная информация
+            super.drawDebugInfo(g2D, worldDTO.getTitle()); // отладочная информация
 
             int leftShift = 320;
             Point2D.Double playerPos = gameController.getCurrentHero().getPosition();
@@ -224,10 +183,17 @@ public class GameCanvas extends FoxCanvas {
                     (int) playerPos.x - Constants.MAP_CELL_DIM / 2d,
                     (int) playerPos.y - Constants.MAP_CELL_DIM / 2d,
                     Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
-            g2D.drawString("Player pos: " + playerShape.getBounds2D().getCenterX() + "x" + playerShape.getBounds2D().getCenterY(),
+
+            if (Constants.isLowFpsAlarm()) {
+                g2D.setColor(Color.RED);
+            }
+            g2D.drawString("Delay fps: " + Constants.getDelay(), getWidth() - leftShift, getHeight() - 130);
+
+            g2D.setColor(Color.GRAY);
+            g2D.drawString("Hero pos: " + playerShape.getBounds2D().getCenterX() + "x" + playerShape.getBounds2D().getCenterY(),
                     getWidth() - leftShift, getHeight() - 110);
 
-            g2D.drawString("Player speed: " + gameController.getCurrentHero().getSpeed(),
+            g2D.drawString("Hero speed: " + gameController.getCurrentHero().getSpeed(),
                     getWidth() - leftShift, getHeight() - 90);
 
             g2D.drawString("GameMap WxH: " + worldDTO.getGameMap().getWidth() + "x" + worldDTO.getGameMap().getHeight(),
@@ -246,6 +212,9 @@ public class GameCanvas extends FoxCanvas {
 
         // проводим основную инициализацию класса мира:
         this.worldDTO.init(this);
+
+        reloadShapes(this);
+        recalculateMenuRectangles();
 
         // если не создан вьюпорт - создаём:
         if (this.viewPort == null) {
@@ -305,8 +274,46 @@ public class GameCanvas extends FoxCanvas {
         // рисуем мир:
         worldDTO.draw(g2D, viewPort.getBounds());
 
+        // рисуем данные героев:
+        drawHeroesData(g2D, worldDTO.getHeroes());
+
         // рисуем UI:
         drawUI(g2D);
+    }
+
+    private void drawHeroesData(Graphics2D g2D, Set<HeroDTO> heroes) {
+        g2D.setFont(Constants.DEBUG_FONT);
+
+        // draw heroes data:
+        heroes.forEach(hero -> {
+            if (hero.getUid().equals(getCurrentHero().getUid()) || worldDTO.isHeroActive(hero, viewPort.getBounds())) {
+                g2D.setColor(Color.YELLOW);
+
+                // Преобразуем координаты героя из карты мира в координаты текущего холста:
+                Point2D relocatedPoint = FoxPointConverter.relocateOn(viewPort, getBounds(), hero.getPosition());
+
+                double infoStrut = 58d;
+                double infoStrutHardness = 40d;
+                int strutMod = (int) (infoStrut - ((viewPort.getHeight() - viewPort.getY()) / infoStrutHardness));
+
+                g2D.setColor(Color.WHITE);
+                int halfName = (int) (FFB.getStringBounds(g2D, hero.getHeroName()).getWidth() / 2d);
+                g2D.drawString(hero.getHeroName(),
+                        (int) (relocatedPoint.getX() - halfName),
+                        (int) (relocatedPoint.getY() - strutMod));
+
+                strutMod += 24;
+                // draw heroes HP:
+                g2D.setColor(Color.red);
+                g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
+                        (int) (relocatedPoint.getY() - strutMod),
+                        hero.getHealth() - 10, 9, 3, 3);
+                g2D.setColor(Color.black);
+                g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
+                        (int) (relocatedPoint.getY() - strutMod),
+                        100, 9, 3, 3);
+            }
+        });
     }
 
     private void drawUI(Graphics2D g2D) {
@@ -314,23 +321,25 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void setGameActive() {
-        Optional<HeroDTO> currentHero = this.worldDTO.getHeroes().values().stream()
-                .filter(h -> h.getHeroName().equals(Constants.getUserConfig().getUserName())).findFirst();
-        if (currentHero.isEmpty()) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, currentHero);
-        }
         gameController.getCurrentPlayer().setOnline(true);
         this.isGameActive = true;
         Constants.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
+
+        setVisible(true);
+        requestFocusInWindow();
     }
 
     private void drawPauseMode(Graphics2D g2D) {
+        g2D.setFont(Constants.GAME_FONT_03);
+        g2D.setColor(new Color(0, 0, 0, 63));
+        g2D.drawString(pausedString,
+                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, pausedString)), getHeight() / 2 + 3);
+
         g2D.setFont(Constants.GAME_FONT_02);
         g2D.setColor(Color.DARK_GRAY);
-        g2D.drawString("- PAUSED -",
-                (int) (getWidth() / 2D - Constants.FFB.getStringBounds(g2D, "- PAUSED -").getWidth() / 2),
-                getHeight() / 2);
+        g2D.drawString(pausedString,
+                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, pausedString)), getHeight() / 2);
 
         // fill left gray menu polygon:
         g2D.setColor(Constants.getMainMenuBackgroundColor());
@@ -545,7 +554,26 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void stop() {
-        this.isGameActive = false;
+        if (this.isGameActive || isVisible()) {
+            boolean paused = Constants.isPaused();
+            boolean debug = Constants.isDebugInfoVisible();
+
+            Constants.setPaused(false);
+            Constants.setDebugInfoVisible(false);
+            gameController.doScreenShot(parentFrame.getLocation(), getBounds());
+            Constants.setPaused(paused);
+            Constants.setDebugInfoVisible(debug);
+
+            this.isGameActive = false;
+            setVisible(false);
+
+            gameController.updateWorld(worldDTO);
+            gameController.getCurrentPlayer().setOnline(false);
+            gameController.updateCurrentPlayer();
+            gameController.updateCurrentHero(getDuration());
+
+            gameController.loadScreen(ScreenType.MENU_SCREEN, null);
+        }
     }
 
     @Override
@@ -579,9 +607,6 @@ public class GameCanvas extends FoxCanvas {
             Constants.setPaused(false);
         }
         if (optionsButtonOver) {
-//            FoxTip tip = new FoxTip(Constants.RENDER, (JComponent) getParent(), FoxTip.TYPE.INFO, null, null, null);
-//            tip.createFoxTip(FoxTip.TYPE.INFO, null, "1", "2", "3", (JComponent) getParent());
-//            tip.showTip();
             Constants.showNFP();
         }
         if (saveButtonOver) {
@@ -589,9 +614,6 @@ public class GameCanvas extends FoxCanvas {
         }
         if (exitButtonOver) {
             stop();
-            gameController.updateWorld(worldDTO);
-            gameController.updateCurrentPlayer(getDuration());
-            gameController.loadScreen(ScreenType.MENU_SCREEN, null);
         }
     }
 
@@ -643,10 +665,35 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void componentResized(ComponentEvent e) {
-        reloadShapes(this);
-        recalculateMenuRectangles();
-        recreateViewPort();
-        moveViewToPlayer(0, 0);
+        onResize();
+    }
+
+    private void onResize() {
+        if (resizeThread != null && resizeThread.isAlive()) {
+            return;
+        }
+
+        resizeThread = new Thread(() -> {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                // ...
+            }
+
+            log.debug("Resizing of game canvas...");
+
+            if (Constants.getUserConfig().isFullscreen()) {
+                setSize(parentFrame.getSize());
+            } else if (!getSize().equals(parentFrame.getRootPane().getSize())) {
+                setSize(parentFrame.getRootPane().getSize());
+            }
+
+            reloadShapes(this);
+            recalculateMenuRectangles();
+            recreateViewPort();
+            moveViewToPlayer(0, 0);
+        });
+        resizeThread.start();
     }
 
     @Override
@@ -667,30 +714,30 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
+        if (e.getKeyCode() == HotKeys.MOVE_UP.getEvent()) {
             isPlayerMovingUp = true;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
+        } else if (e.getKeyCode() == HotKeys.MOVE_BACK.getEvent()) {
             isPlayerMovingDown = true;
         }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
+        if (e.getKeyCode() == HotKeys.MOVE_LEFT.getEvent()) {
             isPlayerMovingLeft = true;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
+        } else if (e.getKeyCode() == HotKeys.MOVE_RIGHT.getEvent()) {
             isPlayerMovingRight = true;
         }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {
+        if (e.getKeyCode() == HotKeys.CAM_UP.getEvent()) {
             isMovingKeyActive = true;
             isMouseUpEdgeOver = true;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookDown()) {
+        } else if (e.getKeyCode() == HotKeys.CAM_DOWN.getEvent()) {
             isMovingKeyActive = true;
             isMouseDownEdgeOver = true;
         }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookLeft()) {
+        if (e.getKeyCode() == HotKeys.CAM_LEFT.getEvent()) {
             isMovingKeyActive = true;
             isMouseLeftEdgeOver = true;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookRight()) {
+        } else if (e.getKeyCode() == HotKeys.CAM_RIGHT.getEvent()) {
             isMovingKeyActive = true;
             isMouseRightEdgeOver = true;
         }
@@ -732,12 +779,12 @@ public class GameCanvas extends FoxCanvas {
 
     }
 
-    public PlayerDTO getCurrentPlayer() {
-        return gameController.getCurrentPlayer();
-    }
-
     public HeroDTO getCurrentHero() {
         return gameController.getCurrentHero();
+    }
+
+    public void setCurrentHero(HeroDTO hero) {
+        gameController.setCurrentHero(hero);
     }
 
     public WorldDTO getCurrentWorld() {

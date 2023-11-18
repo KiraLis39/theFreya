@@ -28,11 +28,12 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
     public AudioSettingsPane(MenuCanvas canvas) {
         setName("Audio settings pane");
         setVisible(false);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
+
+        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+        setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
 
         add(new SubPane("Звук") {{
@@ -48,6 +49,8 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
                 }});
             }}, BorderLayout.WEST);
             add(new JZlider("soundSlider") {{
+                setMinorTickSpacing(5);
+                setMajorTickSpacing(20);
                 setValue(Constants.getUserConfig().getSoundVolumePercent());
                 addChangeListener(AudioSettingsPane.this);
             }}, BorderLayout.CENTER);
@@ -66,6 +69,8 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
                 }});
             }}, BorderLayout.WEST);
             add(new JZlider("musicSlider") {{
+                setMinorTickSpacing(5);
+                setMajorTickSpacing(20);
                 setValue(Constants.getUserConfig().getMusicVolumePercent());
                 addChangeListener(AudioSettingsPane.this);
             }}, BorderLayout.CENTER);

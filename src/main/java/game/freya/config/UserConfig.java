@@ -20,139 +20,118 @@ import java.util.UUID;
 @AllArgsConstructor
 public final class UserConfig {
 
+    @Getter
+    @Setter
+    @Builder.Default
+    public float miniMapOpacity = 0.7f;
     // player:
     @Getter
     @Setter
     @Builder.Default
     private UUID userId = UUID.randomUUID();
-
     @Getter
     @Setter
     @Builder.Default
     private String userName = SystemUtils.getUserName();
-
     @Getter
     @Setter
     @Builder.Default
     private String userMail = "demo@test.ru";
-
-
     // audio:
     @Getter
     @Setter
     @Builder.Default
     private boolean isSoundEnabled = true;
-
     @Getter
     @Setter
     @Builder.Default
     private int soundVolumePercent = 75;
-
     @Getter
     @Setter
     @Builder.Default
     private boolean isMusicEnabled = true;
-
     @Getter
     @Setter
     @Builder.Default
     private int musicVolumePercent = 75;
-
-
     // hotkeys:
     @Setter
     @Getter
     @Builder.Default
     private int keyLookUp = KeyEvent.VK_UP;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyLookLeft = KeyEvent.VK_LEFT;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyLookRight = KeyEvent.VK_RIGHT;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyLookDown = KeyEvent.VK_DOWN;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyMoveUp = KeyEvent.VK_W;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyMoveLeft = KeyEvent.VK_A;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyMoveRight = KeyEvent.VK_D;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyMoveDown = KeyEvent.VK_S;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyRotateClockwise = KeyEvent.VK_E;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyRotateCounter = KeyEvent.VK_Q;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyPause = KeyEvent.VK_ESCAPE;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyConsole = KeyEvent.VK_BACK_QUOTE;
-
     @Setter
     @Getter
     @Builder.Default
     private int keyConsoleMod = InputEvent.SHIFT_DOWN_MASK;
-
+    @Setter
+    @Getter
+    @Builder.Default
+    private int keyDebug = KeyEvent.VK_F10;
     @Setter
     @Getter
     @Builder.Default
     private int keyFullscreen = KeyEvent.VK_F11;
-
-
     // gameplay:
     @Getter
     @Setter
     @Builder.Default
     private boolean dragGameFieldOnFrameEdgeReached = true;
-
     @Getter
     @Setter
     @Builder.Default
     private FullscreenType fullscreenType = FullscreenType.MAXIMIZE_WINDOW; // .EXCLUSIVE
-
     @Getter
     @Setter
     @Builder.Default
     private boolean isFullscreen = false;
-
     @Getter
     @Setter
     @Builder.Default
     private boolean isPauseOnHidden = true;
-
-
     // graphics:
     @Getter
     @Setter
@@ -202,19 +181,20 @@ public final class UserConfig {
     }
 
     public enum HotKeys {
-        VK_UP("Камера вверх", Constants.getUserConfig().getKeyLookUp(), 0),
-        VK_LEFT("Камера влево", Constants.getUserConfig().getKeyLookLeft(), 0),
-        VK_RIGHT("Камера вправо", Constants.getUserConfig().getKeyLookRight(), 0),
-        VK_DOWN("Камера вниз", Constants.getUserConfig().getKeyLookDown(), 0),
-        VK_W("Движение вперед", Constants.getUserConfig().getKeyMoveUp(), 0),
-        VK_A("Движение влево", Constants.getUserConfig().getKeyMoveLeft(), 0),
-        VK_D("Движение вправо", Constants.getUserConfig().getKeyMoveRight(), 0),
-        VK_S("Движение назад", Constants.getUserConfig().getKeyMoveDown(), 0),
-        VK_E("Поворот по часовой", Constants.getUserConfig().getKeyRotateClockwise(), 0),
-        VK_Q("Поворот против часовой", Constants.getUserConfig().getKeyRotateCounter(), 0),
-        VK_ESCAPE("Меню/Пауза", Constants.getUserConfig().getKeyPause(), 0),
-        VK_BACK_QUOTE("Консоль", Constants.getUserConfig().getKeyConsole(), Constants.getUserConfig().getKeyConsoleMod()),
-        VK_F11("Переключение режима экрана", Constants.getUserConfig().getKeyFullscreen(), 0);
+        CAM_UP("Камера вверх", Constants.getUserConfig().getKeyLookUp(), 0),
+        CAM_LEFT("Камера влево", Constants.getUserConfig().getKeyLookLeft(), 0),
+        CAM_RIGHT("Камера вправо", Constants.getUserConfig().getKeyLookRight(), 0),
+        CAM_DOWN("Камера вниз", Constants.getUserConfig().getKeyLookDown(), 0),
+        MOVE_UP("Движение вперед", Constants.getUserConfig().getKeyMoveUp(), 0),
+        MOVE_LEFT("Движение влево", Constants.getUserConfig().getKeyMoveLeft(), 0),
+        MOVE_RIGHT("Движение вправо", Constants.getUserConfig().getKeyMoveRight(), 0),
+        MOVE_BACK("Движение назад", Constants.getUserConfig().getKeyMoveDown(), 0),
+        ROTATE_CLOCK("Поворот по часовой", Constants.getUserConfig().getKeyRotateClockwise(), 0),
+        ROTATE_COUNTER("Поворот против часовой", Constants.getUserConfig().getKeyRotateCounter(), 0),
+        PAUSE("Меню/Пауза", Constants.getUserConfig().getKeyPause(), 0),
+        CONSOLE("Консоль", Constants.getUserConfig().getKeyConsole(), Constants.getUserConfig().getKeyConsoleMod()),
+        DEBUG("Отладка", Constants.getUserConfig().getKeyDebug(), 0),
+        FULLSCREEN("Переключение режима экрана", Constants.getUserConfig().getKeyFullscreen(), 0);
 
         @Getter
         private final String description;

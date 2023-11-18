@@ -22,9 +22,12 @@ public class SubPane extends JPanel {
                         BorderFactory.createLineBorder(Color.DARK_GRAY, 1, true),
                         title, 2, 2, Constants.LITTLE_UNICODE_FONT, Color.WHITE));
             } else {
-                setBorder(BorderFactory.createTitledBorder(
-                        BorderFactory.createLineBorder(Color.DARK_GRAY, 1, true),
-                        title, 1, 2, Constants.DEBUG_FONT, Color.WHITE));
+                setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(Color.DARK_GRAY, 1, true),
+                                title, 1, 2, Constants.DEBUG_FONT, Color.WHITE),
+                        BorderFactory.createEmptyBorder(0, 3, 3, 3)
+                ));
             }
         } else {
             setBorder(BorderFactory.createCompoundBorder(

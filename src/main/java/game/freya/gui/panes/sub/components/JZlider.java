@@ -18,8 +18,6 @@ public class JZlider extends JSlider {
         setForeground(Color.WHITE);
         setFont(Constants.GAME_FONT_01);
 
-        setMinorTickSpacing(5);
-        setMajorTickSpacing(15);
         setPaintTicks(true);
         setSnapToTicks(true);
 

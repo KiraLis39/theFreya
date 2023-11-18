@@ -1,11 +1,15 @@
 package game.freya.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,6 +21,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static javax.persistence.CascadeType.ALL;
@@ -44,6 +49,10 @@ public class Hero {
     @Builder.Default
     @Column(name = "level")
     private short level = 1;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    private HeroType type = HeroType.VOID;
 
     @Builder.Default
     @Column(name = "attack")
@@ -82,9 +91,39 @@ public class Hero {
     @Column(name = "in_game_time", columnDefinition = "bigint default 0")
     private long inGameTime = 0;
 
-    @ManyToOne(cascade = ALL, fetch = FetchType.EAGER)
-    private World world;
+    @Column(name = "world_uid")
+    private UUID worldUid;
 
+    @JsonIgnoreProperties(value = "heroes")
     @ManyToOne(cascade = ALL, fetch = FetchType.EAGER)
     private Player ownedPlayer;
+
+    @Builder.Default
+    @CreatedDate
+    @CreationTimestamp
+    @Column(name = "create_date")
+    private LocalDateTime createDate = LocalDateTime.now();
+
+    @Override
+    public String toString() {
+        return "Hero{"
+                + "uid=" + uid
+                + ", heroName='" + heroName + '\''
+                + ", inventoryJson='" + inventoryJson + '\''
+                + ", level=" + level
+                + ", type=" + type
+                + ", currentAttackPower=" + currentAttackPower
+                + ", experience=" + experience
+                + ", health=" + health
+                + ", maxHealth=" + maxHealth
+                + ", speed=" + speed
+                + ", hurtLevel=" + hurtLevel
+                + ", buffsJson='" + buffsJson + '\''
+                + ", positionX=" + positionX
+                + ", positionY=" + positionY
+                + ", inGameTime=" + inGameTime
+                + ", worldUid=" + worldUid
+                + ", ownedPlayer=" + ownedPlayer.getUid()
+                + '}';
+    }
 }

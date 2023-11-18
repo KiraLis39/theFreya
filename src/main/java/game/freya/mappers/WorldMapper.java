@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Component
 public class WorldMapper {
-    private final PlayerMapper playerMapper;
     private final HeroMapper heroMapper;
 
     public WorldDTO toDto(World entity) {
@@ -23,11 +22,13 @@ public class WorldMapper {
         }
         WorldDTO result = new WorldDTO(
                 entity.getUid(),
+                entity.getAuthor(),
                 entity.getTitle(),
                 entity.getLevel(),
                 new Dimension(entity.getDimensionWidth(), entity.getDimensionHeight()),
-                entity.getPasswordHash());
-//        entity.getPlayers().forEach(player -> result.addPlayer(playerMapper.toDto(player)));
+                entity.isNetAvailable(),
+                entity.getPasswordHash(),
+                entity.getCreateDate());
         entity.getHeroes().forEach(hero -> result.addHero(heroMapper.toDto(hero)));
         return result;
     }
@@ -45,12 +46,14 @@ public class WorldMapper {
         }
         return World.builder()
                 .uid(dto.getUid())
+                .author(dto.getAuthor())
                 .title(dto.getTitle())
+                .isNetAvailable(dto.isNetAvailable())
                 .passwordHash(dto.getPasswordHash())
                 .dimensionWidth(dto.getDimension().width)
                 .dimensionHeight(dto.getDimension().height)
                 .level(dto.getLevel())
-//                .players(playerMapper.toEntities(dto.getPlayers()))
+                .createDate(dto.getCreateDate())
                 .heroes(heroMapper.toEntities(dto.getHeroes()))
                 .build();
     }

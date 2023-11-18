@@ -4,15 +4,19 @@ import fox.FoxRender;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.entities.dto.HeroDTO;
+import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.sub.AudioSettingsPane;
 import game.freya.gui.panes.sub.GameplaySettingsPane;
 import game.freya.gui.panes.sub.HeroCreatingPane;
+import game.freya.gui.panes.sub.HeroesListPane;
 import game.freya.gui.panes.sub.HotkeysSettingsPane;
 import game.freya.gui.panes.sub.VideoSettingsPane;
 import game.freya.gui.panes.sub.WorldCreatingPane;
+import game.freya.gui.panes.sub.WorldsListPane;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +39,10 @@ import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import static javax.swing.JLayeredPane.PALETTE_LAYER;
 
@@ -43,27 +51,27 @@ import static javax.swing.JLayeredPane.PALETTE_LAYER;
 public class MenuCanvas extends FoxCanvas {
     private final transient GameController gameController;
     private final transient JFrame parentFrame;
-    private boolean isMenuActive;
-    private String downInfoString1, downInfoString2;
-    private String startGameButtonText, startNewGameButtonText, coopPlayButtonText, optionsButtonText, exitButtonText, backButtonText,
-            randomHeroButtonText, resetHeroButtonText, completeHeroButtonText;
-    private String continueGameButtonText, startWithNewPlayerGameButtonText, createNewWorldGameButtonText;
-    private String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
-    private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
-    private Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
     private transient VolatileImage backMenuImage;
     private transient BufferedImage pAvatar;
-    private boolean initialized = false;
-    private boolean isStartGameMenuSetVisible = false, isOptionsMenuSetVisible = false,
-            isCreatingNewHeroSetVisible = false, isCreatingNewWorldSetVisible = false;
+    private transient Rectangle avatarRect;
+    private String downInfoString1, downInfoString2;
+    private String startGameButtonText, startNewGameButtonText, continueGameButtonText, coopPlayButtonText,
+            optionsButtonText, exitButtonText, backButtonText, randomButtonText, resetButtonText, createNewButtonText;
+    private String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
+    private Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
+    private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
+    private boolean isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false,
+            isCreatingNewWorldSetVisible = false, isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false;
     private boolean isAudioSettingsMenuVisible = false, isVideoSettingsMenuVisible = false,
             isHotkeysSettingsMenuVisible = false, isGameplaySettingsMenuVisible = false;
+    private boolean isMenuActive, initialized = false;
 
-    private Area area;
-    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane;
+    private transient Area area;
+    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane, heroesListPane;
     private double parentHeightMemory = 0;
     private byte drawErrorCount = 0;
     private transient Thread resizeThread = null;
+    private WorldDTO aNewWorldMemory;
 
     public MenuCanvas(JFrame parentFrame, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "MenuCanvas");
@@ -91,34 +99,38 @@ public class MenuCanvas extends FoxCanvas {
                 Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        onExitBack();
+                        if (isVisible()) {
+                            onExitBack();
+                        } else {
+                            Constants.setPaused(!Constants.isPaused());
+                        }
                     }
                 });
     }
 
     @Override
     public void run() {
-        this.isMenuActive = true;
+        setMenuActive();
 
         while (isMenuActive) {
-            if (getParent() == null || !isDisplayable()) {
+            if (getParent() == null || !isDisplayable() || Constants.isPaused()) {
                 Thread.yield();
                 continue;
             }
 
+            if (!initialized) {
+                init();
+            }
+
+            // если изменился размер фрейма:
+            if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
+                log.info("Resizing by parent frame...");
+                onResize();
+                parentHeightMemory = parentFrame.getBounds().getHeight();
+            }
+
             Graphics2D g2D = null;
             try {
-                if (!initialized) {
-                    init();
-                }
-
-                // если изменился размер фрейма:
-                if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
-                    log.info("Resizing by parent frame...");
-                    onResize();
-                    parentHeightMemory = parentFrame.getBounds().getHeight();
-                }
-
                 if (getBufferStrategy() == null) {
                     createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
                 }
@@ -132,11 +144,7 @@ public class MenuCanvas extends FoxCanvas {
                     drawMenu(g2D);
 
                     if (Constants.isDebugInfoVisible()) {
-                        super.drawDebugInfo(g2D, null, 0);
-                    }
-
-                    if (Constants.isFpsInfoVisible()) {
-                        super.drawFps(g2D);
+                        super.drawDebugInfo(g2D, null);
                     }
                 } while (getBufferStrategy().contentsRestored() || getBufferStrategy().contentsLost());
                 getBufferStrategy().show();
@@ -170,6 +178,11 @@ public class MenuCanvas extends FoxCanvas {
             }
         }
         log.info("Thread of Menu canvas is finalized.");
+    }
+
+    private void setMenuActive() {
+        Constants.setPaused(false);
+        this.isMenuActive = true;
     }
 
     private void drawBackground(Graphics2D g2D) {
@@ -208,44 +221,46 @@ public class MenuCanvas extends FoxCanvas {
             g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x - 1, fourthButtonRect.y + 17);
             g2D.setColor(fourthButtonOver ? Color.GREEN : Color.WHITE);
             g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x, fourthButtonRect.y + 18);
-        } else if (isStartGameMenuSetVisible) {
-            drawHeader(g2D, "Запуск игры");
+        } else if (isCreatingNewWorldSetVisible) {
+            drawHeader(g2D, "Создание мира");
 
-            // new game or continue buttons text:
+            // creating world buttons text:
             g2D.setColor(Color.BLACK);
-            g2D.drawString(gameController.getLastPlayedWorldUuid() != null ? continueGameButtonText : startNewGameButtonText,
-                    firstButtonRect.x - 1, firstButtonRect.y + 17);
+            g2D.drawString(randomButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
             g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(gameController.getLastPlayedWorldUuid() != null ? continueGameButtonText : startNewGameButtonText,
-                    firstButtonRect.x, firstButtonRect.y + 18);
+            g2D.drawString(randomButtonText, firstButtonRect.x, firstButtonRect.y + 18);
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(startWithNewPlayerGameButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
+            g2D.drawString(resetButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
             g2D.setColor(secondButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(startWithNewPlayerGameButtonText, secondButtonRect.x, secondButtonRect.y + 18);
+            g2D.drawString(resetButtonText, secondButtonRect.x, secondButtonRect.y + 18);
+        } else if (isChooseWorldMenuVisible) {
+            drawHeader(g2D, "Выбор мира");
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(createNewWorldGameButtonText, thirdButtonRect.x - 1, thirdButtonRect.y + 17);
-            g2D.setColor(thirdButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(createNewWorldGameButtonText, thirdButtonRect.x, thirdButtonRect.y + 18);
+            g2D.drawString(createNewButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
+            g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
+            g2D.drawString(createNewButtonText, firstButtonRect.x, firstButtonRect.y + 18);
+        } else if (isChooseHeroMenuVisible) {
+            drawHeader(g2D, "Выбор героя");
+
+            g2D.setColor(Color.BLACK);
+            g2D.drawString(createNewButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
+            g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
+            g2D.drawString(createNewButtonText, firstButtonRect.x, firstButtonRect.y + 18);
         } else if (isCreatingNewHeroSetVisible) {
             drawHeader(g2D, "Создание героя");
 
             // creating hero buttons text:
             g2D.setColor(Color.BLACK);
-            g2D.drawString(randomHeroButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
+            g2D.drawString(randomButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
             g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(randomHeroButtonText, firstButtonRect.x, firstButtonRect.y + 18);
+            g2D.drawString(randomButtonText, firstButtonRect.x, firstButtonRect.y + 18);
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(resetHeroButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
+            g2D.drawString(resetButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
             g2D.setColor(secondButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(resetHeroButtonText, secondButtonRect.x, secondButtonRect.y + 18);
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(completeHeroButtonText, thirdButtonRect.x - 1, thirdButtonRect.y + 17);
-            g2D.setColor(thirdButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(completeHeroButtonText, thirdButtonRect.x, thirdButtonRect.y + 18);
+            g2D.drawString(resetButtonText, secondButtonRect.x, secondButtonRect.y + 18);
         } else {
             // default buttons text:
             g2D.setColor(Color.BLACK);
@@ -265,10 +280,10 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(isOptionsMenuSetVisible || isStartGameMenuSetVisible
+        g2D.drawString(isOptionsMenuSetVisible // || isStartGameMenuSetVisible
                 ? backButtonText : exitButtonText, exitButtonRect.x - 1, exitButtonRect.y + 17);
         g2D.setColor(exitButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(isOptionsMenuSetVisible || isStartGameMenuSetVisible
+        g2D.drawString(isOptionsMenuSetVisible // || isStartGameMenuSetVisible
                 ? backButtonText : exitButtonText, exitButtonRect.x, exitButtonRect.y + 18);
     }
 
@@ -286,6 +301,8 @@ public class MenuCanvas extends FoxCanvas {
         gameplayPane.setVisible(partIndex == 3);
         heroCreatingPane.setVisible(partIndex == 4);
         worldCreatingPane.setVisible(partIndex == 5);
+        worldsListPane.setVisible(partIndex == 6);
+        heroesListPane.setVisible(partIndex == 7);
 
         if (Constants.isDebugInfoVisible()) {
             g2D.setColor(Color.RED);
@@ -322,18 +339,17 @@ public class MenuCanvas extends FoxCanvas {
         exitButtonText = "← Выход";
         backButtonText = "← В главное меню";
 
-        continueGameButtonText = "Продолжить игру";
-        startWithNewPlayerGameButtonText = "Создать героя";
-        createNewWorldGameButtonText = "Создать свой мир";
+        continueGameButtonText = "Продолжить";
+        createNewButtonText = "Создать";
 
         audioSettingsButtonText = "Настройки звука";
         videoSettingsButtonText = "Настройки графики";
         hotkeysSettingsButtonText = "Управление";
         gameplaySettingsButtonText = "Геймплей";
 
-        randomHeroButtonText = "Случайно";
-        resetHeroButtonText = "Сброс";
-        completeHeroButtonText = "Принять";
+//        completeButtonText = "Принять";
+        randomButtonText = "Случайно";
+        resetButtonText = "Сброс";
 
         try {
             Constants.CACHE.addIfAbsent("backMenuImage",
@@ -347,6 +363,7 @@ public class MenuCanvas extends FoxCanvas {
 
         recalculateMenuRectangles();
 
+        setVisible(true);
         this.initialized = true;
     }
 
@@ -361,6 +378,8 @@ public class MenuCanvas extends FoxCanvas {
         gameplayPane = new GameplaySettingsPane(this);
         heroCreatingPane = new HeroCreatingPane(this);
         worldCreatingPane = new WorldCreatingPane(this);
+        worldsListPane = new WorldsListPane(this);
+        heroesListPane = new HeroesListPane(this);
 
         // добавляем панели на слой:
         try {
@@ -370,6 +389,8 @@ public class MenuCanvas extends FoxCanvas {
             parentFrame.getLayeredPane().add(gameplayPane, PALETTE_LAYER);
             parentFrame.getLayeredPane().add(heroCreatingPane, PALETTE_LAYER);
             parentFrame.getLayeredPane().add(worldCreatingPane, PALETTE_LAYER);
+            parentFrame.getLayeredPane().add(worldsListPane, PALETTE_LAYER);
+            parentFrame.getLayeredPane().add(heroesListPane, PALETTE_LAYER);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
             recalculateSettingsPanes();
@@ -407,6 +428,16 @@ public class MenuCanvas extends FoxCanvas {
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма worldCreatingPane, которой там нет.");
         }
+        try {
+            parentFrame.getLayeredPane().remove(worldsListPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма worldsListPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(heroesListPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма heroesListPane, которой там нет.");
+        }
     }
 
     private void recreateBackImage() {
@@ -414,8 +445,7 @@ public class MenuCanvas extends FoxCanvas {
         Graphics2D g2D = backMenuImage.createGraphics();
         Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED, // todo: будет ли тут иметь вообще значение рендер?
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-        g2D.drawImage((BufferedImage) (isOptionsMenuSetVisible || isCreatingNewHeroSetVisible
-                        ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
+        g2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
                 0, 0, getWidth(), getHeight(), this);
 
         // fill left gray polygon:
@@ -431,18 +461,18 @@ public class MenuCanvas extends FoxCanvas {
                 (int) (getWidth() - Constants.FFB.getStringBounds(g2D, downInfoString2).getWidth() - 6), getHeight() - 25);
 
         // player`s info:
-        if (!isOptionsMenuSetVisible && !isCreatingNewHeroSetVisible) {
+        if (!isOptionsMenuSetVisible && !isCreatingNewHeroSetVisible && !isChooseWorldMenuVisible) {
             if (pAvatar == null) {
                 pAvatar = gameController.getCurrentPlayer().getAvatar();
             }
             g2D.setColor(Color.BLACK);
             g2D.setStroke(new BasicStroke(5f));
-            g2D.drawImage(pAvatar, getWidth() - 133, 6, 128, 128, this);
-            g2D.drawRoundRect(getWidth() - 133, 6, 128, 128, 16, 16);
+            g2D.drawImage(pAvatar, avatarRect.x, avatarRect.y, avatarRect.width, avatarRect.height, this);
+            g2D.drawRoundRect(avatarRect.x, avatarRect.y, avatarRect.width, avatarRect.height, 16, 16);
             g2D.setFont(Constants.DEBUG_FONT);
             g2D.drawString(gameController.getCurrentPlayer().getNickName(),
-                    (int) (getWidth() - 66 - Constants.FFB.getStringBounds(g2D, gameController.getCurrentPlayer().getNickName()).getWidth() / 2),
-                    152);
+                    (int) (avatarRect.getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayer().getNickName())),
+                    avatarRect.height + 24);
         }
 
         if (isAudioSettingsMenuVisible) {
@@ -457,6 +487,10 @@ public class MenuCanvas extends FoxCanvas {
             drawSettingsPart(g2D, 4);
         } else if (isCreatingNewWorldSetVisible) {
             drawSettingsPart(g2D, 5);
+        } else if (isChooseWorldMenuVisible) {
+            drawSettingsPart(g2D, 6);
+        } else if (isChooseHeroMenuVisible) {
+            drawSettingsPart(g2D, 7);
         }
 
         if (Constants.isDebugInfoVisible()) {
@@ -465,6 +499,11 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         g2D.dispose();
+    }
+
+    private boolean isShadowBackNeeds() {
+        return isOptionsMenuSetVisible || isCreatingNewHeroSetVisible || isCreatingNewWorldSetVisible || isChooseWorldMenuVisible
+                || isChooseHeroMenuVisible;
     }
 
     private void recalculateMenuRectangles() {
@@ -485,6 +524,8 @@ public class MenuCanvas extends FoxCanvas {
         exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
                 (int) (getHeight() * 0.85D),
                 buttonsRectsWidth, 30);
+
+        avatarRect = new Rectangle(getWidth() - 135, 8, 128, 128);
     }
 
     @Override
@@ -492,107 +533,8 @@ public class MenuCanvas extends FoxCanvas {
 
     }
 
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        if (firstButtonOver) {
-            if (isStartGameMenuSetVisible) {
-                // нажато Начать новую игру или Продолжить игру:
-                if (gameController.getCurrentPlayer().getHeroes().isEmpty()) {
-                    // создаём нового героя:
-                    isStartGameMenuSetVisible = false;
-                    isCreatingNewHeroSetVisible = true;
-                } else {
-                    gameController.createTheWorldIfAbsent();
-                    gameController.loadScreen(ScreenType.GAME_SCREEN, gameController.getLastPlayedWorld());
-                }
-            } else if (isOptionsMenuSetVisible) {
-                if (!isAudioSettingsMenuVisible) {
-                    isAudioSettingsMenuVisible = true;
-                    isVideoSettingsMenuVisible = false;
-                    isHotkeysSettingsMenuVisible = false;
-                    isGameplaySettingsMenuVisible = false;
-                }
-            } else if (isCreatingNewHeroSetVisible) {
-                Constants.showNFP();
-            } else {
-                // нажато Начать игру:
-                isStartGameMenuSetVisible = true;
-            }
-        }
-
-        if (secondButtonOver) {
-            if (isStartGameMenuSetVisible) {
-                if (!isCreatingNewHeroSetVisible) {
-                    // создаём нового героя:
-                    isCreatingNewHeroSetVisible = true;
-                    isStartGameMenuSetVisible = false;
-                } else {
-                    // нажато Создать героя:
-                    Constants.showNFP();
-                    // if ((int) new FOptionPane().buildFOptionPane("Уверены?",
-                    //     "Начать новую игру новым персонажем?", FOptionPane.TYPE.YES_NO_TYPE).get() == 0
-                    // ) {
-                    //    gameController.resetCurrentPlayer();
-                    //    gameController.loadScreen(ScreenType.GAME_SCREEN, gameController.getLastPlayedWorld());
-                    // }
-                }
-            } else if (isOptionsMenuSetVisible) {
-                // нажато Настройки графики:
-                if (!isVideoSettingsMenuVisible) {
-                    isVideoSettingsMenuVisible = true;
-                    isAudioSettingsMenuVisible = false;
-                    isHotkeysSettingsMenuVisible = false;
-                    isGameplaySettingsMenuVisible = false;
-                }
-            } else if (isCreatingNewHeroSetVisible) {
-                // нажато Сбросить героя:
-                Constants.showNFP();
-            } else {
-                Constants.showNFP();
-            }
-        }
-
-        if (thirdButtonOver) {
-            if (!isOptionsMenuSetVisible && !isStartGameMenuSetVisible && !isCreatingNewHeroSetVisible) {
-                isOptionsMenuSetVisible = true;
-                isAudioSettingsMenuVisible = true;
-            } else if (isCreatingNewHeroSetVisible) {
-                Constants.showNFP();
-            } else if (isOptionsMenuSetVisible) {
-                if (!isHotkeysSettingsMenuVisible) {
-                    isHotkeysSettingsMenuVisible = true;
-                    isVideoSettingsMenuVisible = false;
-                    isAudioSettingsMenuVisible = false;
-                    isGameplaySettingsMenuVisible = false;
-                }
-            }
-            // FoxTip плохо подходит для Rectangle т.к. нет возможности получить абсолютные координаты:
-            // new Color(102, 242, 223), new Color(157, 159, 201)
-//            FoxTip tip = new FoxTip(FoxTip.TYPE.INFO, null, "Не реализовано",
-//                    "Данный функционал ещё находится\nв разработке.", "Приносим свои извинения", optionsButtonRect);
-//            tip.showTip();
-        }
-
-        if (fourthButtonOver) {
-            if (isOptionsMenuSetVisible) {
-                if (!isGameplaySettingsMenuVisible) {
-                    isGameplaySettingsMenuVisible = true;
-                    isHotkeysSettingsMenuVisible = false;
-                    isVideoSettingsMenuVisible = false;
-                    isAudioSettingsMenuVisible = false;
-                }
-            } else {
-                Constants.showNFP();
-            }
-        }
-
-        if (exitButtonOver) {
-            onExitBack();
-        }
-    }
-
     private void onExitBack() {
-        if (isOptionsMenuSetVisible || isStartGameMenuSetVisible) {
+        if (isOptionsMenuSetVisible) { // || isStartGameMenuSetVisible
             isOptionsMenuSetVisible = false;
             isAudioSettingsMenuVisible = false;
             isVideoSettingsMenuVisible = false;
@@ -600,30 +542,43 @@ public class MenuCanvas extends FoxCanvas {
             isGameplaySettingsMenuVisible = false;
             isCreatingNewWorldSetVisible = false;
             isCreatingNewHeroSetVisible = false;
-            isStartGameMenuSetVisible = false;
         } else if (isCreatingNewHeroSetVisible) {
             isCreatingNewHeroSetVisible = false;
-            isStartGameMenuSetVisible = true;
         } else if (isCreatingNewWorldSetVisible) {
             isCreatingNewWorldSetVisible = false;
-            isStartGameMenuSetVisible = true;
+        } else if (isChooseWorldMenuVisible) {
+            isChooseWorldMenuVisible = false;
+        } else if (isChooseHeroMenuVisible) {
+            isChooseHeroMenuVisible = false;
         } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
             gameController.exitTheGame(null);
         }
 
         // в любом случае, любая панель тут скрывается:
-        audiosPane.setVisible(false);
-        videosPane.setVisible(false);
-        hotkeysPane.setVisible(false);
-        gameplayPane.setVisible(false);
-        heroCreatingPane.setVisible(false);
-        worldCreatingPane.setVisible(false);
+        hidePanelIfNotNull(audiosPane);
+        hidePanelIfNotNull(videosPane);
+        hidePanelIfNotNull(hotkeysPane);
+        hidePanelIfNotNull(gameplayPane);
+        hidePanelIfNotNull(heroCreatingPane);
+        hidePanelIfNotNull(worldCreatingPane);
+        hidePanelIfNotNull(worldsListPane);
+        hidePanelIfNotNull(heroesListPane);
+    }
+
+    private void hidePanelIfNotNull(JPanel panel) {
+        if (panel != null) {
+            panel.setVisible(false);
+        }
     }
 
     @Override
     public void stop() {
         this.isMenuActive = false;
+        dropOldPanesFromLayer();
+        this.backMenuImage.flush();
+        this.backMenuImage.getGraphics().dispose();
+        setVisible(false);
     }
 
     @Override
@@ -687,6 +642,10 @@ public class MenuCanvas extends FoxCanvas {
             boolean rect1IsVisible = videosPane != null && videosPane.isVisible();
             boolean rect2IsVisible = hotkeysPane != null && hotkeysPane.isVisible();
             boolean rect3IsVisible = gameplayPane != null && gameplayPane.isVisible();
+            boolean rect4IsVisible = heroCreatingPane != null && heroCreatingPane.isVisible();
+            boolean rect5IsVisible = worldCreatingPane != null && worldCreatingPane.isVisible();
+            boolean rect6IsVisible = worldsListPane != null && worldsListPane.isVisible();
+            boolean rect7IsVisible = heroesListPane != null && heroesListPane.isVisible();
 
             recalculateSettingsPanes();
 
@@ -694,6 +653,10 @@ public class MenuCanvas extends FoxCanvas {
             isVideoSettingsMenuVisible = rect1IsVisible;
             isHotkeysSettingsMenuVisible = rect2IsVisible;
             isGameplaySettingsMenuVisible = rect3IsVisible;
+            isCreatingNewHeroSetVisible = rect4IsVisible;
+            isCreatingNewWorldSetVisible = rect5IsVisible;
+            isChooseWorldMenuVisible = rect6IsVisible;
+            isChooseHeroMenuVisible = rect7IsVisible;
         });
         resizeThread.start();
     }
@@ -728,5 +691,161 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void keyReleased(KeyEvent e) {
+    }
+
+    public void createNewWorldAndCloseThatPanel(WorldCreatingPane newWorldTemplate) {
+        aNewWorldMemory = new WorldDTO();
+        aNewWorldMemory.setTitle(newWorldTemplate.getWorldName());
+        aNewWorldMemory.setLevel(newWorldTemplate.getHardnessLevel());
+        aNewWorldMemory.setNetAvailable(newWorldTemplate.isNetAvailable());
+        aNewWorldMemory.setPasswordHash(newWorldTemplate.getNetPasswordHash());
+
+        aNewWorldMemory = gameController.saveNewWorld(aNewWorldMemory);
+        isCreatingNewWorldSetVisible = false;
+        isCreatingNewHeroSetVisible = true;
+    }
+
+    public void createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane newHeroTemplate) {
+        HeroDTO aNewHeroDto = gameController.saveNewHero(HeroDTO.builder()
+                .heroName(newHeroTemplate.getHeroName())
+                .ownedPlayer(gameController.getCurrentPlayer())
+                .worldUid(newHeroTemplate.getWorldUid())
+                .build());
+
+        aNewWorldMemory.addHero(aNewHeroDto);
+        aNewWorldMemory = gameController.updateWorld(aNewWorldMemory);
+        gameController.setCurrentWorld(aNewWorldMemory);
+
+        playWithThisHero(aNewHeroDto.getUid());
+    }
+
+    public List<WorldDTO> getExistsWorlds() {
+        return gameController.getExistingWorlds();
+    }
+
+    public void createNewHeroForExistsWorldAndCloseThatPanel(UUID selectedWorldUuid) {
+        gameController.setLastPlayedWorldUuid(selectedWorldUuid);
+        aNewWorldMemory = gameController.getCurrentWorld();
+
+        if (getCurrentWorldHeroes().isEmpty()) {
+            isCreatingNewHeroSetVisible = true;
+        } else {
+            isChooseHeroMenuVisible = true;
+        }
+
+        isChooseWorldMenuVisible = false;
+        worldsListPane.setVisible(false);
+    }
+
+    public void deleteExistsWorldAndCloseThatPanel(UUID worldUid) {
+        log.info("Удаление мира {}...", worldUid);
+        gameController.deleteWorld(worldUid);
+    }
+
+    public Set<HeroDTO> getCurrentWorldHeroes() {
+        return gameController.getCurrentWorld() == null
+                ? Collections.emptySet() : gameController.getCurrentWorld().getHeroes();
+    }
+
+    public void deleteExistsPlayerHero(UUID heroUid) {
+        gameController.deleteCurrentPlayerHero(heroUid);
+    }
+
+    public void playWithThisHero(UUID heroUid) {
+        isCreatingNewHeroSetVisible = false;
+        heroCreatingPane.setVisible(false);
+
+        gameController.setCurrentHero(heroUid);
+        gameController.getCurrentPlayer().setLastPlayedWorldUid(aNewWorldMemory.getUid());
+        gameController.loadScreen(ScreenType.GAME_SCREEN, aNewWorldMemory);
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        if (firstButtonOver) {
+            if (isOptionsMenuSetVisible) {
+                if (!isAudioSettingsMenuVisible) {
+                    isAudioSettingsMenuVisible = true;
+                    isVideoSettingsMenuVisible = false;
+                    isHotkeysSettingsMenuVisible = false;
+                    isGameplaySettingsMenuVisible = false;
+                }
+            } else if (isCreatingNewHeroSetVisible) {
+                Constants.showNFP();
+            } else if (isChooseWorldMenuVisible) {
+                isChooseWorldMenuVisible = false;
+                isCreatingNewWorldSetVisible = true;
+            } else if (isChooseHeroMenuVisible) {
+                isChooseHeroMenuVisible = false;
+                isCreatingNewHeroSetVisible = true;
+            } else {
+                // Попытка начать новую игру:
+                List<WorldDTO> worlds = gameController.getExistingWorlds();
+                if (worlds.isEmpty()) {
+                    // миров нет - создаём:
+                    isCreatingNewWorldSetVisible = true;
+                    return;
+                }
+                // отображаем существующие миры для игры:
+                isChooseWorldMenuVisible = true;
+            }
+        }
+
+        if (secondButtonOver) {
+            if (isOptionsMenuSetVisible) {
+                // нажато Настройки графики:
+                if (!isVideoSettingsMenuVisible) {
+                    isVideoSettingsMenuVisible = true;
+                    isAudioSettingsMenuVisible = false;
+                    isHotkeysSettingsMenuVisible = false;
+                    isGameplaySettingsMenuVisible = false;
+                }
+            } else if (isCreatingNewHeroSetVisible) {
+                Constants.showNFP();
+            } else {
+                Constants.showNFP();
+            }
+        }
+
+        if (thirdButtonOver) {
+            if (!isOptionsMenuSetVisible && !isCreatingNewHeroSetVisible && !isChooseWorldMenuVisible) {
+                isOptionsMenuSetVisible = true;
+                isAudioSettingsMenuVisible = true;
+            } else if (isCreatingNewHeroSetVisible) {
+                Constants.showNFP();
+            } else if (isOptionsMenuSetVisible) {
+                if (!isHotkeysSettingsMenuVisible) {
+                    isHotkeysSettingsMenuVisible = true;
+                    isVideoSettingsMenuVisible = false;
+                    isAudioSettingsMenuVisible = false;
+                    isGameplaySettingsMenuVisible = false;
+                }
+            } else if (isChooseWorldMenuVisible) {
+                Constants.showNFP();
+            } else {
+                Constants.showNFP();
+            }
+        }
+
+        if (fourthButtonOver) {
+            if (isOptionsMenuSetVisible) {
+                if (!isGameplaySettingsMenuVisible) {
+                    isGameplaySettingsMenuVisible = true;
+                    isHotkeysSettingsMenuVisible = false;
+                    isVideoSettingsMenuVisible = false;
+                    isAudioSettingsMenuVisible = false;
+                }
+            } else {
+                Constants.showNFP();
+            }
+        }
+
+        if (exitButtonOver) {
+            onExitBack();
+        }
+    }
+
+    public WorldDTO getCurrentWorld() {
+        return gameController.getCurrentWorld();
     }
 }

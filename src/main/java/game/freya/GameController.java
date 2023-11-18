@@ -3,18 +3,24 @@ package game.freya;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
 import game.freya.entities.Player;
+import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.PlayerDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
+import game.freya.mappers.HeroMapper;
 import game.freya.mappers.PlayerMapper;
 import game.freya.mappers.WorldMapper;
 import game.freya.net.SocketService;
+import game.freya.services.HeroService;
 import game.freya.services.PlayerService;
 import game.freya.services.UserConfigService;
 import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
+import game.freya.utils.Screenshoter;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -25,10 +31,14 @@ import org.sqlite.SQLiteConnection;
 import javax.annotation.PostConstruct;
 import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,6 +48,8 @@ import java.util.UUID;
 public class GameController {
     private final PlayerService playerService;
     private final PlayerMapper playerMapper;
+    private final HeroService heroService;
+    private final HeroMapper heroMapper;
     private final SQLiteConnection conn;
     private final UserConfigService userConfigService;
     private final WorldService worldService;
@@ -49,14 +61,14 @@ public class GameController {
     private final GameConfig gameConfig;
 
     @Getter
+    @Setter
     private PlayerDTO currentPlayer;
 
     @Getter
     private HeroDTO currentHero;
 
     @Getter
-    @Setter
-    private UUID lastPlayedWorldUuid;
+    private WorldDTO currentWorld;
 
     @PostConstruct
     public void init() throws IOException {
@@ -64,6 +76,10 @@ public class GameController {
             UIManager.setLookAndFeel(new NimbusLookAndFeel());
         } catch (Exception e) {
             log.warn("Couldn't get specified look and feel, for reason: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+
+        if (Files.notExists(Path.of(Constants.getWorldsImagesDir()))) {
+            Files.createDirectories(Path.of(Constants.getWorldsImagesDir()));
         }
 
         userConfigService.load(Path.of(Constants.getUserSave()));
@@ -91,12 +107,13 @@ public class GameController {
         }
 
         this.currentPlayer = playerMapper.toDto(curPlayer.get());
-        this.lastPlayedWorldUuid = currentPlayer.getLastPlayedWorld();
+        Optional<World> wOpt = worldService.findByUid(currentPlayer.getLastPlayedWorldUid());
+        this.currentWorld = worldMapper.toDto(wOpt.orElse(null));
 
         // если мир был удалён:
-        if (this.lastPlayedWorldUuid != null && !worldService.existsByUuid(this.lastPlayedWorldUuid)) {
-            this.lastPlayedWorldUuid = null;
-            currentPlayer.setLastPlayedWorld(null);
+        if (this.currentWorld != null && !worldService.existsByUuid(this.currentWorld.getUid())) {
+            this.currentWorld = null;
+            currentPlayer.setLastPlayedWorldUid(null);
         }
 
         // если сменили никнейм в конфиге:
@@ -147,47 +164,75 @@ public class GameController {
         }
     }
 
-    public void updateCurrentPlayer(Duration duration) {
-        currentPlayer.setInGameTime(duration.toMillis());
+    public void updateCurrentPlayer() {
+        currentPlayer.setCurrentActiveHero(currentHero);
         playerService.updatePlayer(currentPlayer);
     }
 
-    public void updateWorld(WorldDTO worldDTO) {
-        worldService.save(worldDTO);
+    public WorldDTO updateWorld(WorldDTO worldDTO) {
+        return worldService.save(worldDTO);
     }
 
-//    public void resetCurrentPlayer() {
-//        log.info("Удаление старого персонажа, создание нового...");
-//        playerService.delete(currentPlayer);
-//        this.currentPlayer = playerMapper.toDto(playerService.createPlayer());
-//    }
-
-    public WorldDTO getLastPlayedWorld() {
-        if (lastPlayedWorldUuid == null) {
-            return null;
-        } else if (worldService.existsByUuid(lastPlayedWorldUuid) && worldService.findByUid(lastPlayedWorldUuid).isPresent()) {
-            return worldMapper.toDto(worldService.findByUid(lastPlayedWorldUuid).get());
-        }
-        return null;
+    public List<WorldDTO> getExistingWorlds() {
+        return worldService.findAll();
     }
 
-    public void createTheWorldIfAbsent() {
-        if (lastPlayedWorldUuid == null || !worldService.existsByUuid(lastPlayedWorldUuid)) {
-            // create a new world:
-            WorldDTO createdWorld = worldService.createDefaultWorld(this.currentPlayer);
-            this.lastPlayedWorldUuid = createdWorld.getUid();
-        }
+    public WorldDTO saveNewWorld(WorldDTO aNewWorld) {
+        aNewWorld.setAuthor(currentPlayer.getUid());
+        WorldDTO saved = worldService.save(aNewWorld);
+        this.currentWorld = saved;
+        return saved;
     }
 
-    /*
-        if (worldService.count() > 0) {
-            List<WorldDTO> worldDtos = worldService.findAll();
-            // выводить список доступных миров:
-            log.debug("Not realized");
-        } else {
-            // создаём первый, дефолтный мир:
-            worldDto = worldService.save(new WorldDTO("Demo world"));
-            worldDto = worldService.addPlayerToWorld(worldDto, gameController.getCurrentPlayer());
+    public void setCurrentWorld(WorldDTO currentWorld) {
+        this.currentWorld = currentWorld;
+    }
+
+    public void setLastPlayedWorldUuid(UUID selectedWorldUuid) {
+        Optional<World> wOpt = worldService.findByUid(selectedWorldUuid);
+        if (wOpt.isEmpty()) {
+            throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid);
         }
-     */
+        this.currentWorld = worldMapper.toDto(wOpt.get());
+    }
+
+    public void deleteCurrentPlayerHero(UUID heroUid) {
+        heroService.deleteHeroByUuid(heroUid);
+        if (this.currentHero != null && this.currentHero.getUid().equals(heroUid)) {
+            this.currentHero = null;
+        }
+        Optional<Player> plOpt = playerService.findByUid(this.currentPlayer.getUid());
+        setCurrentPlayer(playerMapper.toDto(plOpt.get()));
+    }
+
+    public void setCurrentHero(HeroDTO hero) {
+        this.currentHero = hero;
+    }
+
+    public void setCurrentHero(UUID uid) {
+        this.currentHero = heroMapper.toDto(heroService.findByUid(uid).orElseThrow());
+    }
+
+    public HeroDTO saveNewHero(HeroDTO aNewHeroDto) {
+        aNewHeroDto.setWorldUid(currentWorld.getUid());
+        aNewHeroDto.setOwnedPlayer(this.currentPlayer);
+        return heroMapper.toDto(heroService.save(heroMapper.toEntity(aNewHeroDto)));
+    }
+
+    public void deleteWorld(UUID worldUid) {
+        worldService.delete(worldUid);
+    }
+
+    public void updateCurrentHero(Duration duration) {
+        this.currentHero.setInGameTime(duration == null ? 0 : duration.toMillis());
+        heroService.save(heroMapper.toEntity(this.currentHero));
+    }
+
+    public void doScreenShot(Point location, Rectangle canvasRect) {
+        new Screenshoter().doScreenshot(new Rectangle(
+                location.x + 9 + canvasRect.getBounds().x,
+                location.y + 30 + canvasRect.getBounds().y,
+                canvasRect.getBounds().width, canvasRect.getBounds().height
+        ), Constants.getWorldsImagesDir() + getCurrentWorld().getUid());
+    }
 }

@@ -4,10 +4,12 @@ import game.freya.enums.HardnessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
+import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -18,8 +20,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -27,9 +29,9 @@ import java.util.UUID;
 @Getter
 @Setter
 @Builder
-@RequiredArgsConstructor
-@Entity
+@NoArgsConstructor
 @AllArgsConstructor
+@Entity
 @Table(name = "worlds")
 public class World {
     @Id
@@ -38,18 +40,25 @@ public class World {
     @Column(name = "id", nullable = false, insertable = false, updatable = false)
     private UUID uid = UUID.randomUUID();
 
+    @Column(name = "author")
+    private UUID author;
+
     @Column(name = "title", length = 64, unique = true, nullable = false)
     private String title;
+
+    @Builder.Default
+    @Column(name = "is_net_available")
+    private boolean isNetAvailable = false;
 
     @Column(name = "password_hash")
     private int passwordHash;
 
     @Builder.Default
-    @Column(name = "dimension_w", nullable = false)
+    @Column(name = "dimension_w")
     private int dimensionWidth = 64; // 64 = 2048 cells | 128 = 4096 cells
 
     @Builder.Default
-    @Column(name = "dimension_h", nullable = false)
+    @Column(name = "dimension_h")
     private int dimensionHeight = 32; // 32 = 1024 cells | 128 = 4096 cells
 
     @Builder.Default
@@ -58,29 +67,12 @@ public class World {
 
     @Builder.Default
     @LazyCollection(LazyCollectionOption.FALSE)
-    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
-    private Set<Player> players = HashSet.newHashSet(3);
-
-    @Builder.Default
-    @LazyCollection(LazyCollectionOption.FALSE)
-    @OneToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, orphanRemoval = true)
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH})
     private Set<Hero> heroes = HashSet.newHashSet(3);
 
-    public World addPlayer(Player p) {
-        players.add(p);
-        return this;
-    }
-
-    public Player getPlayer(String nickName) {
-        return players.stream().filter(p -> p.getNickName().equals(nickName)).findFirst().orElse(null);
-    }
-
-    public World addHero(Hero hero) {
-        heroes.add(hero);
-        return this;
-    }
-
-    public Hero getHero(String heroName) {
-        return heroes.stream().filter(h -> h.getHeroName().equals(heroName)).findFirst().orElse(null);
-    }
+    @Builder.Default
+    @CreatedDate
+    @CreationTimestamp
+    @Column(name = "create_date", nullable = false)
+    private LocalDateTime createDate = LocalDateTime.now();
 }

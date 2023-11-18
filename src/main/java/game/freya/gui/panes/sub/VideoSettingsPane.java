@@ -64,6 +64,10 @@ public class VideoSettingsPane extends JPanel {
                 zlider = new JZlider("fpsLimiterSlider") {{
                     setMinimum(30);
                     setMaximum(Constants.MON.getRefreshRate());
+
+                    setMinorTickSpacing(5);
+                    setMajorTickSpacing(15);
+
                     setValue((int) Constants.getUserConfig().getScreenDiscreteLimit());
                     addChangeListener(e -> {
                         if (cBox.isSelected()) {
@@ -82,6 +86,10 @@ public class VideoSettingsPane extends JPanel {
             add(new SubPane(null) {{
                 setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
 
+                add(new ZLabel("Использовать мультибуфер", null) {{
+                    setVerticalAlignment(CENTER);
+                }});
+
                 add(new CheckBokz("useMultiBufferCheck") {{
                     setSelected(Constants.getUserConfig().isMultiBufferEnabled());
                     setAction(new AbstractAction() {
@@ -90,9 +98,7 @@ public class VideoSettingsPane extends JPanel {
                             Constants.getUserConfig().setMultiBufferEnabled(isSelected());
                         }
                     });
-                }}, BorderLayout.WEST);
-
-                add(new ZLabel("Использовать мультибуфер", null));
+                }}, BorderLayout.EAST);
             }});
 
             add(Box.createVerticalStrut(6));
@@ -100,14 +106,15 @@ public class VideoSettingsPane extends JPanel {
             add(new SubPane(null) {{
                 setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
 
+                add(new ZLabel("Размер мультибуфера", null) {{
+                    setVerticalAlignment(CENTER);
+                }});
                 add(new JSpinner(new SpinnerNumberModel(2, 2, 3, 1)) {{
                     setValue(Constants.getUserConfig().getBufferedDeep());
                     setBorder(null);
                     setFocusable(false);
                     addChangeListener(e -> Constants.getUserConfig().setBufferedDeep(Integer.parseInt(getValue().toString())));
-                }}, BorderLayout.WEST);
-
-                add(new ZLabel("Размер мультибуфера", null));
+                }}, BorderLayout.EAST);
             }});
 
             add(Box.createVerticalStrut(canvas.getHeight()));

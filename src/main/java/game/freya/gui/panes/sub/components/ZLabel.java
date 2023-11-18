@@ -4,6 +4,7 @@ import game.freya.config.Constants;
 
 import javax.swing.Icon;
 import javax.swing.JLabel;
+import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 
 public class ZLabel extends JLabel {
@@ -13,5 +14,6 @@ public class ZLabel extends JLabel {
         setFont(Constants.DEBUG_FONT);
         setForeground(Color.WHITE);
         setVerticalAlignment(TOP);
+        setBorder(new EmptyBorder(0, 3, 0, 0));
     }
 }

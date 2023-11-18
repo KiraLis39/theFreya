@@ -2,6 +2,7 @@ package game.freya.entities.dto;
 
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iHero;
+import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import game.freya.items.containers.Backpack;
 import game.freya.items.interfaces.iEntity;
@@ -15,8 +16,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
+import javax.swing.Icon;
 import javax.validation.constraints.NotNull;
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
@@ -25,11 +26,10 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import static game.freya.config.Constants.FFB;
 
 @Slf4j
 @Getter
@@ -50,6 +50,9 @@ public class HeroDTO implements iHero {
 
     @Builder.Default
     private short level = 1;
+
+    @Builder.Default
+    private HeroType type = HeroType.VOID;
 
     @Builder.Default
     private float currentAttackPower = 1.0f;
@@ -75,7 +78,23 @@ public class HeroDTO implements iHero {
     @Builder.Default
     private List<Buff> buffs = new ArrayList<>(9);
 
+    @Setter
+    private UUID worldUid;
+
+    @Setter
     private PlayerDTO ownedPlayer;
+
+    @Getter
+    @Builder.Default
+    private LocalDateTime createDate = LocalDateTime.now();
+
+    @Setter
+    @Builder.Default
+    private long inGameTime = 0;
+
+//    @Getter
+//    @Builder.Default
+//    private Shape playerShape = new Ellipse2D.Double(0, 0, 1, 1);
 
     @Override
     public boolean isDead() {
@@ -116,8 +135,8 @@ public class HeroDTO implements iHero {
     @Override
     public void draw(Graphics2D g2D) {
         Shape playerShape = new Ellipse2D.Double(
-                (int) getPosition().x - Constants.MAP_CELL_DIM / 4d,
-                (int) getPosition().y - Constants.MAP_CELL_DIM / 4d,
+                (int) this.position.x - Constants.MAP_CELL_DIM / 4d,
+                (int) this.position.y - Constants.MAP_CELL_DIM / 4d,
                 Constants.MAP_CELL_DIM / 2d, Constants.MAP_CELL_DIM / 2d);
 
         // draw shadow:
@@ -125,22 +144,14 @@ public class HeroDTO implements iHero {
         g2D.fillOval(playerShape.getBounds().x + 3, playerShape.getBounds().y + 6,
                 playerShape.getBounds().width, playerShape.getBounds().height);
 
-        // draw border:
-        g2D.setStroke(new BasicStroke(2f));
-        g2D.setColor(Color.ORANGE);
-        g2D.draw(playerShape);
-
         // fill body:
         g2D.setColor(Color.GREEN);
-        g2D.fillOval(playerShape.getBounds().x + 1, playerShape.getBounds().y + 1,
-                playerShape.getBounds().width - 2, playerShape.getBounds().height - 2);
+        g2D.fill(playerShape);
 
-        // draw nickname:
-        g2D.setColor(Color.BLACK);
-        g2D.setFont(Constants.GAME_FONT_01);
-        g2D.drawString(getHeroName(),
-                (int) (playerShape.getBounds2D().getCenterX() - FFB.getStringBounds(g2D, getHeroName()).getWidth() / 2d),
-                (int) (playerShape.getBounds2D().getCenterY() + FFB.getStringBounds(g2D, getHeroName()).getHeight() / 3d));
+        // draw border:
+//        g2D.setStroke(new BasicStroke(2f));
+        g2D.setColor(Color.ORANGE);
+        g2D.draw(playerShape);
     }
 
     private void recheckHurtLevel() {
@@ -160,11 +171,11 @@ public class HeroDTO implements iHero {
 
     @Override
     public BufferedImage getAvatar() {
-        try (InputStream avatarResource = getClass().getResourceAsStream("/images/defaultAvatar.png")) {
+        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
             if (avatarResource != null) {
                 return ImageIO.read(avatarResource);
             }
-            throw new IOException("/images/defaultAvatar.png");
+            throw new IOException(Constants.DEFAULT_AVATAR_URL);
         } catch (IOException e) {
             log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
             return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
@@ -219,19 +230,19 @@ public class HeroDTO implements iHero {
     }
 
     public void moveUp() {
-        position.setLocation(position.x, position.y - 1);
+        this.position.setLocation(position.x, position.y - 1);
     }
 
     public void moveDown() {
-        position.setLocation(position.x, position.y + 1);
+        this.position.setLocation(position.x, position.y + 1);
     }
 
     public void moveLeft() {
-        position.setLocation(position.x - 1, position.y);
+        this.position.setLocation(position.x - 1, position.y);
     }
 
     public void moveRight() {
-        position.setLocation(position.x + 1, position.y);
+        this.position.setLocation(position.x + 1, position.y);
     }
 
     @Override
@@ -246,5 +257,10 @@ public class HeroDTO implements iHero {
                 + ", position=" + position
                 + ", hurtLevel=" + hurtLevel
                 + '}';
+    }
+
+    public Icon getIcon() {
+        log.warn("Иконки типов героев ещё не заведены!");
+        return null;
     }
 }

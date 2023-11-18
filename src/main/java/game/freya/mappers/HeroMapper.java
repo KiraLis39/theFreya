@@ -9,21 +9,21 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.items.containers.Backpack;
 import game.freya.items.logic.Buff;
 import game.freya.utils.ExceptionUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.awt.geom.Point2D;
-import java.util.Map;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public final class HeroMapper {
     private final ObjectMapper mapper = new ObjectMapper();
-
-    private HeroMapper() {
-    }
+    private final PlayerMapper playerMapper;
 
     public Hero toEntity(HeroDTO dto) {
         if (dto == null) {
@@ -33,6 +33,7 @@ public final class HeroMapper {
                 .uid(dto.getUid())
                 .heroName(dto.getHeroName())
                 .level(dto.getLevel())
+                .type(dto.getType())
                 .currentAttackPower(dto.getCurrentAttackPower())
                 .experience(dto.getExperience())
                 .health(dto.getHealth())
@@ -41,6 +42,10 @@ public final class HeroMapper {
                 .positionX(dto.getPosition().x)
                 .positionY(dto.getPosition().y)
                 .hurtLevel(dto.getHurtLevel())
+                .createDate(dto.getCreateDate())
+                .ownedPlayer(playerMapper.toEntity(dto.getOwnedPlayer()))
+                .worldUid(dto.getWorldUid())
+                .inGameTime(dto.getInGameTime())
                 .build();
 
         try {
@@ -63,6 +68,7 @@ public final class HeroMapper {
                 .uid(entity.getUid())
                 .heroName(entity.getHeroName())
                 .level(entity.getLevel())
+                .type(entity.getType())
                 .currentAttackPower(entity.getCurrentAttackPower())
                 .experience(entity.getExperience())
                 .health(entity.getHealth())
@@ -70,6 +76,10 @@ public final class HeroMapper {
                 .speed(entity.getSpeed())
                 .position(new Point2D.Double(entity.getPositionX(), entity.getPositionY()))
                 .hurtLevel(entity.getHurtLevel())
+                .createDate(entity.getCreateDate())
+                .worldUid(entity.getWorldUid())
+                .ownedPlayer(playerMapper.toDto(entity.getOwnedPlayer()))
+                .inGameTime(entity.getInGameTime())
                 .build();
 
         try {
@@ -86,7 +96,17 @@ public final class HeroMapper {
         return result;
     }
 
-    public Set<Hero> toEntities(Map<String, HeroDTO> heroes) {
-        return heroes.values().stream().map(this::toEntity).collect(Collectors.toSet());
+    public Set<Hero> toEntities(Set<HeroDTO> heroes) {
+        if (heroes == null) {
+            return Collections.emptySet();
+        }
+        return heroes.stream().map(this::toEntity).collect(Collectors.toSet());
+    }
+
+    public Set<HeroDTO> toDtos(Set<Hero> heroes) {
+        if (heroes == null) {
+            return Collections.emptySet();
+        }
+        return heroes.stream().map(this::toDto).collect(Collectors.toSet());
     }
 }
