@@ -8,6 +8,8 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.PlayerMapper;
 import game.freya.repositories.PlayersRepository;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -20,12 +22,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Service
 @Transactional
 public class PlayerService {
     private final PlayersRepository playersRepository;
     private final PlayerMapper playerMapper;
+
+    @Getter
+    private PlayerDTO currentPlayer;
+
+    public void setCurrentPlayer(Player player) {
+        this.currentPlayer = playerMapper.toDto(player);
+    }
 
     public Player save(Player player) {
         if (player != null) {
@@ -44,13 +53,13 @@ public class PlayerService {
         return playersRepository.findByEmailIgnoreCase(userMail);
     }
 
-    public void updatePlayer(PlayerDTO playerDTO) {
-        Optional<Player> playerToUpdate = playersRepository.findByUid(playerDTO.getUid());
+    public void updateCurrentPlayer() {
+        Optional<Player> playerToUpdate = playersRepository.findByUid(currentPlayer.getUid());
         if (playerToUpdate.isEmpty()) {
-            throw new GlobalServiceException(ErrorMessages.PLAYER_NOT_FOUND, playerDTO.getNickName());
+            throw new GlobalServiceException(ErrorMessages.PLAYER_NOT_FOUND, currentPlayer.getNickName());
         }
         Player pl = playerToUpdate.get();
-        BeanUtils.copyProperties(playerDTO, pl, "id");
+        BeanUtils.copyProperties(currentPlayer, pl, "id");
         save(pl);
     }
 
@@ -70,11 +79,7 @@ public class PlayerService {
             log.error("Can`t set the avatar to player {} by url '{}'", newPlayer.getNickName(), Constants.DEFAULT_AVATAR_URL);
             throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, Constants.DEFAULT_AVATAR_URL);
         }
-        log.info("Новый персонаж успешно создан.");
+        log.info("Новый пользователь {} успешно создан.", newPlayer.getNickName());
         return save(playerMapper.toEntity(newPlayer));
-    }
-
-    public void updateNickName(UUID puid, String nickName) {
-        playersRepository.updateNickNameByUid(puid, nickName);
     }
 }

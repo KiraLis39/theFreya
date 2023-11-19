@@ -5,6 +5,9 @@ import game.freya.entities.dto.WorldDTO;
 import game.freya.mappers.WorldMapper;
 import game.freya.repositories.WorldRepository;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -14,11 +17,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Service
 public class WorldService {
     private final WorldRepository worldRepository;
     private final WorldMapper worldMapper;
+
+    @Getter
+    @Setter
+    private WorldDTO currentWorld;
 
     public List<WorldDTO> findAll() {
         return worldMapper.toDto(worldRepository.findAll());
@@ -38,13 +45,6 @@ public class WorldService {
 
     public Optional<World> findByUid(UUID uid) {
         return worldRepository.findByUid(uid);
-    }
-
-    public boolean existsByUuid(UUID lpw) {
-        if (lpw == null) {
-            return false;
-        }
-        return worldRepository.existsById(lpw);
     }
 
     public void delete(UUID worldUid) {
