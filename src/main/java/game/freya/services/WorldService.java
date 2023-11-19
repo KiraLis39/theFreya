@@ -4,7 +4,6 @@ import game.freya.entities.World;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.mappers.WorldMapper;
 import game.freya.repositories.WorldRepository;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;

@@ -7,13 +7,11 @@ import game.freya.config.Constants;
 import game.freya.config.UserConfig.HotKeys;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.enums.MovingVector;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JComponent;
@@ -29,8 +27,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -44,15 +40,15 @@ public class GameCanvas extends FoxCanvas {
     private final transient JFrame parentFrame;
     private final transient UIHandler uiHandler;
     private final transient GameController gameController;
-    private final transient WorldDTO worldDTO;
+    private final double infoStrut = 58d, infoStrutHardness = 40d;
+    private transient WorldDTO worldDTO;
     private transient Rectangle2D viewPort;
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
     private boolean isGameActive = false, isControlsMapped = false, isMovingKeyActive = false;
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
-
-//    private boolean isPlayerMovingUp = false, isPlayerMovingDown = false, isPlayerMovingLeft = false, isPlayerMovingRight = false;
     private double parentHeightMemory = 0;
     private transient Thread resizeThread = null;
+    private int strutMod;
 
     public GameCanvas(WorldDTO worldDTO, UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "GameCanvas", gameController);
@@ -220,7 +216,7 @@ public class GameCanvas extends FoxCanvas {
         log.info("Do canvas re-initialization...");
 
         // проводим основную инициализацию класса мира:
-        this.worldDTO.init(this);
+        this.worldDTO.init(this, gameController);
 
         reloadShapes(this);
         recalculateMenuRectangles();
@@ -266,38 +262,37 @@ public class GameCanvas extends FoxCanvas {
 
     private void drawWorld(Graphics2D g2D) {
         // рисуем мир:
-        worldDTO.draw(g2D, viewPort.getBounds());
+        worldDTO.draw(g2D);
 
         // рисуем данные героев:
-        drawHeroesData(g2D, worldDTO.getHeroes());
+        drawHeroesData(g2D, gameController.getCurrentWorldHeroes());
 
         // рисуем UI:
         drawUI(g2D);
     }
 
     private void drawHeroesData(Graphics2D g2D, Set<HeroDTO> heroes) {
+        strutMod = (int) (infoStrut - ((viewPort.getHeight() - viewPort.getY()) / infoStrutHardness));
+
         g2D.setFont(Constants.DEBUG_FONT);
+        g2D.setColor(Color.WHITE);
 
         // draw heroes data:
         heroes.forEach(hero -> {
-            if (hero.getUid().equals(getCurrentHero().getUid()) || worldDTO.isHeroActive(hero, viewPort.getBounds())) {
-                g2D.setColor(Color.YELLOW);
+            if (gameController.isHeroActive(hero, viewPort.getBounds())) {
 
                 // Преобразуем координаты героя из карты мира в координаты текущего холста:
                 Point2D relocatedPoint = FoxPointConverter.relocateOn(viewPort, getBounds(), hero.getPosition());
 
-                double infoStrut = 58d;
-                double infoStrutHardness = 40d;
-                int strutMod = (int) (infoStrut - ((viewPort.getHeight() - viewPort.getY()) / infoStrutHardness));
-
-                g2D.setColor(Color.WHITE);
+                // draw hero name:
                 int halfName = (int) (FFB.getStringBounds(g2D, hero.getHeroName()).getWidth() / 2d);
                 g2D.drawString(hero.getHeroName(),
                         (int) (relocatedPoint.getX() - halfName),
                         (int) (relocatedPoint.getY() - strutMod));
 
                 strutMod += 24;
-                // draw heroes HP:
+
+                // draw hero HP:
                 g2D.setColor(Color.red);
                 g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
                         (int) (relocatedPoint.getY() - strutMod),
@@ -315,7 +310,6 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void setGameActive() {
-        gameController.getCurrentPlayer().setOnline(true);
         this.isGameActive = true;
         Constants.setPaused(false);
         setOptionsMenuSetVisible(false);
@@ -547,7 +541,7 @@ public class GameCanvas extends FoxCanvas {
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         if (this.isGameActive || isVisible()) {
             boolean paused = Constants.isPaused();
             boolean debug = Constants.isDebugInfoVisible();
@@ -558,14 +552,11 @@ public class GameCanvas extends FoxCanvas {
             Constants.setPaused(paused);
             Constants.setDebugInfoVisible(debug);
 
+            this.worldDTO = gameController.updateWorld(worldDTO);
+            gameController.setCurrentHeroOnline(false, getDuration());
+
             this.isGameActive = false;
             setVisible(false);
-
-            gameController.updateWorld(worldDTO);
-            gameController.getCurrentPlayer().setOnline(false);
-            gameController.updateCurrentPlayer();
-            gameController.updateCurrentHero(getDuration());
-
             gameController.loadScreen(ScreenType.MENU_SCREEN, null);
         }
     }
@@ -731,21 +722,18 @@ public class GameCanvas extends FoxCanvas {
 
     }
 
-    @Getter
-    public boolean isPlayerMovingUp, isPlayerMovingDown, isPlayerMovingLeft, isPlayerMovingRight;
-
     @Override
     public void keyPressed(KeyEvent e) {
         // hero movement:
         if (e.getKeyCode() == HotKeys.MOVE_UP.getEvent()) {
-            isPlayerMovingUp = true;
+            gameController.setPlayerMovingUp(true);
         } else if (e.getKeyCode() == HotKeys.MOVE_BACK.getEvent()) {
-            isPlayerMovingDown = true;
+            gameController.setPlayerMovingDown(true);
         }
         if (e.getKeyCode() == HotKeys.MOVE_LEFT.getEvent()) {
-            isPlayerMovingLeft = true;
+            gameController.setPlayerMovingLeft(true);
         } else if (e.getKeyCode() == HotKeys.MOVE_RIGHT.getEvent()) {
-            isPlayerMovingRight = true;
+            gameController.setPlayerMovingRight(true);
         }
 
         // camera movement:
@@ -768,15 +756,15 @@ public class GameCanvas extends FoxCanvas {
     @Override
     public void keyReleased(KeyEvent e) {
         if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
-            isPlayerMovingUp = false;
+            gameController.setPlayerMovingUp(false);
         } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
-            isPlayerMovingDown = false;
+            gameController.setPlayerMovingDown(false);
         }
 
         if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
-            isPlayerMovingLeft = false;
+            gameController.setPlayerMovingLeft(false);
         } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
-            isPlayerMovingRight = false;
+            gameController.setPlayerMovingRight(false);
         }
 
         if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {
@@ -801,11 +789,7 @@ public class GameCanvas extends FoxCanvas {
 
     }
 
-    public HeroDTO getCurrentHero() {
-        return gameController.getCurrentHero();
-    }
-
-    public WorldDTO getCurrentWorld() {
-        return this.worldDTO;
+    public Rectangle2D getViewPort() {
+        return this.viewPort;
     }
 }

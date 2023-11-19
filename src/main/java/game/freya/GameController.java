@@ -182,16 +182,6 @@ public class GameController {
         heroService.getCurrentHero().setInGameTime(duration == null ? 0 : duration.toMillis());
     }
 
-    public void setCurrentHero(HeroDTO hero) {
-        // если был активен другой герой - снимаем с него метку онлайн:
-        Optional<HeroDTO> onLineHeroOpt = heroService.getCurrentHeroes().stream().filter(HeroDTO::isOnline).findAny();
-        onLineHeroOpt.ifPresent(heroDTO -> heroDTO.setOnline(false));
-
-        // ставим метку онлайн на нового героя:
-        hero.setOnline(true);
-        heroService.getCurrentHeroes().add(hero);
-    }
-
     public void doScreenShot(Point location, Rectangle canvasRect) {
         new Screenshoter().doScreenshot(new Rectangle(
                 location.x + 9 + canvasRect.getBounds().x,
@@ -291,6 +281,16 @@ public class GameController {
 
     public HeroDTO getCurrentHero() {
         return heroService.getCurrentHero();
+    }
+
+    public void setCurrentHero(HeroDTO hero) {
+        // если был активен другой герой - снимаем с него метку онлайн:
+        Optional<HeroDTO> onLineHeroOpt = heroService.getCurrentHeroes().stream().filter(HeroDTO::isOnline).findAny();
+        onLineHeroOpt.ifPresent(heroDTO -> heroDTO.setOnline(false));
+
+        // ставим метку онлайн на нового героя:
+        hero.setOnline(true);
+        heroService.getCurrentHeroes().add(hero);
     }
 
     public BufferedImage getCurrentPlayerAvatar() {

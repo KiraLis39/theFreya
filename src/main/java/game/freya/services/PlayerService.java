@@ -7,7 +7,6 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.PlayerMapper;
 import game.freya.repositories.PlayersRepository;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

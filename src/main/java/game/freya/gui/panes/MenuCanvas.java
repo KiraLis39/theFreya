@@ -96,8 +96,6 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void run() {
-        // Thread.currentThread().setDaemon(true);
-
         setMenuActive();
 
         while (isMenuActive) {
@@ -539,7 +537,6 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         resizeThread = new Thread(() -> {
-            // Thread.currentThread().setDaemon(true);
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
