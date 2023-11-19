@@ -22,6 +22,9 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private static final short rightShift = 21;
     private static float downShift = 0;
     private final String name;
+    private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
+    private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
+    private final String pausedString, downInfoString1, downInfoString2;
     private int frames = 0;
     private long timeStamp = System.currentTimeMillis();
     private Polygon leftGrayMenuPoly;
@@ -29,9 +32,6 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private Duration duration;
     private transient Rectangle avatarRect;
     private Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
-    private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
-    private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
-    private final String pausedString, downInfoString1, downInfoString2;
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
     private boolean isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false, isCreatingNewWorldSetVisible = false,
             isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false;

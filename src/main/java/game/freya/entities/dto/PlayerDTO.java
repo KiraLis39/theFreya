@@ -25,9 +25,12 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PlayerDTO {
     @NotNull
-    private final String nickName;
-    @NotNull
     private final String email;
+
+    @NotNull
+    @Setter
+    private String nickName;
+
     @NotNull
     @Setter
     private UUID uid;
@@ -39,9 +42,6 @@ public class PlayerDTO {
     private UUID lastPlayedWorldUid;
 
     // custom fields:
-    @Builder.Default
-    private boolean isOnline = false;
-
     @Setter
     private BufferedImage avatar;
 
@@ -62,11 +62,6 @@ public class PlayerDTO {
         } catch (IOException e) {
             throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, Constants.DEFAULT_AVATAR_URL);
         }
-    }
-
-    public void setOnline(boolean online) {
-        log.info("The Player '{}' is {} now!", getNickName(), online ? "ON-LINE" : "OFF-LINE");
-        isOnline = online;
     }
 
     @Override

@@ -3,7 +3,6 @@ package game.freya.gui.panes.handlers;
 import fox.FoxRender;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.GameCanvas;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +17,6 @@ import java.awt.Composite;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
-import java.awt.geom.Path2D;
-import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 
@@ -93,7 +90,7 @@ public final class UIHandler {
 
         // down left minimap:
         if (!Constants.isPaused()) {
-            updateMiniMap(canvas.getCurrentWorld());
+            updateMiniMap();
         }
 
         // draw minimap:
@@ -127,7 +124,7 @@ public final class UIHandler {
         }
     }
 
-    private void updateMiniMap(WorldDTO world) {
+    private void updateMiniMap() {
         Point2D.Double hPos = gameController.getCurrentHero().getPosition();
 //        int srcX = (int) (hPos.x - halfDim);
 //        int srcY = (int) (hPos.y - halfDim);
@@ -142,7 +139,7 @@ public final class UIHandler {
 
 //        m2D.drawImage(drown, 0, 0, minimapImage.getWidth(), minimapImage.getHeight(), null);
 
-        world.getHeroes().forEach(hero -> {
+        gameController.getCurrentWorldHeroes().forEach(hero -> {
             if (hero.getUid().equals(gameController.getCurrentHero().getUid())) {
                 // draw green arrow:
                 m2D.setColor(Color.GREEN);
