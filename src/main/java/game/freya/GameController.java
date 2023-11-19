@@ -182,6 +182,11 @@ public class GameController {
         heroService.offlineHero();
     }
 
+    public void justSaveOnlineHero(Duration duration) {
+        heroService.getCurrentHero().setInGameTime(duration == null ? 0 : duration.toMillis());
+        heroService.saveCurrentHero();
+    }
+
     public void doScreenShot(Point location, Rectangle canvasRect) {
         new Screenshoter().doScreenshot(new Rectangle(
                 location.x + 9 + canvasRect.getBounds().x,

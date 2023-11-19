@@ -39,7 +39,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
     private boolean isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false, isCreatingNewWorldSetVisible = false,
-            isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false;
+            isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false, networkMenuVisible = false;
     private boolean isAudioSettingsMenuVisible = false, isVideoSettingsMenuVisible = false, isHotkeysSettingsMenuVisible = false,
             isGameplaySettingsMenuVisible = false;
     private boolean revolatileNeeds = false;

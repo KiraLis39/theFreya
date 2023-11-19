@@ -33,6 +33,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.Set;
 
 import static game.freya.config.Constants.FFB;
+import static game.freya.config.Constants.setPaused;
 
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
@@ -566,6 +567,11 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
+    private void justSave() {
+        gameController.justSaveOnlineHero(getDuration());
+        gameController.saveCurrentWorld();
+    }
+
     @Override
     public void mouseMoved(MouseEvent e) {
         Point p = e.getPoint();
@@ -596,7 +602,7 @@ public class GameCanvas extends FoxCanvas {
     public void mouseReleased(MouseEvent e) {
         if (isFirstButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                Constants.showNFP();
+                setAudioSettingsMenuVisible(true);
             } else {
                 Constants.setPaused(false);
                 setOptionsMenuSetVisible(false);
@@ -604,21 +610,25 @@ public class GameCanvas extends FoxCanvas {
         }
         if (isSecondButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                Constants.showNFP();
+                setVideoSettingsMenuVisible(true);
             } else {
                 setOptionsMenuSetVisible(true);
             }
         }
         if (isThirdButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                Constants.showNFP();
+                setHotkeysSettingsMenuVisible(true);
             } else {
-                Constants.showNFP();
+                // нет нужды в паузе здесь, просто сохраняемся:
+                Constants.setPaused(false);
+                justSave();
+                new FOptionPane().buildFOptionPane("Успешно", "Игра сохранена!",
+                        FOptionPane.TYPE.INFO, null, Constants.getDefaultCursor(), 3, false);
             }
         }
         if (isFourthButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                Constants.showNFP();
+                setGameplaySettingsMenuVisible(true);
             } else {
                 Constants.showNFP();
             }
@@ -626,6 +636,10 @@ public class GameCanvas extends FoxCanvas {
         if (isExitButtonOver()) {
             if (isOptionsMenuSetVisible()) {
                 setOptionsMenuSetVisible(false);
+                setAudioSettingsMenuVisible(false);
+                setVideoSettingsMenuVisible(false);
+                setHotkeysSettingsMenuVisible(false);
+                setGameplaySettingsMenuVisible(false);
             } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти в главное меню?",
                     FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
                 stop();
