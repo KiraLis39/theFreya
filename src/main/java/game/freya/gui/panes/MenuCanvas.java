@@ -48,7 +48,6 @@ import static javax.swing.JLayeredPane.PALETTE_LAYER;
 public class MenuCanvas extends FoxCanvas {
     private final transient GameController gameController;
     private final transient JFrame parentFrame;
-    private transient VolatileImage backMenuImage;
     private transient BufferedImage pAvatar;
     private transient Thread resizeThread = null;
     private transient WorldDTO aNewWorldMemory;
@@ -92,6 +91,34 @@ public class MenuCanvas extends FoxCanvas {
                         }
                     }
                 });
+    }
+
+    private void init() {
+        reloadShapes(this);
+
+        startGameButtonText = "Начать игру";
+        coopPlayButtonText = "Игра по сети";
+        optionsButtonText = "Настройки";
+        createNewButtonText = "Создать";
+        randomButtonText = "Случайно";
+        resetButtonText = "Сброс";
+
+        try {
+            Constants.CACHE.addIfAbsent("backMenuImage",
+                    ImageIO.read(new File("./resources/images/menu.png")));
+            Constants.CACHE.addIfAbsent("backMenuImageShadowed",
+                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
+            Constants.CACHE.addIfAbsent("green_arrow",
+                    ImageIO.read(new File("./resources/images/green_arrow.png")));
+//            recreateBackImage();
+        } catch (Exception e) {
+            log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+
+        recalculateMenuRectangles();
+
+        setVisible(true);
+        this.initialized = true;
     }
 
     @Override
@@ -172,13 +199,78 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     private void drawBackground(Graphics2D g2D) {
-        if (backMenuImage != null) {
-            if (backMenuImage.validate(Constants.getGraphicsConfiguration()) != VolatileImage.IMAGE_OK) {
-                recreateBackImage();
-            }
-            // draw background image:
-            g2D.drawImage(backMenuImage, 0, 0, getWidth(), getHeight(), this);
+        if (getBackImage() == null || validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE || isRevolatileNeeds()) {
+            log.info("Recreating new volatile...");
+            setBackImage(createVolatileImage(getWidth(), getHeight()));
+            setRevolatileNeeds(false);
         }
+        if (validateBackImage() == VolatileImage.IMAGE_RESTORED) {
+            log.info("Awaits while is not Ok...");
+            recreateBackImage(getBackImage().createGraphics());
+        } else {
+            recreateBackImage((Graphics2D) getBackImage().getGraphics());
+        }
+
+        // draw background image:
+        g2D.drawImage(getBackImage(), 0, 0, getWidth(), getHeight(), this);
+    }
+
+    private void recreateBackImage(Graphics2D g2D) {
+        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+        g2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
+                0, 0, getWidth(), getHeight(), this);
+
+        // fill left gray polygon:
+        drawLeftGrayPoly(g2D);
+
+        // down right corner text:
+        g2D.setFont(Constants.INFO_FONT);
+        g2D.setColor(Color.WHITE);
+        g2D.drawString(getDownInfoString1(),
+                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString1()).getWidth() - 6), getHeight() - 9);
+        g2D.drawString(getDownInfoString2(),
+                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString2()).getWidth() - 6), getHeight() - 25);
+
+        // player`s info:
+        if (!isOptionsMenuSetVisible() && !isCreatingNewHeroSetVisible() && !isChooseWorldMenuVisible()) {
+            if (pAvatar == null) {
+                pAvatar = gameController.getCurrentPlayerAvatar();
+            }
+            g2D.setColor(Color.BLACK);
+            g2D.setStroke(new BasicStroke(5f));
+            g2D.drawImage(pAvatar, getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, this);
+            g2D.drawRoundRect(getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, 16, 16);
+            g2D.setFont(Constants.DEBUG_FONT);
+            g2D.drawString(gameController.getCurrentPlayerNickName(),
+                    (int) (getAvatarRect().getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayerNickName())),
+                    getAvatarRect().height + 24);
+        }
+
+        if (isAudioSettingsMenuVisible()) {
+            drawSettingsPart(g2D, 0);
+        } else if (isVideoSettingsMenuVisible()) {
+            drawSettingsPart(g2D, 1);
+        } else if (isHotkeysSettingsMenuVisible()) {
+            drawSettingsPart(g2D, 2);
+        } else if (isGameplaySettingsMenuVisible()) {
+            drawSettingsPart(g2D, 3);
+        } else if (isCreatingNewHeroSetVisible()) {
+            drawSettingsPart(g2D, 4);
+        } else if (isCreatingNewWorldSetVisible()) {
+            drawSettingsPart(g2D, 5);
+        } else if (isChooseWorldMenuVisible()) {
+            drawSettingsPart(g2D, 6);
+        } else if (isChooseHeroMenuVisible()) {
+            drawSettingsPart(g2D, 7);
+        }
+
+        if (Constants.isDebugInfoVisible()) {
+            g2D.setColor(Color.CYAN);
+            g2D.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
+        }
+
+        g2D.dispose();
     }
 
     private void drawMenu(Graphics2D g2D) {
@@ -278,34 +370,6 @@ public class MenuCanvas extends FoxCanvas {
         g2D.setFont(font);
     }
 
-    private void init() {
-        reloadShapes(this);
-
-        startGameButtonText = "Начать игру";
-        coopPlayButtonText = "Игра по сети";
-        optionsButtonText = "Настройки";
-        createNewButtonText = "Создать";
-        randomButtonText = "Случайно";
-        resetButtonText = "Сброс";
-
-        try {
-            Constants.CACHE.addIfAbsent("backMenuImage",
-                    ImageIO.read(new File("./resources/images/menu.png")));
-            Constants.CACHE.addIfAbsent("backMenuImageShadowed",
-                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
-            Constants.CACHE.addIfAbsent("green_arrow",
-                    ImageIO.read(new File("./resources/images/green_arrow.png")));
-            recreateBackImage();
-        } catch (Exception e) {
-            log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
-
-        recalculateMenuRectangles();
-
-        setVisible(true);
-        this.initialized = true;
-    }
-
     private void recalculateSettingsPanes() {
         // удаляем старые панели с фрейма:
         dropOldPanesFromLayer();
@@ -379,66 +443,6 @@ public class MenuCanvas extends FoxCanvas {
         }
     }
 
-    private void recreateBackImage() {
-        backMenuImage = createVolatileImage(getWidth(), getHeight());
-        Graphics2D g2D = backMenuImage.createGraphics();
-        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-        g2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
-                0, 0, getWidth(), getHeight(), this);
-
-        // fill left gray polygon:
-        drawLeftGrayPoly(g2D);
-
-        // down right corner text:
-        g2D.setFont(Constants.INFO_FONT);
-        g2D.setColor(Color.WHITE);
-        g2D.drawString(getDownInfoString1(),
-                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString1()).getWidth() - 6), getHeight() - 9);
-        g2D.drawString(getDownInfoString2(),
-                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString2()).getWidth() - 6), getHeight() - 25);
-
-        // player`s info:
-        if (!isOptionsMenuSetVisible() && !isCreatingNewHeroSetVisible() && !isChooseWorldMenuVisible()) {
-            if (pAvatar == null) {
-                pAvatar = gameController.getCurrentPlayerAvatar();
-            }
-            g2D.setColor(Color.BLACK);
-            g2D.setStroke(new BasicStroke(5f));
-            g2D.drawImage(pAvatar, getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, this);
-            g2D.drawRoundRect(getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, 16, 16);
-            g2D.setFont(Constants.DEBUG_FONT);
-            g2D.drawString(gameController.getCurrentPlayerNickName(),
-                    (int) (getAvatarRect().getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayerNickName())),
-                    getAvatarRect().height + 24);
-        }
-
-        if (isAudioSettingsMenuVisible()) {
-            drawSettingsPart(g2D, 0);
-        } else if (isVideoSettingsMenuVisible()) {
-            drawSettingsPart(g2D, 1);
-        } else if (isHotkeysSettingsMenuVisible()) {
-            drawSettingsPart(g2D, 2);
-        } else if (isGameplaySettingsMenuVisible()) {
-            drawSettingsPart(g2D, 3);
-        } else if (isCreatingNewHeroSetVisible()) {
-            drawSettingsPart(g2D, 4);
-        } else if (isCreatingNewWorldSetVisible()) {
-            drawSettingsPart(g2D, 5);
-        } else if (isChooseWorldMenuVisible()) {
-            drawSettingsPart(g2D, 6);
-        } else if (isChooseHeroMenuVisible()) {
-            drawSettingsPart(g2D, 7);
-        }
-
-        if (Constants.isDebugInfoVisible()) {
-            g2D.setColor(Color.CYAN);
-            g2D.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
-        }
-
-        g2D.dispose();
-    }
-
     private boolean isShadowBackNeeds() {
         return isOptionsMenuSetVisible() || isCreatingNewHeroSetVisible() || isCreatingNewWorldSetVisible()
                 || isChooseWorldMenuVisible() || isChooseHeroMenuVisible();
@@ -492,8 +496,7 @@ public class MenuCanvas extends FoxCanvas {
     public void stop() {
         this.isMenuActive = false;
         dropOldPanesFromLayer();
-        this.backMenuImage.flush();
-        this.backMenuImage.getGraphics().dispose();
+        closeBackImage();
         setVisible(false);
     }
 
@@ -538,18 +541,14 @@ public class MenuCanvas extends FoxCanvas {
 
         resizeThread = new Thread(() -> {
             try {
-                Thread.sleep(100);
+                Thread.sleep(50);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
 
             log.debug("Resizing of menu canvas...");
 
-            if (Constants.getUserConfig().isFullscreen()) {
-                setSize(parentFrame.getSize());
-            } else if (!getSize().equals(parentFrame.getRootPane().getSize())) {
-                setSize(parentFrame.getRootPane().getSize());
-            }
+            setSize(parentFrame.getRootPane().getSize());
 
             reloadShapes(this);
             recalculateMenuRectangles();
@@ -573,6 +572,8 @@ public class MenuCanvas extends FoxCanvas {
             setCreatingNewWorldSetVisible(rect5IsVisible);
             setChooseWorldMenuVisible(rect6IsVisible);
             setChooseHeroMenuVisible(rect7IsVisible);
+
+            setRevolatileNeeds(true);
         });
         resizeThread.start();
     }

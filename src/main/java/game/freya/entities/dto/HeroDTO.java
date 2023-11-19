@@ -69,7 +69,7 @@ public class HeroDTO implements iHero {
     private short maxHealth = 100;
 
     @Builder.Default
-    private short speed = 6;
+    private byte speed = 6;
 
     @Builder.Default
     private Point2D.Double position = new Point2D.Double(384d, 384d);

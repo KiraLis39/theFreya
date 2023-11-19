@@ -182,7 +182,8 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
         log.info("Try to load World '{}' screen...", worldDto.getTitle());
         clearFrame();
-        frame.add(new GameCanvas(worldDto, uIHandler, frame, gameController)); // мир уже должен быть с игроком (-ами)!
+        gameController.setCurrentWorld(worldDto);
+        frame.add(new GameCanvas(uIHandler, frame, gameController)); // мир уже должен быть с игроком (-ами)!
         frame.revalidate();
     }
 

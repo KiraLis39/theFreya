@@ -68,7 +68,7 @@ public class Hero {
 
     @Builder.Default
     @Column(name = "speed")
-    private short speed = 6;
+    private byte speed = 6;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)

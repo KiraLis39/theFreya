@@ -36,6 +36,10 @@ public class HeroService {
         return heroRepository.save(hero);
     }
 
+    public HeroDTO save(HeroDTO hero) {
+        return heroMapper.toDto(heroRepository.save(heroMapper.toEntity(hero)));
+    }
+
     @Modifying
     public void deleteHeroByUuid(UUID heroUid) {
         heroRepository.deleteByUid(heroUid);
@@ -57,5 +61,15 @@ public class HeroService {
 
     public boolean isCurrentHero(HeroDTO hero) {
         return getCurrentHero().equals(hero);
+    }
+
+    public void saveCurrentHero() {
+        heroRepository.save(heroMapper.toEntity(getCurrentHero()));
+    }
+
+    public void offlineHero() {
+        HeroDTO cHero = getCurrentHero();
+        cHero.setOnline(false);
+        save(cHero);
     }
 }

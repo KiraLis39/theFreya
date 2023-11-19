@@ -177,9 +177,9 @@ public class GameController {
         worldService.delete(worldUid);
     }
 
-    public void setCurrentHeroOnline(boolean isOnline, Duration duration) {
-        heroService.getCurrentHero().setOnline(isOnline);
+    public void setHeroOfflineAndSave(Duration duration) {
         heroService.getCurrentHero().setInGameTime(duration == null ? 0 : duration.toMillis());
+        heroService.offlineHero();
     }
 
     public void doScreenShot(Point location, Rectangle canvasRect) {
@@ -192,7 +192,7 @@ public class GameController {
 
     public void drawHeroes(Graphics2D g2D, Rectangle visibleRect, GameCanvas canvas) {
         for (HeroDTO hero : heroService.getCurrentHeroes()) {
-            if (heroService.isCurrentHero(hero)) {
+            if (heroService.getCurrentHero() != null && heroService.isCurrentHero(hero)) {
                 // если это мой текущий герой:
                 if (!Constants.isPaused()) {
                     moveHeroIfAvailable(heroService.getCurrentHero(), visibleRect, canvas);
@@ -279,10 +279,6 @@ public class GameController {
         playerService.getCurrentPlayer().setLastPlayedWorldUid(uid);
     }
 
-    public HeroDTO getCurrentHero() {
-        return heroService.getCurrentHero();
-    }
-
     public void setCurrentHero(HeroDTO hero) {
         // если был активен другой герой - снимаем с него метку онлайн:
         Optional<HeroDTO> onLineHeroOpt = heroService.getCurrentHeroes().stream().filter(HeroDTO::isOnline).findAny();
@@ -290,7 +286,13 @@ public class GameController {
 
         // ставим метку онлайн на нового героя:
         hero.setOnline(true);
-        heroService.getCurrentHeroes().add(hero);
+        if (heroService.getCurrentHeroes().contains(hero)) {
+            heroService.getCurrentHeroes().stream()
+                    .filter(h -> h.getUid().equals(hero.getUid())).findFirst()
+                    .orElseThrow().setOnline(true);
+        } else {
+            heroService.getCurrentHeroes().add(hero);
+        }
     }
 
     public BufferedImage getCurrentPlayerAvatar() {
@@ -336,5 +338,53 @@ public class GameController {
 
     public List<HeroDTO> findAllHeroesByWorldUid(UUID uid) {
         return heroService.findAllByWorldUuid(uid);
+    }
+
+    public String getCurrentWorldTitle() {
+        return worldService.getCurrentWorld().getTitle();
+    }
+
+    public BufferedImage getCurrentWorldMap() {
+        return worldService.getCurrentWorld().getGameMap();
+    }
+
+    public void getDrawCurrentWorld(Graphics2D g2D) {
+        worldService.getCurrentWorld().draw(g2D);
+    }
+
+    public void saveCurrentWorld() {
+        worldService.saveCurrentWorld();
+    }
+
+    public void initCurrentWorld(GameCanvas gameCanvas) {
+        worldService.getCurrentWorld().init(gameCanvas, this);
+    }
+
+    public long getCurrentHeroInGameTime() {
+        if (heroService.getCurrentHero() != null) {
+            return heroService.getCurrentHero().getInGameTime();
+        }
+        return -1;
+    }
+
+    public UUID getCurrentHeroUid() {
+        if (heroService.getCurrentHero() != null) {
+            return heroService.getCurrentHero().getUid();
+        }
+        return null;
+    }
+
+    public Point2D.Double getCurrentHeroPosition() {
+        if (heroService.getCurrentHero() != null) {
+            return heroService.getCurrentHero().getPosition();
+        }
+        return null;
+    }
+
+    public byte getCurrentHeroSpeed() {
+        if (heroService.getCurrentHero() != null) {
+            return heroService.getCurrentHero().getSpeed();
+        }
+        return -1;
     }
 }

@@ -125,7 +125,7 @@ public final class UIHandler {
     }
 
     private void updateMiniMap() {
-        Point2D.Double hPos = gameController.getCurrentHero().getPosition();
+        Point2D.Double hPos = gameController.getCurrentHeroPosition();
 //        int srcX = (int) (hPos.x - halfDim);
 //        int srcY = (int) (hPos.y - halfDim);
 //        BufferedImage drown = mapImage.getSubimage(
@@ -140,7 +140,7 @@ public final class UIHandler {
 //        m2D.drawImage(drown, 0, 0, minimapImage.getWidth(), minimapImage.getHeight(), null);
 
         gameController.getCurrentWorldHeroes().forEach(hero -> {
-            if (hero.getUid().equals(gameController.getCurrentHero().getUid())) {
+            if (hero.getUid().equals(gameController.getCurrentHeroUid())) {
                 // draw green arrow:
                 m2D.setColor(Color.GREEN);
                 m2D.drawImage((Image) Constants.CACHE.get("green_arrow"),

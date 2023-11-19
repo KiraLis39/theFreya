@@ -5,6 +5,7 @@ import game.freya.config.Constants;
 import game.freya.gui.panes.interfaces.iCanvas;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.awt.Canvas;
 import java.awt.Color;
@@ -12,31 +13,36 @@ import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.image.VolatileImage;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Slf4j
 // iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, KeyListener, Runnable
 public abstract class FoxCanvas extends Canvas implements iCanvas {
-    private static final short rightShift = 21;
-    private static float downShift = 0;
     private final String name;
     private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
     private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
     private final String pausedString, downInfoString1, downInfoString2;
-    private int frames = 0;
-    private long timeStamp = System.currentTimeMillis();
-    private Polygon leftGrayMenuPoly;
-    private Polygon headerPoly;
-    private Duration duration;
+    private final short rightShift = 21;
+    private transient VolatileImage backImage;
     private transient Rectangle avatarRect;
-    private Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
+    private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
+    private transient Polygon leftGrayMenuPoly;
+    private transient Polygon headerPoly;
+    private transient Duration duration;
+    private float downShift = 0;
+    private long timeStamp = System.currentTimeMillis();
+    private int frames = 0;
+
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
     private boolean isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false, isCreatingNewWorldSetVisible = false,
             isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false;
     private boolean isAudioSettingsMenuVisible = false, isVideoSettingsMenuVisible = false, isHotkeysSettingsMenuVisible = false,
             isGameplaySettingsMenuVisible = false;
+    private boolean revolatileNeeds = false;
 
     protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller) {
         super(gConf);
@@ -120,6 +126,8 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 new int[]{0, (int) (canvas.getWidth() * 0.3D), (int) (canvas.getWidth() * 0.29D), (int) (canvas.getWidth() * 0.3D), 0},
                 new int[]{3, 3, (int) (canvas.getHeight() * 0.031D), (int) (canvas.getHeight() * 0.061D), (int) (canvas.getHeight() * 0.061D)},
                 5));
+
+        log.info("Новый серый меню размер: {}", getLeftGrayMenuPoly().getBounds());
     }
 
     public void recalculateMenuRectangles() {
@@ -193,5 +201,14 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         // fill left gray polygon:
         g2D.setColor(isOptionsMenuSetVisible() ? Constants.getMainMenuBackgroundColor2() : Constants.getMainMenuBackgroundColor());
         g2D.fillPolygon(getLeftGrayMenuPoly());
+    }
+
+    public int validateBackImage() {
+        return this.backImage.validate(Constants.getGraphicsConfiguration());
+    }
+
+    public void closeBackImage() {
+        this.backImage.flush();
+        this.backImage.getGraphics().dispose();
     }
 }

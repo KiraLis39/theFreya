@@ -88,6 +88,8 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         this.gameMap = new BufferedImage(
                 dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM, BufferedImage.TYPE_INT_RGB);
         this.gameController = controller;
+
+        log.info("World {} initialized successfully", getTitle());
     }
 
     /**

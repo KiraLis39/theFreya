@@ -49,4 +49,8 @@ public class WorldService {
     public void delete(UUID worldUid) {
         worldRepository.deleteById(worldUid);
     }
+
+    public void saveCurrentWorld() {
+        worldRepository.save(worldMapper.toEntity(currentWorld));
+    }
 }
