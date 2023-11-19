@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -86,7 +87,7 @@ public class HeroDTO implements iHero {
     private UUID worldUid;
 
     @Setter
-    private PlayerDTO ownedPlayer;
+    private UUID ownerUid;
 
     @Getter
     @Builder.Default
@@ -95,6 +96,10 @@ public class HeroDTO implements iHero {
     @Setter
     @Builder.Default
     private long inGameTime = 0;
+
+    @Getter
+    @Builder.Default
+    private boolean isOnline = false;
 
     @Override
     public boolean isDead() {
@@ -216,11 +221,6 @@ public class HeroDTO implements iHero {
         this.level = level;
     }
 
-    @Override
-    public PlayerDTO getOwnedPlayer() {
-        return this.ownedPlayer;
-    }
-
     private void recheckPlayerLevel() {
         // level
     }
@@ -286,7 +286,8 @@ public class HeroDTO implements iHero {
                     moveRight();
                 }
             }
-            case NONE -> {}
+            case NONE -> {
+            }
             default -> log.warn("Неизвестное направление вектора героя {}", vector);
         }
     }
@@ -297,5 +298,26 @@ public class HeroDTO implements iHero {
 
     public void setPosition(Point2D.Double position) {
         this.position = position;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        HeroDTO heroDTO = (HeroDTO) o;
+        return Objects.equals(getUid(), heroDTO.getUid()) && Objects.equals(getHeroName(), heroDTO.getHeroName());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getUid(), getHeroName());
+    }
+
+    public void setOnline(boolean b) {
+        this.isOnline = b;
     }
 }

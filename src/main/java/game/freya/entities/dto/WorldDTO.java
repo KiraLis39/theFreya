@@ -1,15 +1,14 @@
 package game.freya.entities.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fox.FoxRender;
+import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iWorld;
 import game.freya.enums.HardnessLevel;
-import game.freya.enums.MovingVector;
-import game.freya.exceptions.ErrorMessages;
-import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GameCanvas;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,24 +19,18 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
-@RequiredArgsConstructor
+@Builder
 public class WorldDTO extends ComponentAdapter implements iWorld {
-
-    private final Random r = new Random(100);
+    private static final Random r = new Random(100);
 
     @Getter
-    private final UUID uid;
-
-    private final Set<HeroDTO> heroes = HashSet.newHashSet(3);
+    private UUID uid;
 
     @Setter
     @Getter
@@ -45,102 +38,67 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @Setter
     @Getter
+    @Builder.Default
     private String title = "world_demo_" + r.nextInt(1000);
 
     @Setter
     @Getter
+    @Builder.Default
     private boolean isNetAvailable = false;
 
     @Setter
     @Getter
+    @Builder.Default
     private int passwordHash = -1;
 
     @Setter
     @Getter
+    @Builder.Default
     private Dimension dimension = new Dimension(32, 32);
 
     @Setter
     @Getter
+    @Builder.Default
     private HardnessLevel level = HardnessLevel.EASY;
 
     @Getter
+    @Builder.Default
     private LocalDateTime createDate = LocalDateTime.now();
 
     // custom fields:
+    @JsonIgnore
     private GameCanvas canvas;
 
     @Getter
+    @JsonIgnore
     private BufferedImage gameMap;
 
     @Getter
+    @JsonIgnore
     private ImageIcon icon;
 
-    public WorldDTO() {
-        this.uid = UUID.randomUUID();
-        this.title = "the_world_" + r.nextInt(1000);
-        this.level = HardnessLevel.EASY;
-        this.dimension = new Dimension(32, 32);
-        this.passwordHash = -1;
-    }
+    @JsonIgnore
+    private GameController gameController;
 
-    public WorldDTO(
-            UUID uid,
-            UUID author,
-            String title,
-            HardnessLevel level,
-            Dimension dimension,
-            boolean isNetAvailable,
-            int passwordHash,
-            LocalDateTime createDate
-    ) {
-        this.uid = uid;
-        this.author = author;
-        this.title = title;
-        this.isNetAvailable = isNetAvailable;
-        this.passwordHash = passwordHash;
-        this.level = level;
-        this.dimension = dimension;
-        this.createDate = createDate;
-    }
 
     @Override
-    public void addHero(HeroDTO heroDTO) {
-        if (heroDTO.getUid() == null) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "hero uuid");
-        }
-        heroes.add(heroDTO);
-    }
-
-    @Override
-    public void removeHero(HeroDTO heroDTO) {
-        heroes.remove(heroDTO);
-    }
-
-    @Override
-    public void init(GameCanvas canvas) {
-        setCanvas(canvas);
+    public void init(GameCanvas canvas, GameController controller) {
+        this.canvas = canvas;
 
         this.gameMap = new BufferedImage(
                 dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM, BufferedImage.TYPE_INT_RGB);
-    }
-
-    public void setCanvas(GameCanvas canvas) {
-        if (canvas != null) {
-            this.canvas = canvas;
-            log.debug("Income canvas dim: {}x{}-{}x{}", canvas.getX(), canvas.getY(), canvas.getWidth(), canvas.getHeight());
-        }
+        this.gameController = controller;
     }
 
     /**
      * Основной метод рисования карты игры.
-     * Здесь, на холсте gameMap, отрисовывается при каждом вызове данного метода всё перечисленное в методе.
-     * Для оптимизации указывается ректангл вьюпорта холста, чтобы игнорировать скрытое "за кадром".
+     * Для оптимизации указывается вьюпорт холста, чтобы игнорировать скрытое "за кадром".
      *
-     * @param g2D         графика холста
-     * @param visibleRect отображаемый на холсте прямоугольник игрового мира.
+     * @param g2D графика холста
      */
     @Override
-    public void draw(Graphics2D g2D, Rectangle visibleRect) {
+    public void draw(Graphics2D g2D) {
+        Rectangle visibleRect = canvas.getViewPort().getBounds();
         // рисуем готовый кадр мира:
         g2D.drawImage(repaintMap(visibleRect), 0, 0, canvas.getWidth(), canvas.getHeight(),
                 visibleRect.x, visibleRect.y,
@@ -148,14 +106,9 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
                 canvas);
     }
 
-    public boolean isHeroActive(HeroDTO hero, Rectangle visibleRect) {
-        return visibleRect.contains(hero.getPosition()) && hero.getOwnedPlayer().isOnline();
-    }
-
     private BufferedImage repaintMap(Rectangle visibleRect) {
         // re-draw map:
         Graphics2D m2D = (Graphics2D) this.gameMap.getGraphics();
-        // m2D.clearRect(visibleRect.x, visibleRect.y, visibleRect.width, visibleRect.height);
         m2D.clip(visibleRect);
         Constants.RENDER.setRender(m2D, FoxRender.RENDER.MED,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
@@ -193,8 +146,8 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         // рисуем окружение на карте:
         drawEnvironment(m2D, visibleRect);
 
-        // рисуем игроков на карте:
-        drawHeroes(m2D, visibleRect);
+        // рисуем игроков из контроллера на карте:
+        gameController.drawHeroes(m2D, visibleRect, canvas);
 
         m2D.dispose();
         return this.gameMap;

@@ -1,6 +1,5 @@
 package game.freya.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import lombok.AllArgsConstructor;
@@ -15,16 +14,13 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
-import static javax.persistence.CascadeType.ALL;
 
 @Getter
 @Setter
@@ -94,9 +90,8 @@ public class Hero {
     @Column(name = "world_uid")
     private UUID worldUid;
 
-    @JsonIgnoreProperties(value = "heroes")
-    @ManyToOne(cascade = ALL, fetch = FetchType.EAGER)
-    private Player ownedPlayer;
+    @Column(name = "owner_uid")
+    private UUID ownerUid;
 
     @Builder.Default
     @CreatedDate
@@ -104,6 +99,13 @@ public class Hero {
     @Column(name = "create_date")
     private LocalDateTime createDate = LocalDateTime.now();
 
+
+    // custom fields:
+    @Transient
+    private boolean isOnline;
+
+
+    // methods:
     @Override
     public String toString() {
         return "Hero{"
@@ -123,7 +125,7 @@ public class Hero {
                 + ", positionY=" + positionY
                 + ", inGameTime=" + inGameTime
                 + ", worldUid=" + worldUid
-                + ", ownedPlayer=" + ownedPlayer.getUid()
+                + ", ownerUuid=" + ownerUid
                 + '}';
     }
 }
