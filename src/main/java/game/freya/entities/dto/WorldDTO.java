@@ -206,8 +206,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     private void drawHeroes(Graphics2D g2D, Rectangle visibleRect) {
         for (HeroDTO hero : heroes) {
-            if (hero.getUid().equals(canvas.getCurrentHero().getUid())) {
-                // если это - я:
+            if (isCurrentHero(hero)) {
                 if (!Constants.isPaused()) {
                     checkPlayerMoving(hero, visibleRect);
                 }
@@ -217,6 +216,10 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
                 hero.draw(g2D);
             }
         }
+    }
+
+    private boolean isCurrentHero(HeroDTO hero) {
+        return hero.getUid().equals(canvas.getCurrentHero().getUid());
     }
 
     private void checkPlayerMoving(HeroDTO currentHeroDto, Rectangle visibleRect) {

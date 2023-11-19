@@ -29,7 +29,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
@@ -53,28 +52,17 @@ public class MenuCanvas extends FoxCanvas {
     private final transient JFrame parentFrame;
     private transient VolatileImage backMenuImage;
     private transient BufferedImage pAvatar;
-    private transient Rectangle avatarRect;
-    private String downInfoString1, downInfoString2;
-    private String startGameButtonText, startNewGameButtonText, continueGameButtonText, coopPlayButtonText,
-            optionsButtonText, exitButtonText, backButtonText, randomButtonText, resetButtonText, createNewButtonText;
-    private String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
-    private Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
-    private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
-    private boolean isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false,
-            isCreatingNewWorldSetVisible = false, isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false;
-    private boolean isAudioSettingsMenuVisible = false, isVideoSettingsMenuVisible = false,
-            isHotkeysSettingsMenuVisible = false, isGameplaySettingsMenuVisible = false;
-    private boolean isMenuActive, initialized = false;
-
+    private transient Thread resizeThread = null;
+    private transient WorldDTO aNewWorldMemory;
     private transient Area area;
+    private boolean isMenuActive, initialized = false;
+    private String startGameButtonText, coopPlayButtonText, optionsButtonText, randomButtonText, resetButtonText, createNewButtonText;
     private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane, heroesListPane;
     private double parentHeightMemory = 0;
     private byte drawErrorCount = 0;
-    private transient Thread resizeThread = null;
-    private WorldDTO aNewWorldMemory;
 
     public MenuCanvas(JFrame parentFrame, GameController gameController) {
-        super(Constants.getGraphicsConfiguration(), "MenuCanvas");
+        super(Constants.getGraphicsConfiguration(), "MenuCanvas", gameController);
         this.gameController = gameController;
         this.parentFrame = parentFrame;
 
@@ -118,15 +106,15 @@ public class MenuCanvas extends FoxCanvas {
                 continue;
             }
 
-            if (!initialized) {
-                init();
-            }
-
             // если изменился размер фрейма:
             if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
                 log.info("Resizing by parent frame...");
                 onResize();
                 parentHeightMemory = parentFrame.getBounds().getHeight();
+            }
+
+            if (!initialized) {
+                init();
             }
 
             Graphics2D g2D = null;
@@ -198,93 +186,72 @@ public class MenuCanvas extends FoxCanvas {
     private void drawMenu(Graphics2D g2D) {
         g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
 
-        if (isOptionsMenuSetVisible) {
-            drawHeader(g2D, "Настройки игры");
-
-            // default buttons text:
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(audioSettingsButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
-            g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(audioSettingsButtonText, firstButtonRect.x, firstButtonRect.y + 18);
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(videoSettingsButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
-            g2D.setColor(secondButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(videoSettingsButtonText, secondButtonRect.x, secondButtonRect.y + 18);
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(hotkeysSettingsButtonText, thirdButtonRect.x - 1, thirdButtonRect.y + 17);
-            g2D.setColor(thirdButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(hotkeysSettingsButtonText, thirdButtonRect.x, thirdButtonRect.y + 18);
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x - 1, fourthButtonRect.y + 17);
-            g2D.setColor(fourthButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x, fourthButtonRect.y + 18);
-        } else if (isCreatingNewWorldSetVisible) {
+        if (isOptionsMenuSetVisible()) {
+            showOptions(g2D);
+        } else if (isCreatingNewWorldSetVisible()) {
             drawHeader(g2D, "Создание мира");
 
             // creating world buttons text:
             g2D.setColor(Color.BLACK);
-            g2D.drawString(randomButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
-            g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(randomButtonText, firstButtonRect.x, firstButtonRect.y + 18);
+            g2D.drawString(randomButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
+            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(randomButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(resetButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
-            g2D.setColor(secondButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(resetButtonText, secondButtonRect.x, secondButtonRect.y + 18);
-        } else if (isChooseWorldMenuVisible) {
+            g2D.drawString(resetButtonText, getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
+            g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(resetButtonText, getSecondButtonRect().x, getSecondButtonRect().y + 18);
+        } else if (isChooseWorldMenuVisible()) {
             drawHeader(g2D, "Выбор мира");
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(createNewButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
-            g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(createNewButtonText, firstButtonRect.x, firstButtonRect.y + 18);
-        } else if (isChooseHeroMenuVisible) {
+            g2D.drawString(createNewButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
+            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(createNewButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
+        } else if (isChooseHeroMenuVisible()) {
             drawHeader(g2D, "Выбор героя");
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(createNewButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
-            g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(createNewButtonText, firstButtonRect.x, firstButtonRect.y + 18);
-        } else if (isCreatingNewHeroSetVisible) {
+            g2D.drawString(createNewButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
+            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(createNewButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
+        } else if (isCreatingNewHeroSetVisible()) {
             drawHeader(g2D, "Создание героя");
 
             // creating hero buttons text:
             g2D.setColor(Color.BLACK);
-            g2D.drawString(randomButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
-            g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(randomButtonText, firstButtonRect.x, firstButtonRect.y + 18);
+            g2D.drawString(randomButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
+            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(randomButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(resetButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
-            g2D.setColor(secondButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(resetButtonText, secondButtonRect.x, secondButtonRect.y + 18);
+            g2D.drawString(resetButtonText, getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
+            g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(resetButtonText, getSecondButtonRect().x, getSecondButtonRect().y + 18);
         } else {
             // default buttons text:
             g2D.setColor(Color.BLACK);
-            g2D.drawString(startGameButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
-            g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(startGameButtonText, firstButtonRect.x, firstButtonRect.y + 18);
+            g2D.drawString(startGameButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
+            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(startGameButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(coopPlayButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
-            g2D.setColor(secondButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(coopPlayButtonText, secondButtonRect.x, secondButtonRect.y + 18);
+            g2D.drawString(coopPlayButtonText, getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
+            g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(coopPlayButtonText, getSecondButtonRect().x, getSecondButtonRect().y + 18);
 
             g2D.setColor(Color.BLACK);
-            g2D.drawString(optionsButtonText, thirdButtonRect.x - 1, thirdButtonRect.y + 17);
-            g2D.setColor(thirdButtonOver ? Color.GREEN : Color.WHITE);
-            g2D.drawString(optionsButtonText, thirdButtonRect.x, thirdButtonRect.y + 18);
+            g2D.drawString(optionsButtonText, getThirdButtonRect().x - 1, getThirdButtonRect().y + 17);
+            g2D.setColor(isThirdButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(optionsButtonText, getThirdButtonRect().x, getThirdButtonRect().y + 18);
         }
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(isOptionsMenuSetVisible // || isStartGameMenuSetVisible
-                ? backButtonText : exitButtonText, exitButtonRect.x - 1, exitButtonRect.y + 17);
-        g2D.setColor(exitButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(isOptionsMenuSetVisible // || isStartGameMenuSetVisible
-                ? backButtonText : exitButtonText, exitButtonRect.x, exitButtonRect.y + 18);
+        g2D.drawString(isOptionsMenuSetVisible()
+                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
+        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(isOptionsMenuSetVisible()
+                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
     private void drawSettingsPart(Graphics2D g2D, int partIndex) {
@@ -313,41 +280,13 @@ public class MenuCanvas extends FoxCanvas {
         g2D.setFont(font);
     }
 
-    private void drawHeader(Graphics2D g2D, String headerTitle) {
-        g2D.setColor(Color.DARK_GRAY.darker());
-        g2D.fill(getHeaderPoly());
-        g2D.setColor(Color.BLACK);
-        g2D.draw(getHeaderPoly());
-
-        g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
-        g2D.setColor(Color.DARK_GRAY);
-        g2D.drawString(headerTitle, getWidth() / 11 - 1, (int) (getHeight() * 0.041D) + 1);
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(headerTitle, getWidth() / 11, (int) (getHeight() * 0.041D));
-    }
-
     private void init() {
         reloadShapes(this);
 
-        downInfoString1 = gameController.getGameConfig().getAppCompany();
-        downInfoString2 = gameController.getGameConfig().getAppName().concat(" v.").concat(gameController.getGameConfig().getAppVersion());
-
         startGameButtonText = "Начать игру";
-        startNewGameButtonText = "Начать новую игру";
         coopPlayButtonText = "Игра по сети";
         optionsButtonText = "Настройки";
-        exitButtonText = "← Выход";
-        backButtonText = "← В главное меню";
-
-        continueGameButtonText = "Продолжить";
         createNewButtonText = "Создать";
-
-        audioSettingsButtonText = "Настройки звука";
-        videoSettingsButtonText = "Настройки графики";
-        hotkeysSettingsButtonText = "Управление";
-        gameplaySettingsButtonText = "Геймплей";
-
-//        completeButtonText = "Принять";
         randomButtonText = "Случайно";
         resetButtonText = "Сброс";
 
@@ -356,6 +295,8 @@ public class MenuCanvas extends FoxCanvas {
                     ImageIO.read(new File("./resources/images/menu.png")));
             Constants.CACHE.addIfAbsent("backMenuImageShadowed",
                     ImageIO.read(new File("./resources/images/menu_shadowed.png")));
+            Constants.CACHE.addIfAbsent("green_arrow",
+                    ImageIO.read(new File("./resources/images/green_arrow.png")));
             recreateBackImage();
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
@@ -443,53 +384,52 @@ public class MenuCanvas extends FoxCanvas {
     private void recreateBackImage() {
         backMenuImage = createVolatileImage(getWidth(), getHeight());
         Graphics2D g2D = backMenuImage.createGraphics();
-        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED, // todo: будет ли тут иметь вообще значение рендер?
+        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
         g2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
                 0, 0, getWidth(), getHeight(), this);
 
         // fill left gray polygon:
-        g2D.setColor(isOptionsMenuSetVisible ? Constants.getMainMenuBackgroundColor2() : Constants.getMainMenuBackgroundColor());
-        g2D.fillPolygon(getLeftGrayMenuPoly());
+        drawLeftGrayPoly(g2D);
 
         // down right corner text:
         g2D.setFont(Constants.INFO_FONT);
         g2D.setColor(Color.WHITE);
-        g2D.drawString(downInfoString1,
-                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, downInfoString1).getWidth() - 6), getHeight() - 9);
-        g2D.drawString(downInfoString2,
-                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, downInfoString2).getWidth() - 6), getHeight() - 25);
+        g2D.drawString(getDownInfoString1(),
+                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString1()).getWidth() - 6), getHeight() - 9);
+        g2D.drawString(getDownInfoString2(),
+                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString2()).getWidth() - 6), getHeight() - 25);
 
         // player`s info:
-        if (!isOptionsMenuSetVisible && !isCreatingNewHeroSetVisible && !isChooseWorldMenuVisible) {
+        if (!isOptionsMenuSetVisible() && !isCreatingNewHeroSetVisible() && !isChooseWorldMenuVisible()) {
             if (pAvatar == null) {
                 pAvatar = gameController.getCurrentPlayer().getAvatar();
             }
             g2D.setColor(Color.BLACK);
             g2D.setStroke(new BasicStroke(5f));
-            g2D.drawImage(pAvatar, avatarRect.x, avatarRect.y, avatarRect.width, avatarRect.height, this);
-            g2D.drawRoundRect(avatarRect.x, avatarRect.y, avatarRect.width, avatarRect.height, 16, 16);
+            g2D.drawImage(pAvatar, getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, this);
+            g2D.drawRoundRect(getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, 16, 16);
             g2D.setFont(Constants.DEBUG_FONT);
             g2D.drawString(gameController.getCurrentPlayer().getNickName(),
-                    (int) (avatarRect.getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayer().getNickName())),
-                    avatarRect.height + 24);
+                    (int) (getAvatarRect().getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayer().getNickName())),
+                    getAvatarRect().height + 24);
         }
 
-        if (isAudioSettingsMenuVisible) {
+        if (isAudioSettingsMenuVisible()) {
             drawSettingsPart(g2D, 0);
-        } else if (isVideoSettingsMenuVisible) {
+        } else if (isVideoSettingsMenuVisible()) {
             drawSettingsPart(g2D, 1);
-        } else if (isHotkeysSettingsMenuVisible) {
+        } else if (isHotkeysSettingsMenuVisible()) {
             drawSettingsPart(g2D, 2);
-        } else if (isGameplaySettingsMenuVisible) {
+        } else if (isGameplaySettingsMenuVisible()) {
             drawSettingsPart(g2D, 3);
-        } else if (isCreatingNewHeroSetVisible) {
+        } else if (isCreatingNewHeroSetVisible()) {
             drawSettingsPart(g2D, 4);
-        } else if (isCreatingNewWorldSetVisible) {
+        } else if (isCreatingNewWorldSetVisible()) {
             drawSettingsPart(g2D, 5);
-        } else if (isChooseWorldMenuVisible) {
+        } else if (isChooseWorldMenuVisible()) {
             drawSettingsPart(g2D, 6);
-        } else if (isChooseHeroMenuVisible) {
+        } else if (isChooseHeroMenuVisible()) {
             drawSettingsPart(g2D, 7);
         }
 
@@ -502,30 +442,8 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     private boolean isShadowBackNeeds() {
-        return isOptionsMenuSetVisible || isCreatingNewHeroSetVisible || isCreatingNewWorldSetVisible || isChooseWorldMenuVisible
-                || isChooseHeroMenuVisible;
-    }
-
-    private void recalculateMenuRectangles() {
-        int buttonsRectsWidth = (int) (getWidth() * 0.14D);
-        // стандартное меню:
-        firstButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.15D),
-                buttonsRectsWidth, 30);
-        secondButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.20D),
-                buttonsRectsWidth, 30);
-        thirdButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.25D),
-                buttonsRectsWidth, 30);
-        fourthButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.30D),
-                buttonsRectsWidth, 30);
-        exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.85D),
-                buttonsRectsWidth, 30);
-
-        avatarRect = new Rectangle(getWidth() - 135, 8, 128, 128);
+        return isOptionsMenuSetVisible() || isCreatingNewHeroSetVisible() || isCreatingNewWorldSetVisible()
+                || isChooseWorldMenuVisible() || isChooseHeroMenuVisible();
     }
 
     @Override
@@ -534,22 +452,22 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     private void onExitBack() {
-        if (isOptionsMenuSetVisible) { // || isStartGameMenuSetVisible
-            isOptionsMenuSetVisible = false;
-            isAudioSettingsMenuVisible = false;
-            isVideoSettingsMenuVisible = false;
-            isHotkeysSettingsMenuVisible = false;
-            isGameplaySettingsMenuVisible = false;
-            isCreatingNewWorldSetVisible = false;
-            isCreatingNewHeroSetVisible = false;
-        } else if (isCreatingNewHeroSetVisible) {
-            isCreatingNewHeroSetVisible = false;
-        } else if (isCreatingNewWorldSetVisible) {
-            isCreatingNewWorldSetVisible = false;
-        } else if (isChooseWorldMenuVisible) {
-            isChooseWorldMenuVisible = false;
-        } else if (isChooseHeroMenuVisible) {
-            isChooseHeroMenuVisible = false;
+        if (isOptionsMenuSetVisible()) {
+            setOptionsMenuSetVisible(false);
+            setAudioSettingsMenuVisible(false);
+            setVideoSettingsMenuVisible(false);
+            setHotkeysSettingsMenuVisible(false);
+            setGameplaySettingsMenuVisible(false);
+            setCreatingNewWorldSetVisible(false);
+            setCreatingNewHeroSetVisible(false);
+        } else if (isCreatingNewHeroSetVisible()) {
+            setCreatingNewHeroSetVisible(false);
+        } else if (isCreatingNewWorldSetVisible()) {
+            setCreatingNewWorldSetVisible(false);
+        } else if (isChooseWorldMenuVisible()) {
+            setChooseWorldMenuVisible(false);
+        } else if (isChooseHeroMenuVisible()) {
+            setChooseHeroMenuVisible(false);
         } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
             gameController.exitTheGame(null);
@@ -583,11 +501,11 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void mouseMoved(MouseEvent e) {
-        firstButtonOver = firstButtonRect != null && firstButtonRect.contains(e.getPoint());
-        secondButtonOver = secondButtonRect != null && secondButtonRect.contains(e.getPoint());
-        thirdButtonOver = thirdButtonRect != null && thirdButtonRect.contains(e.getPoint());
-        fourthButtonOver = fourthButtonRect != null && fourthButtonRect.contains(e.getPoint());
-        exitButtonOver = exitButtonRect != null && exitButtonRect.contains(e.getPoint());
+        setFirstButtonOver(getFirstButtonRect() != null && getFirstButtonRect().contains(e.getPoint()));
+        setSecondButtonOver(getSecondButtonRect() != null && getSecondButtonRect().contains(e.getPoint()));
+        setThirdButtonOver(getThirdButtonRect() != null && getThirdButtonRect().contains(e.getPoint()));
+        setFourthButtonOver(getFourthButtonRect() != null && getFourthButtonRect().contains(e.getPoint()));
+        setExitButtonOver(getExitButtonRect() != null && getExitButtonRect().contains(e.getPoint()));
     }
 
     @Override
@@ -624,7 +542,7 @@ public class MenuCanvas extends FoxCanvas {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                // ...
+                Thread.currentThread().interrupt();
             }
 
             log.debug("Resizing of menu canvas...");
@@ -649,14 +567,14 @@ public class MenuCanvas extends FoxCanvas {
 
             recalculateSettingsPanes();
 
-            isAudioSettingsMenuVisible = rect0IsVisible;
-            isVideoSettingsMenuVisible = rect1IsVisible;
-            isHotkeysSettingsMenuVisible = rect2IsVisible;
-            isGameplaySettingsMenuVisible = rect3IsVisible;
-            isCreatingNewHeroSetVisible = rect4IsVisible;
-            isCreatingNewWorldSetVisible = rect5IsVisible;
-            isChooseWorldMenuVisible = rect6IsVisible;
-            isChooseHeroMenuVisible = rect7IsVisible;
+            setAudioSettingsMenuVisible(rect0IsVisible);
+            setVideoSettingsMenuVisible(rect1IsVisible);
+            setHotkeysSettingsMenuVisible(rect2IsVisible);
+            setGameplaySettingsMenuVisible(rect3IsVisible);
+            setCreatingNewHeroSetVisible(rect4IsVisible);
+            setCreatingNewWorldSetVisible(rect5IsVisible);
+            setChooseWorldMenuVisible(rect6IsVisible);
+            setChooseHeroMenuVisible(rect7IsVisible);
         });
         resizeThread.start();
     }
@@ -701,8 +619,8 @@ public class MenuCanvas extends FoxCanvas {
         aNewWorldMemory.setPasswordHash(newWorldTemplate.getNetPasswordHash());
 
         aNewWorldMemory = gameController.saveNewWorld(aNewWorldMemory);
-        isCreatingNewWorldSetVisible = false;
-        isCreatingNewHeroSetVisible = true;
+        setCreatingNewWorldSetVisible(false);
+        setCreatingNewHeroSetVisible(true);
     }
 
     public void createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane newHeroTemplate) {
@@ -728,12 +646,12 @@ public class MenuCanvas extends FoxCanvas {
         aNewWorldMemory = gameController.getCurrentWorld();
 
         if (getCurrentWorldHeroes().isEmpty()) {
-            isCreatingNewHeroSetVisible = true;
+            setCreatingNewHeroSetVisible(true);
         } else {
-            isChooseHeroMenuVisible = true;
+            setChooseHeroMenuVisible(true);
         }
 
-        isChooseWorldMenuVisible = false;
+        setChooseWorldMenuVisible(false);
         worldsListPane.setVisible(false);
     }
 
@@ -752,7 +670,7 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     public void playWithThisHero(UUID heroUid) {
-        isCreatingNewHeroSetVisible = false;
+        setCreatingNewHeroSetVisible(false);
         heroCreatingPane.setVisible(false);
 
         gameController.setCurrentHero(heroUid);
@@ -762,85 +680,83 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (firstButtonOver) {
-            if (isOptionsMenuSetVisible) {
-                if (!isAudioSettingsMenuVisible) {
-                    isAudioSettingsMenuVisible = true;
-                    isVideoSettingsMenuVisible = false;
-                    isHotkeysSettingsMenuVisible = false;
-                    isGameplaySettingsMenuVisible = false;
+        if (isFirstButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                if (!isAudioSettingsMenuVisible()) {
+                    setAudioSettingsMenuVisible(true);
+                    setVideoSettingsMenuVisible(false);
+                    setHotkeysSettingsMenuVisible(false);
+                    setGameplaySettingsMenuVisible(false);
                 }
-            } else if (isCreatingNewHeroSetVisible) {
+            } else if (isCreatingNewHeroSetVisible()) {
                 Constants.showNFP();
-            } else if (isChooseWorldMenuVisible) {
-                isChooseWorldMenuVisible = false;
-                isCreatingNewWorldSetVisible = true;
-            } else if (isChooseHeroMenuVisible) {
-                isChooseHeroMenuVisible = false;
-                isCreatingNewHeroSetVisible = true;
+            } else if (isChooseWorldMenuVisible()) {
+                setChooseWorldMenuVisible(false);
+                setCreatingNewWorldSetVisible(true);
+            } else if (isChooseHeroMenuVisible()) {
+                setChooseHeroMenuVisible(false);
+                setCreatingNewHeroSetVisible(true);
             } else {
                 // Попытка начать новую игру:
                 List<WorldDTO> worlds = gameController.getExistingWorlds();
                 if (worlds.isEmpty()) {
                     // миров нет - создаём:
-                    isCreatingNewWorldSetVisible = true;
+                    setCreatingNewWorldSetVisible(true);
                     return;
                 }
                 // отображаем существующие миры для игры:
-                isChooseWorldMenuVisible = true;
+                setChooseWorldMenuVisible(true);
             }
         }
 
-        if (secondButtonOver) {
-            if (isOptionsMenuSetVisible) {
+        if (isSecondButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
                 // нажато Настройки графики:
-                if (!isVideoSettingsMenuVisible) {
-                    isVideoSettingsMenuVisible = true;
-                    isAudioSettingsMenuVisible = false;
-                    isHotkeysSettingsMenuVisible = false;
-                    isGameplaySettingsMenuVisible = false;
+                if (!isVideoSettingsMenuVisible()) {
+                    setVideoSettingsMenuVisible(true);
+                    setAudioSettingsMenuVisible(false);
+                    setHotkeysSettingsMenuVisible(false);
+                    setGameplaySettingsMenuVisible(false);
                 }
-            } else if (isCreatingNewHeroSetVisible) {
+            } else if (isCreatingNewHeroSetVisible()) {
                 Constants.showNFP();
             } else {
                 Constants.showNFP();
             }
         }
 
-        if (thirdButtonOver) {
-            if (!isOptionsMenuSetVisible && !isCreatingNewHeroSetVisible && !isChooseWorldMenuVisible) {
-                isOptionsMenuSetVisible = true;
-                isAudioSettingsMenuVisible = true;
-            } else if (isCreatingNewHeroSetVisible) {
+        if (isThirdButtonOver()) {
+            if (!isOptionsMenuSetVisible() && !isCreatingNewHeroSetVisible() && !isChooseWorldMenuVisible()) {
+                setOptionsMenuSetVisible(true);
+                setAudioSettingsMenuVisible(true);
+            } else if (isCreatingNewHeroSetVisible()) {
                 Constants.showNFP();
-            } else if (isOptionsMenuSetVisible) {
-                if (!isHotkeysSettingsMenuVisible) {
-                    isHotkeysSettingsMenuVisible = true;
-                    isVideoSettingsMenuVisible = false;
-                    isAudioSettingsMenuVisible = false;
-                    isGameplaySettingsMenuVisible = false;
-                }
-            } else if (isChooseWorldMenuVisible) {
-                Constants.showNFP();
-            } else {
-                Constants.showNFP();
-            }
-        }
-
-        if (fourthButtonOver) {
-            if (isOptionsMenuSetVisible) {
-                if (!isGameplaySettingsMenuVisible) {
-                    isGameplaySettingsMenuVisible = true;
-                    isHotkeysSettingsMenuVisible = false;
-                    isVideoSettingsMenuVisible = false;
-                    isAudioSettingsMenuVisible = false;
+            } else if (isOptionsMenuSetVisible()) {
+                if (!isHotkeysSettingsMenuVisible()) {
+                    setHotkeysSettingsMenuVisible(true);
+                    setVideoSettingsMenuVisible(false);
+                    setAudioSettingsMenuVisible(false);
+                    setGameplaySettingsMenuVisible(false);
                 }
             } else {
                 Constants.showNFP();
             }
         }
 
-        if (exitButtonOver) {
+        if (isFourthButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                if (!isGameplaySettingsMenuVisible()) {
+                    setGameplaySettingsMenuVisible(true);
+                    setHotkeysSettingsMenuVisible(false);
+                    setVideoSettingsMenuVisible(false);
+                    setAudioSettingsMenuVisible(false);
+                }
+            } else {
+                Constants.showNFP();
+            }
+        }
+
+        if (isExitButtonOver()) {
             onExitBack();
         }
     }

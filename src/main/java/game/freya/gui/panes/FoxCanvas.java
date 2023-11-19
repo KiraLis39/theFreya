@@ -1,5 +1,6 @@
 package game.freya.gui.panes;
 
+import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.gui.panes.interfaces.iCanvas;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -25,10 +27,36 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private Polygon leftGrayMenuPoly;
     private Polygon headerPoly;
     private Duration duration;
+    private transient Rectangle avatarRect;
+    private Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
+    private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
+    private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
+    private final String pausedString, downInfoString1, downInfoString2;
+    private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
+    private boolean isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false, isCreatingNewWorldSetVisible = false,
+            isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false;
+    private boolean isAudioSettingsMenuVisible = false, isVideoSettingsMenuVisible = false, isHotkeysSettingsMenuVisible = false,
+            isGameplaySettingsMenuVisible = false;
 
-    protected FoxCanvas(GraphicsConfiguration gConf, String name) {
+    protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller) {
         super(gConf);
         this.name = name;
+
+        this.audioSettingsButtonText = "Настройки звука";
+        this.videoSettingsButtonText = "Настройки графики";
+        this.hotkeysSettingsButtonText = "Управление";
+        this.gameplaySettingsButtonText = "Геймплей";
+        this.backButtonText = "← В главное меню";
+        this.exitButtonText = "← Выход";
+
+        this.backToGameButtonText = "Вернуться";
+        this.optionsButtonText = "Настройки";
+        this.saveButtonText = "Сохранить";
+
+        this.downInfoString1 = controller.getGameConfig().getAppCompany();
+        this.downInfoString2 = controller.getGameConfig().getAppName().concat(" v.").concat(controller.getGameConfig().getAppVersion());
+
+        this.pausedString = "- PAUSED -";
     }
 
     public void incrementFramesCounter() {
@@ -94,7 +122,76 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 5));
     }
 
+    public void recalculateMenuRectangles() {
+        int buttonsRectsWidth = (int) (getWidth() * 0.14D);
+        // стандартное меню:
+        firstButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
+                (int) (getHeight() * 0.15D),
+                buttonsRectsWidth, 30);
+        secondButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
+                (int) (getHeight() * 0.20D),
+                buttonsRectsWidth, 30);
+        thirdButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
+                (int) (getHeight() * 0.25D),
+                buttonsRectsWidth, 30);
+        fourthButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
+                (int) (getHeight() * 0.30D),
+                buttonsRectsWidth, 30);
+        exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
+                (int) (getHeight() * 0.85D),
+                buttonsRectsWidth, 30);
+
+        avatarRect = new Rectangle(getWidth() - 135, 8, 128, 128);
+    }
+
     public void checkGameplayDuration(long inGamePlayed) {
         this.duration = Duration.ofMillis(inGamePlayed + (System.currentTimeMillis() - Constants.getGameStartedIn()));
+    }
+
+    public void drawHeader(Graphics2D g2D, String headerTitle) {
+        g2D.setColor(Color.DARK_GRAY.darker());
+        g2D.fill(getHeaderPoly());
+        g2D.setColor(Color.BLACK);
+        g2D.draw(getHeaderPoly());
+
+        g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
+        g2D.setColor(Color.DARK_GRAY);
+        g2D.drawString(headerTitle, getWidth() / 11 - 1, (int) (getHeight() * 0.041D) + 1);
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(headerTitle, getWidth() / 11, (int) (getHeight() * 0.041D));
+    }
+
+    public void showOptions(Graphics2D g2D) {
+        drawLeftGrayPoly(g2D);
+
+        // draw header:
+        drawHeader(g2D, "Настройки игры");
+
+        // default buttons text:
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(audioSettingsButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
+        g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
+        g2D.drawString(audioSettingsButtonText, firstButtonRect.x, firstButtonRect.y + 18);
+
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(videoSettingsButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
+        g2D.setColor(secondButtonOver ? Color.GREEN : Color.WHITE);
+        g2D.drawString(videoSettingsButtonText, secondButtonRect.x, secondButtonRect.y + 18);
+
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(hotkeysSettingsButtonText, thirdButtonRect.x - 1, thirdButtonRect.y + 17);
+        g2D.setColor(thirdButtonOver ? Color.GREEN : Color.WHITE);
+        g2D.drawString(hotkeysSettingsButtonText, thirdButtonRect.x, thirdButtonRect.y + 18);
+
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x - 1, fourthButtonRect.y + 17);
+        g2D.setColor(fourthButtonOver ? Color.GREEN : Color.WHITE);
+        g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x, fourthButtonRect.y + 18);
+    }
+
+    public void drawLeftGrayPoly(Graphics2D g2D) {
+        // fill left gray polygon:
+        g2D.setColor(isOptionsMenuSetVisible() ? Constants.getMainMenuBackgroundColor2() : Constants.getMainMenuBackgroundColor());
+        g2D.fillPolygon(getLeftGrayMenuPoly());
     }
 }

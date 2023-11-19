@@ -3,6 +3,7 @@ package game.freya.gui.panes.handlers;
 import fox.FoxRender;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.GameCanvas;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +16,10 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Rectangle;
+import java.awt.geom.Path2D;
+import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 
@@ -89,7 +93,7 @@ public final class UIHandler {
 
         // down left minimap:
         if (!Constants.isPaused()) {
-            updateMiniMap(canvas.getCurrentWorld().getGameMap());
+            updateMiniMap(canvas.getCurrentWorld());
         }
 
         // draw minimap:
@@ -123,19 +127,33 @@ public final class UIHandler {
         }
     }
 
-    private void updateMiniMap(BufferedImage mapImage) {
+    private void updateMiniMap(WorldDTO world) {
         Point2D.Double hPos = gameController.getCurrentHero().getPosition();
-        int srcX = (int) (hPos.x - halfDim);
-        int srcY = (int) (hPos.y - halfDim);
-        BufferedImage drown = mapImage.getSubimage(
-                Math.min(Math.max(srcX, 0), mapImage.getWidth() - minimapDim),
-                Math.min(Math.max(srcY, 0), mapImage.getHeight() - minimapDim),
-                minimapDim, minimapDim);
+//        int srcX = (int) (hPos.x - halfDim);
+//        int srcY = (int) (hPos.y - halfDim);
+//        BufferedImage drown = mapImage.getSubimage(
+//                Math.min(Math.max(srcX, 0), mapImage.getWidth() - minimapDim),
+//                Math.min(Math.max(srcY, 0), mapImage.getHeight() - minimapDim),
+//                minimapDim, minimapDim);
 
+        // draw minimap:
         Graphics2D m2D = (Graphics2D) minimapImage.getGraphics();
         Constants.RENDER.setRender(m2D, FoxRender.RENDER.OFF);
 
-        m2D.drawImage(drown, 0, 0, minimapImage.getWidth(), minimapImage.getHeight(), null);
+//        m2D.drawImage(drown, 0, 0, minimapImage.getWidth(), minimapImage.getHeight(), null);
+
+        world.getHeroes().forEach(hero -> {
+            if (hero.getUid().equals(gameController.getCurrentHero().getUid())) {
+                // draw green arrow:
+                m2D.setColor(Color.GREEN);
+                m2D.drawImage((Image) Constants.CACHE.get("green_arrow"),
+                        minimapImage.getWidth() / 2 - 32, minimapImage.getHeight() / 2 - 32,
+                        64, 64, null);
+            } else {
+                // draw colored heroes circles:
+                // ...
+            }
+        });
 
         m2D.dispose();
     }

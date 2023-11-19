@@ -4,6 +4,7 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iHero;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
+import game.freya.enums.MovingVector;
 import game.freya.items.containers.Backpack;
 import game.freya.items.interfaces.iEntity;
 import game.freya.items.logic.Buff;
@@ -73,6 +74,9 @@ public class HeroDTO implements iHero {
     private Point2D.Double position = new Point2D.Double(384d, 384d);
 
     @Builder.Default
+    private MovingVector vector = MovingVector.NONE;
+
+    @Builder.Default
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
     @Builder.Default
@@ -91,10 +95,6 @@ public class HeroDTO implements iHero {
     @Setter
     @Builder.Default
     private long inGameTime = 0;
-
-//    @Getter
-//    @Builder.Default
-//    private Shape playerShape = new Ellipse2D.Double(0, 0, 1, 1);
 
     @Override
     public boolean isDead() {
@@ -229,19 +229,19 @@ public class HeroDTO implements iHero {
         this.currentAttackPower = currentAttackPower;
     }
 
-    public void moveUp() {
+    private void moveUp() {
         this.position.setLocation(position.x, position.y - 1);
     }
 
-    public void moveDown() {
+    private void moveDown() {
         this.position.setLocation(position.x, position.y + 1);
     }
 
-    public void moveLeft() {
+    private void moveLeft() {
         this.position.setLocation(position.x - 1, position.y);
     }
 
-    public void moveRight() {
+    private void moveRight() {
         this.position.setLocation(position.x + 1, position.y);
     }
 
@@ -262,5 +262,40 @@ public class HeroDTO implements iHero {
     public Icon getIcon() {
         log.warn("Иконки типов героев ещё не заведены!");
         return null;
+    }
+
+    public void move() {
+        switch (vector) {
+            case UP -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveUp();
+                }
+            }
+            case DOWN -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveDown();
+                }
+            }
+            case LEFT -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveLeft();
+                }
+            }
+            case RIGHT -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveRight();
+                }
+            }
+            case NONE -> {}
+            default -> log.warn("Неизвестное направление вектора героя {}", vector);
+        }
+    }
+
+    public void setVector(MovingVector movingVector) {
+        this.vector = movingVector;
+    }
+
+    public void setPosition(Point2D.Double position) {
+        this.position = position;
     }
 }

@@ -7,6 +7,7 @@ import game.freya.config.Constants;
 import game.freya.config.UserConfig.HotKeys;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
+import game.freya.enums.MovingVector;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -28,6 +29,8 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -38,28 +41,21 @@ import static game.freya.config.Constants.FFB;
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
 public class GameCanvas extends FoxCanvas {
-    private static final String backToGameButtonText = "Вернуться", optionsButtonText = "Настройки", saveButtonText = "Сохранить",
-            exitButtonText = "Выйти в меню";
     private final transient JFrame parentFrame;
     private final transient UIHandler uiHandler;
     private final transient GameController gameController;
     private final transient WorldDTO worldDTO;
-    private final String pausedString = "- PAUSED -";
     private transient Rectangle2D viewPort;
-    private transient Rectangle backToGameButtonRect, optionsButtonRect, saveButtonRect, exitButtonRect;
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
-    private boolean isGameActive = false;
-    private boolean isControlsMapped = false;
-    private boolean isMovingKeyActive = false;
-    private boolean backToGameButtonOver = false, optionsButtonOver = false, saveButtonOver = false, exitButtonOver = false;
+    private boolean isGameActive = false, isControlsMapped = false, isMovingKeyActive = false;
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
-    @Getter
-    private boolean isPlayerMovingUp = false, isPlayerMovingDown = false, isPlayerMovingLeft = false, isPlayerMovingRight = false;
+
+//    private boolean isPlayerMovingUp = false, isPlayerMovingDown = false, isPlayerMovingLeft = false, isPlayerMovingRight = false;
     private double parentHeightMemory = 0;
     private transient Thread resizeThread = null;
 
     public GameCanvas(WorldDTO worldDTO, UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
-        super(Constants.getGraphicsConfiguration(), "GameCanvas");
+        super(Constants.getGraphicsConfiguration(), "GameCanvas", gameController);
         this.gameController = gameController;
         this.uiHandler = uiHandler;
         this.parentFrame = parentFrame;
@@ -142,8 +138,12 @@ public class GameCanvas extends FoxCanvas {
 
                         // not-pause events and changes:
                         if (Constants.isPaused()) {
-                            // is needs to draw the Menu:
-                            drawPauseMode(g2D);
+                            if (isOptionsMenuSetVisible()) {
+                                showOptions(g2D);
+                                addExitVariantToOptionsMenuFix(g2D);
+                            } else {
+                                drawPauseMode(g2D);
+                            }
                         } else {
                             dragViewIfNeeds();
                         }
@@ -171,6 +171,15 @@ public class GameCanvas extends FoxCanvas {
             }
         }
         log.info("Thread of Game canvas is finalized.");
+    }
+
+    private void addExitVariantToOptionsMenuFix(Graphics2D g2D) {
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(isOptionsMenuSetVisible()
+                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
+        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(isOptionsMenuSetVisible()
+                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
     private void drawLocalDebugInfo(Graphics2D g2D) {
@@ -222,9 +231,9 @@ public class GameCanvas extends FoxCanvas {
         }
 
         // пересчитываем ректанглы пунктов меню:
-        if (backToGameButtonRect == null) {
-            recalculateMenuRectangles();
-        }
+//        if (getFirstButtonRect() == null) {
+//            recalculateMenuRectangles();
+//        }
 
         if (!isControlsMapped) {
             // назначаем горячие клавиши управления:
@@ -253,21 +262,6 @@ public class GameCanvas extends FoxCanvas {
         if (isMouseDownEdgeOver) {
             dragUp(null);
         }
-    }
-
-    private void recalculateMenuRectangles() {
-        backToGameButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.17D),
-                (int) (getWidth() * 0.1D), 30);
-        optionsButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.22D),
-                (int) (getWidth() * 0.1D), 30);
-        saveButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.27D),
-                (int) (getWidth() * 0.1D), 30);
-        exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-                (int) (getHeight() * 0.85D),
-                (int) (getWidth() * 0.1D), 30);
     }
 
     private void drawWorld(Graphics2D g2D) {
@@ -324,6 +318,7 @@ public class GameCanvas extends FoxCanvas {
         gameController.getCurrentPlayer().setOnline(true);
         this.isGameActive = true;
         Constants.setPaused(false);
+        setOptionsMenuSetVisible(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
 
         setVisible(true);
@@ -333,17 +328,16 @@ public class GameCanvas extends FoxCanvas {
     private void drawPauseMode(Graphics2D g2D) {
         g2D.setFont(Constants.GAME_FONT_03);
         g2D.setColor(new Color(0, 0, 0, 63));
-        g2D.drawString(pausedString,
-                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, pausedString)), getHeight() / 2 + 3);
+        g2D.drawString(getPausedString(),
+                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2 + 3);
 
         g2D.setFont(Constants.GAME_FONT_02);
         g2D.setColor(Color.DARK_GRAY);
-        g2D.drawString(pausedString,
-                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, pausedString)), getHeight() / 2);
+        g2D.drawString(getPausedString(),
+                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2);
 
         // fill left gray menu polygon:
-        g2D.setColor(Constants.getMainMenuBackgroundColor());
-        g2D.fillPolygon(getLeftGrayMenuPoly());
+        drawLeftGrayPoly(g2D);
 
         drawEscMenu(g2D);
     }
@@ -352,32 +346,32 @@ public class GameCanvas extends FoxCanvas {
         // buttons text:
         g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
         g2D.setColor(Color.BLACK);
-        g2D.drawString(backToGameButtonText, backToGameButtonRect.x - 1, backToGameButtonRect.y + 17);
-        g2D.setColor(backToGameButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(backToGameButtonText, backToGameButtonRect.x, backToGameButtonRect.y + 18);
+        g2D.drawString(getBackToGameButtonText(), getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
+        g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(getBackToGameButtonText(), getFirstButtonRect().x, getFirstButtonRect().y + 18);
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(optionsButtonText, optionsButtonRect.x - 1, optionsButtonRect.y + 17);
-        g2D.setColor(optionsButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(optionsButtonText, optionsButtonRect.x, optionsButtonRect.y + 18);
+        g2D.drawString(getOptionsButtonText(), getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
+        g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(getOptionsButtonText(), getSecondButtonRect().x, getSecondButtonRect().y + 18);
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(saveButtonText, saveButtonRect.x - 1, saveButtonRect.y + 17);
-        g2D.setColor(saveButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(saveButtonText, saveButtonRect.x, saveButtonRect.y + 18);
+        g2D.drawString(getSaveButtonText(), getThirdButtonRect().x - 1, getThirdButtonRect().y + 17);
+        g2D.setColor(isThirdButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(getSaveButtonText(), getThirdButtonRect().x, getThirdButtonRect().y + 18);
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(exitButtonText, exitButtonRect.x - 1, exitButtonRect.y + 17);
-        g2D.setColor(exitButtonOver ? Color.GREEN : Color.WHITE);
-        g2D.drawString(exitButtonText, exitButtonRect.x, exitButtonRect.y + 18);
+        g2D.drawString(getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
+        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
 
-//        if (Constants.isDebugInfoVisible()) {
-//            g2D.setColor(Color.DARK_GRAY);
-//            g2D.drawRoundRect(backToGameButtonRect.x, backToGameButtonRect.y, backToGameButtonRect.width, backToGameButtonRect.height, 3, 3);
-//            g2D.drawRoundRect(optionsButtonRect.x, optionsButtonRect.y, optionsButtonRect.width, optionsButtonRect.height, 3, 3);
-//            g2D.drawRoundRect(saveButtonRect.x, saveButtonRect.y, saveButtonRect.width, saveButtonRect.height, 3, 3);
-//            g2D.drawRoundRect(exitButtonRect.x, exitButtonRect.y, exitButtonRect.width, exitButtonRect.height, 3, 3);
-//        }
+        if (Constants.isDebugInfoVisible()) {
+            g2D.setColor(Color.DARK_GRAY);
+            g2D.drawRoundRect(getFirstButtonRect().x, getFirstButtonRect().y, getFirstButtonRect().width, getFirstButtonRect().height, 3, 3);
+            g2D.drawRoundRect(getSecondButtonRect().x, getSecondButtonRect().y, getSecondButtonRect().width, getSecondButtonRect().height, 3, 3);
+            g2D.drawRoundRect(getThirdButtonRect().x, getThirdButtonRect().y, getThirdButtonRect().width, getThirdButtonRect().height, 3, 3);
+            g2D.drawRoundRect(getExitButtonRect().x, getExitButtonRect().y, getExitButtonRect().width, getExitButtonRect().height, 3, 3);
+        }
     }
 
     private void zoomIn() {
@@ -582,10 +576,11 @@ public class GameCanvas extends FoxCanvas {
 
         if (Constants.isPaused()) {
             // если пауза - проверяем меню:
-            backToGameButtonOver = backToGameButtonRect.contains(p);
-            optionsButtonOver = optionsButtonRect.contains(p);
-            saveButtonOver = saveButtonRect.contains(p);
-            exitButtonOver = exitButtonRect.contains(p);
+            setFirstButtonOver(getFirstButtonRect().contains(p));
+            setSecondButtonOver(getSecondButtonRect().contains(p));
+            setThirdButtonOver(getThirdButtonRect().contains(p));
+            setFourthButtonOver(getFourthButtonRect().contains(p));
+            setExitButtonOver(getExitButtonRect().contains(p));
         } else { // иначе мониторим наведение на край окна для прокрутки поля:
             if (!isMovingKeyActive && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
                 isMouseLeftEdgeOver = p.getX() <= 20 && (Constants.getUserConfig().isFullscreen() || p.getX() > 1);
@@ -603,17 +598,41 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (backToGameButtonOver) {
-            Constants.setPaused(false);
+        if (isFirstButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                Constants.showNFP();
+            } else {
+                Constants.setPaused(false);
+                setOptionsMenuSetVisible(false);
+            }
         }
-        if (optionsButtonOver) {
-            Constants.showNFP();
+        if (isSecondButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                Constants.showNFP();
+            } else {
+                setOptionsMenuSetVisible(true);
+            }
         }
-        if (saveButtonOver) {
-            Constants.showNFP();
+        if (isThirdButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                Constants.showNFP();
+            } else {
+                Constants.showNFP();
+            }
         }
-        if (exitButtonOver) {
-            stop();
+        if (isFourthButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                Constants.showNFP();
+            } else {
+                Constants.showNFP();
+            }
+        }
+        if (isExitButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                setOptionsMenuSetVisible(false);
+            } else {
+                stop();
+            }
         }
     }
 
@@ -677,7 +696,7 @@ public class GameCanvas extends FoxCanvas {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                // ...
+                Thread.currentThread().interrupt();
             }
 
             log.debug("Resizing of game canvas...");
@@ -712,20 +731,24 @@ public class GameCanvas extends FoxCanvas {
 
     }
 
+    @Getter
+    public boolean isPlayerMovingUp, isPlayerMovingDown, isPlayerMovingLeft, isPlayerMovingRight;
+
     @Override
     public void keyPressed(KeyEvent e) {
+        // hero movement:
         if (e.getKeyCode() == HotKeys.MOVE_UP.getEvent()) {
             isPlayerMovingUp = true;
         } else if (e.getKeyCode() == HotKeys.MOVE_BACK.getEvent()) {
             isPlayerMovingDown = true;
         }
-
         if (e.getKeyCode() == HotKeys.MOVE_LEFT.getEvent()) {
             isPlayerMovingLeft = true;
         } else if (e.getKeyCode() == HotKeys.MOVE_RIGHT.getEvent()) {
             isPlayerMovingRight = true;
         }
 
+        // camera movement:
         if (e.getKeyCode() == HotKeys.CAM_UP.getEvent()) {
             isMovingKeyActive = true;
             isMouseUpEdgeOver = true;
@@ -733,7 +756,6 @@ public class GameCanvas extends FoxCanvas {
             isMovingKeyActive = true;
             isMouseDownEdgeOver = true;
         }
-
         if (e.getKeyCode() == HotKeys.CAM_LEFT.getEvent()) {
             isMovingKeyActive = true;
             isMouseLeftEdgeOver = true;
@@ -781,10 +803,6 @@ public class GameCanvas extends FoxCanvas {
 
     public HeroDTO getCurrentHero() {
         return gameController.getCurrentHero();
-    }
-
-    public void setCurrentHero(HeroDTO hero) {
-        gameController.setCurrentHero(hero);
     }
 
     public WorldDTO getCurrentWorld() {
