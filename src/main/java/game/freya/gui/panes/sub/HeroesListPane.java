@@ -1,6 +1,7 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
+import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.gui.panes.MenuCanvas;
@@ -26,10 +27,12 @@ import java.awt.image.BufferedImage;
 @Slf4j
 public class HeroesListPane extends JPanel {
     private final transient MenuCanvas canvas;
+    private final transient GameController gameController;
     private transient BufferedImage snap;
 
-    public HeroesListPane(MenuCanvas canvas) {
+    public HeroesListPane(MenuCanvas canvas, GameController controller) {
         this.canvas = canvas;
+        this.gameController = controller;
 
         setName("Heroes list pane");
         setVisible(false);
@@ -41,14 +44,16 @@ public class HeroesListPane extends JPanel {
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-        reloadHeroes(canvas);
+        if (isVisible()) {
+            reloadHeroes(canvas);
+        }
     }
 
     private void reloadHeroes(MenuCanvas canvas) {
         HeroesListPane.this.removeAll();
 
         int i = 0;
-        for (HeroDTO hero : canvas.getCurrentWorldHeroes()) {
+        for (HeroDTO hero : gameController.findAllHeroesByWorldUid(gameController.getCurrentWorldUid())) {
             i++;
             add(new SubPane("Hero 0" + i) {{
                 add(new JPanel() {
@@ -126,7 +131,7 @@ public class HeroesListPane extends JPanel {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                canvas.playWithThisHero(hero.getUid());
+                                canvas.playWithThisHero(hero);
                             }
                         });
                     }});

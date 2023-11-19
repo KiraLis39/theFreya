@@ -1,6 +1,7 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
+import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
@@ -32,15 +33,17 @@ import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Set;
+import java.util.List;
 
 @Slf4j
 public class WorldsListPane extends JPanel {
     private final transient MenuCanvas canvas;
+    private final transient GameController gameController;
     private transient BufferedImage snap;
 
-    public WorldsListPane(MenuCanvas canvas) {
+    public WorldsListPane(MenuCanvas canvas, GameController controller) {
         this.canvas = canvas;
+        this.gameController = controller;
 
         setName("Worlds list pane");
         setVisible(false);
@@ -99,7 +102,7 @@ public class WorldsListPane extends JPanel {
                     add(new JTexztArea("Название: '%s'\tСложность: %s".formatted(world.getTitle(),
                             world.getLevel().getDescription()), 1, 30), BorderLayout.NORTH);
 
-                    Set<HeroDTO> hers = world.getHeroes();
+                    List<HeroDTO> hers = gameController.findAllHeroesByWorldUid(world.getUid());
                     if (hers.isEmpty()) {
                         add(new JTexztArea("Герои: (нет)", 1, 30), BorderLayout.CENTER);
                     } else {

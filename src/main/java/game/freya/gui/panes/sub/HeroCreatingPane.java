@@ -1,5 +1,6 @@
 package game.freya.gui.panes.sub;
 
+import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
@@ -42,7 +43,7 @@ public class HeroCreatingPane extends JPanel {
     private String heroName;
     private JTextField ntf;
 
-    public HeroCreatingPane(MenuCanvas canvas) {
+    public HeroCreatingPane(MenuCanvas canvas, GameController gameController) {
         setName("Hero creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -126,7 +127,7 @@ public class HeroCreatingPane extends JPanel {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            worldUid = canvas.getCurrentWorld().getUid();
+                            worldUid = gameController.getCurrentWorldUid();
                             canvas.createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane.this);
                         }
                     });

@@ -38,9 +38,7 @@ import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.io.File;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import static javax.swing.JLayeredPane.PALETTE_LAYER;
@@ -98,6 +96,8 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void run() {
+        // Thread.currentThread().setDaemon(true);
+
         setMenuActive();
 
         while (isMenuActive) {
@@ -317,10 +317,10 @@ public class MenuCanvas extends FoxCanvas {
         videosPane = new VideoSettingsPane(this);
         hotkeysPane = new HotkeysSettingsPane(this);
         gameplayPane = new GameplaySettingsPane(this);
-        heroCreatingPane = new HeroCreatingPane(this);
         worldCreatingPane = new WorldCreatingPane(this);
-        worldsListPane = new WorldsListPane(this);
-        heroesListPane = new HeroesListPane(this);
+        heroCreatingPane = new HeroCreatingPane(this, gameController);
+        worldsListPane = new WorldsListPane(this, gameController);
+        heroesListPane = new HeroesListPane(this, gameController);
 
         // добавляем панели на слой:
         try {
@@ -403,15 +403,15 @@ public class MenuCanvas extends FoxCanvas {
         // player`s info:
         if (!isOptionsMenuSetVisible() && !isCreatingNewHeroSetVisible() && !isChooseWorldMenuVisible()) {
             if (pAvatar == null) {
-                pAvatar = gameController.getCurrentPlayer().getAvatar();
+                pAvatar = gameController.getCurrentPlayerAvatar();
             }
             g2D.setColor(Color.BLACK);
             g2D.setStroke(new BasicStroke(5f));
             g2D.drawImage(pAvatar, getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, this);
             g2D.drawRoundRect(getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, 16, 16);
             g2D.setFont(Constants.DEBUG_FONT);
-            g2D.drawString(gameController.getCurrentPlayer().getNickName(),
-                    (int) (getAvatarRect().getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayer().getNickName())),
+            g2D.drawString(gameController.getCurrentPlayerNickName(),
+                    (int) (getAvatarRect().getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayerNickName())),
                     getAvatarRect().height + 24);
         }
 
@@ -539,6 +539,7 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         resizeThread = new Thread(() -> {
+            // Thread.currentThread().setDaemon(true);
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
@@ -612,13 +613,14 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     public void createNewWorldAndCloseThatPanel(WorldCreatingPane newWorldTemplate) {
-        aNewWorldMemory = new WorldDTO();
-        aNewWorldMemory.setTitle(newWorldTemplate.getWorldName());
-        aNewWorldMemory.setLevel(newWorldTemplate.getHardnessLevel());
-        aNewWorldMemory.setNetAvailable(newWorldTemplate.isNetAvailable());
-        aNewWorldMemory.setPasswordHash(newWorldTemplate.getNetPasswordHash());
+        WorldDTO aNewWorld = WorldDTO.builder()
+                .title(newWorldTemplate.getWorldName())
+                .level(newWorldTemplate.getHardnessLevel())
+                .isNetAvailable(newWorldTemplate.isNetAvailable())
+                .passwordHash(newWorldTemplate.getNetPasswordHash())
+                .build();
 
-        aNewWorldMemory = gameController.saveNewWorld(aNewWorldMemory);
+        aNewWorldMemory = gameController.saveNewWorld(aNewWorld);
         setCreatingNewWorldSetVisible(false);
         setCreatingNewHeroSetVisible(true);
     }
@@ -626,15 +628,14 @@ public class MenuCanvas extends FoxCanvas {
     public void createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane newHeroTemplate) {
         HeroDTO aNewHeroDto = gameController.saveNewHero(HeroDTO.builder()
                 .heroName(newHeroTemplate.getHeroName())
-                .ownedPlayer(gameController.getCurrentPlayer())
+                .ownerUid(gameController.getCurrentPlayerUid())
                 .worldUid(newHeroTemplate.getWorldUid())
                 .build());
 
-        aNewWorldMemory.addHero(aNewHeroDto);
-        aNewWorldMemory = gameController.updateWorld(aNewWorldMemory);
         gameController.setCurrentWorld(aNewWorldMemory);
+        gameController.getCurrentWorldHeroes().add(aNewHeroDto);
 
-        playWithThisHero(aNewHeroDto.getUid());
+        playWithThisHero(aNewHeroDto);
     }
 
     public List<WorldDTO> getExistsWorlds() {
@@ -642,10 +643,9 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     public void createNewHeroForExistsWorldAndCloseThatPanel(UUID selectedWorldUuid) {
-        gameController.setLastPlayedWorldUuid(selectedWorldUuid);
-        aNewWorldMemory = gameController.getCurrentWorld();
+        aNewWorldMemory = gameController.setCurrentWorld(selectedWorldUuid);
 
-        if (getCurrentWorldHeroes().isEmpty()) {
+        if (gameController.findAllHeroesByWorldUid(selectedWorldUuid).isEmpty()) {
             setCreatingNewHeroSetVisible(true);
         } else {
             setChooseHeroMenuVisible(true);
@@ -660,21 +660,17 @@ public class MenuCanvas extends FoxCanvas {
         gameController.deleteWorld(worldUid);
     }
 
-    public Set<HeroDTO> getCurrentWorldHeroes() {
-        return gameController.getCurrentWorld() == null
-                ? Collections.emptySet() : gameController.getCurrentWorld().getHeroes();
-    }
-
     public void deleteExistsPlayerHero(UUID heroUid) {
-        gameController.deleteCurrentPlayerHero(heroUid);
+        gameController.deleteHero(heroUid);
     }
 
-    public void playWithThisHero(UUID heroUid) {
+    public void playWithThisHero(HeroDTO hero) {
+        gameController.setCurrentHero(hero);
+        gameController.setCurrentPlayerLastPlayedWorldUid(aNewWorldMemory.getUid());
+
         setCreatingNewHeroSetVisible(false);
         heroCreatingPane.setVisible(false);
 
-        gameController.setCurrentHero(heroUid);
-        gameController.getCurrentPlayer().setLastPlayedWorldUid(aNewWorldMemory.getUid());
         gameController.loadScreen(ScreenType.GAME_SCREEN, aNewWorldMemory);
     }
 
@@ -759,9 +755,5 @@ public class MenuCanvas extends FoxCanvas {
         if (isExitButtonOver()) {
             onExitBack();
         }
-    }
-
-    public WorldDTO getCurrentWorld() {
-        return gameController.getCurrentWorld();
     }
 }
