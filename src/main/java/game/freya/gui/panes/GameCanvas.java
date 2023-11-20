@@ -33,23 +33,21 @@ import java.awt.geom.Rectangle2D;
 import java.util.Set;
 
 import static game.freya.config.Constants.FFB;
-import static game.freya.config.Constants.setPaused;
 
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
 public class GameCanvas extends FoxCanvas {
+    private static final double infoStrut = 58d, infoStrutHardness = 40d;
     private final transient JFrame parentFrame;
     private final transient UIHandler uiHandler;
     private final transient GameController gameController;
-    //    private final transient WorldDTO worldDTO;
-    private final double infoStrut = 58d, infoStrutHardness = 40d;
     private transient Rectangle2D viewPort;
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
     private boolean isGameActive = false, isControlsMapped = false, isMovingKeyActive = false;
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
     private double parentHeightMemory = 0;
     private transient Thread resizeThread = null;
-    private int strutMod;
+
 
     public GameCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
         super(Constants.getGraphicsConfiguration(), "GameCanvas", gameController);
@@ -274,13 +272,14 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void drawHeroesData(Graphics2D g2D, Set<HeroDTO> heroes) {
-        strutMod = (int) (infoStrut - ((viewPort.getHeight() - viewPort.getY()) / infoStrutHardness));
+        int sMod = (int) (infoStrut - ((viewPort.getHeight() - viewPort.getY()) / infoStrutHardness));
 
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.setColor(Color.WHITE);
 
         // draw heroes data:
         heroes.forEach(hero -> {
+            int strutMod = sMod;
             if (gameController.isHeroActive(hero, viewPort.getBounds())) {
 
                 // Преобразуем координаты героя из карты мира в координаты текущего холста:
@@ -556,6 +555,15 @@ public class GameCanvas extends FoxCanvas {
 
             // останавливаем отрисовку мира:
             this.isGameActive = false;
+
+            // если игра сетевая - останавливаем сервер:
+            if (gameController.isCurrentWorldIsNetwork()) {
+                if (gameController.closeNet()) {
+                    log.info("Сервер успешно остановлен");
+                } else {
+                    log.warn("Возникла ошибка при закрытии сервера.");
+                }
+            }
 
             // сохраняем всё и всех:
             gameController.setHeroOfflineAndSave(getDuration());

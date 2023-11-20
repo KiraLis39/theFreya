@@ -53,4 +53,8 @@ public class WorldService {
     public void saveCurrentWorld() {
         worldRepository.save(worldMapper.toEntity(currentWorld));
     }
+
+    public List<WorldDTO> findAllByNetAvailable(boolean isNetAvailable) {
+        return worldMapper.toDto(worldRepository.findAllByIsNetAvailableIs(isNetAvailable));
+    }
 }

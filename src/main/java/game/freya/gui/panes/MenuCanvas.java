@@ -14,6 +14,7 @@ import game.freya.gui.panes.sub.GameplaySettingsPane;
 import game.freya.gui.panes.sub.HeroCreatingPane;
 import game.freya.gui.panes.sub.HeroesListPane;
 import game.freya.gui.panes.sub.HotkeysSettingsPane;
+import game.freya.gui.panes.sub.NetCreatingPane;
 import game.freya.gui.panes.sub.NetworkListPane;
 import game.freya.gui.panes.sub.VideoSettingsPane;
 import game.freya.gui.panes.sub.WorldCreatingPane;
@@ -21,7 +22,6 @@ import game.freya.gui.panes.sub.WorldsListPane;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -38,8 +38,6 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
-import java.io.File;
-import java.util.List;
 import java.util.UUID;
 
 import static javax.swing.JLayeredPane.PALETTE_LAYER;
@@ -55,7 +53,8 @@ public class MenuCanvas extends FoxCanvas {
     private transient Area area;
     private boolean isMenuActive, initialized = false;
     private String startGameButtonText, coopPlayButtonText, optionsButtonText, randomButtonText, resetButtonText, createNewButtonText;
-    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane, heroesListPane, networkListPane;
+    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane,
+            heroesListPane, networkListPane, networkCreatingPane;
     private double parentHeightMemory = 0;
     private byte drawErrorCount = 0;
 
@@ -103,18 +102,6 @@ public class MenuCanvas extends FoxCanvas {
         createNewButtonText = "Создать";
         randomButtonText = "Случайно";
         resetButtonText = "Сброс";
-
-        try {
-            Constants.CACHE.addIfAbsent("backMenuImage",
-                    ImageIO.read(new File("./resources/images/menu.png")));
-            Constants.CACHE.addIfAbsent("backMenuImageShadowed",
-                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
-            Constants.CACHE.addIfAbsent("green_arrow",
-                    ImageIO.read(new File("./resources/images/green_arrow.png")));
-//            recreateBackImage();
-        } catch (Exception e) {
-            log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
 
         recalculateMenuRectangles();
 
@@ -266,6 +253,8 @@ public class MenuCanvas extends FoxCanvas {
             drawSettingsPart(g2D, 7);
         } else if (isNetworkMenuVisible()) {
             drawSettingsPart(g2D, 8);
+        } else if (isCreatingNewNetworkVisible()) {
+            drawSettingsPart(g2D, 9);
         }
 
         if (Constants.isDebugInfoVisible()) {
@@ -315,6 +304,8 @@ public class MenuCanvas extends FoxCanvas {
             g2D.drawString(createNewButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
             g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(createNewButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
+        } else if (isCreatingNewNetworkVisible()) {
+            drawHeader(g2D, "Создание подключения");
         } else if (isCreatingNewHeroSetVisible()) {
             showHeroCreating(g2D);
             return;
@@ -337,10 +328,10 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(isOptionsMenuSetVisible()
+        g2D.drawString(isOptionsMenuSetVisible() || isCreatingNewNetworkVisible() || isNetworkMenuVisible()
                 ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
         g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(isOptionsMenuSetVisible()
+        g2D.drawString(isOptionsMenuSetVisible() || isCreatingNewNetworkVisible() || isNetworkMenuVisible()
                 ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
@@ -381,6 +372,7 @@ public class MenuCanvas extends FoxCanvas {
         worldsListPane.setVisible(partIndex == 6);
         heroesListPane.setVisible(partIndex == 7);
         networkListPane.setVisible(partIndex == 8);
+        networkCreatingPane.setVisible(partIndex == 9);
 
         if (Constants.isDebugInfoVisible()) {
             g2D.setColor(Color.RED);
@@ -405,6 +397,7 @@ public class MenuCanvas extends FoxCanvas {
         worldsListPane = new WorldsListPane(this, gameController);
         heroesListPane = new HeroesListPane(this, gameController);
         networkListPane = new NetworkListPane(this, gameController);
+        networkCreatingPane = new NetCreatingPane(this);
 
         // добавляем панели на слой:
         try {
@@ -417,6 +410,7 @@ public class MenuCanvas extends FoxCanvas {
             parentFrame.getLayeredPane().add(worldsListPane, PALETTE_LAYER);
             parentFrame.getLayeredPane().add(heroesListPane, PALETTE_LAYER);
             parentFrame.getLayeredPane().add(networkListPane, PALETTE_LAYER);
+            parentFrame.getLayeredPane().add(networkCreatingPane, PALETTE_LAYER);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
             recalculateSettingsPanes();
@@ -469,11 +463,16 @@ public class MenuCanvas extends FoxCanvas {
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма networkListPane, которой там нет.");
         }
+        try {
+            parentFrame.getLayeredPane().remove(networkCreatingPane);
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма networkCreatingPane, которой там нет.");
+        }
     }
 
     private boolean isShadowBackNeeds() {
         return isOptionsMenuSetVisible() || isCreatingNewHeroSetVisible() || isCreatingNewWorldSetVisible()
-                || isChooseWorldMenuVisible() || isChooseHeroMenuVisible() || isNetworkMenuVisible();
+                || isChooseWorldMenuVisible() || isChooseHeroMenuVisible() || isNetworkMenuVisible() || isCreatingNewNetworkVisible();
     }
 
     @Override
@@ -488,8 +487,6 @@ public class MenuCanvas extends FoxCanvas {
             setVideoSettingsMenuVisible(false);
             setHotkeysSettingsMenuVisible(false);
             setGameplaySettingsMenuVisible(false);
-            setCreatingNewWorldSetVisible(false);
-            setCreatingNewHeroSetVisible(false);
         } else if (isCreatingNewHeroSetVisible()) {
             setCreatingNewHeroSetVisible(false);
             setChooseHeroMenuVisible(true);
@@ -502,6 +499,9 @@ public class MenuCanvas extends FoxCanvas {
             setChooseHeroMenuVisible(false);
         } else if (isNetworkMenuVisible()) {
             setNetworkMenuVisible(false);
+        } else if (isCreatingNewNetworkVisible()) {
+            setCreatingNewNetworkVisible(false);
+            setNetworkMenuVisible(true);
         } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
             gameController.exitTheGame(null);
@@ -517,6 +517,7 @@ public class MenuCanvas extends FoxCanvas {
         hidePanelIfNotNull(worldsListPane);
         hidePanelIfNotNull(heroesListPane);
         hidePanelIfNotNull(networkListPane);
+        hidePanelIfNotNull(networkCreatingPane);
     }
 
     private void hidePanelIfNotNull(JPanel panel) {
@@ -656,6 +657,19 @@ public class MenuCanvas extends FoxCanvas {
         setCreatingNewHeroSetVisible(true);
     }
 
+    public void createNewNetworkWorldAndCloseThatPanel(NetCreatingPane netCreatingPane) {
+        WorldDTO aNewNetWorld = WorldDTO.builder()
+                .title(netCreatingPane.getWorldName())
+                .level(netCreatingPane.getHardnessLevel())
+                .passwordHash(netCreatingPane.getNetPasswordHash())
+                .isNetAvailable(true)
+                .build();
+
+        aNewWorldMemory = gameController.saveNewNetWorld(aNewNetWorld);
+        setCreatingNewNetworkVisible(false);
+        setCreatingNewHeroSetVisible(true);
+    }
+
     public void createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane newHeroTemplate) {
         HeroDTO aNewHeroDto = gameController.saveNewHero(HeroDTO.builder()
                 .heroName(newHeroTemplate.getHeroName())
@@ -667,10 +681,6 @@ public class MenuCanvas extends FoxCanvas {
         gameController.getCurrentWorldHeroes().add(aNewHeroDto);
 
         playWithThisHero(aNewHeroDto);
-    }
-
-    public List<WorldDTO> getExistsWorlds() {
-        return gameController.getExistingWorlds();
     }
 
     public void createNewHeroForExistsWorldAndCloseThatPanel(UUID selectedWorldUuid) {
@@ -724,17 +734,14 @@ public class MenuCanvas extends FoxCanvas {
                 setChooseHeroMenuVisible(false);
                 setCreatingNewHeroSetVisible(true);
             } else if (isNetworkMenuVisible()) {
-                Constants.showNFP();
+                setNetworkMenuVisible(false);
+                setCreatingNewNetworkVisible(true);
             } else {
-                // Попытка начать новую игру:
-                List<WorldDTO> worlds = gameController.getExistingWorlds();
-                if (worlds.isEmpty()) {
-                    // миров нет - создаём:
+                if (gameController.findAllWorldsByNetworkAvailable(false).isEmpty()) {
                     setCreatingNewWorldSetVisible(true);
-                    return;
+                } else {
+                    setChooseWorldMenuVisible(true);
                 }
-                // отображаем существующие миры для игры:
-                setChooseWorldMenuVisible(true);
             }
         }
 

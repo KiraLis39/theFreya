@@ -22,11 +22,12 @@ import java.time.LocalDateTime;
 @Slf4j
 // iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, KeyListener, Runnable
 public abstract class FoxCanvas extends Canvas implements iCanvas {
+    private static final short rightShift = 21;
+
     private final String name;
     private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
     private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
     private final String pausedString, downInfoString1, downInfoString2;
-    private final short rightShift = 21;
     private transient VolatileImage backImage;
     private transient Rectangle avatarRect;
     private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
@@ -39,7 +40,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
     private boolean isOptionsMenuSetVisible = false, isCreatingNewHeroSetVisible = false, isCreatingNewWorldSetVisible = false,
-            isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false, networkMenuVisible = false;
+            isChooseWorldMenuVisible = false, isChooseHeroMenuVisible = false, isNetworkMenuVisible = false, isCreatingNewNetworkVisible = false;
     private boolean isAudioSettingsMenuVisible = false, isVideoSettingsMenuVisible = false, isHotkeysSettingsMenuVisible = false,
             isGameplaySettingsMenuVisible = false;
     private boolean revolatileNeeds = false;
@@ -52,7 +53,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         this.videoSettingsButtonText = "Настройки графики";
         this.hotkeysSettingsButtonText = "Управление";
         this.gameplaySettingsButtonText = "Геймплей";
-        this.backButtonText = "← В главное меню";
+        this.backButtonText = "← Назад";
         this.exitButtonText = "← Выход";
 
         this.backToGameButtonText = "Вернуться";

@@ -27,6 +27,7 @@ import javax.swing.text.StyledDocument;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
@@ -37,6 +38,7 @@ import java.util.List;
 
 @Slf4j
 public class WorldsListPane extends JPanel {
+    private static final int maxElementsHeight = 96;
     private final transient MenuCanvas canvas;
     private final transient GameController gameController;
     private transient BufferedImage snap;
@@ -62,7 +64,7 @@ public class WorldsListPane extends JPanel {
         WorldsListPane.this.removeAll();
 
         int i = 0;
-        for (WorldDTO world : canvas.getExistsWorlds()) {
+        for (WorldDTO world : gameController.findAllWorldsByNetworkAvailable(false)) {
             i++;
             add(new SubPane("World 0" + i) {{
                 add(new JPanel() {
@@ -72,7 +74,7 @@ public class WorldsListPane extends JPanel {
                     protected void paintComponent(Graphics g) {
                         if (wImage == null) {
                             g.setColor(Color.DARK_GRAY);
-                            g.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                            g.fillRoundRect(0, 0, getWidth(), getHeight(), maxElementsHeight, maxElementsHeight);
                             g.setColor(Color.GRAY);
                             g.setFont(Constants.DEBUG_FONT);
                             g.drawString("NO IMAGE",
@@ -99,8 +101,16 @@ public class WorldsListPane extends JPanel {
                 }, BorderLayout.WEST);
 
                 add(new SubPane("Мир:") {{
-                    add(new JTexztArea("Название: '%s'\tСложность: %s".formatted(world.getTitle(),
-                            world.getLevel().getDescription()), 1, 30), BorderLayout.NORTH);
+                    setLayout(new FlowLayout(FlowLayout.LEFT, 1, 1));
+                    setBorder(new EmptyBorder(-6, 3, 3, 3));
+
+                    add(new ZLabel(("<html><pre>"
+                            + "Название:<font color=#F8CF43><b> %s</b></font>"
+                            + "<br>Уровень:<font color=#43F8C9><b>  %s</b></font>"
+                            + "<br>Сетевой:<font color=#239BEE><b>  %s</b></font>"
+                            + "</pre></html>")
+                            .formatted(world.getTitle(), world.getLevel().getDescription(), world.isNetAvailable()),
+                            null));
 
                     List<HeroDTO> hers = gameController.findAllHeroesByWorldUid(world.getUid());
                     if (hers.isEmpty()) {
@@ -201,9 +211,9 @@ public class WorldsListPane extends JPanel {
                         setBackground(Color.BLUE.darker().darker().darker());
                         setForeground(Color.WHITE);
                         setFocusPainted(false);
-                        setMinimumSize(new Dimension(96, 96));
-                        setPreferredSize(new Dimension(96, 96));
-                        setMaximumSize(new Dimension(96, 96));
+                        setMinimumSize(new Dimension(maxElementsHeight, maxElementsHeight));
+                        setPreferredSize(new Dimension(maxElementsHeight, maxElementsHeight));
+                        setMaximumSize(new Dimension(maxElementsHeight, maxElementsHeight));
                         setAlignmentY(TOP_ALIGNMENT);
 
                         addActionListener(new AbstractAction() {
@@ -215,7 +225,7 @@ public class WorldsListPane extends JPanel {
                     }});
                 }}, BorderLayout.EAST);
 
-                add(new ZLabel(world.getCreateDate().format(Constants.DATE_FORMAT_3), world.getIcon()), BorderLayout.SOUTH);
+                add(new ZLabel("Создано: " + world.getCreateDate().format(Constants.DATE_FORMAT_3), null), BorderLayout.SOUTH);
             }});
 
             add(Box.createVerticalStrut(6));

@@ -4,7 +4,6 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.SubPane;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 @Slf4j
-public class WorldCreatingPane extends JPanel {
+public class NetCreatingPane extends JPanel {
     private static final Random r = new Random();
     private transient BufferedImage snap;
     @Getter
@@ -48,8 +47,8 @@ public class WorldCreatingPane extends JPanel {
     @Getter
     private int netPasswordHash = -1;
 
-    public WorldCreatingPane(MenuCanvas canvas) {
-        setName("World creating pane");
+    public NetCreatingPane(MenuCanvas canvas) {
+        setName("Net creating pane");
         setVisible(false);
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
@@ -59,7 +58,7 @@ public class WorldCreatingPane extends JPanel {
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
 
-        add(new SubPane("Создание игрового мира") {{
+        add(new SubPane("Создание сетевого мира") {{
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
             add(Box.createVerticalStrut(32));
@@ -85,19 +84,6 @@ public class WorldCreatingPane extends JPanel {
 
             add(Box.createVerticalStrut(18));
 
-            add(new SubPane("Доступен для сети:") {{
-                add(new CheckBokz("netAvailableCheck") {{
-                    setAction(new AbstractAction() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            isNetAvailable = isSelected();
-                        }
-                    });
-                }});
-            }});
-
-            add(Box.createVerticalStrut(18));
-
             add(new SubPane("Сетевой пароль:") {{
                 add(new JPasswordField(String.valueOf(netPasswordHash), 20) {{
                     addKeyListener(new KeyAdapter() {
@@ -109,23 +95,23 @@ public class WorldCreatingPane extends JPanel {
                 }});
             }});
 
-            add(Box.createVerticalStrut(9));
+            add(Box.createVerticalStrut(getHeight() / 2));
             add(new JSeparator(SwingConstants.HORIZONTAL));
             add(Box.createVerticalStrut(9));
 
             add(Box.createVerticalStrut(getHeight()));
         }});
 
-        add(new SubPane("Готово") {
+        add(new SubPane("Открыть") {
             {
-                add(new JButton("Готово", null) {{
+                add(new JButton("Открыть", null) {{
                     setBackground(Color.DARK_GRAY);
                     setForeground(Color.WHITE);
                     setPreferredSize(new Dimension(256, 32));
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            canvas.createNewWorldAndCloseThatPanel(WorldCreatingPane.this);
+                            canvas.createNewNetworkWorldAndCloseThatPanel(NetCreatingPane.this);
                         }
                     });
                 }});
@@ -136,7 +122,7 @@ public class WorldCreatingPane extends JPanel {
     @Override
     public void paintComponent(Graphics g) {
         if (snap == null) {
-            log.info("Reload world creating snap...");
+            log.info("Reload net creating snap...");
             BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
@@ -150,7 +136,7 @@ public class WorldCreatingPane extends JPanel {
             return;
         }
 
-        this.worldName = "World_%s".formatted(r.nextInt(1000));
+        this.worldName = "Net_World_%s".formatted(r.nextInt(1000));
         if (ntf != null) {
             ntf.setText(this.worldName);
         }

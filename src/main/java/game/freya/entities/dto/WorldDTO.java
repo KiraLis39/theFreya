@@ -12,11 +12,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.ImageIcon;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.image.BufferedImage;
@@ -73,9 +73,8 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     @JsonIgnore
     private BufferedImage gameMap;
 
-    @Getter
     @JsonIgnore
-    private ImageIcon icon;
+    private Image icon;
 
     @JsonIgnore
     private GameController gameController;
@@ -157,5 +156,16 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     private void drawEnvironment(Graphics2D g2D, Rectangle visibleRect) {
 
+    }
+
+    public Image getIcon() {
+        if (this.icon == null) {
+            if (isNetAvailable) {
+                this.icon = (BufferedImage) Constants.CACHE.get("net");
+            } else {
+                log.debug(Constants.getNotRealizedString());
+            }
+        }
+        return this.icon;
     }
 }

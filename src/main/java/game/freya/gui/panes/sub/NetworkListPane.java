@@ -1,11 +1,9 @@
 package game.freya.gui.panes.sub;
 
-import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.entities.dto.HeroDTO;
+import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +17,14 @@ import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 
 @Slf4j
 public class NetworkListPane extends JPanel {
+    private static final int maxElementsHeight = 96;
     private final transient MenuCanvas canvas;
     private final transient GameController gameController;
     private transient BufferedImage snap;
@@ -53,53 +52,66 @@ public class NetworkListPane extends JPanel {
         NetworkListPane.this.removeAll();
 
         int i = 0;
-        for (HeroDTO hero : gameController.findAllHeroesByWorldUid(gameController.getCurrentWorldUid())) {
-            i++;
-            add(new SubPane("Net world 0" + i) {{
-                add(new JPanel() {
-                    @Override
-                    protected void paintComponent(Graphics g) {
-                        g.setColor(Color.MAGENTA);
-                        g.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
-                        g.dispose();
-                    }
-
-                    {
-                        setOpaque(false);
-                        setIgnoreRepaint(true);
-                        setMinimumSize(new Dimension(96, 96));
-                        setPreferredSize(new Dimension(96, 96));
-                    }
-                }, BorderLayout.WEST);
-
-                add(new JTexztArea("Доступный мир '%s'".formatted("-na-"), 1, 30), BorderLayout.CENTER);
-
+        for (WorldDTO world : gameController.findAllWorldsByNetworkAvailable(true)) {
+            int k = ++i;
+            add(new SubPane("Net world 0" + k) {{
                 add(new JPanel() {{
-                    setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
                     setOpaque(false);
-                    setBackground(new Color(0, 0, 0, 0));
                     setFocusable(false);
+                    setDoubleBuffered(false);
                     setIgnoreRepaint(true);
 
-                    add(new JButton(" CONN ") {{
-                        setBackground(Color.BLUE.darker().darker().darker());
-                        setForeground(Color.WHITE);
-                        setFocusPainted(false);
-                        setMinimumSize(new Dimension(96, 96));
-                        setPreferredSize(new Dimension(96, 96));
-                        setMaximumSize(new Dimension(96, 96));
-                        setAlignmentY(TOP_ALIGNMENT);
-
-                        addActionListener(new AbstractAction() {
-                            @Override
-                            public void actionPerformed(ActionEvent e) {
-                                Constants.showNFP();
+                    add(new JPanel() {
+                        @Override
+                        protected void paintComponent(Graphics g) {
+                            if (world.getIcon() != null) {
+                                g.drawImage(world.getIcon(), 0, 2, maxElementsHeight, maxElementsHeight, this);
+                                g.dispose();
                             }
-                        });
-                    }});
-                }}, BorderLayout.EAST);
+                        }
 
-                add(new ZLabel(hero.getCreateDate().format(Constants.DATE_FORMAT_3), hero.getIcon()), BorderLayout.SOUTH);
+                        {
+                            setOpaque(false);
+                            setIgnoreRepaint(true);
+                            setDoubleBuffered(false);
+                            setMinimumSize(new Dimension(maxElementsHeight, maxElementsHeight));
+                            setPreferredSize(new Dimension(maxElementsHeight, maxElementsHeight));
+                            setMaximumSize(new Dimension(maxElementsHeight, maxElementsHeight));
+                        }
+                    }, BorderLayout.WEST);
+
+                    add(new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 1)) {{
+                        setOpaque(false);
+                        setIgnoreRepaint(true);
+                        setDoubleBuffered(false);
+
+                        add(new ZLabel(("<html><pre>"
+                                + "Название:<font color=#F8CF43><b>   %s</b></font>"
+                                + "<br>Уровень:<font color=#43F8C9><b>    %s</b></font>"
+                                + "<br>Сетевой:<font color=#239BEE><b>    %s</b></font>"
+                                + "<br>Создано:<font color=#8805A8><b>    %s</b></font>"
+                                + "</pre></html>")
+                                .formatted(world.getTitle(), world.getLevel().getDescription(),
+                                        world.isNetAvailable(), world.getCreateDate().format(Constants.DATE_FORMAT_3)),
+                                null));
+                    }}, BorderLayout.CENTER);
+                }}, BorderLayout.WEST);
+
+                add(new JButton(" CONN ") {{
+                    setBackground(Color.BLUE.darker().darker().darker());
+                    setForeground(Color.WHITE);
+                    setFocusPainted(false);
+                    setMinimumSize(new Dimension(64, getHeight()));
+                    setMaximumSize(new Dimension(96, getHeight()));
+                    setAlignmentY(TOP_ALIGNMENT);
+
+                    addActionListener(new AbstractAction() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            Constants.showNFP();
+                        }
+                    });
+                }}, BorderLayout.EAST);
             }});
 
             add(Box.createVerticalStrut(6));

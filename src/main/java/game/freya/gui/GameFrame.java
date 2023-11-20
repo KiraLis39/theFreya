@@ -68,6 +68,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/logo.png");
             } catch (InterruptedException e) {
                 log.error("Logo thread was interrupted: {}", ExceptionUtils.getFullExceptionMessage(e));
+                logo.getEngine().interrupt();
             }
         }
 
@@ -93,6 +94,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 logo.getEngine().join(10_000);
             } catch (InterruptedException ie) {
                 log.warn("Logo thread joining was interrupted: {}", ExceptionUtils.getFullExceptionMessage(ie));
+                logo.getEngine().interrupt();
             }
         }
 
@@ -183,7 +185,16 @@ public class GameFrame implements WindowListener, WindowStateListener {
         log.info("Try to load World '{}' screen...", worldDto.getTitle());
         clearFrame();
         gameController.setCurrentWorld(worldDto);
-        frame.add(new GameCanvas(uIHandler, frame, gameController)); // мир уже должен быть с игроком (-ами)!
+
+        // если мир по сети:
+        if (worldDto.isNetAvailable()) {
+            if (gameController.openNet()) {
+                log.warn("Сервер сетевой игры успешно активирован");
+            } else {
+                log.warn("Что-то пошло не так при активации сетевого сервера");
+            }
+        }
+        frame.add(new GameCanvas(uIHandler, frame, gameController));
         frame.revalidate();
     }
 
@@ -191,7 +202,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
         boolean success = false;
         for (java.awt.Component comp : frame.getComponents()) {
             if (comp instanceof FoxCanvas fc) {
-                log.debug("Found to remove from frame: {}", fc.getName());
                 fc.stop();
                 frame.remove(fc);
                 success = true;
@@ -199,7 +209,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
             if (comp instanceof JRootPane rp) {
                 for (java.awt.Component cmp : rp.getContentPane().getComponents()) {
                     if (cmp instanceof FoxCanvas fc) {
-                        log.debug("Found to remove from frame: {}", fc.getName());
                         fc.stop();
                         frame.remove(fc);
                         success = true;
@@ -207,7 +216,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 }
                 for (java.awt.Component cmp : rp.getLayeredPane().getComponents()) {
                     if (cmp instanceof FoxCanvas fc) {
-                        log.debug("Found to remove from frame: {}", fc.getName());
                         fc.stop();
                         frame.remove(fc);
                         success = true;
@@ -217,7 +225,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
             if (comp instanceof JLayeredPane lp) {
                 for (java.awt.Component cmp : lp.getComponents()) {
                     if (cmp instanceof FoxCanvas fc) {
-                        log.debug("Found to remove from frame: {}", fc.getName());
                         fc.stop();
                         frame.remove(fc);
                         success = true;

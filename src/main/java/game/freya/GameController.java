@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 import org.sqlite.SQLiteConnection;
 
 import javax.annotation.PostConstruct;
+import javax.imageio.ImageIO;
 import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.Graphics2D;
@@ -37,12 +38,15 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -85,6 +89,22 @@ public class GameController {
         log.info("Check the current user in DB created...");
         checkCurrentPlayerExists();
 
+        try {
+            Constants.CACHE.addIfAbsent("backMenuImage",
+                    ImageIO.read(new File("./resources/images/menu.png")));
+            Constants.CACHE.addIfAbsent("backMenuImageShadowed",
+                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
+            Constants.CACHE.addIfAbsent("green_arrow",
+                    ImageIO.read(new File("./resources/images/green_arrow.png")));
+
+            try (InputStream netResource = getClass().getResourceAsStream("/images/net.png")) {
+                Objects.requireNonNull(netResource);
+                Constants.CACHE.addIfAbsent("net", ImageIO.read(netResource));
+            }
+        } catch (Exception e) {
+            log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+
         log.info("The game is started!");
         this.gameFrame.showMainMenu(this);
     }
@@ -121,6 +141,10 @@ public class GameController {
     }
 
     private void closeConnections() {
+        if (socketService.isOpen()) {
+            socketService.close();
+        }
+
         try {
             if (conn != null) {
                 log.info("Connection to SQLite is closing...");
@@ -163,10 +187,6 @@ public class GameController {
 
     public WorldDTO updateWorld(WorldDTO worldDTO) {
         return worldService.save(worldDTO);
-    }
-
-    public List<WorldDTO> getExistingWorlds() {
-        return worldService.findAll();
     }
 
     public HeroDTO saveNewHero(HeroDTO aNewHeroDto) {
@@ -312,6 +332,18 @@ public class GameController {
         return worldService.save(newWorld);
     }
 
+    public WorldDTO saveNewNetWorld(WorldDTO aNewNetWorld) {
+        return worldService.save(aNewNetWorld);
+    }
+
+    public boolean openNet() {
+        return socketService.openServer();
+    }
+
+    public boolean closeNet() {
+        return socketService.close();
+    }
+
     public UUID getCurrentPlayerUid() {
         return playerService.getCurrentPlayer().getUid();
     }
@@ -391,5 +423,13 @@ public class GameController {
             return heroService.getCurrentHero().getSpeed();
         }
         return -1;
+    }
+
+    public List<WorldDTO> findAllWorldsByNetworkAvailable(boolean isNetworkAvailable) {
+        return worldService.findAllByNetAvailable(isNetworkAvailable);
+    }
+
+    public boolean isCurrentWorldIsNetwork() {
+        return worldService.getCurrentWorld().isNetAvailable();
     }
 }

@@ -32,6 +32,18 @@ import java.util.Locale;
 
 @Slf4j
 public final class Constants {
+    // net:
+    public static final int SERVER_PORT = 13958;
+    public static final int SOCKET_BUFFER_SIZE = 10240; // 65536
+
+
+    // other:
+    public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
+    public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
+    public static final int MAP_CELL_DIM = 64;
+    public static final String DEFAULT_AVATAR_URL = "/images/defaultAvatar.png";
+
+
     // libraries objects:
     public static final VideoMonitor MON = new VideoMonitor();
     public static final FoxFontBuilder FFB = new FoxFontBuilder();
@@ -39,11 +51,11 @@ public final class Constants {
     public static final MediaCache CACHE = MediaCache.getInstance();
     public static final InputAction INPUT_ACTION = new InputAction();
     public static final FoxSpritesCombiner COMBINER = new FoxSpritesCombiner();
-    //    public static final FoxExperience EXP = new FoxExperience();
+    // public static final FoxExperience EXP = new FoxExperience();
     public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
     // public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.of("ru"));
     public static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("День dd (HH:mm)", Locale.of("ru"));
-    public static final DateTimeFormatter DATE_FORMAT_3 = DateTimeFormatter.ofPattern("Создан: dd MMMM yyyy HH:mm", Locale.of("ru"));
+    public static final DateTimeFormatter DATE_FORMAT_3 = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm", Locale.of("ru"));
     // fonts:
     public static final Font DEBUG_FONT = FFB.setFoxFont(FONT.ARIAL, 16, true, MON.getEnvironment());
     public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 14, false, MON.getEnvironment());
@@ -55,14 +67,6 @@ public final class Constants {
     public static final Font MENU_BUTTONS_FONT;
     public static final Font PROPAGANDA_FONT;
     public static final Font PROPAGANDA_BIG_FONT;
-
-    // other:
-    public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
-    public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
-    public static final int MAP_CELL_DIM = 64;
-    public static final int SERVER_PORT = 13958;
-    public static final int SOCKET_BUFFER_SIZE = 10240; // 65536
-    public static final String DEFAULT_AVATAR_URL = "/images/defaultAvatar.png";
 
 
     // project:
@@ -151,7 +155,7 @@ public final class Constants {
                 BufferedImage curImage = ImageIO.read(is);
                 BufferedImage curResult = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D c2D = curResult.createGraphics();
-                RENDER.setRender(c2D, FoxRender.RENDER.ULTRA); // todo: будет ли тут иметь вообще значение рендер?
+                RENDER.setRender(c2D, FoxRender.RENDER.ULTRA);
                 c2D.drawImage(curImage, 0, 0, 64, 64, null);
                 c2D.dispose();
                 defaultCursor = FoxCursor.createCursor(curResult, "default");

@@ -20,7 +20,7 @@ public class ClientHandler extends Thread implements Runnable {
     private final ObjectOutputStream outputStream;
     private final ObjectInputStream inputStream;
     @Setter
-    private long dynamicReadStreamDelay; // оно повышать-понижать при нагрузке или т.т.
+    private long dynamicReadStreamDelay = 1_000L; // оно повышать-понижать при нагрузке или т.т.
 
     public ClientHandler(String clientId, Socket client) throws IOException {
         this.clientId = clientId;
@@ -40,6 +40,7 @@ public class ClientHandler extends Thread implements Runnable {
             ClientDataDTO readed;
             while ((readed = (ClientDataDTO) inputStream.readObject()) != null) { // .readUTF()
                 log.info("Income client`s data here: {}", readed);
+                // здесь будет мерж входящих данных с игровым миром...
                 sleep(dynamicReadStreamDelay);
             }
         } catch (IOException e) {
