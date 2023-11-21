@@ -1,5 +1,6 @@
 package game.freya.net;
 
+import game.freya.entities.dto.HeroDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,8 @@ public class ClientHandler extends Thread implements Runnable {
     private final Socket client;
     private final ObjectOutputStream outputStream;
     private final ObjectInputStream inputStream;
+    @Getter
+    private HeroDTO heroDto;
     @Setter
     private long dynamicReadStreamDelay = 1_000L; // оно повышать-понижать при нагрузке или т.т.
 
@@ -40,7 +43,13 @@ public class ClientHandler extends Thread implements Runnable {
             ClientDataDTO readed;
             while ((readed = (ClientDataDTO) inputStream.readObject()) != null) { // .readUTF()
                 log.info("Income client`s data here: {}", readed);
-                // здесь будет мерж входящих данных с игровым миром...
+
+                if (heroDto == null) {
+                    // инициализация героя подключившегося игрока
+                } else {
+                    // здесь будет мерж входящих данных с игровым миром...
+                }
+
                 sleep(dynamicReadStreamDelay);
             }
         } catch (IOException e) {

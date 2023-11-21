@@ -4,7 +4,9 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.SubPane;
+import game.freya.gui.panes.sub.templates.WorldCreator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +15,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
@@ -30,7 +31,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 @Slf4j
-public class NetCreatingPane extends JPanel {
+public class NetCreatingPane extends WorldCreator {
     private static final Random r = new Random();
     private transient BufferedImage snap;
     @Getter
@@ -47,7 +48,7 @@ public class NetCreatingPane extends JPanel {
     @Getter
     private int netPasswordHash = -1;
 
-    public NetCreatingPane(MenuCanvas canvas) {
+    public NetCreatingPane(FoxCanvas canvas) {
         setName("Net creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -111,7 +112,9 @@ public class NetCreatingPane extends JPanel {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            canvas.createNewNetworkWorldAndCloseThatPanel(NetCreatingPane.this);
+                            if (canvas instanceof MenuCanvas mCanvas) {
+                                mCanvas.createNewWorldAndCloseThatPanel(NetCreatingPane.this);
+                            }
                         }
                     });
                 }});

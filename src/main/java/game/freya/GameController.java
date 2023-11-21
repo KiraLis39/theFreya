@@ -12,9 +12,10 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
 import game.freya.gui.panes.GameCanvas;
+import game.freya.items.interfaces.iEntity;
 import game.freya.mappers.HeroMapper;
-import game.freya.mappers.PlayerMapper;
 import game.freya.mappers.WorldMapper;
+import game.freya.net.ClientHandler;
 import game.freya.net.SocketService;
 import game.freya.services.HeroService;
 import game.freya.services.PlayerService;
@@ -46,6 +47,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -56,7 +58,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GameController {
     private final PlayerService playerService;
-    private final PlayerMapper playerMapper;
     private final HeroService heroService;
     private final HeroMapper heroMapper;
     private final SQLiteConnection conn;
@@ -176,11 +177,11 @@ public class GameController {
         log.info("The game is saved.");
     }
 
-    public void loadScreen(ScreenType screenType, WorldDTO worldDTO) {
+    public void loadScreen(ScreenType screenType) {
         log.info("Try to load screen {}...", screenType);
         switch (screenType) {
             case MENU_SCREEN -> gameFrame.loadMenuScreen();
-            case GAME_SCREEN -> gameFrame.loadGameScreen(worldDTO);
+            case GAME_SCREEN -> gameFrame.loadGameScreen();
             default -> log.error("Unknown screen failed to load: {}", screenType);
         }
     }
@@ -220,7 +221,7 @@ public class GameController {
             if (heroService.getCurrentHero() != null && heroService.isCurrentHero(hero)) {
                 // если это мой текущий герой:
                 if (!Constants.isPaused()) {
-                    moveHeroIfAvailable(heroService.getCurrentHero(), visibleRect, canvas);
+                    moveHeroIfAvailable(visibleRect, canvas);
                 }
                 heroService.getCurrentHero().draw(g2D);
             } else if (isHeroActive(hero, visibleRect)) {
@@ -234,52 +235,91 @@ public class GameController {
         return visibleRect.contains(hero.getPosition()) && hero.isOnline();
     }
 
-    private void moveHeroIfAvailable(HeroDTO currentHeroDto, Rectangle visibleRect, GameCanvas canvas) {
-        Point2D.Double plPos = currentHeroDto.getPosition();
-        boolean isViewMovableX = plPos.x > visibleRect.getWidth() / 2d
-                && plPos.x < worldService.getCurrentWorld().getGameMap().getWidth() - (visibleRect.width - visibleRect.x) / 2d;
-        boolean isViewMovableY = plPos.y > visibleRect.getHeight() / 2d
-                && plPos.y < worldService.getCurrentWorld().getGameMap().getHeight() - (visibleRect.height - visibleRect.y) / 2d;
+    private void moveHeroIfAvailable(Rectangle visibleRect, GameCanvas canvas) {
+        if (isPlayerMoving()) {
+            MovingVector vector = heroService.getCurrentHero().getVector();
+            Point2D.Double plPos = heroService.getCurrentHero().getPosition();
+            boolean isViewMovableX = plPos.x > visibleRect.getWidth() / 2d
+                    && plPos.x < worldService.getCurrentWorld().getGameMap().getWidth() - (visibleRect.width - visibleRect.x) / 2d;
+            boolean isViewMovableY = plPos.y > visibleRect.getHeight() / 2d
+                    && plPos.y < worldService.getCurrentWorld().getGameMap().getHeight() - (visibleRect.height - visibleRect.y) / 2d;
 
-        if (isPlayerMovingUp()) {
-            if (isPlayerCanGo(visibleRect, MovingVector.UP, canvas)) {
-                currentHeroDto.setVector(MovingVector.UP);
-                currentHeroDto.move();
+            if (isPlayerMovingUp() && isPlayerCanGo(visibleRect, MovingVector.UP, canvas)) {
+                vector = isPlayerMovingRight() ? MovingVector.UP_RIGHT : isPlayerMovingLeft() ? MovingVector.LEFT_UP : MovingVector.UP;
+            } else if (isPlayerMovingDown() && isPlayerCanGo(visibleRect, MovingVector.DOWN, canvas)) {
+                vector = isPlayerMovingRight() ? MovingVector.RIGHT_DOWN : isPlayerMovingLeft() ? MovingVector.DOWN_LEFT : MovingVector.DOWN;
             }
 
-            if (isViewMovableY) {
-                canvas.dragDown((double) currentHeroDto.getSpeed());
-            }
-        } else if (isPlayerMovingDown()) {
-            if (isPlayerCanGo(visibleRect, MovingVector.DOWN, canvas)) {
-                currentHeroDto.setVector(MovingVector.DOWN);
-                currentHeroDto.move();
+            if (isPlayerMovingRight() && isPlayerCanGo(visibleRect, MovingVector.RIGHT, canvas)) {
+                vector = isPlayerMovingUp() ? MovingVector.UP_RIGHT : isPlayerMovingDown() ? MovingVector.RIGHT_DOWN : MovingVector.RIGHT;
+            } else if (isPlayerMovingLeft() && isPlayerCanGo(visibleRect, MovingVector.LEFT, canvas)) {
+                vector = isPlayerMovingUp() ? MovingVector.LEFT_UP : isPlayerMovingDown() ? MovingVector.DOWN_LEFT : MovingVector.LEFT;
             }
 
-            if (isViewMovableY) {
-                canvas.dragUp((double) currentHeroDto.getSpeed());
+            // set hero vector:
+            heroService.getCurrentHero().setVector(vector);
+            heroService.getCurrentHero().move();
+
+            // move map:
+            switch (vector) {
+                case UP -> {
+                    if (isViewMovableY) {
+                        canvas.dragDown((double) getCurrentHeroSpeed());
+                    }
+                }
+                case UP_RIGHT -> {
+                    if (isViewMovableY) {
+                        canvas.dragDown((double) getCurrentHeroSpeed());
+                    }
+                    if (isViewMovableX) {
+                        canvas.dragLeft((double) getCurrentHeroSpeed());
+                    }
+                }
+                case RIGHT -> {
+                    if (isViewMovableX) {
+                        canvas.dragLeft((double) getCurrentHeroSpeed());
+                    }
+                }
+                case RIGHT_DOWN -> {
+                    if (isViewMovableX) {
+                        canvas.dragLeft((double) getCurrentHeroSpeed());
+                    }
+                    if (isViewMovableY) {
+                        canvas.dragUp((double) getCurrentHeroSpeed());
+                    }
+                }
+                case DOWN -> {
+                    if (isViewMovableY) {
+                        canvas.dragUp((double) getCurrentHeroSpeed());
+                    }
+                }
+                case DOWN_LEFT -> {
+                    if (isViewMovableY) {
+                        canvas.dragUp((double) getCurrentHeroSpeed());
+                    }
+                    if (isViewMovableX) {
+                        canvas.dragRight((double) getCurrentHeroSpeed());
+                    }
+                }
+                case LEFT -> {
+                    if (isViewMovableX) {
+                        canvas.dragRight((double) getCurrentHeroSpeed());
+                    }
+                }
+                case LEFT_UP -> {
+                    if (isViewMovableX) {
+                        canvas.dragRight((double) getCurrentHeroSpeed());
+                    }
+                    if (isViewMovableY) {
+                        canvas.dragDown((double) getCurrentHeroSpeed());
+                    }
+                }
             }
         }
+    }
 
-        if (isPlayerMovingRight()) {
-            if (isPlayerCanGo(visibleRect, MovingVector.RIGHT, canvas)) {
-                currentHeroDto.setVector(MovingVector.RIGHT);
-                currentHeroDto.move();
-            }
-
-            if (isViewMovableX) {
-                canvas.dragLeft((double) currentHeroDto.getSpeed());
-            }
-        } else if (isPlayerMovingLeft()) {
-            if (isPlayerCanGo(visibleRect, MovingVector.LEFT, canvas)) {
-                currentHeroDto.setVector(MovingVector.LEFT);
-                currentHeroDto.move();
-            }
-
-            if (isViewMovableX) {
-                canvas.dragRight((double) currentHeroDto.getSpeed());
-            }
-        }
+    private boolean isPlayerMoving() {
+        return isPlayerMovingUp || isPlayerMovingDown || isPlayerMovingRight || isPlayerMovingLeft;
     }
 
     private boolean isPlayerCanGo(Rectangle visibleRect, MovingVector vector, GameCanvas canvas) {
@@ -287,12 +327,16 @@ public class GameController {
         if (!visibleRect.contains(pos)) {
             canvas.moveViewToPlayer(0, 0);
         }
+        BufferedImage gMap = worldService.getCurrentWorld().getGameMap();
         return switch (vector) {
             case UP -> pos.y > 0;
-            case DOWN -> pos.y < worldService.getCurrentWorld().getGameMap().getHeight();
+            case UP_RIGHT -> pos.y > 0 && pos.x < gMap.getWidth();
+            case RIGHT -> pos.x < gMap.getWidth();
+            case RIGHT_DOWN -> pos.x < gMap.getWidth() && pos.y < gMap.getHeight();
+            case DOWN -> pos.y < gMap.getHeight();
+            case DOWN_LEFT -> pos.y < gMap.getHeight() && pos.x > 0;
             case LEFT -> pos.x > 0;
-            case RIGHT -> pos.x < worldService.getCurrentWorld().getGameMap().getWidth();
-            case NONE -> false;
+            case LEFT_UP -> pos.x > 0 && pos.y > 0;
         };
     }
 
@@ -316,6 +360,7 @@ public class GameController {
                     .filter(h -> h.getUid().equals(hero.getUid())).findFirst()
                     .orElseThrow().setOnline(true);
         } else {
+            hero.setOnline(true);
             heroService.getCurrentHeroes().add(hero);
         }
     }
@@ -356,21 +401,25 @@ public class GameController {
         Optional<World> selected = worldService.findByUid(selectedWorldUuid);
         if (selected.isPresent()) {
             setLastPlayedWorldUuid(selectedWorldUuid);
-            return worldMapper.toDto(selected.get());
+            return worldService.setCurrentWorld(worldMapper.toDto(selected.get()));
         }
         throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid);
-    }
-
-    public void setLastPlayedWorldUuid(UUID lastWorldUuid) {
-        playerService.getCurrentPlayer().setLastPlayedWorldUid(lastWorldUuid);
     }
 
     public UUID getCurrentWorldUid() {
         return worldService.getCurrentWorld().getUid();
     }
 
+    public void setLastPlayedWorldUuid(UUID lastWorldUuid) {
+        playerService.getCurrentPlayer().setLastPlayedWorldUid(lastWorldUuid);
+    }
+
     public Set<HeroDTO> getCurrentWorldHeroes() {
         return heroService.getCurrentHeroes();
+    }
+
+    public Set<iEntity> getWorldEntities(Rectangle rectangle) {
+        return worldService.getEntitiesFromRectangle(rectangle);
     }
 
     public List<HeroDTO> findAllHeroesByWorldUid(UUID uid) {
@@ -431,5 +480,25 @@ public class GameController {
 
     public boolean isCurrentWorldIsNetwork() {
         return worldService.getCurrentWorld().isNetAvailable();
+    }
+
+    public HeroDTO findHeroByNameAndWorld(String heroName, UUID worldUid) {
+        return heroMapper.toDto(heroService.findHeroByNameAndWorld(heroName, worldUid).orElse(null));
+    }
+
+    public boolean isServerIsOpen() {
+        return socketService.isOpen();
+    }
+
+    public long getConnectedPlayersCount() {
+        return socketService.getPlayersCount();
+    }
+
+    public Map<String, ClientHandler> getConnectedPlayers() {
+        return socketService.getPlayers();
+    }
+
+    public MovingVector getCurrentHeroVector() {
+        return heroService.getCurrentHero().getVector();
     }
 }

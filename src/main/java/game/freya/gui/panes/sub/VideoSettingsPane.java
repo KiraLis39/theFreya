@@ -1,7 +1,7 @@
 package game.freya.gui.panes.sub;
 
 import game.freya.config.Constants;
-import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -28,7 +28,7 @@ public class VideoSettingsPane extends JPanel {
     private JZlider zlider;
     private CheckBokz cBox;
 
-    public VideoSettingsPane(MenuCanvas canvas) {
+    public VideoSettingsPane(FoxCanvas canvas) {
         setName("Video settings pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -46,17 +46,16 @@ public class VideoSettingsPane extends JPanel {
 
             add(new SubPane("Ограничить частоту кадров") {{
                 cBox = new CheckBokz("fpsLimitedCheck") {{
-                    setSelected(Constants.isFrameLimited());
+                    setSelected(Constants.isFpsLimited());
                     setAction(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
                             if (isSelected()) {
-                                Constants.getUserConfig().setScreenDiscreteLimit(zlider.getValue());
-                                log.debug("Включено ограничение частоты кадров на {}",
-                                        Constants.getUserConfig().getScreenDiscreteLimit());
+                                Constants.getUserConfig().setFpsLimit(zlider.getValue());
+                                log.debug("Включено ограничение частоты кадров на {}", Constants.getUserConfig().getFpsLimit());
                             } else {
                                 log.debug("Снято ограничение на частоту кадров");
-                                Constants.getUserConfig().setScreenDiscreteLimit(0);
+                                Constants.getUserConfig().setFpsLimit(0);
                             }
                         }
                     });
@@ -65,13 +64,13 @@ public class VideoSettingsPane extends JPanel {
                     setMinimum(30);
                     setMaximum(Constants.MON.getRefreshRate());
 
-                    setMinorTickSpacing(5);
-                    setMajorTickSpacing(15);
+                    setMinorTickSpacing(2);
+                    setMajorTickSpacing(5);
 
-                    setValue((int) Constants.getUserConfig().getScreenDiscreteLimit());
+                    setValue(Constants.getUserConfig().getFpsLimit());
                     addChangeListener(e -> {
                         if (cBox.isSelected()) {
-                            Constants.getUserConfig().setScreenDiscreteLimit(getValue());
+                            Constants.getUserConfig().setFpsLimit(getValue());
                         }
                     });
                 }};

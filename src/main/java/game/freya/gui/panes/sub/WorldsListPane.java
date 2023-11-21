@@ -6,6 +6,7 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
@@ -38,12 +39,12 @@ import java.util.List;
 
 @Slf4j
 public class WorldsListPane extends JPanel {
-    private static final int maxElementsHeight = 96;
-    private final transient MenuCanvas canvas;
+    private static final int maxElementsDim = 96;
+    private final transient FoxCanvas canvas;
     private final transient GameController gameController;
     private transient BufferedImage snap;
 
-    public WorldsListPane(MenuCanvas canvas, GameController controller) {
+    public WorldsListPane(FoxCanvas canvas, GameController controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -60,7 +61,7 @@ public class WorldsListPane extends JPanel {
         reloadWorlds(canvas);
     }
 
-    private void reloadWorlds(MenuCanvas canvas) {
+    private void reloadWorlds(FoxCanvas canvas) {
         WorldsListPane.this.removeAll();
 
         int i = 0;
@@ -74,12 +75,12 @@ public class WorldsListPane extends JPanel {
                     protected void paintComponent(Graphics g) {
                         if (wImage == null) {
                             g.setColor(Color.DARK_GRAY);
-                            g.fillRoundRect(0, 0, getWidth(), getHeight(), maxElementsHeight, maxElementsHeight);
+                            g.fillRoundRect(0, 0, getWidth(), getHeight(), maxElementsDim / 2, maxElementsDim / 2);
                             g.setColor(Color.GRAY);
                             g.setFont(Constants.DEBUG_FONT);
                             g.drawString("NO IMAGE",
-                                    (int) (getWidth() / 2d - Constants.FFB.getHalfWidthOfString(g, "NO IMAGE")),
-                                    getHeight() / 2 + 3);
+                                    (int) (getWidth() / 2d - Constants.FFB.getHalfWidthOfString(g, "NO IMAGE")) + 1,
+                                    getHeight() / 2 + 7);
                         } else {
                             g.drawImage(wImage, 0, 0, getWidth(), getHeight(), this);
                         }
@@ -197,8 +198,9 @@ public class WorldsListPane extends JPanel {
                                     if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                                             "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+                                            && canvas instanceof MenuCanvas mCanvas
                                     ) {
-                                        canvas.deleteExistsWorldAndCloseThatPanel(world.getUid());
+                                        mCanvas.deleteExistsWorldAndCloseThatPanel(world.getUid());
                                         reloadWorlds(canvas);
                                         WorldsListPane.this.revalidate();
                                     }
@@ -211,15 +213,17 @@ public class WorldsListPane extends JPanel {
                         setBackground(Color.BLUE.darker().darker().darker());
                         setForeground(Color.WHITE);
                         setFocusPainted(false);
-                        setMinimumSize(new Dimension(maxElementsHeight, maxElementsHeight));
-                        setPreferredSize(new Dimension(maxElementsHeight, maxElementsHeight));
-                        setMaximumSize(new Dimension(maxElementsHeight, maxElementsHeight));
+                        setMinimumSize(new Dimension(maxElementsDim, maxElementsDim));
+                        setPreferredSize(new Dimension(maxElementsDim, maxElementsDim));
+                        setMaximumSize(new Dimension(maxElementsDim, maxElementsDim));
                         setAlignmentY(TOP_ALIGNMENT);
 
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                canvas.createNewHeroForExistsWorldAndCloseThatPanel(world.getUid());
+                                if (canvas instanceof MenuCanvas mCanvas) {
+                                    mCanvas.getOrCreateHeroForSelectedWorldAndCloseThat(world.getUid());
+                                }
                             }
                         });
                     }});

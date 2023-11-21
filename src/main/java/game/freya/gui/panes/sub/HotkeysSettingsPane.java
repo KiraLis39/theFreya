@@ -3,7 +3,8 @@ package game.freya.gui.panes.sub;
 import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
-import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JLabel;
@@ -21,7 +22,7 @@ import java.awt.image.BufferedImage;
 public class HotkeysSettingsPane extends JPanel {
     private transient BufferedImage snap;
 
-    public HotkeysSettingsPane(MenuCanvas canvas) {
+    public HotkeysSettingsPane(FoxCanvas canvas) {
         setName("Hotkeys settings pane");
         setVisible(false);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
@@ -34,6 +35,7 @@ public class HotkeysSettingsPane extends JPanel {
         for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
             add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3)) {{
                 setOpaque(false);
+                setIgnoreRepaint(true);
                 setDoubleBuffered(false);
                 add(new JLabel(key.getDescription()) {{
                     setForeground(Color.WHITE);
@@ -53,6 +55,10 @@ public class HotkeysSettingsPane extends JPanel {
                 }});
             }});
         }
+
+        add(new SubPane(null) {{
+            // todo: UserConfig.resetControlKeys();
+        }});
     }
 
     @Override

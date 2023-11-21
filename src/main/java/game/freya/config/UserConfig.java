@@ -23,7 +23,7 @@ public final class UserConfig {
     @Getter
     @Setter
     @Builder.Default
-    private float miniMapOpacity = 0.7f;
+    private float miniMapOpacity = 0.65f;
     // player:
     @Getter
     @Setter
@@ -114,6 +114,10 @@ public final class UserConfig {
     @Setter
     @Getter
     @Builder.Default
+    private int keyFps = KeyEvent.VK_F9;
+    @Setter
+    @Getter
+    @Builder.Default
     private int keyFullscreen = KeyEvent.VK_F11;
     // gameplay:
     @Getter
@@ -146,7 +150,7 @@ public final class UserConfig {
     @Getter
     @Setter
     @Builder.Default
-    private long screenDiscreteLimit = 60L; // fps limit
+    private int fpsLimit = 60; // fps limit
 
     @Getter
     @Setter
@@ -194,6 +198,7 @@ public final class UserConfig {
         PAUSE("Меню/Пауза", Constants.getUserConfig().getKeyPause(), 0),
         CONSOLE("Консоль", Constants.getUserConfig().getKeyConsole(), Constants.getUserConfig().getKeyConsoleMod()),
         DEBUG("Отладка", Constants.getUserConfig().getKeyDebug(), 0),
+        FPS("FPS", Constants.getUserConfig().getKeyFps(), 0),
         FULLSCREEN("Переключение режима экрана", Constants.getUserConfig().getKeyFullscreen(), 0);
 
         @Getter

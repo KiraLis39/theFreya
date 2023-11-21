@@ -75,7 +75,7 @@ public class HeroDTO implements iHero {
     private Point2D.Double position = new Point2D.Double(384d, 384d);
 
     @Builder.Default
-    private MovingVector vector = MovingVector.NONE;
+    private MovingVector vector = MovingVector.UP;
 
     @Builder.Default
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
@@ -271,14 +271,10 @@ public class HeroDTO implements iHero {
                     moveUp();
                 }
             }
-            case DOWN -> {
+            case UP_RIGHT -> {
                 for (int i = 0; i < getSpeed(); i++) {
-                    moveDown();
-                }
-            }
-            case LEFT -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveLeft();
+                    moveUp();
+                    moveRight();
                 }
             }
             case RIGHT -> {
@@ -286,7 +282,33 @@ public class HeroDTO implements iHero {
                     moveRight();
                 }
             }
-            case NONE -> {
+            case RIGHT_DOWN -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveRight();
+                    moveDown();
+                }
+            }
+            case DOWN -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveDown();
+                }
+            }
+            case DOWN_LEFT -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveDown();
+                    moveLeft();
+                }
+            }
+            case LEFT -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveLeft();
+                }
+            }
+            case LEFT_UP -> {
+                for (int i = 0; i < getSpeed(); i++) {
+                    moveLeft();
+                    moveUp();
+                }
             }
             default -> log.warn("Неизвестное направление вектора героя {}", vector);
         }

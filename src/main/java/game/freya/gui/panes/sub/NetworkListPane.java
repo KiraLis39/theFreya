@@ -4,6 +4,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import lombok.extern.slf4j.Slf4j;
@@ -24,12 +25,12 @@ import java.awt.image.BufferedImage;
 
 @Slf4j
 public class NetworkListPane extends JPanel {
-    private static final int maxElementsHeight = 96;
-    private final transient MenuCanvas canvas;
+    private static final int maxElementsDim = 96;
+    private final transient FoxCanvas canvas;
     private final transient GameController gameController;
     private transient BufferedImage snap;
 
-    public NetworkListPane(MenuCanvas canvas, GameController controller) {
+    public NetworkListPane(FoxCanvas canvas, GameController controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -48,7 +49,7 @@ public class NetworkListPane extends JPanel {
         }
     }
 
-    private void reloadNet(MenuCanvas canvas) {
+    private void reloadNet(FoxCanvas canvas) {
         NetworkListPane.this.removeAll();
 
         int i = 0;
@@ -65,7 +66,7 @@ public class NetworkListPane extends JPanel {
                         @Override
                         protected void paintComponent(Graphics g) {
                             if (world.getIcon() != null) {
-                                g.drawImage(world.getIcon(), 0, 2, maxElementsHeight, maxElementsHeight, this);
+                                g.drawImage(world.getIcon(), 0, 2, maxElementsDim, maxElementsDim, this);
                                 g.dispose();
                             }
                         }
@@ -74,9 +75,9 @@ public class NetworkListPane extends JPanel {
                             setOpaque(false);
                             setIgnoreRepaint(true);
                             setDoubleBuffered(false);
-                            setMinimumSize(new Dimension(maxElementsHeight, maxElementsHeight));
-                            setPreferredSize(new Dimension(maxElementsHeight, maxElementsHeight));
-                            setMaximumSize(new Dimension(maxElementsHeight, maxElementsHeight));
+                            setMinimumSize(new Dimension(maxElementsDim, maxElementsDim));
+                            setPreferredSize(new Dimension(maxElementsDim, maxElementsDim));
+                            setMaximumSize(new Dimension(maxElementsDim, maxElementsDim));
                         }
                     }, BorderLayout.WEST);
 
@@ -108,7 +109,9 @@ public class NetworkListPane extends JPanel {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            Constants.showNFP();
+                            if (canvas instanceof MenuCanvas mCanvas) {
+                                mCanvas.getOrCreateHeroForSelectedWorldAndCloseThat(world.getUid());
+                            }
                         }
                     });
                 }}, BorderLayout.EAST);

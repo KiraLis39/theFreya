@@ -72,4 +72,8 @@ public class HeroService {
         cHero.setOnline(false);
         save(cHero);
     }
+
+    public Optional<Hero> findHeroByNameAndWorld(String heroName, UUID worldUid) {
+        return heroRepository.findByHeroNameAndWorldUid(heroName, worldUid);
+    }
 }

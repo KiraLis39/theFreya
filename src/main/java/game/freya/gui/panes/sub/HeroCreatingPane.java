@@ -1,10 +1,13 @@
 package game.freya.gui.panes.sub;
 
+import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
 import lombok.Getter;
@@ -43,7 +46,7 @@ public class HeroCreatingPane extends JPanel {
     private String heroName;
     private JTextField ntf;
 
-    public HeroCreatingPane(MenuCanvas canvas, GameController gameController) {
+    public HeroCreatingPane(FoxCanvas canvas, GameController gameController) {
         setName("Hero creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -128,7 +131,14 @@ public class HeroCreatingPane extends JPanel {
                         @Override
                         public void actionPerformed(ActionEvent e) {
                             worldUid = gameController.getCurrentWorldUid();
-                            canvas.createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane.this);
+                            HeroDTO existsHero = gameController.findHeroByNameAndWorld(getHeroName(), worldUid);
+                            if (existsHero != null) {
+                                new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
+                            } else {
+                                if (canvas instanceof MenuCanvas mCanvas) {
+                                    mCanvas.createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane.this);
+                                }
+                            }
                         }
                     });
                 }});

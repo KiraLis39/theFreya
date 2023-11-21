@@ -7,6 +7,7 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iWorld;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
+import game.freya.items.interfaces.iEntity;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,50 +22,46 @@ import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.image.BufferedImage;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
 @Builder
 public class WorldDTO extends ComponentAdapter implements iWorld {
     private static final Random r = new Random(100);
-
+    @Getter
+    @Builder.Default
+    private final Set<iEntity> entities = HashSet.newHashSet(30);
     @Getter
     private UUID uid;
-
     @Setter
     @Getter
     private UUID author;
-
     @Setter
     @Getter
     @Builder.Default
     private String title = "world_demo_" + r.nextInt(1000);
-
     @Setter
     @Getter
     @Builder.Default
     private boolean isNetAvailable = false;
-
     @Setter
     @Getter
     @Builder.Default
     private int passwordHash = -1;
-
     @Setter
     @Getter
     @Builder.Default
     private Dimension dimension = new Dimension(32, 32);
-
     @Setter
     @Getter
     @Builder.Default
     private HardnessLevel level = HardnessLevel.EASY;
-
     @Getter
     @Builder.Default
     private LocalDateTime createDate = LocalDateTime.now();
-
     // custom fields:
     @JsonIgnore
     private GameCanvas canvas;

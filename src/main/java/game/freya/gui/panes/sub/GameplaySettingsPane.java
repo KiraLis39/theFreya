@@ -2,7 +2,7 @@ package game.freya.gui.panes.sub;
 
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
-import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.JZlider;
@@ -27,7 +27,7 @@ import java.awt.image.BufferedImage;
 public class GameplaySettingsPane extends JPanel {
     private transient BufferedImage snap;
 
-    public GameplaySettingsPane(MenuCanvas canvas) {
+    public GameplaySettingsPane(FoxCanvas canvas) {
         setName("Gameplay settings pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -84,7 +84,7 @@ public class GameplaySettingsPane extends JPanel {
                     setFocusable(false);
                     setOpaque(false);
                     setBackground(new Color(0, 0, 0, 0));
-                    setForeground(Color.WHITE);
+                    setForeground(Color.RED);
                     setFont(Constants.DEBUG_FONT);
                 }}, BorderLayout.CENTER);
             }});

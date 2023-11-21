@@ -29,6 +29,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public final class Constants {
@@ -67,6 +69,7 @@ public final class Constants {
     public static final Font MENU_BUTTONS_FONT;
     public static final Font PROPAGANDA_FONT;
     public static final Font PROPAGANDA_BIG_FONT;
+    public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 10_000; // сколько секунд сервер ждёт подключений
 
 
     // project:
@@ -101,51 +104,38 @@ public final class Constants {
 
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
-
+    private static final int SHIFT_FPS_ALLOWED = 2; // допустимый разброс FPS.
+    private static final int MAX_FPS_ALLOWED = 120; // больше этой частоты нет смысла гнать точно.
+    private static final AtomicInteger realFreshRate = new AtomicInteger(0);
     @Getter
-    private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.95f);
-
+    private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.85f);
     @Getter
-    private static Color mainMenuBackgroundColor2 = new Color(0.0f, 0.0f, 0.0f, 0.65f);
-
+    private static Color mainMenuBackgroundColor2 = new Color(0.0f, 0.0f, 0.0f, 0.45f);
     @Getter
     @Setter
     private static long gameStartedIn;
-
     @Getter
     private static String notRealizedString = "Не реализовано ещё";
-
     @Getter
     private static Cursor defaultCursor;
     // user config:
     @Getter
     @Setter
     private static UserConfig userConfig;
-
-
     // dynamic game booleans:
     @Getter
     @Setter
     private static boolean isDebugInfoVisible = false;
-
     @Getter
     @Setter
     private static boolean isFpsInfoVisible = true;
-
     @Getter
     private static boolean isPaused = false;
-
     @Getter
     private static boolean isShowStartLogo = false;
-
     @Getter
-    private static volatile long screenDiscreteLimitMem;
-
-    @Getter
-    private static long delay = -1;
-
-    @Getter
-    private static int realFreshRate = 0;
+    private static volatile int fpsLimit;
+    private static final AtomicLong delay = new AtomicLong(30L);
     @Getter
     private static String worldsImagesDir = "./worlds/img/";
 
@@ -182,38 +172,77 @@ public final class Constants {
         return MON.getConfiguration();
     }
 
-    public static boolean isFrameLimited() {
-        return Constants.getUserConfig().getScreenDiscreteLimit() > 0;
+    public static boolean isFpsLimited() {
+        return Constants.getUserConfig().getFpsLimit() > 0;
     }
 
-    public static long getDiscreteDelay() {
-        if (delay < 0 || screenDiscreteLimitMem != Constants.getUserConfig().getScreenDiscreteLimit()) {
-            screenDiscreteLimitMem = Constants.getUserConfig().getScreenDiscreteLimit();
-            delay = Math.floorDiv(1000L, screenDiscreteLimitMem);
+    public static long getDelay() {
+        if (fpsLimit != Constants.getUserConfig().getFpsLimit()) {
+            // если значение в настройках изменилось:
+            fpsLimit = Constants.getUserConfig().getFpsLimit();
+            delay.set(Math.floorDiv(1000L, fpsLimit));
         }
-        return delay;
+        return delay.get() - 1;
     }
 
-    public static void setRealFreshRate(int framesPerSecond) {
-        realFreshRate = framesPerSecond;
-        // повышаем fps только если не в паузе (к чему высокий fps у свёрнутого приложения?):
-        if (realFreshRate < screenDiscreteLimitMem - 3 && !isPaused()) {
-            if (delay > 1) {
-                log.info("Decrease delay (increase fps)");
-                delay--;
-            } else {
-                log.warn("Не удастся сократить задержку отрисовки для увеличения fps т.к. delay уже равен 1!");
-            }
-        }
+    public static void setCurrentFreshRate(int framesPerSecond) {
+        realFreshRate.set(framesPerSecond);
 
-        if (realFreshRate > screenDiscreteLimitMem + 3) {
-            if (delay < 250) {
-                log.info("Increase delay (decrease fps)");
-                delay++;
-            } else {
-                log.warn("Не удастся повысить задержку отрисовки для снижения fps т.к. delay уже равен 250!");
+        if (isFpsLimited()) {
+            if (!isPaused() && isCurrentFpsIsLessThanLimit()) {
+                riseFps();
+            }
+
+            if (isLimitFpsIsLessThanCurrentFps() || isCurrentFpsIsGreaterThanAllowed() || isMaxMonitorRateOver()) {
+                coolFps();
             }
         }
+    }
+
+    private static boolean isMaxMonitorRateOver() {
+        return getFpsLimit() == MON.getRefreshRate() && realFreshRate.get() > MON.getRefreshRate();
+    }
+
+    private static void coolFps() {
+        if (delay.get() < 500) {
+            log.info("Increase delay (decrease fps)");
+            delay.incrementAndGet();
+        } else {
+            log.warn("Не удастся повысить задержку отрисовки для снижения fps - delay уже равен 500! (fps limited: {})", isFpsLimited());
+        }
+    }
+
+    private static void riseFps() {
+        if (delay.get() > 1) {
+            log.info("Decrease delay (increase fps)");
+            delay.decrementAndGet();
+        } else {
+            log.warn("Не удастся сократить задержку отрисовки для увеличения fps - delay уже равен 1! (fps limited: {})", isFpsLimited());
+        }
+    }
+
+    private static boolean isCurrentFpsIsGreaterThanAllowed() {
+        return realFreshRate.get() > MAX_FPS_ALLOWED;
+    }
+
+    private static boolean isLimitFpsIsLessThanCurrentFps() {
+        return fpsLimit + SHIFT_FPS_ALLOWED < realFreshRate.get();
+    }
+
+    private static boolean isCurrentFpsIsLessThanLimit() {
+        return realFreshRate.get() < fpsLimit - SHIFT_FPS_ALLOWED;
+    }
+
+    private static boolean isCurrentFpsIsLessThanMonitorRate() {
+        return realFreshRate.get() < MON.getRefreshRate();
+    }
+
+    private static boolean isCurrentFpsIsGreaterThanMonitorRate() {
+        return realFreshRate.get() > MON.getRefreshRate();
+    }
+
+    public static int getRealFreshRate() {
+        return realFreshRate.get();
     }
 
     public static void showNFP() {
@@ -228,6 +257,6 @@ public final class Constants {
     }
 
     public static boolean isLowFpsAlarm() {
-        return getDelay() <= 3;
+        return isFpsLimited() && delay.get() <= 3;
     }
 }

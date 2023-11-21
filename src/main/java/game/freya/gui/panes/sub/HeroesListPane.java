@@ -5,6 +5,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
@@ -26,11 +27,11 @@ import java.awt.image.BufferedImage;
 
 @Slf4j
 public class HeroesListPane extends JPanel {
-    private final transient MenuCanvas canvas;
+    private final transient FoxCanvas canvas;
     private final transient GameController gameController;
     private transient BufferedImage snap;
 
-    public HeroesListPane(MenuCanvas canvas, GameController controller) {
+    public HeroesListPane(FoxCanvas canvas, GameController controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -49,7 +50,7 @@ public class HeroesListPane extends JPanel {
         }
     }
 
-    private void reloadHeroes(MenuCanvas canvas) {
+    private void reloadHeroes(FoxCanvas canvas) {
         HeroesListPane.this.removeAll();
 
         int i = 0;
@@ -111,8 +112,10 @@ public class HeroesListPane extends JPanel {
                                             "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                     ) {
-                                        canvas.deleteExistsPlayerHero(hero.getUid());
-                                        reloadHeroes(canvas);
+                                        if (canvas instanceof MenuCanvas mCanvas) {
+                                            mCanvas.deleteExistsPlayerHero(hero.getUid());
+                                            reloadHeroes(mCanvas);
+                                        }
                                     }
                                 }
                             });
@@ -131,7 +134,9 @@ public class HeroesListPane extends JPanel {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                canvas.playWithThisHero(hero);
+                                if (canvas instanceof MenuCanvas mCanvas) {
+                                    mCanvas.playWithThisHero(hero);
+                                }
                             }
                         });
                     }});

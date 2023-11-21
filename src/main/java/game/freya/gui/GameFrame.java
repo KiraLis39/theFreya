@@ -5,13 +5,12 @@ import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
-import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.gui.panes.FoxCanvas;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,6 @@ import java.io.InputStream;
 @RequiredArgsConstructor
 public class GameFrame implements WindowListener, WindowStateListener {
     private final UIHandler uIHandler;
-    private Dimension monitorSize;
     private Dimension windowSize;
     private GameController gameController;
     private JFrame frame;
@@ -49,7 +47,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
     public void showMainMenu(GameController gameController) {
         this.gameController = gameController;
 
-        monitorSize = Constants.MON.getConfiguration().getBounds().getSize();
+        Dimension monitorSize = Constants.MON.getConfiguration().getBounds().getSize();
         double delta = monitorSize.getWidth() / monitorSize.getHeight();
         double newWidth = monitorSize.getWidth() * 0.75d;
         double newHeight = newWidth / delta;
@@ -101,7 +99,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
         log.info("Show the MainFrame...");
         checkFullscreenMode();
 
-        gameController.loadScreen(ScreenType.MENU_SCREEN, null);
+        gameController.loadScreen(ScreenType.MENU_SCREEN);
     }
 
     private void checkFullscreenMode() {
@@ -168,26 +166,30 @@ public class GameFrame implements WindowListener, WindowStateListener {
                         Constants.setDebugInfoVisible(!Constants.isDebugInfoVisible());
                     }
                 });
+
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFps",
+                UserConfig.HotKeys.FPS.getEvent(), 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        log.debug("Try to switch the fps mode...");
+                        Constants.setFpsInfoVisible(!Constants.isFpsInfoVisible());
+                    }
+                });
     }
 
     public void loadMenuScreen() {
         log.info("Try to load Menu screen...");
         clearFrame();
-        frame.getLayeredPane().add(new MenuCanvas(frame, gameController), Integer.valueOf(0));
+        frame.getLayeredPane().add(new MenuCanvas(uIHandler, frame, gameController), Integer.valueOf(0));
         frame.revalidate();
     }
 
-    public void loadGameScreen(WorldDTO worldDto) {
-        if (worldDto == null) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "worldDto is NULL");
-        }
-
-        log.info("Try to load World '{}' screen...", worldDto.getTitle());
+    public void loadGameScreen() {
+        log.info("Try to load World '{}' screen...", gameController.getCurrentWorldTitle());
         clearFrame();
-        gameController.setCurrentWorld(worldDto);
 
         // если мир по сети:
-        if (worldDto.isNetAvailable()) {
+        if (gameController.isCurrentWorldIsNetwork()) {
             if (gameController.openNet()) {
                 log.warn("Сервер сетевой игры успешно активирован");
             } else {

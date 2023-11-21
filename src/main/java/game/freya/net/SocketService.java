@@ -1,5 +1,6 @@
 package game.freya.net;
 
+import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -33,7 +34,7 @@ public class SocketService {
                      */
                     serverSocket.setReuseAddress(true);
                     serverSocket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
-                    serverSocket.setSoTimeout(60_000);
+                    serverSocket.setSoTimeout(Constants.SERVER_CONNECTION_AWAIT_TIMEOUT);
                     log.info("Создан сервер на порту {} (buffer: {})", serverSocket.getLocalPort(), serverSocket.getReceiveBufferSize());
 
                     while (!serverThread.isInterrupted()) {
@@ -45,8 +46,10 @@ public class SocketService {
                     }
                     log.info("Connection server is shutting down...");
                 } catch (SocketTimeoutException ste) {
-                    log.error("Это все-таки случилось. Из-за SoTimeout?");
-                    throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, ExceptionUtils.getFullExceptionMessage(ste));
+                    log.warn("Завершение работы сервера по SoTimeout: {}", ste.getMessage());
+                    new FOptionPane().buildFOptionPane("Нет подключений:",
+                            "Не обнаружено входящих подключений за %s секунд.".formatted(Constants.SERVER_CONNECTION_AWAIT_TIMEOUT),
+                            FOptionPane.TYPE.INFO, Constants.getDefaultCursor(), 5, false);
                 } catch (IOException e) {
                     throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, ExceptionUtils.getFullExceptionMessage(e));
                 }
@@ -67,7 +70,7 @@ public class SocketService {
         if (serverThread != null) {
             try {
                 serverThread.interrupt();
-                serverThread.join(5_000);
+                serverThread.join(10_000);
             } catch (InterruptedException e) {
                 log.error("Ошибка при прерывании потока сервера: {}", e.getMessage());
                 serverThread.interrupt();
@@ -96,5 +99,13 @@ public class SocketService {
 
     public boolean isOpen() {
         return serverThread != null && !serverThread.isInterrupted() && serverThread.isAlive();
+    }
+
+    public long getPlayersCount() {
+        return clients.size();
+    }
+
+    public Map<String, ClientHandler> getPlayers() {
+        return clients;
     }
 }

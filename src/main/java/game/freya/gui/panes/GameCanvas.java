@@ -10,10 +10,12 @@ import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -23,6 +25,7 @@ import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Shape;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -50,7 +53,7 @@ public class GameCanvas extends FoxCanvas {
 
 
     public GameCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
-        super(Constants.getGraphicsConfiguration(), "GameCanvas", gameController);
+        super(Constants.getGraphicsConfiguration(), "GameCanvas", gameController, parentFrame.getLayeredPane());
         this.gameController = gameController;
         this.uiHandler = uiHandler;
         this.parentFrame = parentFrame;
@@ -69,19 +72,22 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void setInAc() {
-//        final String frameName = "mainFrame";
         final String frameName = "game_canvas";
 
         // KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_MASK)
         Constants.INPUT_ACTION.add(frameName, (JComponent) getParent());
 
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, "game_canvas", "move_down_release",
-//                Constants.getUserConfig().getKeyDown(), 0, true, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        isMouseDownEdgeOver = false;
-//                    }
-//                });
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "backFunction",
+                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        if (isVisible() && Constants.isPaused()) {
+                            onExitBack(GameCanvas.this);
+                        } else {
+                            Constants.setPaused(!Constants.isPaused());
+                        }
+                    }
+                });
 
         this.isControlsMapped = true;
     }
@@ -109,7 +115,7 @@ public class GameCanvas extends FoxCanvas {
 
             // если изменился размер фрейма:
             if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
-                log.info("Resizing by parent frame...");
+                log.debug("Resizing by parent frame...");
                 onResize();
                 parentHeightMemory = parentFrame.getBounds().getHeight();
             }
@@ -133,11 +139,11 @@ public class GameCanvas extends FoxCanvas {
 
                         // not-pause events and changes:
                         if (Constants.isPaused()) {
+                            drawPauseMode(g2D);
+
                             if (isOptionsMenuSetVisible()) {
                                 showOptions(g2D);
                                 addExitVariantToOptionsMenuFix(g2D);
-                            } else {
-                                drawPauseMode(g2D);
                             }
                         } else {
                             dragViewIfNeeds();
@@ -158,9 +164,9 @@ public class GameCanvas extends FoxCanvas {
                 Thread.yield();
             }
 
-            if (Constants.isFrameLimited() && Constants.getDiscreteDelay() > 1) {
+            if (Constants.isFpsLimited()) {
                 try {
-                    Thread.sleep(Constants.getDiscreteDelay());
+                    Thread.sleep(Constants.getDelay());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -179,27 +185,38 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void drawLocalDebugInfo(Graphics2D g2D) {
-        if (Constants.isDebugInfoVisible()) {
-            super.drawDebugInfo(g2D, gameController.getCurrentWorldTitle()); // отладочная информация
+        super.drawDebugInfo(g2D, gameController.getCurrentWorldTitle()); // отладочная информация
 
+        if (Constants.isDebugInfoVisible()) {
             int leftShift = 320;
             Point2D.Double playerPos = gameController.getCurrentHeroPosition();
+            if (playerPos == null) {
+                return;
+            }
             Shape playerShape = new Ellipse2D.Double(
                     (int) playerPos.x - Constants.MAP_CELL_DIM / 2d,
                     (int) playerPos.y - Constants.MAP_CELL_DIM / 2d,
                     Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
 
-            if (Constants.isLowFpsAlarm()) {
-                g2D.setColor(Color.RED);
-            }
-            g2D.drawString("Delay fps: " + Constants.getDelay(), getWidth() - leftShift, getHeight() - 130);
+            // server info:
+            g2D.setColor(gameController.isServerIsOpen() ? Color.GREEN : Color.DARK_GRAY);
+            g2D.drawString("Server open: " + gameController.isServerIsOpen(), getWidth() - leftShift, getHeight() - 190);
+            g2D.drawString("Connected players: " + gameController.getConnectedPlayersCount(), getWidth() - leftShift, getHeight() - 170);
 
+            // hero info:
             g2D.setColor(Color.GRAY);
             g2D.drawString("Hero pos: " + playerShape.getBounds2D().getCenterX() + "x" + playerShape.getBounds2D().getCenterY(),
-                    getWidth() - leftShift, getHeight() - 110);
+                    getWidth() - leftShift, getHeight() - 140);
 
             g2D.drawString("Hero speed: " + gameController.getCurrentHeroSpeed(),
-                    getWidth() - leftShift, getHeight() - 90);
+                    getWidth() - leftShift, getHeight() - 120);
+
+            // gameplay info:
+            if (Constants.isFpsInfoVisible()) {
+                g2D.setColor(Constants.isLowFpsAlarm() ? Color.RED : Color.GRAY);
+                g2D.drawString("Delay fps: " + Constants.getDelay(), getWidth() - leftShift, getHeight() - 90);
+            }
+            g2D.setColor(Color.GRAY);
 
             g2D.drawString("GameMap WxH: " + gameController.getCurrentWorldMap().getWidth() + "x" + gameController.getCurrentWorldMap().getHeight(),
                     getWidth() - leftShift, getHeight() - 70);
@@ -225,11 +242,6 @@ public class GameCanvas extends FoxCanvas {
         if (this.viewPort == null) {
             recreateViewPort();
         }
-
-        // пересчитываем ректанглы пунктов меню:
-//        if (getFirstButtonRect() == null) {
-//            recalculateMenuRectangles();
-//        }
 
         if (!isControlsMapped) {
             // назначаем горячие клавиши управления:
@@ -307,6 +319,10 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void drawUI(Graphics2D g2D) {
+        if (isShadowBackNeeds()) {
+            g2D.setColor(new Color(0, 0, 0, 32));
+            g2D.fillRect(0, 0, getWidth(), getHeight());
+        }
         uiHandler.drawUI(this, g2D);
     }
 
@@ -383,22 +399,6 @@ public class GameCanvas extends FoxCanvas {
         }
 
         moveViewToPlayer(Constants.getScrollSpeed(), (int) (Constants.getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
-
-//        double delta = getBounds().getWidth() / getBounds().getHeight();
-////        double widthPercent = getBounds().getWidth() * Constants.getScrollSpeed();
-////        double heightPercent = getBounds().getHeight() * Constants.getScrollSpeed();
-//
-////        double factor = getBounds().getWidth() % getBounds().getHeight();
-////        double resultX = getBounds().getWidth() / factor * 10;
-////        double resultY = getBounds().getHeight() / factor * 10;
-//        double sdf = (viewPort.getWidth() - viewPort.getX()) / 100d;
-//        double sdf2 = (viewPort.getHeight() - viewPort.getY()) / (100d / delta);
-//        viewPort.setRect(
-//                viewPort.getX() + sdf,
-//                viewPort.getY() + sdf2,
-//                viewPort.getWidth() - sdf,
-//                viewPort.getHeight() - sdf2);
-////        log.info("f): {}, r1): {}, r2): {}", factor, resultX, resultY);
     }
 
     private void zoomOut() {
@@ -571,7 +571,7 @@ public class GameCanvas extends FoxCanvas {
 
             // закрываем и выходим в меню:
             setVisible(false);
-            gameController.loadScreen(ScreenType.MENU_SCREEN, null);
+            gameController.loadScreen(ScreenType.MENU_SCREEN);
         }
     }
 
@@ -610,7 +610,11 @@ public class GameCanvas extends FoxCanvas {
     public void mouseReleased(MouseEvent e) {
         if (isFirstButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                setAudioSettingsMenuVisible(true);
+                getAudiosPane().setVisible(true);
+                getVideosPane().setVisible(false);
+                getHotkeysPane().setVisible(false);
+                getGameplayPane().setVisible(false);
+
             } else {
                 Constants.setPaused(false);
                 setOptionsMenuSetVisible(false);
@@ -618,14 +622,21 @@ public class GameCanvas extends FoxCanvas {
         }
         if (isSecondButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                setVideoSettingsMenuVisible(true);
+                getVideosPane().setVisible(true);
+                getAudiosPane().setVisible(false);
+                getHotkeysPane().setVisible(false);
+                getGameplayPane().setVisible(false);
             } else {
                 setOptionsMenuSetVisible(true);
+                getAudiosPane().setVisible(true);
             }
         }
         if (isThirdButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                setHotkeysSettingsMenuVisible(true);
+                getHotkeysPane().setVisible(true);
+                getVideosPane().setVisible(false);
+                getAudiosPane().setVisible(false);
+                getGameplayPane().setVisible(false);
             } else {
                 // нет нужды в паузе здесь, просто сохраняемся:
                 Constants.setPaused(false);
@@ -636,18 +647,17 @@ public class GameCanvas extends FoxCanvas {
         }
         if (isFourthButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                setGameplaySettingsMenuVisible(true);
+                getGameplayPane().setVisible(true);
+                getHotkeysPane().setVisible(false);
+                getVideosPane().setVisible(false);
+                getAudiosPane().setVisible(false);
             } else {
                 Constants.showNFP();
             }
         }
         if (isExitButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                setOptionsMenuSetVisible(false);
-                setAudioSettingsMenuVisible(false);
-                setVideoSettingsMenuVisible(false);
-                setHotkeysSettingsMenuVisible(false);
-                setGameplaySettingsMenuVisible(false);
+                onExitBack(this);
             } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти в главное меню?",
                     FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
                 stop();
@@ -728,6 +738,7 @@ public class GameCanvas extends FoxCanvas {
 
             reloadShapes(this);
             recalculateMenuRectangles();
+            recalculateSettingsPanes();
             recreateViewPort();
             moveViewToPlayer(0, 0);
             requestFocusInWindow();

@@ -19,6 +19,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import javax.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -28,7 +29,7 @@ import java.util.UUID;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "heroes")
+@Table(name = "heroes", uniqueConstraints = @UniqueConstraint(name = "uc_names_in_world", columnNames = {"hero_name", "world_uid"}))
 public class Hero {
     @Id
     @Builder.Default
@@ -36,7 +37,7 @@ public class Hero {
     @Column(name = "id", nullable = false, insertable = false, updatable = false, unique = true)
     private UUID uid = UUID.randomUUID();
 
-    @Column(name = "hero_name", length = 16, unique = true)
+    @Column(name = "hero_name", length = 16)
     private String heroName;
 
     @Column(name = "inventory_json", length = 1024)

@@ -2,18 +2,21 @@ package game.freya.services;
 
 import game.freya.entities.World;
 import game.freya.entities.dto.WorldDTO;
+import game.freya.items.interfaces.iEntity;
 import game.freya.mappers.WorldMapper;
 import game.freya.repositories.WorldRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.awt.Rectangle;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -23,7 +26,6 @@ public class WorldService {
     private final WorldMapper worldMapper;
 
     @Getter
-    @Setter
     private WorldDTO currentWorld;
 
     public List<WorldDTO> findAll() {
@@ -56,5 +58,14 @@ public class WorldService {
 
     public List<WorldDTO> findAllByNetAvailable(boolean isNetAvailable) {
         return worldMapper.toDto(worldRepository.findAllByIsNetAvailableIs(isNetAvailable));
+    }
+
+    public Set<iEntity> getEntitiesFromRectangle(Rectangle rectangle) {
+        return currentWorld.getEntities().stream().filter(e -> rectangle.contains(e.getPosition())).collect(Collectors.toSet());
+    }
+
+    public WorldDTO setCurrentWorld(WorldDTO currentWorld) {
+        this.currentWorld = currentWorld;
+        return this.currentWorld;
     }
 }

@@ -1,9 +1,12 @@
 package game.freya.enums;
 
 public enum MovingVector {
-    NONE,
     UP,
+    UP_RIGHT,
+    RIGHT,
+    RIGHT_DOWN,
     DOWN,
+    DOWN_LEFT,
     LEFT,
-    RIGHT
+    LEFT_UP
 }

@@ -4,8 +4,10 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.SubPane;
+import game.freya.gui.panes.sub.templates.WorldCreator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,7 +16,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
@@ -31,7 +32,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 @Slf4j
-public class WorldCreatingPane extends JPanel {
+public class WorldCreatingPane extends WorldCreator {
     private static final Random r = new Random();
     private transient BufferedImage snap;
     @Getter
@@ -48,7 +49,9 @@ public class WorldCreatingPane extends JPanel {
     @Getter
     private int netPasswordHash = -1;
 
-    public WorldCreatingPane(MenuCanvas canvas) {
+    private SubPane netPassPane;
+
+    public WorldCreatingPane(FoxCanvas canvas) {
         setName("World creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -84,21 +87,19 @@ public class WorldCreatingPane extends JPanel {
             }});
 
             add(Box.createVerticalStrut(18));
-
-            add(new SubPane("Доступен для сети:") {{
-                add(new CheckBokz("netAvailableCheck") {{
-                    setAction(new AbstractAction() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            isNetAvailable = isSelected();
+            CheckBokz nac = new CheckBokz("netAvailableCheck") {{
+                setAction(new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        isNetAvailable = isSelected();
+                        if (netPassPane != null) {
+                            netPassPane.setVisible(isSelected());
                         }
-                    });
-                }});
-            }});
-
-            add(Box.createVerticalStrut(18));
-
-            add(new SubPane("Сетевой пароль:") {{
+                    }
+                });
+            }};
+            netPassPane = new SubPane("Сетевой пароль:") {{
+                setVisible(nac.isSelected());
                 add(new JPasswordField(String.valueOf(netPasswordHash), 20) {{
                     addKeyListener(new KeyAdapter() {
                         @Override
@@ -107,7 +108,15 @@ public class WorldCreatingPane extends JPanel {
                         }
                     });
                 }});
+            }};
+
+            add(new SubPane("Доступен для сети:") {{
+                add(nac);
             }});
+
+            add(Box.createVerticalStrut(9));
+
+            add(netPassPane);
 
             add(Box.createVerticalStrut(9));
             add(new JSeparator(SwingConstants.HORIZONTAL));
@@ -125,7 +134,9 @@ public class WorldCreatingPane extends JPanel {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            canvas.createNewWorldAndCloseThatPanel(WorldCreatingPane.this);
+                            if (canvas instanceof MenuCanvas mCanvas) {
+                                mCanvas.createNewWorldAndCloseThatPanel(WorldCreatingPane.this);
+                            }
                         }
                     });
                 }});

@@ -4,64 +4,49 @@ import fox.FoxRender;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.config.UserConfig;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.gui.panes.sub.AudioSettingsPane;
-import game.freya.gui.panes.sub.GameplaySettingsPane;
+import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.gui.panes.sub.HeroCreatingPane;
-import game.freya.gui.panes.sub.HeroesListPane;
-import game.freya.gui.panes.sub.HotkeysSettingsPane;
-import game.freya.gui.panes.sub.NetCreatingPane;
-import game.freya.gui.panes.sub.NetworkListPane;
-import game.freya.gui.panes.sub.VideoSettingsPane;
-import game.freya.gui.panes.sub.WorldCreatingPane;
-import game.freya.gui.panes.sub.WorldsListPane;
+import game.freya.gui.panes.sub.templates.WorldCreator;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JPanel;
-import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.util.UUID;
-
-import static javax.swing.JLayeredPane.PALETTE_LAYER;
 
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, Runnable
 public class MenuCanvas extends FoxCanvas {
     private final transient GameController gameController;
     private final transient JFrame parentFrame;
-    private transient BufferedImage pAvatar;
+    private final transient UIHandler uiHandler;
     private transient Thread resizeThread = null;
-    private transient WorldDTO aNewWorldMemory;
-    private transient Area area;
     private boolean isMenuActive, initialized = false;
-    private String startGameButtonText, coopPlayButtonText, optionsButtonText, randomButtonText, resetButtonText, createNewButtonText;
-    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane,
-            heroesListPane, networkListPane, networkCreatingPane;
     private double parentHeightMemory = 0;
     private byte drawErrorCount = 0;
 
-    public MenuCanvas(JFrame parentFrame, GameController gameController) {
-        super(Constants.getGraphicsConfiguration(), "MenuCanvas", gameController);
+    public MenuCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
+        super(Constants.getGraphicsConfiguration(), "MenuCanvas", gameController, parentFrame.getLayeredPane());
         this.gameController = gameController;
         this.parentFrame = parentFrame;
+        this.uiHandler = uiHandler;
 
         setSize(parentFrame.getLayeredPane().getSize());
         setBackground(Color.DARK_GRAY.darker());
@@ -72,41 +57,48 @@ public class MenuCanvas extends FoxCanvas {
         addComponentListener(this);
 //        addMouseWheelListener(this); // если понадобится - можно включить.
 
-        inAc();
-
         new Thread(this).start();
+    }
+
+    private void init() {
+        reloadShapes(this);
+        recalculateMenuRectangles();
+        inAc();
+        setVisible(true);
+        this.initialized = true;
     }
 
     private void inAc() {
         final String frameName = "mainFrame";
 
-        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "backFunction",
+        Constants.INPUT_ACTION.set(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT, frameName, "backFunction",
                 Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         if (isVisible()) {
-                            onExitBack();
+                            onExitBack(MenuCanvas.this);
                         } else {
                             Constants.setPaused(!Constants.isPaused());
                         }
                     }
                 });
-    }
 
-    private void init() {
-        reloadShapes(this);
-
-        startGameButtonText = "Начать игру";
-        coopPlayButtonText = "Игра по сети";
-        optionsButtonText = "Настройки";
-        createNewButtonText = "Создать";
-        randomButtonText = "Случайно";
-        resetButtonText = "Сброс";
-
-        recalculateMenuRectangles();
-
-        setVisible(true);
-        this.initialized = true;
+        Constants.INPUT_ACTION.add("menuCanvas", getWorldsListPane());
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "enterNextFunction",
+                KeyEvent.VK_ENTER, 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        if (getHeroesListPane().isVisible()) {
+                            playWithThisHero(
+                                    gameController.findAllHeroesByWorldUid(gameController.getCurrentWorldUid()).get(0));
+                        } else if (getWorldsListPane().isVisible()) {
+                            getOrCreateHeroForSelectedWorldAndCloseThat(
+                                    gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
+                        } else {
+                            getWorldsListPane().setVisible(true);
+                        }
+                    }
+                });
     }
 
     @Override
@@ -121,7 +113,7 @@ public class MenuCanvas extends FoxCanvas {
 
             // если изменился размер фрейма:
             if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
-                log.info("Resizing by parent frame...");
+                log.debug("Resizing by parent frame...");
                 onResize();
                 parentHeightMemory = parentFrame.getBounds().getHeight();
             }
@@ -142,11 +134,9 @@ public class MenuCanvas extends FoxCanvas {
                             Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
                     drawBackground(g2D);
-                    drawMenu(g2D);
+                    drawUI(g2D);
 
-                    if (Constants.isDebugInfoVisible()) {
-                        super.drawDebugInfo(g2D, null);
-                    }
+                    super.drawDebugInfo(g2D, null);
                 } while (getBufferStrategy().contentsRestored() || getBufferStrategy().contentsLost());
                 getBufferStrategy().show();
             } catch (Exception e) {
@@ -165,9 +155,9 @@ public class MenuCanvas extends FoxCanvas {
                 }
             }
 
-            if (Constants.isFrameLimited() && Constants.getDiscreteDelay() > 1) {
+            if (Constants.isFpsLimited()) {
                 try {
-                    Thread.sleep(Constants.getDiscreteDelay());
+                    Thread.sleep(Constants.getDelay());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -188,12 +178,12 @@ public class MenuCanvas extends FoxCanvas {
 
     private void drawBackground(Graphics2D g2D) {
         if (getBackImage() == null || validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE || isRevolatileNeeds()) {
-            log.info("Recreating new volatile...");
+            log.info("Recreating new volatile image by incompatible...");
             setBackImage(createVolatileImage(getWidth(), getHeight()));
             setRevolatileNeeds(false);
         }
         if (validateBackImage() == VolatileImage.IMAGE_RESTORED) {
-            log.info("Awaits while is not Ok...");
+            log.info("Awaits while volatile image is restored...");
             recreateBackImage(getBackImage().createGraphics());
         } else {
             recreateBackImage((Graphics2D) getBackImage().getGraphics());
@@ -201,16 +191,9 @@ public class MenuCanvas extends FoxCanvas {
 
         // draw background image:
         g2D.drawImage(getBackImage(), 0, 0, getWidth(), getHeight(), this);
-    }
-
-    private void recreateBackImage(Graphics2D g2D) {
-        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-        g2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
-                0, 0, getWidth(), getHeight(), this);
 
         // fill left gray polygon:
-        drawLeftGrayPoly(g2D);
+        super.drawLeftGrayPoly(g2D);
 
         // down right corner text:
         g2D.setFont(Constants.INFO_FONT);
@@ -221,41 +204,16 @@ public class MenuCanvas extends FoxCanvas {
                 (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString2()).getWidth() - 6), getHeight() - 25);
 
         // player`s info:
-        if (!isOptionsMenuSetVisible() && !isCreatingNewHeroSetVisible() && !isChooseWorldMenuVisible()) {
-            if (pAvatar == null) {
-                pAvatar = gameController.getCurrentPlayerAvatar();
-            }
-            g2D.setColor(Color.BLACK);
-            g2D.setStroke(new BasicStroke(5f));
-            g2D.drawImage(pAvatar, getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, this);
-            g2D.drawRoundRect(getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, 16, 16);
-            g2D.setFont(Constants.DEBUG_FONT);
-            g2D.drawString(gameController.getCurrentPlayerNickName(),
-                    (int) (getAvatarRect().getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayerNickName())),
-                    getAvatarRect().height + 24);
+        if (!isShadowBackNeeds()) {
+            super.drawAvatar(g2D);
         }
+    }
 
-        if (isAudioSettingsMenuVisible()) {
-            drawSettingsPart(g2D, 0);
-        } else if (isVideoSettingsMenuVisible()) {
-            drawSettingsPart(g2D, 1);
-        } else if (isHotkeysSettingsMenuVisible()) {
-            drawSettingsPart(g2D, 2);
-        } else if (isGameplaySettingsMenuVisible()) {
-            drawSettingsPart(g2D, 3);
-        } else if (isCreatingNewHeroSetVisible()) {
-            drawSettingsPart(g2D, 4);
-        } else if (isCreatingNewWorldSetVisible()) {
-            drawSettingsPart(g2D, 5);
-        } else if (isChooseWorldMenuVisible()) {
-            drawSettingsPart(g2D, 6);
-        } else if (isChooseHeroMenuVisible()) {
-            drawSettingsPart(g2D, 7);
-        } else if (isNetworkMenuVisible()) {
-            drawSettingsPart(g2D, 8);
-        } else if (isCreatingNewNetworkVisible()) {
-            drawSettingsPart(g2D, 9);
-        }
+    private void recreateBackImage(Graphics2D g2D) {
+        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+        g2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
+                0, 0, getWidth(), getHeight(), this);
 
         if (Constants.isDebugInfoVisible()) {
             g2D.setColor(Color.CYAN);
@@ -265,273 +223,8 @@ public class MenuCanvas extends FoxCanvas {
         g2D.dispose();
     }
 
-    private void drawMenu(Graphics2D g2D) {
-        g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
-
-        if (isOptionsMenuSetVisible()) {
-            showOptions(g2D);
-        } else if (isCreatingNewWorldSetVisible()) {
-            drawHeader(g2D, "Создание мира");
-
-            // creating world buttons text:
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(randomButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
-            g2D.drawString(randomButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(resetButtonText, getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
-            g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
-            g2D.drawString(resetButtonText, getSecondButtonRect().x, getSecondButtonRect().y + 18);
-        } else if (isChooseWorldMenuVisible()) {
-            drawHeader(g2D, "Выбор мира");
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(createNewButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
-            g2D.drawString(createNewButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
-        } else if (isChooseHeroMenuVisible()) {
-            drawHeader(g2D, "Выбор героя");
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(createNewButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
-            g2D.drawString(createNewButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
-        } else if (isNetworkMenuVisible()) {
-            drawHeader(g2D, "Сетевые подключения");
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(createNewButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
-            g2D.drawString(createNewButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
-        } else if (isCreatingNewNetworkVisible()) {
-            drawHeader(g2D, "Создание подключения");
-        } else if (isCreatingNewHeroSetVisible()) {
-            showHeroCreating(g2D);
-            return;
-        } else {
-            // default buttons text:
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(startGameButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-            g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
-            g2D.drawString(startGameButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(coopPlayButtonText, getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
-            g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
-            g2D.drawString(coopPlayButtonText, getSecondButtonRect().x, getSecondButtonRect().y + 18);
-
-            g2D.setColor(Color.BLACK);
-            g2D.drawString(optionsButtonText, getThirdButtonRect().x - 1, getThirdButtonRect().y + 17);
-            g2D.setColor(isThirdButtonOver() ? Color.GREEN : Color.WHITE);
-            g2D.drawString(optionsButtonText, getThirdButtonRect().x, getThirdButtonRect().y + 18);
-        }
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(isOptionsMenuSetVisible() || isCreatingNewNetworkVisible() || isNetworkMenuVisible()
-                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
-        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(isOptionsMenuSetVisible() || isCreatingNewNetworkVisible() || isNetworkMenuVisible()
-                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
-    }
-
-    private void showHeroCreating(Graphics2D g2D) {
-        drawHeader(g2D, "Создание героя");
-
-        // creating hero buttons text:
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(randomButtonText, getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-        g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(randomButtonText, getFirstButtonRect().x, getFirstButtonRect().y + 18);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(resetButtonText, getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
-        g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(resetButtonText, getSecondButtonRect().x, getSecondButtonRect().y + 18);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getBackButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
-        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getBackButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
-    }
-
-    private void drawSettingsPart(Graphics2D g2D, int partIndex) {
-        Font font = g2D.getFont();
-
-        if (area == null || area.getBounds().getHeight() != getBounds().getHeight()) {
-            area = new Area(getBounds());
-            area.subtract(new Area(super.getLeftGrayMenuPoly()));
-        }
-
-        audiosPane.setVisible(partIndex == 0);
-        videosPane.setVisible(partIndex == 1);
-        hotkeysPane.setVisible(partIndex == 2);
-        gameplayPane.setVisible(partIndex == 3);
-        heroCreatingPane.setVisible(partIndex == 4);
-        worldCreatingPane.setVisible(partIndex == 5);
-        worldsListPane.setVisible(partIndex == 6);
-        heroesListPane.setVisible(partIndex == 7);
-        networkListPane.setVisible(partIndex == 8);
-        networkCreatingPane.setVisible(partIndex == 9);
-
-        if (Constants.isDebugInfoVisible()) {
-            g2D.setColor(Color.RED);
-            g2D.draw(area);
-        }
-
-        // restore font:
-        g2D.setFont(font);
-    }
-
-    private void recalculateSettingsPanes() {
-        // удаляем старые панели с фрейма:
-        dropOldPanesFromLayer();
-
-        // создаём новые панели:
-        audiosPane = new AudioSettingsPane(this);
-        videosPane = new VideoSettingsPane(this);
-        hotkeysPane = new HotkeysSettingsPane(this);
-        gameplayPane = new GameplaySettingsPane(this);
-        worldCreatingPane = new WorldCreatingPane(this);
-        heroCreatingPane = new HeroCreatingPane(this, gameController);
-        worldsListPane = new WorldsListPane(this, gameController);
-        heroesListPane = new HeroesListPane(this, gameController);
-        networkListPane = new NetworkListPane(this, gameController);
-        networkCreatingPane = new NetCreatingPane(this);
-
-        // добавляем панели на слой:
-        try {
-            parentFrame.getLayeredPane().add(audiosPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(videosPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(hotkeysPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(gameplayPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(heroCreatingPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(worldCreatingPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(worldsListPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(heroesListPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(networkListPane, PALETTE_LAYER);
-            parentFrame.getLayeredPane().add(networkCreatingPane, PALETTE_LAYER);
-        } catch (Exception e) {
-            log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
-            recalculateSettingsPanes();
-        }
-    }
-
-    private void dropOldPanesFromLayer() {
-        try {
-            parentFrame.getLayeredPane().remove(audiosPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма audiosPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(videosPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма videosPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(hotkeysPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма hotkeysPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(gameplayPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма gameplayPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(heroCreatingPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма heroCreatingPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(worldCreatingPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма worldCreatingPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(worldsListPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма worldsListPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(heroesListPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма heroesListPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(networkListPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма networkListPane, которой там нет.");
-        }
-        try {
-            parentFrame.getLayeredPane().remove(networkCreatingPane);
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма networkCreatingPane, которой там нет.");
-        }
-    }
-
-    private boolean isShadowBackNeeds() {
-        return isOptionsMenuSetVisible() || isCreatingNewHeroSetVisible() || isCreatingNewWorldSetVisible()
-                || isChooseWorldMenuVisible() || isChooseHeroMenuVisible() || isNetworkMenuVisible() || isCreatingNewNetworkVisible();
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-
-    }
-
-    private void onExitBack() {
-        if (isOptionsMenuSetVisible()) {
-            setOptionsMenuSetVisible(false);
-            setAudioSettingsMenuVisible(false);
-            setVideoSettingsMenuVisible(false);
-            setHotkeysSettingsMenuVisible(false);
-            setGameplaySettingsMenuVisible(false);
-        } else if (isCreatingNewHeroSetVisible()) {
-            setCreatingNewHeroSetVisible(false);
-            setChooseHeroMenuVisible(true);
-            return;
-        } else if (isCreatingNewWorldSetVisible()) {
-            setCreatingNewWorldSetVisible(false);
-        } else if (isChooseWorldMenuVisible()) {
-            setChooseWorldMenuVisible(false);
-        } else if (isChooseHeroMenuVisible()) {
-            setChooseHeroMenuVisible(false);
-        } else if (isNetworkMenuVisible()) {
-            setNetworkMenuVisible(false);
-        } else if (isCreatingNewNetworkVisible()) {
-            setCreatingNewNetworkVisible(false);
-            setNetworkMenuVisible(true);
-        } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
-                FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
-            gameController.exitTheGame(null);
-        }
-
-        // в любом случае, любая панель тут скрывается:
-        hidePanelIfNotNull(audiosPane);
-        hidePanelIfNotNull(videosPane);
-        hidePanelIfNotNull(hotkeysPane);
-        hidePanelIfNotNull(gameplayPane);
-        hidePanelIfNotNull(heroCreatingPane);
-        hidePanelIfNotNull(worldCreatingPane);
-        hidePanelIfNotNull(worldsListPane);
-        hidePanelIfNotNull(heroesListPane);
-        hidePanelIfNotNull(networkListPane);
-        hidePanelIfNotNull(networkCreatingPane);
-    }
-
-    private void hidePanelIfNotNull(JPanel panel) {
-        if (panel != null) {
-            panel.setVisible(false);
-        }
-    }
-
-    @Override
-    public void stop() {
-        this.isMenuActive = false;
-        dropOldPanesFromLayer();
-        closeBackImage();
-        setVisible(false);
+    private void drawUI(Graphics2D g2D) {
+        uiHandler.drawUI(this, g2D);
     }
 
     @Override
@@ -541,26 +234,6 @@ public class MenuCanvas extends FoxCanvas {
         setThirdButtonOver(getThirdButtonRect() != null && getThirdButtonRect().contains(e.getPoint()));
         setFourthButtonOver(getFourthButtonRect() != null && getFourthButtonRect().contains(e.getPoint()));
         setExitButtonOver(getExitButtonRect() != null && getExitButtonRect().contains(e.getPoint()));
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseEntered(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-
     }
 
     @Override
@@ -575,42 +248,241 @@ public class MenuCanvas extends FoxCanvas {
 
         resizeThread = new Thread(() -> {
             try {
-                Thread.sleep(50);
+                Thread.sleep(30);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
 
             log.debug("Resizing of menu canvas...");
 
-            setSize(parentFrame.getRootPane().getSize());
+            if (Constants.getUserConfig().isFullscreen()
+                    && Constants.getUserConfig().getFullscreenType().equals(UserConfig.FullscreenType.EXCLUSIVE)
+            ) {
+                setSize(parentFrame.getSize());
+            } else {
+                setSize(parentFrame.getRootPane().getSize());
+            }
 
             reloadShapes(this);
             recalculateMenuRectangles();
 
-            boolean rect0IsVisible = audiosPane != null && audiosPane.isVisible();
-            boolean rect1IsVisible = videosPane != null && videosPane.isVisible();
-            boolean rect2IsVisible = hotkeysPane != null && hotkeysPane.isVisible();
-            boolean rect3IsVisible = gameplayPane != null && gameplayPane.isVisible();
-            boolean rect4IsVisible = heroCreatingPane != null && heroCreatingPane.isVisible();
-            boolean rect5IsVisible = worldCreatingPane != null && worldCreatingPane.isVisible();
-            boolean rect6IsVisible = worldsListPane != null && worldsListPane.isVisible();
-            boolean rect7IsVisible = heroesListPane != null && heroesListPane.isVisible();
+            boolean rect0IsVisible = getAudiosPane() != null && getAudiosPane().isVisible();
+            boolean rect1IsVisible = getVideosPane() != null && getVideosPane().isVisible();
+            boolean rect2IsVisible = getHotkeysPane() != null && getHotkeysPane().isVisible();
+            boolean rect3IsVisible = getGameplayPane() != null && getGameplayPane().isVisible();
+            boolean rect4IsVisible = getHeroCreatingPane() != null && getHeroCreatingPane().isVisible();
+            boolean rect5IsVisible = getWorldCreatingPane() != null && getWorldCreatingPane().isVisible();
+            boolean rect6IsVisible = getWorldsListPane() != null && getWorldsListPane().isVisible();
+            boolean rect7IsVisible = getHeroesListPane() != null && getHeroesListPane().isVisible();
+            boolean rect8IsVisible = getNetworkListPane() != null && getNetworkListPane().isVisible();
+            boolean rect9IsVisible = getNetworkCreatingPane() != null && getNetworkCreatingPane().isVisible();
 
             recalculateSettingsPanes();
 
-            setAudioSettingsMenuVisible(rect0IsVisible);
-            setVideoSettingsMenuVisible(rect1IsVisible);
-            setHotkeysSettingsMenuVisible(rect2IsVisible);
-            setGameplaySettingsMenuVisible(rect3IsVisible);
-            setCreatingNewHeroSetVisible(rect4IsVisible);
-            setCreatingNewWorldSetVisible(rect5IsVisible);
-            setChooseWorldMenuVisible(rect6IsVisible);
-            setChooseHeroMenuVisible(rect7IsVisible);
+            getAudiosPane().setVisible(rect0IsVisible);
+            getVideosPane().setVisible(rect1IsVisible);
+            getHotkeysPane().setVisible(rect2IsVisible);
+            getGameplayPane().setVisible(rect3IsVisible);
+            getHeroCreatingPane().setVisible(rect4IsVisible);
+            getWorldCreatingPane().setVisible(rect5IsVisible);
+            getWorldsListPane().setVisible(rect6IsVisible);
+            getHeroesListPane().setVisible(rect7IsVisible);
+            getNetworkListPane().setVisible(rect8IsVisible);
+            getNetworkCreatingPane().setVisible(rect9IsVisible);
 
             setRevolatileNeeds(true);
         });
         resizeThread.start();
+        try {
+            resizeThread.join(500);
+        } catch (InterruptedException e) {
+            resizeThread.interrupt();
+        }
     }
+
+    /**
+     * Когда создаём новый мир - идём сюда, для его сохранения и указания как текущий мир в контроллере.
+     *
+     * @param newWorldTemplate модель нового мира для сохранения.
+     */
+    public void createNewWorldAndCloseThatPanel(WorldCreator newWorldTemplate) {
+        WorldDTO aNewWorld = WorldDTO.builder()
+                .title(newWorldTemplate.getWorldName())
+                .level(newWorldTemplate.getHardnessLevel())
+                .isNetAvailable(newWorldTemplate.isNetAvailable())
+                .passwordHash(newWorldTemplate.getNetPasswordHash())
+                .build();
+
+        if (aNewWorld.isNetAvailable()) {
+            gameController.setCurrentWorld(gameController.saveNewNetWorld(aNewWorld));
+        } else {
+            gameController.setCurrentWorld(gameController.saveNewWorld(aNewWorld));
+        }
+
+        // скрываем панель создания мира, показываем панель создания первого героя для нового мира:
+        getWorldCreatingPane().setVisible(false);
+        getHeroCreatingPane().setVisible(true);
+    }
+
+    /**
+     * После выбора уже существующего мира - приходим сюда для создания нового героя или выбора
+     * существующего, для игры в данном мире.
+     *
+     * @param selectedWorldUuid uuid выбранного для игры мира.
+     */
+    public void getOrCreateHeroForSelectedWorldAndCloseThat(UUID selectedWorldUuid) {
+        gameController.setCurrentWorld(selectedWorldUuid);
+
+        if (gameController.findAllHeroesByWorldUid(selectedWorldUuid).isEmpty()) {
+            getHeroCreatingPane().setVisible(true);
+        } else {
+            getHeroesListPane().setVisible(true);
+        }
+
+        getNetworkListPane().setVisible(false);
+        getWorldsListPane().setVisible(false);
+    }
+
+    /**
+     * После создания нового мира - приходим сюда для создания и нового героя для игры.
+     *
+     * @param newHeroTemplate модель нового героя для игры в новом мире.
+     */
+    public void createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane newHeroTemplate) {
+        HeroDTO aNewHeroDto = gameController.saveNewHero(HeroDTO.builder()
+                .heroName(newHeroTemplate.getHeroName())
+                .ownerUid(gameController.getCurrentPlayerUid())
+                .worldUid(newHeroTemplate.getWorldUid())
+                .build());
+
+        gameController.setCurrentWorld(newHeroTemplate.getWorldUid());
+
+        // начинаем игру сохраненным и указанным как текущим героем в указанном как текущем мире:
+        playWithThisHero(aNewHeroDto);
+    }
+
+    /**
+     * После выбора или создания мира (и указания его как текущего в контроллере) и выбора или создания героя, которым
+     * будем играть в выбранном мире - попадаем сюда для последних приготовлений и
+     * загрузки холста мира (собственно, начала игры).
+     *
+     * @param hero выбранный герой для игры в выбранном ранее мире.
+     */
+    public void playWithThisHero(HeroDTO hero) {
+        gameController.setCurrentHero(hero);
+        gameController.setCurrentWorld(hero.getWorldUid());
+        gameController.setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());
+
+        getHeroCreatingPane().setVisible(false);
+
+        // здесь у героя уже должны быть заполнены все нужные поля (мир, владелец, он-лайн и т.п.).
+        gameController.loadScreen(ScreenType.GAME_SCREEN);
+    }
+
+    public void deleteExistsWorldAndCloseThatPanel(UUID worldUid) {
+        log.info("Удаление мира {}...", worldUid);
+        gameController.deleteWorld(worldUid);
+    }
+
+    public void deleteExistsPlayerHero(UUID heroUid) {
+        gameController.deleteHero(heroUid);
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        if (isFirstButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                if (!getAudiosPane().isVisible()) {
+                    getAudiosPane().setVisible(true);
+                    getVideosPane().setVisible(false);
+                    getHotkeysPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else if (getWorldsListPane().isVisible()) {
+                getWorldsListPane().setVisible(false);
+                getWorldCreatingPane().setVisible(true);
+            } else if (getHeroesListPane().isVisible()) {
+                getHeroesListPane().setVisible(false);
+                getHeroCreatingPane().setVisible(true);
+            } else if (getNetworkListPane().isVisible()) {
+                getNetworkListPane().setVisible(false);
+                getNetworkCreatingPane().setVisible(true);
+            } else {
+                if (gameController.findAllWorldsByNetworkAvailable(false).isEmpty()) {
+                    getWorldCreatingPane().setVisible(true);
+                } else {
+                    getWorldsListPane().setVisible(true);
+                }
+            }
+        }
+
+        if (isSecondButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                // нажато Настройки графики:
+                if (!getVideosPane().isVisible()) {
+                    getVideosPane().setVisible(true);
+                    getAudiosPane().setVisible(false);
+                    getHotkeysPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else {
+                getNetworkListPane().setVisible(true);
+            }
+        }
+
+        if (isThirdButtonOver()) {
+            if (!isOptionsMenuSetVisible() && !getHeroCreatingPane().isVisible() && !getWorldsListPane().isVisible()) {
+                setOptionsMenuSetVisible(true);
+                getAudiosPane().setVisible(true);
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else if (isOptionsMenuSetVisible()) {
+                if (!getHotkeysPane().isVisible()) {
+                    getHotkeysPane().setVisible(true);
+                    getVideosPane().setVisible(false);
+                    getAudiosPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else {
+                Constants.showNFP();
+            }
+        }
+
+        if (isFourthButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                if (!getGameplayPane().isVisible()) {
+                    getGameplayPane().setVisible(true);
+                    getHotkeysPane().setVisible(false);
+                    getVideosPane().setVisible(false);
+                    getAudiosPane().setVisible(false);
+                }
+            } else {
+                Constants.showNFP();
+            }
+        }
+
+        if (isExitButtonOver()) {
+            onExitBack(this);
+        }
+    }
+
+    public void exitTheGame() {
+        stop();
+        gameController.exitTheGame(null);
+    }
+
+    @Override
+    public void stop() {
+        this.isMenuActive = false;
+        dropOldPanesFromLayer();
+        closeBackImage();
+        setVisible(false);
+    }
+
 
     @Override
     public void componentMoved(ComponentEvent e) {
@@ -641,159 +513,31 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     @Override
-    public void keyReleased(KeyEvent e) {
-    }
+    public void mouseDragged(MouseEvent e) {
 
-    public void createNewWorldAndCloseThatPanel(WorldCreatingPane newWorldTemplate) {
-        WorldDTO aNewWorld = WorldDTO.builder()
-                .title(newWorldTemplate.getWorldName())
-                .level(newWorldTemplate.getHardnessLevel())
-                .isNetAvailable(newWorldTemplate.isNetAvailable())
-                .passwordHash(newWorldTemplate.getNetPasswordHash())
-                .build();
-
-        aNewWorldMemory = gameController.saveNewWorld(aNewWorld);
-        setCreatingNewWorldSetVisible(false);
-        setCreatingNewHeroSetVisible(true);
-    }
-
-    public void createNewNetworkWorldAndCloseThatPanel(NetCreatingPane netCreatingPane) {
-        WorldDTO aNewNetWorld = WorldDTO.builder()
-                .title(netCreatingPane.getWorldName())
-                .level(netCreatingPane.getHardnessLevel())
-                .passwordHash(netCreatingPane.getNetPasswordHash())
-                .isNetAvailable(true)
-                .build();
-
-        aNewWorldMemory = gameController.saveNewNetWorld(aNewNetWorld);
-        setCreatingNewNetworkVisible(false);
-        setCreatingNewHeroSetVisible(true);
-    }
-
-    public void createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane newHeroTemplate) {
-        HeroDTO aNewHeroDto = gameController.saveNewHero(HeroDTO.builder()
-                .heroName(newHeroTemplate.getHeroName())
-                .ownerUid(gameController.getCurrentPlayerUid())
-                .worldUid(newHeroTemplate.getWorldUid())
-                .build());
-
-        gameController.setCurrentWorld(aNewWorldMemory);
-        gameController.getCurrentWorldHeroes().add(aNewHeroDto);
-
-        playWithThisHero(aNewHeroDto);
-    }
-
-    public void createNewHeroForExistsWorldAndCloseThatPanel(UUID selectedWorldUuid) {
-        aNewWorldMemory = gameController.setCurrentWorld(selectedWorldUuid);
-
-        if (gameController.findAllHeroesByWorldUid(selectedWorldUuid).isEmpty()) {
-            setCreatingNewHeroSetVisible(true);
-        } else {
-            setChooseHeroMenuVisible(true);
-        }
-
-        setChooseWorldMenuVisible(false);
-        worldsListPane.setVisible(false);
-    }
-
-    public void deleteExistsWorldAndCloseThatPanel(UUID worldUid) {
-        log.info("Удаление мира {}...", worldUid);
-        gameController.deleteWorld(worldUid);
-    }
-
-    public void deleteExistsPlayerHero(UUID heroUid) {
-        gameController.deleteHero(heroUid);
-    }
-
-    public void playWithThisHero(HeroDTO hero) {
-        gameController.setCurrentHero(hero);
-        gameController.setCurrentPlayerLastPlayedWorldUid(aNewWorldMemory.getUid());
-
-        setCreatingNewHeroSetVisible(false);
-        heroCreatingPane.setVisible(false);
-
-        gameController.loadScreen(ScreenType.GAME_SCREEN, aNewWorldMemory);
     }
 
     @Override
-    public void mouseReleased(MouseEvent e) {
-        if (isFirstButtonOver()) {
-            if (isOptionsMenuSetVisible()) {
-                if (!isAudioSettingsMenuVisible()) {
-                    setAudioSettingsMenuVisible(true);
-                    setVideoSettingsMenuVisible(false);
-                    setHotkeysSettingsMenuVisible(false);
-                    setGameplaySettingsMenuVisible(false);
-                }
-            } else if (isCreatingNewHeroSetVisible()) {
-                Constants.showNFP();
-            } else if (isChooseWorldMenuVisible()) {
-                setChooseWorldMenuVisible(false);
-                setCreatingNewWorldSetVisible(true);
-            } else if (isChooseHeroMenuVisible()) {
-                setChooseHeroMenuVisible(false);
-                setCreatingNewHeroSetVisible(true);
-            } else if (isNetworkMenuVisible()) {
-                setNetworkMenuVisible(false);
-                setCreatingNewNetworkVisible(true);
-            } else {
-                if (gameController.findAllWorldsByNetworkAvailable(false).isEmpty()) {
-                    setCreatingNewWorldSetVisible(true);
-                } else {
-                    setChooseWorldMenuVisible(true);
-                }
-            }
-        }
+    public void mouseEntered(MouseEvent e) {
 
-        if (isSecondButtonOver()) {
-            if (isOptionsMenuSetVisible()) {
-                // нажато Настройки графики:
-                if (!isVideoSettingsMenuVisible()) {
-                    setVideoSettingsMenuVisible(true);
-                    setAudioSettingsMenuVisible(false);
-                    setHotkeysSettingsMenuVisible(false);
-                    setGameplaySettingsMenuVisible(false);
-                }
-            } else if (isCreatingNewHeroSetVisible()) {
-                Constants.showNFP();
-            } else {
-                setNetworkMenuVisible(true);
-            }
-        }
+    }
 
-        if (isThirdButtonOver()) {
-            if (!isOptionsMenuSetVisible() && !isCreatingNewHeroSetVisible() && !isChooseWorldMenuVisible()) {
-                setOptionsMenuSetVisible(true);
-                setAudioSettingsMenuVisible(true);
-            } else if (isCreatingNewHeroSetVisible()) {
-                Constants.showNFP();
-            } else if (isOptionsMenuSetVisible()) {
-                if (!isHotkeysSettingsMenuVisible()) {
-                    setHotkeysSettingsMenuVisible(true);
-                    setVideoSettingsMenuVisible(false);
-                    setAudioSettingsMenuVisible(false);
-                    setGameplaySettingsMenuVisible(false);
-                }
-            } else {
-                Constants.showNFP();
-            }
-        }
+    @Override
+    public void mouseExited(MouseEvent e) {
 
-        if (isFourthButtonOver()) {
-            if (isOptionsMenuSetVisible()) {
-                if (!isGameplaySettingsMenuVisible()) {
-                    setGameplaySettingsMenuVisible(true);
-                    setHotkeysSettingsMenuVisible(false);
-                    setVideoSettingsMenuVisible(false);
-                    setAudioSettingsMenuVisible(false);
-                }
-            } else {
-                Constants.showNFP();
-            }
-        }
+    }
 
-        if (isExitButtonOver()) {
-            onExitBack();
-        }
+    @Override
+    public void mouseClicked(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
     }
 }
