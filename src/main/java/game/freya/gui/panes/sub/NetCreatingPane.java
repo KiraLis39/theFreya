@@ -43,7 +43,7 @@ public class NetCreatingPane extends WorldCreator {
     private HardnessLevel hardnessLevel = HardnessLevel.EASY;
 
     @Getter
-    private boolean isNetAvailable = false;
+    private boolean isNetAvailable = true;
 
     @Getter
     private int netPasswordHash = -1;
@@ -79,7 +79,7 @@ public class NetCreatingPane extends WorldCreator {
             add(new SubPane("Уровень сложности:") {{
                 add(new JComboBox<>(Arrays.stream(HardnessLevel.values()).map(HardnessLevel::getDescription).toArray()) {{
                     addActionListener(e -> hardnessLevel = Arrays.stream(HardnessLevel.values())
-                            .filter(hl -> hl.getDescription().equals(getSelectedItem().toString())).findFirst().get());
+                            .filter(hl -> hl.getDescription().equals(getSelectedItem().toString())).findFirst().orElseThrow());
                 }});
             }});
 

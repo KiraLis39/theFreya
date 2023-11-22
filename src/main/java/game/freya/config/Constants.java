@@ -37,6 +37,8 @@ public final class Constants {
     // net:
     public static final int SERVER_PORT = 13958;
     public static final int SOCKET_BUFFER_SIZE = 10240; // 65536
+    public static final long NETWORK_DATA_TRANSLATE_DELAY = 5_000L; // сколько миллисекунд ждать между отправками данных на сервер
+    public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 300_000; // сколько миллисекунд сервер ждёт подключений
 
 
     // other:
@@ -69,7 +71,6 @@ public final class Constants {
     public static final Font MENU_BUTTONS_FONT;
     public static final Font PROPAGANDA_FONT;
     public static final Font PROPAGANDA_BIG_FONT;
-    public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 10_000; // сколько секунд сервер ждёт подключений
 
 
     // project:
@@ -205,7 +206,7 @@ public final class Constants {
 
     private static void coolFps() {
         if (delay.get() < 500) {
-            log.info("Increase delay (decrease fps)");
+            log.debug("Increase delay (decrease fps)");
             delay.incrementAndGet();
         } else {
             log.warn("Не удастся повысить задержку отрисовки для снижения fps - delay уже равен 500! (fps limited: {})", isFpsLimited());
@@ -214,7 +215,7 @@ public final class Constants {
 
     private static void riseFps() {
         if (delay.get() > 1) {
-            log.info("Decrease delay (increase fps)");
+            log.debug("Decrease delay (increase fps)");
             delay.decrementAndGet();
         } else {
             log.warn("Не удастся сократить задержку отрисовки для увеличения fps - delay уже равен 1! (fps limited: {})", isFpsLimited());

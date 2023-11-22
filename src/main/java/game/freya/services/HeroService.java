@@ -76,4 +76,8 @@ public class HeroService {
     public Optional<Hero> findHeroByNameAndWorld(String heroName, UUID worldUid) {
         return heroRepository.findByHeroNameAndWorldUid(heroName, worldUid);
     }
+
+    public void addToCurrentHeroes(HeroDTO hero) {
+        this.heroes.add(hero);
+    }
 }

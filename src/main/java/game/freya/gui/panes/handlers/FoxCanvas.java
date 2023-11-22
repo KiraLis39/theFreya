@@ -69,7 +69,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private float downShift = 0;
 
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
-    private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false;
+    private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false, isConnectionAwait = false;
 
     protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller, JLayeredPane layeredPane) {
         super(gConf);

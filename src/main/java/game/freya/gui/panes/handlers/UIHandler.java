@@ -260,7 +260,7 @@ public final class UIHandler {
         m2D.setTransform(grTrMem);
 
         // отображаем других игроков на миникарте:
-        for (ClientHandler client : gameController.getConnectedPlayers().values()) {
+        for (ClientHandler client : gameController.getConnectedPlayers()) {
             HeroDTO hero = client.getHeroDto();
             m2D.setColor(Color.YELLOW);
             m2D.fillRect((int) (hero.getPosition().x - 3), (int) (hero.getPosition().y - 3), 6, 6);

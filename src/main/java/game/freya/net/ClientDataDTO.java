@@ -1,11 +1,42 @@
 package game.freya.net;
 
+import game.freya.entities.World;
+import game.freya.enums.HeroType;
+import game.freya.enums.HurtLevel;
+import game.freya.enums.MovingVector;
+import game.freya.enums.NetDataType;
+import lombok.Builder;
+
+import java.awt.geom.Point2D;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
-public record ClientDataDTO(UUID puid) implements Serializable {
-
+@Builder
+public record ClientDataDTO(
+        UUID id,
+        NetDataType type,
+        UUID playerUid,
+        String playerName,
+        UUID heroUuid,
+        String heroName,
+        HeroType heroType,
+        short level,
+        float experience,
+        short hp,
+        HurtLevel hurtLevel,
+        short maxHp,
+        Point2D.Double position,
+        MovingVector vector,
+        byte speed,
+        float power,
+        boolean isOnline,
+        String explanation,
+        World world,
+//        BufferedImage gameMap,
+//        BufferedImage icon,
+        int passwordHash
+) implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -15,18 +46,11 @@ public record ClientDataDTO(UUID puid) implements Serializable {
             return false;
         }
         ClientDataDTO that = (ClientDataDTO) o;
-        return Objects.equals(puid, that.puid);
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(puid);
-    }
-
-    @Override
-    public String toString() {
-        return "ClientDataDTO{"
-                + "puid=" + puid
-                + '}';
+        return Objects.hash(id);
     }
 }

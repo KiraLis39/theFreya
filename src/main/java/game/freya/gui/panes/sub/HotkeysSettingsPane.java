@@ -4,9 +4,11 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -14,6 +16,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -62,7 +65,14 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener {
         }
 
         add(new SubPane(null) {{
-            // todo: UserConfig.resetControlKeys();
+            add(new FButton("По умолчанию") {{
+                setAction(new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        log.info(Constants.getNotRealizedString());
+                    }
+                });
+            }});
         }});
     }
 

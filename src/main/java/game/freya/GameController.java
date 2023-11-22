@@ -6,7 +6,10 @@ import game.freya.entities.Player;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
+import game.freya.enums.HeroType;
+import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
+import game.freya.enums.NetDataType;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -15,6 +18,7 @@ import game.freya.gui.panes.GameCanvas;
 import game.freya.items.interfaces.iEntity;
 import game.freya.mappers.HeroMapper;
 import game.freya.mappers.WorldMapper;
+import game.freya.net.ClientDataDTO;
 import game.freya.net.ClientHandler;
 import game.freya.net.SocketService;
 import game.freya.services.HeroService;
@@ -47,7 +51,6 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -68,7 +71,7 @@ public class GameController {
     private final GameFrame gameFrame;
     @Getter
     private final GameConfig gameConfig;
-
+    private Thread netDataTranslator;
     @Getter
     @Setter
     private boolean isPlayerMovingUp = false, isPlayerMovingDown = false, isPlayerMovingLeft = false, isPlayerMovingRight = false;
@@ -142,10 +145,12 @@ public class GameController {
     }
 
     private void closeConnections() {
-        if (socketService.isOpen()) {
+        // закрываем Сервер:
+        if (socketService.isServerOpen()) {
             socketService.close();
         }
 
+        // закрываем БД:
         try {
             if (conn != null) {
                 log.info("Connection to SQLite is closing...");
@@ -162,7 +167,9 @@ public class GameController {
     public void exitTheGame(WorldDTO world) {
         socketService.close();
         saveTheGame(world);
+        stopBroadcast();
         closeConnections();
+
         log.info("The game is finished!");
         System.exit(0);
     }
@@ -184,6 +191,81 @@ public class GameController {
             case GAME_SCREEN -> gameFrame.loadGameScreen();
             default -> log.error("Unknown screen failed to load: {}", screenType);
         }
+
+        // network check:
+        if (screenType.equals(ScreenType.GAME_SCREEN) && worldService.getCurrentWorld().isNetAvailable()) {
+            log.info("Начинается трансляция данных в сеть...");
+            if (socketService.isServerOpen()) {
+                startServerBroadcast(); // если мы - Сервер.
+            } else {
+                startClientBroadcast(); // если мы - клиент.
+            }
+        }
+    }
+
+    /**
+     * Транслятор сервера.
+     * Не работает, когда выступаем в роли клиента?
+     */
+    private void startServerBroadcast() {
+        if (netDataTranslator == null) {
+            netDataTranslator = new Thread(() -> {
+                while (!netDataTranslator.isInterrupted()) {
+                    socketService.broadcast(buildNewDataPackage());
+
+                    try {
+                        Thread.sleep(Constants.NETWORK_DATA_TRANSLATE_DELAY);
+                    } catch (InterruptedException e) {
+                        log.warn("Прерывание потока бродкаста данных клиентам!");
+                    }
+                }
+            });
+            netDataTranslator.start();
+        } else if (!netDataTranslator.isAlive()) {
+            netDataTranslator.start();
+        } else {
+            log.error("Нельзя повторно запустить ещё живой поток!");
+        }
+    }
+
+    private void startClientBroadcast() {
+        if (netDataTranslator == null) {
+            netDataTranslator = new Thread(() -> {
+                while (!netDataTranslator.isInterrupted()) {
+                    socketService.toServer(buildNewDataPackage());
+
+                    try {
+                        Thread.sleep(Constants.NETWORK_DATA_TRANSLATE_DELAY);
+                    } catch (InterruptedException e) {
+                        log.warn("Прерывание потока отправки данных на сервер!");
+                    }
+                }
+            });
+            netDataTranslator.start();
+        } else if (!netDataTranslator.isAlive()) {
+            netDataTranslator.start();
+        } else {
+            log.error("Нельзя повторно запустить ещё живой поток!");
+        }
+    }
+
+    public void stopBroadcast() {
+        if (netDataTranslator != null && netDataTranslator.isAlive()) {
+            try {
+                netDataTranslator.interrupt();
+                netDataTranslator.join(1_000);
+            } catch (InterruptedException e) {
+                netDataTranslator.interrupt();
+            }
+            log.info("Транслятор данных остановлен: {}", netDataTranslator.isAlive());
+        }
+    }
+
+    private ClientDataDTO buildNewDataPackage() {
+        // собираем пакет данных для сервера и других игроков:
+        return ClientDataDTO.builder()
+                // ...
+                .build();
     }
 
     public WorldDTO updateWorld(WorldDTO worldDTO) {
@@ -314,6 +396,7 @@ public class GameController {
                         canvas.dragDown((double) getCurrentHeroSpeed());
                     }
                 }
+                default -> log.info("Обнаружено несанкционированное направление {}", vector);
             }
         }
     }
@@ -361,7 +444,7 @@ public class GameController {
                     .orElseThrow().setOnline(true);
         } else {
             hero.setOnline(true);
-            heroService.getCurrentHeroes().add(hero);
+            heroService.addToCurrentHeroes(hero);
         }
     }
 
@@ -374,15 +457,12 @@ public class GameController {
     }
 
     public WorldDTO saveNewWorld(WorldDTO newWorld) {
+        newWorld.setAuthor(getCurrentPlayerUid());
         return worldService.save(newWorld);
     }
 
-    public WorldDTO saveNewNetWorld(WorldDTO aNewNetWorld) {
-        return worldService.save(aNewNetWorld);
-    }
-
     public boolean openNet() {
-        return socketService.openServer();
+        return socketService.openServer(this);
     }
 
     public boolean closeNet() {
@@ -391,10 +471,6 @@ public class GameController {
 
     public UUID getCurrentPlayerUid() {
         return playerService.getCurrentPlayer().getUid();
-    }
-
-    public void setCurrentWorld(WorldDTO newWorld) {
-        worldService.setCurrentWorld(newWorld);
     }
 
     public WorldDTO setCurrentWorld(UUID selectedWorldUuid) {
@@ -487,18 +563,111 @@ public class GameController {
     }
 
     public boolean isServerIsOpen() {
-        return socketService.isOpen();
+        return socketService.isServerOpen();
     }
 
     public long getConnectedPlayersCount() {
         return socketService.getPlayersCount();
     }
 
-    public Map<String, ClientHandler> getConnectedPlayers() {
+    public Set<ClientHandler> getConnectedPlayers() {
         return socketService.getPlayers();
     }
 
     public MovingVector getCurrentHeroVector() {
         return heroService.getCurrentHero().getVector();
+    }
+
+    public boolean connectToServer(String host, Integer port, String password) throws IOException {
+        // подключаемся к серверу:
+        ClientHandler connection = socketService.openSocket(host, port, this);
+
+        // передаём свои данные для авторизации:
+        connection.push(ClientDataDTO.builder()
+                .id(UUID.randomUUID())
+                .type(NetDataType.AUTH)
+                .playerUid(getCurrentPlayerUid()) // not null ?
+                .playerName(getCurrentPlayerNickName())
+                .passwordHash(password.isBlank() ? -1 : password.trim().hashCode())
+//                .puid(getCurrentHeroUid())
+//                .heroName(getCurrentHeroName())
+//                .heroType(getCurrentHeroType())
+//                .level(getCurrentHeroLevel())
+//                .experience(getCurrentHeroExperience())
+//                .hp(getCurrentHeroHp())
+//                .hurtLevel(getCurrentHeroHurtLevel())
+//                .maxHp(getCurrentHeroMaxHp())
+//                .position(getCurrentHeroPosition())
+//                .vector(getCurrentHeroVector())
+//                .speed(getCurrentHeroSpeed())
+//                .power(getCurrentHeroPower())
+//                .buffs(readed.buffs())
+//                .inventory(readed.inventory())
+//                .inGameTime(readed.inGameTime())
+//                .ownerUid(readed.ownerUid())
+//                .worldUid(readed.wUid())
+//                .createDate(readed.created())
+                .isOnline(true)
+                .build());
+
+        Thread authThread = new Thread(() -> {
+            while (!connection.isAutorized()) {
+                Thread.yield();
+            }
+        });
+        authThread.start();
+        try {
+            authThread.join(9_000);
+        } catch (InterruptedException e) {
+            authThread.interrupt();
+            return false;
+        }
+
+        // если отправка прошла хорошо:
+        return true;
+    }
+
+    private float getCurrentHeroPower() {
+        return heroService.getCurrentHero().getCurrentAttackPower();
+    }
+
+    private short getCurrentHeroMaxHp() {
+        return heroService.getCurrentHero().getMaxHealth();
+    }
+
+    private HurtLevel getCurrentHeroHurtLevel() {
+        return heroService.getCurrentHero().getHurtLevel();
+    }
+
+    private short getCurrentHeroHp() {
+        return heroService.getCurrentHero().getHealth();
+    }
+
+    private float getCurrentHeroExperience() {
+        return heroService.getCurrentHero().getExperience();
+    }
+
+    private short getCurrentHeroLevel() {
+        return heroService.getCurrentHero().getLevel();
+    }
+
+    private HeroType getCurrentHeroType() {
+        return heroService.getCurrentHero().getType();
+    }
+
+    private String getCurrentHeroName() {
+        return heroService.getCurrentHero().getHeroName();
+    }
+
+    public World getCurrentWorld() {
+        return worldMapper.toEntity(worldService.getCurrentWorld());
+    }
+
+    public void setCurrentWorld(WorldDTO newWorld) {
+        worldService.setCurrentWorld(newWorld);
+    }
+
+    public WorldDTO setCurrentWorld(World world) {
+        return worldService.setCurrentWorld(worldService.save(worldMapper.toDto(world)));
     }
 }

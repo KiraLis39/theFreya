@@ -4,11 +4,14 @@ import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
+import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
+import game.freya.gui.panes.sub.templates.WorldCreator;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
@@ -21,16 +24,24 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 
 @Slf4j
-public class NetworkListPane extends JPanel {
+public class NetworkListPane extends WorldCreator {
     private static final int maxElementsDim = 96;
     private final transient FoxCanvas canvas;
     private final transient GameController gameController;
-    private transient BufferedImage snap;
     private final SubPane centerList;
+    private final String[] dot = new String[]{".", "..", "..."};
+    private transient BufferedImage snap;
+    @Getter
+    private String address;
+    @Getter
+    private String password;
+    private int dots = 0;
+    private long was = System.currentTimeMillis();
 
     public NetworkListPane(FoxCanvas canvas, GameController controller) {
         this.canvas = canvas;
@@ -56,10 +67,18 @@ public class NetworkListPane extends JPanel {
             addActionListener(new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    String result = (String) new FOptionPane()
+                    address = (String) new FOptionPane()
                             .buildFOptionPane("Подключиться:", "Адрес сервера:",
                                     FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
-                    log.info("Подключение к серверу по адресу {} ещё не реализовано", result);
+                    if (address.isBlank()) {
+                        return;
+                    }
+                    if (canvas instanceof MenuCanvas mCanvas) {
+                        password = (String) new FOptionPane()
+                                .buildFOptionPane("Подключиться:", "Пароль сервера:",
+                                        FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
+                        mCanvas.connectToWorldAndCloseThatPanel(NetworkListPane.this);
+                    }
                 }
             });
         }}, BorderLayout.SOUTH);
@@ -119,22 +138,76 @@ public class NetworkListPane extends JPanel {
                     }}, BorderLayout.CENTER);
                 }}, BorderLayout.WEST);
 
-                add(new FButton(" CONN ") {{
-                    setBackground(Color.GREEN);
-                    setForeground(Color.WHITE);
-                    setFocusPainted(false);
-                    setMinimumSize(new Dimension(64, getHeight()));
-                    setMaximumSize(new Dimension(96, getHeight()));
-                    setAlignmentY(TOP_ALIGNMENT);
+                add(new JPanel(new BorderLayout(1, 1)) {{
+                    setOpaque(false);
+                    setFocusable(false);
+                    setDoubleBuffered(false);
+                    setIgnoreRepaint(true);
 
-                    addActionListener(new AbstractAction() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            if (canvas instanceof MenuCanvas mCanvas) {
-                                mCanvas.getOrCreateHeroForSelectedWorldAndCloseThat(world.getUid());
-                            }
+                    add(new JPanel(new BorderLayout(1, 1)) {
+                        {
+                            setOpaque(false);
+                            setFocusable(false);
+                            setDoubleBuffered(false);
+                            setIgnoreRepaint(true);
+                            add(new FButton() {
+                                @Override
+                                public void paintComponent(Graphics g) {
+                                    super.paintComponent(g);
+                                    Graphics2D g2D = (Graphics2D) g;
+                                    g2D.setColor(getForeground());
+                                    g2D.setFont(Constants.GAME_FONT_01);
+                                    g2D.drawString("X",
+                                            (int) (getWidth() / 2d - Constants.FFB.getStringBounds(g2D, "X").getWidth() / 2d),
+                                            getHeight() / 2 + 4);
+                                    g2D.dispose();
+                                }
+
+                                {
+                                    setBackground(Color.RED.darker().darker());
+                                    setForeground(Color.PINK.brighter());
+                                    setFocusPainted(false);
+                                    setIgnoreRepaint(true);
+                                    setMinimumSize(new Dimension(24, 24));
+                                    setPreferredSize(new Dimension(24, 24));
+                                    setMaximumSize(new Dimension(24, 24));
+                                    setAlignmentY(TOP_ALIGNMENT);
+
+                                    addActionListener(new AbstractAction() {
+                                        @Override
+                                        public void actionPerformed(ActionEvent e) {
+                                            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
+                                                    "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
+                                                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+                                                    && canvas instanceof MenuCanvas mCanvas
+                                            ) {
+                                                mCanvas.deleteExistsWorldAndCloseThatPanel(world.getUid());
+                                                reloadNet(canvas);
+                                                NetworkListPane.this.revalidate();
+                                            }
+                                        }
+                                    });
+                                }
+                            }, BorderLayout.NORTH);
                         }
-                    });
+                    }, BorderLayout.CENTER);
+                    add(new FButton(" CONN ") {{
+                        setBackground(Color.GREEN);
+                        setForeground(Color.WHITE);
+                        setFocusPainted(false);
+                        setMinimumSize(new Dimension(64, getHeight()));
+                        setMaximumSize(new Dimension(96, getHeight()));
+                        setAlignmentY(TOP_ALIGNMENT);
+
+                        addActionListener(new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                if (canvas instanceof MenuCanvas mCanvas) {
+                                    mCanvas.getOrCreateHeroForSelectedWorldAndCloseThat(world.getUid());
+                                }
+                            }
+                        });
+                    }}, BorderLayout.EAST);
                 }}, BorderLayout.EAST);
             }});
 
@@ -155,6 +228,20 @@ public class NetworkListPane extends JPanel {
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }
         g.drawImage(snap, 0, 0, getWidth(), getHeight(), this);
+
+        if (canvas.isConnectionAwait()) {
+            g.setFont(Constants.GAME_FONT_03);
+            g.drawString("- CONNECTION -",
+                    (int) (getWidth() / 2d - Constants.FFB.getHalfWidthOfString(g, "- CONNECTION -")), getHeight() / 2);
+            if (System.currentTimeMillis() - was > 1000) {
+                was = System.currentTimeMillis();
+                dots++;
+                if (dots > 2) {
+                    dots = 0;
+                }
+            }
+            g.drawString(dot[dots], (int) (getWidth() / 2d - Constants.FFB.getHalfWidthOfString(g, dot[dots])), getHeight() / 2 + 16);
+        }
     }
 
     @Override
@@ -166,5 +253,25 @@ public class NetworkListPane extends JPanel {
             reloadNet(canvas);
         }
         super.setVisible(isVisible);
+    }
+
+    @Override
+    public String getWorldName() {
+        return null;
+    }
+
+    @Override
+    public HardnessLevel getHardnessLevel() {
+        return null;
+    }
+
+    @Override
+    public boolean isNetAvailable() {
+        return false;
+    }
+
+    @Override
+    public int getNetPasswordHash() {
+        return 0;
     }
 }
