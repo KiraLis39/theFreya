@@ -34,7 +34,7 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
 
         add(new SubPane("Звук") {{
             add(new SubPane("◑") {{

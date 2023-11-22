@@ -8,6 +8,7 @@ import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
 import lombok.Getter;
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
@@ -103,11 +103,11 @@ public class HeroCreatingPane extends JPanel {
                 }});
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Основной цвет") {{
-                    add(new JButton("choose"));
+                    add(new FButton("choose"));
                 }});
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Дополнительный цвет") {{
-                    add(new JButton("choose"));
+                    add(new FButton("choose"));
                 }});
             }});
 
@@ -122,9 +122,8 @@ public class HeroCreatingPane extends JPanel {
                 setBackground(new Color(0, 0, 0, 0));
                 setDoubleBuffered(false);
 
-                add(new JButton("Готово", null) {{
-                    setBackground(Color.DARK_GRAY);
-                    setForeground(Color.WHITE);
+                add(new FButton("Готово") {{
+                    setBackground(Color.GRAY);
                     setFocusPainted(false);
                     setDoubleBuffered(false);
                     addActionListener(new AbstractAction() {

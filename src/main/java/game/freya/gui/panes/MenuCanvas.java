@@ -50,6 +50,7 @@ public class MenuCanvas extends FoxCanvas {
 
         setSize(parentFrame.getLayeredPane().getSize());
         setBackground(Color.DARK_GRAY.darker());
+        setIgnoreRepaint(true);
         setFocusable(false);
 
         addMouseListener(this);
@@ -77,8 +78,6 @@ public class MenuCanvas extends FoxCanvas {
                     public void actionPerformed(ActionEvent e) {
                         if (isVisible()) {
                             onExitBack(MenuCanvas.this);
-                        } else {
-                            Constants.setPaused(!Constants.isPaused());
                         }
                     }
                 });

@@ -36,7 +36,7 @@ public class VideoSettingsPane extends JPanel {
 
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.035d), 64));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
         // left panel:

@@ -57,10 +57,11 @@ public class GameCanvas extends FoxCanvas {
         this.gameController = gameController;
         this.uiHandler = uiHandler;
         this.parentFrame = parentFrame;
-//        this.worldDTO = worldDto;
 
         setSize(parentFrame.getLayeredPane().getSize());
         setBackground(Color.BLACK);
+        setIgnoreRepaint(true);
+//        setFocusable(false);
 
         addMouseMotionListener(this);
         addMouseWheelListener(this);
@@ -72,10 +73,11 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void setInAc() {
-        final String frameName = "game_canvas";
+        final String frameName = "mainFrame";
+//        final String frameName = "game_canvas";
 
         // KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_MASK)
-        Constants.INPUT_ACTION.add(frameName, (JComponent) getParent());
+//        Constants.INPUT_ACTION.add(frameName, parentFrame.getRootPane());
 
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "backFunction",
                 Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
@@ -139,10 +141,12 @@ public class GameCanvas extends FoxCanvas {
 
                         // not-pause events and changes:
                         if (Constants.isPaused()) {
-                            drawPauseMode(g2D);
+                            if (!isOptionsMenuSetVisible()) {
+                                drawPauseMode(g2D);
+                            }
 
                             if (isOptionsMenuSetVisible()) {
-                                showOptions(g2D);
+                                showOptions(g2D); // 285 строка?
                                 addExitVariantToOptionsMenuFix(g2D);
                             }
                         } else {
@@ -320,7 +324,7 @@ public class GameCanvas extends FoxCanvas {
 
     private void drawUI(Graphics2D g2D) {
         if (isShadowBackNeeds()) {
-            g2D.setColor(new Color(0, 0, 0, 32));
+            g2D.setColor(new Color(0, 0, 0, 223));
             g2D.fillRect(0, 0, getWidth(), getHeight());
         }
         uiHandler.drawUI(this, g2D);

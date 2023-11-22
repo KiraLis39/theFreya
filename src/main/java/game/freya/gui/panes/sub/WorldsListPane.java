@@ -7,6 +7,7 @@ import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
@@ -17,7 +18,6 @@ import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.border.EmptyBorder;
@@ -169,7 +169,7 @@ public class WorldsListPane extends JPanel {
                     setBackground(new Color(0, 0, 0, 0));
                     setFocusable(false);
                     setIgnoreRepaint(true);
-                    add(new JButton() {
+                    add(new FButton() {
                         @Override
                         public void paintComponent(Graphics g) {
                             super.paintComponent(g);
@@ -209,7 +209,7 @@ public class WorldsListPane extends JPanel {
                         }
                     });
 
-                    add(new JButton(" PLAY ") {{
+                    add(new FButton(" PLAY ") {{
                         setBackground(Color.BLUE.darker().darker().darker());
                         setForeground(Color.WHITE);
                         setFocusPainted(false);

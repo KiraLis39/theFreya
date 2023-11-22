@@ -253,7 +253,7 @@ public final class UIHandler {
 
         // отображаем себя на миникарте:
         AffineTransform grTrMem = m2D.getTransform();
-        m2D.rotate(ONE_TURN_PI * cVector.ordinal(), minimapImage.getWidth() / 2d, minimapImage.getHeight() / 2d);
+        m2D.rotate(ONE_TURN_PI * cVector.ordinal(), minimapImage.getWidth() / 2d, minimapImage.getHeight() / 2d); // Math.toRadians(90)
         m2D.drawImage((Image) Constants.CACHE.get("green_arrow"),
                 minimapImage.getWidth() / 2 - 32, minimapImage.getHeight() / 2 - 32,
                 64, 64, null);

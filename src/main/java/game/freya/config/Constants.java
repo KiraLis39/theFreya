@@ -107,6 +107,7 @@ public final class Constants {
     private static final int SHIFT_FPS_ALLOWED = 2; // допустимый разброс FPS.
     private static final int MAX_FPS_ALLOWED = 120; // больше этой частоты нет смысла гнать точно.
     private static final AtomicInteger realFreshRate = new AtomicInteger(0);
+    private static final AtomicLong delay = new AtomicLong(30L);
     @Getter
     private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.85f);
     @Getter
@@ -135,7 +136,6 @@ public final class Constants {
     private static boolean isShowStartLogo = false;
     @Getter
     private static volatile int fpsLimit;
-    private static final AtomicLong delay = new AtomicLong(30L);
     @Getter
     private static String worldsImagesDir = "./worlds/img/";
 

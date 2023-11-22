@@ -6,6 +6,7 @@ import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.CheckBokz;
+import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.templates.WorldCreator;
 import lombok.Getter;
@@ -14,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPasswordField;
 import javax.swing.JSeparator;
@@ -127,9 +127,8 @@ public class WorldCreatingPane extends WorldCreator {
 
         add(new SubPane("Готово") {
             {
-                add(new JButton("Готово", null) {{
-                    setBackground(Color.DARK_GRAY);
-                    setForeground(Color.WHITE);
+                add(new FButton("Готово", null) {{
+                    setBackground(Color.GRAY);
                     setPreferredSize(new Dimension(256, 32));
                     addActionListener(new AbstractAction() {
                         @Override

@@ -6,6 +6,7 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
@@ -14,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
@@ -82,7 +82,7 @@ public class HeroesListPane extends JPanel {
                     setFocusable(false);
                     setIgnoreRepaint(true);
 
-                    add(new JButton() {
+                    add(new FButton() {
                         @Override
                         public void paintComponent(Graphics g) {
                             super.paintComponent(g);
@@ -122,7 +122,7 @@ public class HeroesListPane extends JPanel {
                         }
                     });
 
-                    add(new JButton(" PLAY ") {{
+                    add(new FButton(" PLAY ") {{
                         setBackground(Color.BLUE.darker().darker().darker());
                         setForeground(Color.WHITE);
                         setFocusPainted(false);

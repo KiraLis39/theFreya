@@ -1,10 +1,12 @@
 package game.freya.gui.panes.sub;
 
+import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
@@ -29,6 +30,7 @@ public class NetworkListPane extends JPanel {
     private final transient FoxCanvas canvas;
     private final transient GameController gameController;
     private transient BufferedImage snap;
+    private final SubPane centerList;
 
     public NetworkListPane(FoxCanvas canvas, GameController controller) {
         this.canvas = canvas;
@@ -41,8 +43,26 @@ public class NetworkListPane extends JPanel {
 
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setLayout(new BorderLayout(1, 1));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));
+
+        centerList = new SubPane("Сетевые миры:") {{
+            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        }};
+        add(centerList, BorderLayout.CENTER);
+
+        add(new FButton("Новое подключение", null) {{
+            setBackground(Color.MAGENTA.darker().darker());
+            addActionListener(new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String result = (String) new FOptionPane()
+                            .buildFOptionPane("Подключиться:", "Адрес сервера:",
+                                    FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
+                    log.info("Подключение к серверу по адресу {} ещё не реализовано", result);
+                }
+            });
+        }}, BorderLayout.SOUTH);
 
         if (isVisible()) {
             reloadNet(canvas);
@@ -50,12 +70,13 @@ public class NetworkListPane extends JPanel {
     }
 
     private void reloadNet(FoxCanvas canvas) {
-        NetworkListPane.this.removeAll();
+        centerList.removeAll();
+        centerList.add(Box.createVerticalStrut(9));
 
         int i = 0;
         for (WorldDTO world : gameController.findAllWorldsByNetworkAvailable(true)) {
             int k = ++i;
-            add(new SubPane("Net world 0" + k) {{
+            centerList.add(new SubPane("Net world 0" + k) {{
                 add(new JPanel() {{
                     setOpaque(false);
                     setFocusable(false);
@@ -98,8 +119,8 @@ public class NetworkListPane extends JPanel {
                     }}, BorderLayout.CENTER);
                 }}, BorderLayout.WEST);
 
-                add(new JButton(" CONN ") {{
-                    setBackground(Color.BLUE.darker().darker().darker());
+                add(new FButton(" CONN ") {{
+                    setBackground(Color.GREEN);
                     setForeground(Color.WHITE);
                     setFocusPainted(false);
                     setMinimumSize(new Dimension(64, getHeight()));
@@ -117,10 +138,10 @@ public class NetworkListPane extends JPanel {
                 }}, BorderLayout.EAST);
             }});
 
-            add(Box.createVerticalStrut(6));
+            centerList.add(Box.createVerticalStrut(6));
         }
 
-        add(Box.createVerticalStrut(canvas.getHeight()));
+        centerList.add(Box.createVerticalStrut(canvas.getHeight()));
 
         NetworkListPane.this.revalidate();
     }

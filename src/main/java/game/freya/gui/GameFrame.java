@@ -76,6 +76,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.setLayout(null);
         frame.setCursor(Constants.getDefaultCursor());
+        frame.setIgnoreRepaint(true);
 
         // настройка фокуса для работы горячих клавиш:
         frame.setFocusable(false);
