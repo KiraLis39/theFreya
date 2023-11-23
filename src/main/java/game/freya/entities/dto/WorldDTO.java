@@ -7,7 +7,7 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iWorld;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
-import game.freya.items.interfaces.iEntity;
+import game.freya.items.interfaces.iEnvironment;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,7 +33,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     private static final Random r = new Random(100);
     @Getter
     @Builder.Default
-    private final Set<iEntity> entities = HashSet.newHashSet(30);
+    private final Set<iEnvironment> environments = HashSet.newHashSet(30);
     @Getter
     private UUID uid;
     @Setter
@@ -105,29 +105,37 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     }
 
     private BufferedImage repaintMap(Rectangle visibleRect) {
+        final Color textColor = new Color(1, 158, 217, 191);
+        final Color linesColor = new Color(0, 105, 210, 64);
+        final Color backColor = new Color(52, 2, 52);
+        final String scobe = ")";
+
         // re-draw map:
         Graphics2D m2D = (Graphics2D) this.gameMap.getGraphics();
         m2D.clip(visibleRect);
         Constants.RENDER.setRender(m2D, FoxRender.RENDER.MED,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
-        m2D.setColor(new Color(52, 2, 52));
+        m2D.setColor(backColor);
         m2D.fillRect(0, 0, gameMap.getWidth(), gameMap.getHeight());
 
         int n = 1;
         m2D.setStroke(new BasicStroke(2f));
         for (int i = Constants.MAP_CELL_DIM; i <= gameMap.getWidth(); i += Constants.MAP_CELL_DIM) {
 
+            // draw numbers of rows and columns:
             if (Constants.isDebugInfoVisible()) {
-                m2D.setColor(new Color(1, 158, 217, 191));
-                m2D.drawString(n + ")", i - 26, 12);
-                m2D.drawString(n + ")", i - 34, gameMap.getHeight() - 12);
+                String ns = n + scobe;
+                m2D.setColor(textColor);
+                m2D.drawString(ns, i - 26, 12);
+                m2D.drawString(ns, i - 34, gameMap.getHeight() - 12);
 
-                m2D.drawString(n + ")", 6, i - 16);
-                m2D.drawString(n + ")", gameMap.getWidth() - 24, i - 26);
+                m2D.drawString(ns, 6, i - 16);
+                m2D.drawString(ns, gameMap.getWidth() - 24, i - 26);
             }
 
-            m2D.setColor(new Color(0, 105, 210, 64));
+            // draw map grid cells:
+            m2D.setColor(linesColor);
             m2D.drawLine(i, 0, i, gameMap.getHeight());
             m2D.drawLine(0, i, gameMap.getWidth(), i);
 
@@ -142,17 +150,23 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         }
 
         // рисуем окружение на карте:
-        drawEnvironment(m2D, visibleRect);
+        drawEnvironments(m2D, visibleRect);
 
         // рисуем игроков из контроллера на карте:
         gameController.drawHeroes(m2D, visibleRect, canvas);
 
         m2D.dispose();
+
+        // return drown result:
         return this.gameMap;
     }
 
-    private void drawEnvironment(Graphics2D g2D, Rectangle visibleRect) {
-
+    private void drawEnvironments(Graphics2D g2D, Rectangle visibleRect) {
+        for (iEnvironment environment : environments) {
+            if (visibleRect.contains(environment.getPosition())) {
+                environment.draw(g2D);
+            }
+        }
     }
 
     public Image getIcon() {

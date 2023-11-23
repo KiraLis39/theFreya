@@ -24,13 +24,18 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
+import java.awt.BufferCapabilities;
 import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.Shape;
 import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.time.Duration;
@@ -44,36 +49,41 @@ import static javax.swing.JLayeredPane.PALETTE_LAYER;
 @Slf4j
 // iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, KeyListener, Runnable
 public abstract class FoxCanvas extends Canvas implements iCanvas {
-    private static final short rightShift = 21;
+    public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 333;
+
     private static final AtomicInteger frames = new AtomicInteger(0);
+    private static final short rightShift = 21;
     private static long timeStamp = System.currentTimeMillis();
+    @Getter
+    private static byte drawErrorCount = 0;
 
     private final String name;
     private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
     private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
     private final String pausedString, downInfoString1, downInfoString2;
-
-    private transient VolatileImage backImage;
-    private transient Rectangle avatarRect;
+    private final transient GameController gameController;
+    private final transient JLayeredPane parentLayers;
+    private final transient UIHandler uiHandler;
+    private transient Thread secondThread;
+    private transient Rectangle2D viewPort;
     private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
+    private transient Rectangle avatarRect;
+    private transient BufferedImage pAvatar;
+    private transient VolatileImage backImage;
     private transient Polygon leftGrayMenuPoly;
     private transient Polygon headerPoly;
     private transient Duration duration;
     private transient Area area;
-    private transient BufferedImage pAvatar;
-    private transient GameController gameController;
-    private transient JLayeredPane parentLayers;
     private transient JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane,
             heroesListPane, networkListPane, networkCreatingPane;
-
     private float downShift = 0;
-
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
     private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false, isConnectionAwait = false;
 
-    protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller, JLayeredPane layeredPane) {
+    protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller, JLayeredPane layeredPane, UIHandler uiHandler) {
         super(gConf);
         this.name = name;
+        this.uiHandler = uiHandler;
         this.parentLayers = layeredPane;
         this.gameController = controller;
 
@@ -98,59 +108,128 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         frames.incrementAndGet();
     }
 
+    public void drawDebugInfo(Graphics2D g2D) {
+        this.drawDebugInfo(g2D, null);
+    }
+
     public void drawDebugInfo(Graphics2D g2D, String worldTitle) {
         if (Constants.isDebugInfoVisible()) {
-            if (worldTitle != null) {
-                String pass = LocalDateTime.of(0, 1, (int) (duration.toDaysPart() + 1),
-                                duration.toHoursPart(), duration.toMinutesPart(), 0, 0)
-                        .format(Constants.DATE_FORMAT_2);
-
-                g2D.setFont(Constants.DEBUG_FONT);
-                g2D.setColor(Color.BLACK);
-                g2D.drawString("Мир: %s".formatted(worldTitle), rightShift - 1f, downShift + 22);
-                g2D.drawString("В игре: %s".formatted(pass), rightShift - 1f, downShift + 43);
-
-                g2D.setColor(Color.GRAY);
-                g2D.drawString("Мир: %s".formatted(worldTitle), rightShift, downShift + 21);
-                g2D.drawString("В игре: %s".formatted(pass), rightShift, downShift + 42);
-            }
-
-            if (Constants.isPaused()) {
-                // draw menus area border:
-                if (area == null || area.getBounds().getHeight() != getBounds().getHeight()) {
-                    area = new Area(getBounds());
-                    area.subtract(new Area(this.leftGrayMenuPoly));
-                }
-                g2D.setColor(Color.RED);
-                g2D.draw(area);
-            }
+            drawDebug(g2D, worldTitle);
         }
 
         if (Constants.isFpsInfoVisible()) {
-            // FPS check:
-            incrementFramesCounter();
-            if (System.currentTimeMillis() >= timeStamp + 1000L) {
-                resetFpsCounter();
-            }
-
-            if (downShift == 0) {
-                downShift = getHeight() * 0.14f;
-            }
-            g2D.setFont(Constants.DEBUG_FONT);
-            g2D.setColor(Color.BLACK);
-            g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-                    .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
-                            Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
-
-            if (Constants.isLowFpsAlarm()) {
-                g2D.setColor(Color.RED);
-            } else {
-                g2D.setColor(Color.GRAY);
-            }
-            g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-                    .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
-                            Constants.getRealFreshRate()), rightShift, downShift);
+            drawFps(g2D);
         }
+    }
+
+    private void drawDebug(Graphics2D g2D, String worldTitle) {
+        g2D.setFont(Constants.DEBUG_FONT);
+
+        if (worldTitle != null) {
+            String pass = duration != null ? LocalDateTime.of(0, 1, (int) (duration.toDaysPart() + 1),
+                            duration.toHoursPart(), duration.toMinutesPart(), 0, 0)
+                    .format(Constants.DATE_FORMAT_2) : "=na=";
+
+            g2D.setColor(Color.BLACK);
+            g2D.drawString("Мир: %s".formatted(worldTitle), rightShift - 1f, downShift + 22);
+            g2D.drawString("В игре: %s".formatted(pass), rightShift - 1f, downShift + 43);
+
+            g2D.setColor(Color.GRAY);
+            g2D.drawString("Мир: %s".formatted(worldTitle), rightShift, downShift + 21);
+            g2D.drawString("В игре: %s".formatted(pass), rightShift, downShift + 42);
+        }
+
+        final int leftShift = 340;
+        g2D.setColor(Color.GRAY);
+
+        // graphics info:
+        BufferCapabilities gCap = getBufferStrategy().getCapabilities();
+        g2D.drawString("Front accelerated: " + gCap.getFrontBufferCapabilities().isAccelerated(),
+                getWidth() - leftShift, getHeight() - 350);
+        g2D.drawString("Front is true volatile: " + gCap.getFrontBufferCapabilities().isTrueVolatile(),
+                getWidth() - leftShift, getHeight() - 330);
+        g2D.drawString("Back accelerated: " + gCap.getBackBufferCapabilities().isAccelerated(),
+                getWidth() - leftShift, getHeight() - 305);
+        g2D.drawString("Back is true volatile: " + gCap.getBackBufferCapabilities().isTrueVolatile(),
+                getWidth() - leftShift, getHeight() - 285);
+        g2D.drawString("Fullscreen required: " + gCap.isFullScreenRequired(), getWidth() - leftShift, getHeight() - 260);
+        g2D.drawString("Multi-buffer available: " + gCap.isMultiBufferAvailable(), getWidth() - leftShift, getHeight() - 240);
+        g2D.drawString("Is page flipping: " + gCap.isPageFlipping(), getWidth() - leftShift, getHeight() - 220);
+
+        // server info:
+        g2D.setColor(gameController.isServerIsOpen() ? Color.GREEN : Color.DARK_GRAY);
+        g2D.drawString("Server open: " + gameController.isServerIsOpen(), getWidth() - leftShift, getHeight() - 190);
+        g2D.drawString("Connected players: " + gameController.getConnectedPlayersCount(), getWidth() - leftShift, getHeight() - 170);
+
+        // hero info:
+        Point2D.Double playerPos = gameController.getCurrentHeroPosition();
+        if (playerPos != null) {
+            Shape playerShape = new Ellipse2D.Double(
+                    (int) playerPos.x - Constants.MAP_CELL_DIM / 2d,
+                    (int) playerPos.y - Constants.MAP_CELL_DIM / 2d,
+                    Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
+            g2D.setColor(Color.GRAY);
+            g2D.drawString("Hero pos: " + playerShape.getBounds2D().getCenterX() + "x" + playerShape.getBounds2D().getCenterY(),
+                    getWidth() - leftShift, getHeight() - 140);
+        }
+
+        g2D.drawString("Hero speed: " + gameController.getCurrentHeroSpeed(), getWidth() - leftShift, getHeight() - 120);
+
+        // gameplay info:
+        if (Constants.isFpsInfoVisible()) {
+            g2D.setColor(Constants.isLowFpsAlarm() ? Color.RED : Color.GRAY);
+            g2D.drawString("Delay fps: " + Constants.getDelay(), getWidth() - leftShift, getHeight() - 90);
+            g2D.setColor(Color.GRAY);
+        }
+
+        if (gameController.getCurrentWorldMap() != null) {
+            g2D.drawString("GameMap WxH: " + gameController.getCurrentWorldMap().getWidth() + "x" + gameController.getCurrentWorldMap().getHeight(),
+                    getWidth() - leftShift, getHeight() - 70);
+        }
+
+        g2D.drawString("Canvas XxY-WxH: " + getBounds().x + "x" + getBounds().y + "-"
+                + getBounds().width + "x" + getBounds().height, getWidth() - leftShift, getHeight() - 50);
+
+        if (viewPort != null) {
+            g2D.drawString("ViewPort XxY-WxH: " + viewPort.getBounds().x + "x" + viewPort.getBounds().y + "-"
+                    + viewPort.getBounds().width + "x" + viewPort.getBounds().height, getWidth() - leftShift, getHeight() - 30);
+        }
+
+        if (Constants.isPaused()) {
+            // draw menus area border:
+            if (area == null || area.getBounds().getHeight() != getBounds().getHeight()) {
+                area = new Area(getBounds());
+                area.subtract(new Area(this.leftGrayMenuPoly));
+            }
+            g2D.setColor(Color.RED);
+            g2D.draw(area);
+        }
+    }
+
+    private void drawFps(Graphics2D g2D) {
+        // FPS check:
+        incrementFramesCounter();
+        if (System.currentTimeMillis() >= timeStamp + 1000L) {
+            resetFpsCounter();
+        }
+
+        if (downShift == 0) {
+            downShift = getHeight() * 0.14f;
+        }
+        g2D.setFont(Constants.DEBUG_FONT);
+        g2D.setColor(Color.BLACK);
+        g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
+                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
+                        Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
+
+        if (Constants.isLowFpsAlarm()) {
+            g2D.setColor(Color.RED);
+        } else {
+            g2D.setColor(Color.GRAY);
+        }
+        g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
+                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
+                        Constants.getRealFreshRate()), rightShift, downShift);
     }
 
     private void resetFpsCounter() {
@@ -238,6 +317,17 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x - 1, fourthButtonRect.y + 17);
         g2D.setColor(fourthButtonOver ? Color.GREEN : Color.WHITE);
         g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x, fourthButtonRect.y + 18);
+
+        addExitVariantToOptionsMenuFix(g2D);
+    }
+
+    private void addExitVariantToOptionsMenuFix(Graphics2D g2D) {
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(isOptionsMenuSetVisible()
+                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
+        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(isOptionsMenuSetVisible()
+                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
     public void drawLeftGrayPoly(Graphics2D g2D) {
@@ -339,7 +429,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 getAvatarRect().height + 24);
     }
 
-    public void recalculateSettingsPanes() {
+    public void recreateSubPanes() {
         // удаляем старые панели с фрейма:
         dropOldPanesFromLayer();
 
@@ -369,7 +459,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
             parentLayers.add(getNetworkCreatingPane(), PALETTE_LAYER);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
-            recalculateSettingsPanes();
+            recreateSubPanes();
         }
     }
 
@@ -424,5 +514,31 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма networkCreatingPane, которой там нет.");
         }
+    }
+
+    protected void drawUI(Graphics2D g2D) {
+        if (isShadowBackNeeds()) {
+            g2D.setColor(new Color(0, 0, 0, 223));
+            g2D.fillRect(0, 0, getWidth(), getHeight());
+        }
+        uiHandler.drawUI(this, g2D);
+    }
+
+    public void decreaseDrawErrorCount() {
+        drawErrorCount--;
+    }
+
+    public void increaseDrawErrorCount() {
+        drawErrorCount++;
+    }
+
+    public void setSecondThread(String threadName, Thread secondThread) {
+        if (this.secondThread != null && this.secondThread.isAlive()) {
+            this.secondThread.interrupt();
+        }
+
+        this.secondThread = secondThread;
+        this.secondThread.setName(threadName);
+        this.secondThread.setDaemon(true);
     }
 }

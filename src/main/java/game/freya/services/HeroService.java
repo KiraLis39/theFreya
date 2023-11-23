@@ -19,7 +19,6 @@ import java.util.UUID;
 @Slf4j
 @AllArgsConstructor
 @Service
-@Transactional
 public class HeroService {
     private final PlayerService playerService;
     private final HeroRepository heroRepository;
@@ -32,6 +31,7 @@ public class HeroService {
         return heroRepository.findByUid(heroId);
     }
 
+    @Transactional
     public Hero save(Hero hero) {
         return heroRepository.save(hero);
     }
@@ -41,10 +41,12 @@ public class HeroService {
     }
 
     @Modifying
+    @Transactional
     public void deleteHeroByUuid(UUID heroUid) {
         heroRepository.deleteByUid(heroUid);
     }
 
+    @Transactional(readOnly = true)
     public List<HeroDTO> findAllByWorldUuid(UUID uid) {
         return heroMapper.toDtos(heroRepository.findAllByWorldUid(uid));
     }
@@ -63,16 +65,19 @@ public class HeroService {
         return getCurrentHero().equals(hero);
     }
 
+    @Transactional
     public void saveCurrentHero() {
         heroRepository.save(heroMapper.toEntity(getCurrentHero()));
     }
 
+    @Transactional(readOnly = true)
     public void offlineHero() {
         HeroDTO cHero = getCurrentHero();
         cHero.setOnline(false);
         save(cHero);
     }
 
+    @Transactional(readOnly = true)
     public Optional<Hero> findHeroByNameAndWorld(String heroName, UUID worldUid) {
         return heroRepository.findByHeroNameAndWorldUid(heroName, worldUid);
     }

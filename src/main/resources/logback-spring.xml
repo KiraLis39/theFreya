@@ -17,7 +17,9 @@
     <property name="log.totalSizeCap" value="1GB"/>
     <property name="log.oldPattern" value="[App: ${app_name}, v.${app_version}]"/>
     <property name="log.colorPattern"
-              value="%magenta(%d{dd.MM.yy HH:mm:ss.SSS}) %highlight([%level]) %red(th:%thread) %green(%logger{16})\\_%boldCyan(.%M\\(\\))\\_%(:%L) %1() %yellow(%msg%n)"/>
+              value="%magenta(%d{dd.MM.yy HH:mm:ss.SSS}) %highlight([%level]) %red(th:%thread) %green(%logger{64})\\_%boldCyan(.%M\\(\\))\\_%(:%L) %1() %yellow(%msg%n)"/>
+    <property name="log.filePattern"
+              value="%d{dd MMMM HH:mm:ss.SSS} [%level] th:%thread %logger{16}.%M\\(\\)\\_%(:%L) %1() %msg%n"/>
 
     <!-- APPENDERS -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -25,18 +27,15 @@
             <fileNamePattern>${log.path}/trace.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>${log.maxHistory}</maxHistory>
         </rollingPolicy>
-        <append>true</append>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <layout>
+            <pattern>${log.filePattern}</pattern>
+        </layout>
+        <append>true</append>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
             <onMatch>DENY</onMatch>
         </filter>
-    </appender>
-
-    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
-        <queueSize>64</queueSize>
-        <maxFlushTime>10000</maxFlushTime>
-        <appender-ref ref="FILE"/>
     </appender>
 
     <appender name="ERRORS" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -48,11 +47,20 @@
         </rollingPolicy>
         <append>true</append>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <layout>
+            <pattern>${log.filePattern}</pattern>
+        </layout>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>64</queueSize>
+        <maxFlushTime>10000</maxFlushTime>
+        <appender-ref ref="FILE"/>
     </appender>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">

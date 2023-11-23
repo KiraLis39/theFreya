@@ -108,8 +108,9 @@ public class VideoSettingsPane extends JPanel {
                 add(new ZLabel("Размер мультибуфера", null) {{
                     setVerticalAlignment(CENTER);
                 }});
-                add(new JSpinner(new SpinnerNumberModel(2, 2, 3, 1)) {{
-                    setValue(Constants.getUserConfig().getBufferedDeep());
+                add(new JSpinner(new SpinnerNumberModel(
+                        Constants.getUserConfig().getBufferedDeep(), 1, Constants.getUserConfig().getMaxBufferedDeep(), 1)
+                ) {{
                     setBorder(null);
                     setFocusable(false);
                     addChangeListener(e -> Constants.getUserConfig().setBufferedDeep(Integer.parseInt(getValue().toString())));

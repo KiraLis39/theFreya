@@ -23,7 +23,6 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class PlayerService {
     private final PlayersRepository playersRepository;
     private final PlayerMapper playerMapper;
@@ -31,6 +30,7 @@ public class PlayerService {
     @Getter
     private PlayerDTO currentPlayer;
 
+    @Transactional
     public void setCurrentPlayer(Player player) {
         this.currentPlayer = playerMapper.toDto(player);
     }
@@ -52,6 +52,7 @@ public class PlayerService {
         return playersRepository.findByEmailIgnoreCase(userMail);
     }
 
+    @Transactional
     public void updateCurrentPlayer() {
         Optional<Player> playerToUpdate = playersRepository.findByUid(currentPlayer.getUid());
         if (playerToUpdate.isEmpty()) {
@@ -62,6 +63,7 @@ public class PlayerService {
         save(pl);
     }
 
+    @Transactional
     public Player createPlayer() {
         PlayerDTO newPlayer = PlayerDTO.builder()
                 .uid(Constants.getUserConfig().getUserId())

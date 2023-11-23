@@ -31,6 +31,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
+import java.net.ConnectException;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Slf4j
@@ -38,17 +40,14 @@ import java.util.UUID;
 public class MenuCanvas extends FoxCanvas {
     private final transient GameController gameController;
     private final transient JFrame parentFrame;
-    private final transient UIHandler uiHandler;
     private transient Thread resizeThread = null;
-    private boolean isMenuActive, initialized = false;
+    private volatile boolean isMenuActive, initialized = false;
     private double parentHeightMemory = 0;
-    private byte drawErrorCount = 0;
 
     public MenuCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
-        super(Constants.getGraphicsConfiguration(), "MenuCanvas", gameController, parentFrame.getLayeredPane());
+        super(Constants.getGraphicsConfiguration(), "MenuCanvas", gameController, parentFrame.getLayeredPane(), uiHandler);
         this.gameController = gameController;
         this.parentFrame = parentFrame;
-        this.uiHandler = uiHandler;
 
         setSize(parentFrame.getLayeredPane().getSize());
         setBackground(Color.DARK_GRAY.darker());
@@ -61,13 +60,39 @@ public class MenuCanvas extends FoxCanvas {
 //        addMouseWheelListener(this); // если понадобится - можно включить.
 
         new Thread(this).start();
+
+        // запуск вспомогательного потока процессов игры:
+        setSecondThread("Menu second thread", new Thread(() -> {
+            if (!initialized) {
+                init();
+            }
+
+            while (isMenuActive && !getSecondThread().isInterrupted()) {
+                // если изменился размер фрейма:
+                if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
+                    log.debug("Resizing by parent frame...");
+                    onResize();
+                    parentHeightMemory = parentFrame.getBounds().getHeight();
+                }
+
+                try {
+                    Thread.sleep(SECOND_THREAD_SLEEP_MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }));
+        getSecondThread().start();
     }
 
     private void init() {
         reloadShapes(this);
         recalculateMenuRectangles();
+        recreateSubPanes();
         inAc();
+
         setVisible(true);
+        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
         this.initialized = true;
     }
 
@@ -84,7 +109,6 @@ public class MenuCanvas extends FoxCanvas {
                     }
                 });
 
-        Constants.INPUT_ACTION.add("menuCanvas", getWorldsListPane());
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "enterNextFunction",
                 KeyEvent.VK_ENTER, 0, new AbstractAction() {
                     @Override
@@ -104,81 +128,82 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void run() {
-        setMenuActive();
+        // ждём пока компонент не станет виден:
+        long timeout = System.currentTimeMillis();
+        while (getParent() == null || !isDisplayable() || !initialized) {
+            Thread.yield();
+            if (System.currentTimeMillis() - timeout > 9_000) {
+                throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
+            }
+        }
 
+        this.isMenuActive = true;
         while (isMenuActive) {
-            if (getParent() == null || !isDisplayable() || Constants.isPaused()) {
+            if (!parentFrame.isActive()) {
                 Thread.yield();
                 continue;
             }
 
-            // если изменился размер фрейма:
-            if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
-                log.debug("Resizing by parent frame...");
-                onResize();
-                parentHeightMemory = parentFrame.getBounds().getHeight();
-            }
-
-            if (!initialized) {
-                init();
-            }
-
-            Graphics2D g2D = null;
             try {
-                if (getBufferStrategy() == null) {
-                    createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-                }
-
-                do {
-                    g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                    Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
-                            Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
-                    drawBackground(g2D);
-                    drawUI(g2D);
-
-                    super.drawDebugInfo(g2D, null);
-                } while (getBufferStrategy().contentsRestored() || getBufferStrategy().contentsLost());
-                getBufferStrategy().show();
+                drawNextFrame();
             } catch (Exception e) {
-                log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-                drawErrorCount++; // при неуспешной отрисовке
-                if (drawErrorCount > 100) {
-                    new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
-                            "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
-                            FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-//                    gameController.exitTheGame(null);
-                    throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
-                }
-            } finally {
-                if (g2D != null) {
-                    g2D.dispose();
-                }
+                throwExceptionAndYield(e);
             }
 
             if (Constants.isFpsLimited()) {
-                try {
-                    Thread.sleep(Constants.getDelay());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                doDrawDelay();
             }
 
             // при успешной отрисовке:
-            if (drawErrorCount > 0) {
-                drawErrorCount--;
+            if (getDrawErrorCount() > 0) {
+                decreaseDrawErrorCount();
             }
         }
         log.info("Thread of Menu canvas is finalized.");
     }
 
-    private void setMenuActive() {
-        Constants.setPaused(false);
-        this.isMenuActive = true;
+    private void drawNextFrame() {
+        do {
+            do {
+                Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
+                Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
+                        Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+
+                drawBackground(g2D);
+                super.drawUI(g2D);
+                super.drawDebugInfo(g2D);
+            } while (getBufferStrategy().contentsRestored());
+            getBufferStrategy().show();
+        } while (getBufferStrategy().contentsLost());
+    }
+
+    private void throwExceptionAndYield(Exception e) {
+        log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+        increaseDrawErrorCount(); // при неуспешной отрисовке
+        if (getDrawErrorCount() > 100) {
+            new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
+                    "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
+                    FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+//                    gameController.exitTheGame(null);
+            throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
+        }
+        Thread.yield();
+    }
+
+    private void doDrawDelay() {
+        try {
+            if (Constants.getDelay() > 1) {
+                Thread.sleep(Constants.getDelay());
+            } else {
+                Thread.yield();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void drawBackground(Graphics2D g2D) {
-        if (getBackImage() == null || validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE || isRevolatileNeeds()) {
+        if (getBackImage() == null || isRevolatileNeeds() || validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE) {
             log.info("Recreating new volatile image by incompatible...");
             setBackImage(createVolatileImage(getWidth(), getHeight()));
             setRevolatileNeeds(false);
@@ -222,10 +247,6 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         g2D.dispose();
-    }
-
-    private void drawUI(Graphics2D g2D) {
-        uiHandler.drawUI(this, g2D);
     }
 
     @Override
@@ -278,7 +299,8 @@ public class MenuCanvas extends FoxCanvas {
             boolean rect8IsVisible = getNetworkListPane() != null && getNetworkListPane().isVisible();
             boolean rect9IsVisible = getNetworkCreatingPane() != null && getNetworkCreatingPane().isVisible();
 
-            recalculateSettingsPanes();
+            // пересоздание доп-панелей:
+            recreateSubPanes();
 
             getAudiosPane().setVisible(rect0IsVisible);
             getVideosPane().setVisible(rect1IsVisible);
@@ -291,6 +313,7 @@ public class MenuCanvas extends FoxCanvas {
             getNetworkListPane().setVisible(rect8IsVisible);
             getNetworkCreatingPane().setVisible(rect9IsVisible);
 
+            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             setRevolatileNeeds(true);
         });
         resizeThread.start();
@@ -353,11 +376,14 @@ public class MenuCanvas extends FoxCanvas {
                     throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, "connect to remote game");
                 }
             }
+        } catch (ConnectException ce) {
+            new FOptionPane().buildFOptionPane("Не доступно:", "Адрес не доступен.", FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            log.warn("Server address connection failed: {}", ExceptionUtils.getFullExceptionMessage(ce));
         } catch (Exception e) {
-            new FOptionPane().buildFOptionPane("Ошибка данных:", ("Ошибка адреса подключения %s: %s. "
-                    + "Верный формат: <host_ip> или <host_ip>:<port> ( 192.168.0.10:13958 )")
-                    .formatted(e.getMessage(), address), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-            log.error("Server aim address to connect not valid: {}", ExceptionUtils.getFullExceptionMessage(e));
+            new FOptionPane().buildFOptionPane("Ошибка данных:", ("Ошибка адреса подключения '%s'.\n"
+                    + "Верно: <host_ip> или <host_ip>:<port> (192.168.0.10:13958)")
+                    .formatted(e.getMessage()), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            log.error("Server aim address to connect error: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 
@@ -406,6 +432,8 @@ public class MenuCanvas extends FoxCanvas {
      * @param hero выбранный герой для игры в выбранном ранее мире.
      */
     public void playWithThisHero(HeroDTO hero) {
+        hero.setLastPlayDate(LocalDateTime.now());
+
         gameController.setCurrentHero(hero); // again?..
         gameController.setCurrentWorld(hero.getWorldUid()); // again?..
         gameController.setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());

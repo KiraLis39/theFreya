@@ -61,7 +61,7 @@ public final class UIHandler {
         } else {
             if (minimapRect == null || heightMemory != canvasRect.getHeight()) {
                 heightMemory = canvasRect.getHeight();
-                minimapRect = new Rectangle(2, canvasRect.height - 260, 256, 256);
+                minimapRect = new Rectangle(2, canvasRect.height - 258, 256, 256);
                 minimapDebugRect = new Rectangle(minimapRect.x + 6, minimapRect.y + 6,
                         minimapRect.width - 12, minimapRect.height - 12);
                 upLeftPaneRect = new Rectangle(1, 1, (int) (canvasRect.getWidth() * 0.333f), (int) (canvasRect.getHeight() * 0.075f));
@@ -148,7 +148,8 @@ public final class UIHandler {
 
         if (canvas.isOptionsMenuSetVisible()) {
             canvas.showOptions(g2D);
-        } else if (canvas.getWorldCreatingPane().isVisible()) {
+            return;
+        } else if (canvas.getWorldCreatingPane() != null && canvas.getWorldCreatingPane().isVisible()) {
             canvas.drawHeader(g2D, "Создание мира");
 
             // creating world buttons text:
@@ -219,7 +220,6 @@ public final class UIHandler {
                 ? canvas.getBackButtonText() : canvas.getExitButtonText(), canvas.getExitButtonRect().x, canvas.getExitButtonRect().y + 18);
     }
 
-
     private void showHeroCreating(Graphics2D g2D, FoxCanvas canvas) {
         canvas.drawHeader(g2D, "Создание героя");
 
@@ -271,7 +271,7 @@ public final class UIHandler {
                 Math.min(Math.max(srcX, 0), gameController.getCurrentWorldMap().getWidth() - minimapDim),
                 Math.min(Math.max(srcY, 0), gameController.getCurrentWorldMap().getHeight() - minimapDim),
                 minimapDim, minimapDim);
-        gameController.getWorldEntities(scanRect).forEach(entity -> {
+        gameController.getWorldEnvironments(scanRect).forEach(entity -> {
             m2D.setColor(Color.CYAN);
             m2D.fillRect((int) (entity.getPosition().x - 3), (int) (entity.getPosition().y - 3), 6, 6);
         });

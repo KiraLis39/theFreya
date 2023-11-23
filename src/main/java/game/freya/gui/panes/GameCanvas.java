@@ -24,15 +24,12 @@ import java.awt.Graphics2D;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.Shape;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.util.Set;
 
 import static game.freya.config.Constants.FFB;
@@ -42,9 +39,7 @@ import static game.freya.config.Constants.FFB;
 public class GameCanvas extends FoxCanvas {
     private static final double infoStrut = 58d, infoStrutHardness = 40d;
     private final transient JFrame parentFrame;
-    private final transient UIHandler uiHandler;
     private final transient GameController gameController;
-    private transient Rectangle2D viewPort;
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
     private boolean isGameActive = false, isControlsMapped = false, isMovingKeyActive = false;
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
@@ -53,9 +48,8 @@ public class GameCanvas extends FoxCanvas {
 
 
     public GameCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
-        super(Constants.getGraphicsConfiguration(), "GameCanvas", gameController, parentFrame.getLayeredPane());
+        super(Constants.getGraphicsConfiguration(), "GameCanvas", gameController, parentFrame.getLayeredPane(), uiHandler);
         this.gameController = gameController;
-        this.uiHandler = uiHandler;
         this.parentFrame = parentFrame;
 
         setSize(parentFrame.getLayeredPane().getSize());
@@ -70,6 +64,41 @@ public class GameCanvas extends FoxCanvas {
         addKeyListener(this);
 
         new Thread(this).start();
+
+        // запуск вспомогательного потока процессов игры:
+        setSecondThread("Game second thread", new Thread(() -> {
+            // ждём пока основной поток игры запустится:
+            long timeout = System.currentTimeMillis();
+            while (!isGameActive) {
+                Thread.yield();
+                if (System.currentTimeMillis() - timeout > 7_000) {
+                    throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
+                }
+            }
+
+            while (isGameActive && !getSecondThread().isInterrupted()) {
+                // check gameplay duration:
+                checkGameplayDuration(gameController.getCurrentHeroInGameTime());
+
+                // если изменился размер фрейма:
+                if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
+                    log.debug("Resizing by parent frame...");
+                    onResize();
+                    parentHeightMemory = parentFrame.getBounds().getHeight();
+                }
+
+                if (!Constants.isPaused()) {
+                    dragViewIfNeeds();
+                }
+
+                try {
+                    Thread.sleep(SECOND_THREAD_SLEEP_MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }));
+        getSecondThread().start();
     }
 
     private void setInAc() {
@@ -96,141 +125,97 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void run() {
-        setGameActive();
-
         // ждём пока компонент не станет виден:
         long timeout = System.currentTimeMillis();
         while (getParent() == null || !isDisplayable()) {
             Thread.yield();
-            if (System.currentTimeMillis() - timeout > 10_000) {
+            if (System.currentTimeMillis() - timeout > 6_000) {
                 throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
             }
         }
 
-        init();
+        // инициализируем все для игры, отображаем окно игры:
+        setGameActive();
 
+        // старт потока рисования игры:
         while (isGameActive) {
-            if (getParent() == null || !isDisplayable()) {
+            if (!parentFrame.isActive()) {
                 Thread.yield();
                 continue;
             }
 
-            // если изменился размер фрейма:
-            if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
-                log.debug("Resizing by parent frame...");
-                onResize();
-                parentHeightMemory = parentFrame.getBounds().getHeight();
-            }
-
-            Graphics2D g2D;
             try {
-                if (getBufferStrategy() == null) {
-                    createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-                }
-
-                do {
-                    do {
-                        g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
-                                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
-                        // draw all World`s graphic:
-                        drawWorld(g2D);
-                        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
-                                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
-                        // not-pause events and changes:
-                        if (Constants.isPaused()) {
-                            if (!isOptionsMenuSetVisible()) {
-                                drawPauseMode(g2D);
-                            }
-
-                            if (isOptionsMenuSetVisible()) {
-                                showOptions(g2D); // 285 строка?
-                                addExitVariantToOptionsMenuFix(g2D);
-                            }
-                        } else {
-                            dragViewIfNeeds();
-                        }
-
-                        // check gameplay duration:
-                        checkGameplayDuration(gameController.getCurrentHeroInGameTime());
-
-                        // draw debug info corner if debug mode on:
-                        drawLocalDebugInfo(g2D);
-
-                        g2D.dispose();
-                    } while (getBufferStrategy().contentsRestored());
-                } while (getBufferStrategy().contentsLost());
-                getBufferStrategy().show();
+                drawNextFrame();
             } catch (Exception e) {
-                log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-                Thread.yield();
+                throwExceptionAndYield(e);
             }
 
+            // если текущий FPS превышает лимит:
             if (Constants.isFpsLimited()) {
-                try {
-                    Thread.sleep(Constants.getDelay());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                doDrawDelay();
+            }
+
+            // при успешной отрисовке:
+            if (getDrawErrorCount() > 0) {
+                decreaseDrawErrorCount();
             }
         }
         log.info("Thread of Game canvas is finalized.");
     }
 
-    private void addExitVariantToOptionsMenuFix(Graphics2D g2D) {
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(isOptionsMenuSetVisible()
-                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
-        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(isOptionsMenuSetVisible()
-                ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
+    private void doDrawDelay() {
+        try {
+            if (Constants.getDelay() > 1) {
+                Thread.sleep(Constants.getDelay());
+            } else {
+                Thread.yield();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
-    private void drawLocalDebugInfo(Graphics2D g2D) {
-        super.drawDebugInfo(g2D, gameController.getCurrentWorldTitle()); // отладочная информация
-
-        if (Constants.isDebugInfoVisible()) {
-            int leftShift = 320;
-            Point2D.Double playerPos = gameController.getCurrentHeroPosition();
-            if (playerPos == null) {
-                return;
-            }
-            Shape playerShape = new Ellipse2D.Double(
-                    (int) playerPos.x - Constants.MAP_CELL_DIM / 2d,
-                    (int) playerPos.y - Constants.MAP_CELL_DIM / 2d,
-                    Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
-
-            // server info:
-            g2D.setColor(gameController.isServerIsOpen() ? Color.GREEN : Color.DARK_GRAY);
-            g2D.drawString("Server open: " + gameController.isServerIsOpen(), getWidth() - leftShift, getHeight() - 190);
-            g2D.drawString("Connected players: " + gameController.getConnectedPlayersCount(), getWidth() - leftShift, getHeight() - 170);
-
-            // hero info:
-            g2D.setColor(Color.GRAY);
-            g2D.drawString("Hero pos: " + playerShape.getBounds2D().getCenterX() + "x" + playerShape.getBounds2D().getCenterY(),
-                    getWidth() - leftShift, getHeight() - 140);
-
-            g2D.drawString("Hero speed: " + gameController.getCurrentHeroSpeed(),
-                    getWidth() - leftShift, getHeight() - 120);
-
-            // gameplay info:
-            if (Constants.isFpsInfoVisible()) {
-                g2D.setColor(Constants.isLowFpsAlarm() ? Color.RED : Color.GRAY);
-                g2D.drawString("Delay fps: " + Constants.getDelay(), getWidth() - leftShift, getHeight() - 90);
-            }
-            g2D.setColor(Color.GRAY);
-
-            g2D.drawString("GameMap WxH: " + gameController.getCurrentWorldMap().getWidth() + "x" + gameController.getCurrentWorldMap().getHeight(),
-                    getWidth() - leftShift, getHeight() - 70);
-
-            g2D.drawString("Canvas XxY-WxH: " + getBounds().x + "x" + getBounds().y + "-"
-                    + getBounds().width + "x" + getBounds().height, getWidth() - leftShift, getHeight() - 50);
-
-            g2D.drawString("ViewPort XxY-WxH: " + viewPort.getBounds().x + "x" + viewPort.getBounds().y + "-"
-                    + viewPort.getBounds().width + "x" + viewPort.getBounds().height, getWidth() - leftShift, getHeight() - 30);
+    private void throwExceptionAndYield(Exception e) {
+        log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+        increaseDrawErrorCount(); // при неуспешной отрисовке
+        if (getDrawErrorCount() > 100) {
+            new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
+                    "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
+                    FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+//                    gameController.exitTheGame(null);
+            throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
         }
+        Thread.yield();
+    }
+
+    /**
+     * Основной цикл отрисовки игрового окна.
+     */
+    private void drawNextFrame() {
+        do {
+            do {
+                Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
+                Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
+                        Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+
+                // draw the World:
+                drawWorld(g2D);
+
+                // рисуем UI:
+                super.drawUI(g2D);
+
+                // not-pause events and changes:
+                if (Constants.isPaused() && !isOptionsMenuSetVisible()) {
+                    drawPauseMode(g2D);
+                }
+
+                // draw debug info corner if debug mode on:
+                super.drawDebugInfo(g2D, gameController.getCurrentWorldTitle());
+
+                g2D.dispose();
+            } while (getBufferStrategy().contentsRestored());
+            getBufferStrategy().show();
+        } while (getBufferStrategy().contentsLost());
     }
 
     private void init() {
@@ -243,7 +228,7 @@ public class GameCanvas extends FoxCanvas {
         recalculateMenuRectangles();
 
         // если не создан вьюпорт - создаём:
-        if (this.viewPort == null) {
+        if (getViewPort() == null) {
             recreateViewPort();
         }
 
@@ -258,7 +243,7 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void recreateViewPort() {
-        this.viewPort = new Rectangle(0, 0, getWidth(), getHeight());
+        setViewPort(new Rectangle(0, 0, getWidth(), getHeight()));
     }
 
     private void dragViewIfNeeds() {
@@ -280,15 +265,12 @@ public class GameCanvas extends FoxCanvas {
         // рисуем мир:
         gameController.getDrawCurrentWorld(g2D);
 
-        // рисуем данные героев:
+        // рисуем данные героев поверх игры:
         drawHeroesData(g2D, gameController.getCurrentWorldHeroes());
-
-        // рисуем UI:
-        drawUI(g2D);
     }
 
     private void drawHeroesData(Graphics2D g2D, Set<HeroDTO> heroes) {
-        int sMod = (int) (infoStrut - ((viewPort.getHeight() - viewPort.getY()) / infoStrutHardness));
+        int sMod = (int) (infoStrut - ((getViewPort().getHeight() - getViewPort().getY()) / infoStrutHardness));
 
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.setColor(Color.WHITE);
@@ -296,10 +278,10 @@ public class GameCanvas extends FoxCanvas {
         // draw heroes data:
         heroes.forEach(hero -> {
             int strutMod = sMod;
-            if (gameController.isHeroActive(hero, viewPort.getBounds())) {
+            if (gameController.isHeroActive(hero, getViewPort().getBounds())) {
 
                 // Преобразуем координаты героя из карты мира в координаты текущего холста:
-                Point2D relocatedPoint = FoxPointConverter.relocateOn(viewPort, getBounds(), hero.getPosition());
+                Point2D relocatedPoint = FoxPointConverter.relocateOn(getViewPort(), getBounds(), hero.getPosition());
 
                 // draw hero name:
                 int halfName = (int) (FFB.getStringBounds(g2D, hero.getHeroName()).getWidth() / 2d);
@@ -313,31 +295,31 @@ public class GameCanvas extends FoxCanvas {
                 g2D.setColor(Color.red);
                 g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
                         (int) (relocatedPoint.getY() - strutMod),
-                        hero.getHealth() - 10, 9, 3, 3);
+                        hero.getCurHealth() - 10, 9, 3, 3);
                 g2D.setColor(Color.black);
                 g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
                         (int) (relocatedPoint.getY() - strutMod),
-                        100, 9, 3, 3);
+                        hero.getMaxHealth(), 9, 3, 3);
             }
         });
     }
 
-    private void drawUI(Graphics2D g2D) {
-        if (isShadowBackNeeds()) {
-            g2D.setColor(new Color(0, 0, 0, 223));
-            g2D.fillRect(0, 0, getWidth(), getHeight());
-        }
-        uiHandler.drawUI(this, g2D);
-    }
-
     private void setGameActive() {
-        this.isGameActive = true;
-        Constants.setPaused(false);
-        setOptionsMenuSetVisible(false);
-        Constants.setGameStartedIn(System.currentTimeMillis());
+        init();
 
+        this.isGameActive = true;
         setVisible(true);
         requestFocusInWindow();
+
+        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+
+        // если более двух буфферов не позволительно:
+        if (!getBufferStrategy().getCapabilities().isMultiBufferAvailable()) {
+            Constants.getUserConfig().setMaxBufferedDeep(2);
+        }
+
+        Constants.setPaused(false);
+        Constants.setGameStartedIn(System.currentTimeMillis());
     }
 
     private void drawPauseMode(Graphics2D g2D) {
@@ -379,25 +361,17 @@ public class GameCanvas extends FoxCanvas {
         g2D.drawString(getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
         g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
-
-        if (Constants.isDebugInfoVisible()) {
-            g2D.setColor(Color.DARK_GRAY);
-            g2D.drawRoundRect(getFirstButtonRect().x, getFirstButtonRect().y, getFirstButtonRect().width, getFirstButtonRect().height, 3, 3);
-            g2D.drawRoundRect(getSecondButtonRect().x, getSecondButtonRect().y, getSecondButtonRect().width, getSecondButtonRect().height, 3, 3);
-            g2D.drawRoundRect(getThirdButtonRect().x, getThirdButtonRect().y, getThirdButtonRect().width, getThirdButtonRect().height, 3, 3);
-            g2D.drawRoundRect(getExitButtonRect().x, getExitButtonRect().y, getExitButtonRect().width, getExitButtonRect().height, 3, 3);
-        }
     }
 
     private void zoomIn() {
         log.debug("Zoom in...");
 
         // если окно меньше установленного лимита:
-        if (viewPort.getWidth() - viewPort.getX() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
-                || viewPort.getHeight() - viewPort.getY() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
+        if (getViewPort().getWidth() - getViewPort().getX() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
+                || getViewPort().getHeight() - getViewPort().getY() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
         ) {
             log.debug("Can`t zoom in: vpWidth = {}, vpHeight = {} but minSize = {}",
-                    viewPort.getWidth() - viewPort.getX(), viewPort.getHeight() - viewPort.getY(),
+                    getViewPort().getWidth() - getViewPort().getX(), getViewPort().getHeight() - getViewPort().getY(),
                     Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS);
             return;
         }
@@ -409,7 +383,7 @@ public class GameCanvas extends FoxCanvas {
         log.debug("Zoom out...");
 
         // если окно больше установленного лимита или и так максимального размера:
-        if (!canZoomOut(viewPort.getWidth() - viewPort.getX(), viewPort.getHeight() - viewPort.getY(),
+        if (!canZoomOut(getViewPort().getWidth() - getViewPort().getX(), getViewPort().getHeight() - getViewPort().getY(),
                 gameController.getCurrentWorldMap().getWidth(), gameController.getCurrentWorldMap().getHeight())) {
             return;
         }
@@ -437,10 +411,10 @@ public class GameCanvas extends FoxCanvas {
     }
 
     public void moveViewToPlayer(double x, double y) {
-        if (gameController.getCurrentWorldMap() != null && this.viewPort != null) {
+        if (gameController.getCurrentWorldMap() != null && getViewPort() != null) {
             Point2D.Double p = gameController.getCurrentHeroPosition();
-            Rectangle viewRect = this.viewPort.getBounds();
-            this.viewPort.setRect(
+            Rectangle viewRect = getViewPort().getBounds();
+            getViewPort().setRect(
                     p.x - (viewRect.getWidth() - viewRect.getX()) / 2D + x,
                     p.y - (viewRect.getHeight() - viewRect.getY()) / 2D + y,
                     p.x + (viewRect.getWidth() - viewRect.getX()) / 2D - x,
@@ -451,19 +425,19 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void checkOutOfFieldCorrection() {
-        while (viewPort.getX() < 0) {
+        while (getViewPort().getX() < 0) {
             dragLeft(1d);
         }
 
-        while (viewPort.getWidth() > gameController.getCurrentWorldMap().getWidth()) {
+        while (getViewPort().getWidth() > gameController.getCurrentWorldMap().getWidth()) {
             dragRight(1d);
         }
 
-        while (viewPort.getY() < 0) {
+        while (getViewPort().getY() < 0) {
             dragUp(1d);
         }
 
-        while (viewPort.getHeight() > gameController.getCurrentWorldMap().getHeight()) {
+        while (getViewPort().getHeight() > gameController.getCurrentWorldMap().getHeight()) {
             dragDown(1d);
         }
     }
@@ -491,9 +465,9 @@ public class GameCanvas extends FoxCanvas {
             log.debug("Drag left...");
             double per = pixels != null ? pixels : Constants.getDragSpeed();
             double mapWidth = gameController.getCurrentWorldMap().getWidth();
-            double newWidth = Math.min(viewPort.getWidth() + per, mapWidth);
-            viewPort.setRect(viewPort.getX() + per - (newWidth == mapWidth ? Math.abs(viewPort.getWidth() + per - mapWidth) : 0),
-                    viewPort.getY(), newWidth, viewPort.getHeight());
+            double newWidth = Math.min(getViewPort().getWidth() + per, mapWidth);
+            getViewPort().setRect(getViewPort().getX() + per - (newWidth == mapWidth ? Math.abs(getViewPort().getWidth() + per - mapWidth) : 0),
+                    getViewPort().getY(), newWidth, getViewPort().getHeight());
         }
     }
 
@@ -501,9 +475,9 @@ public class GameCanvas extends FoxCanvas {
         if (canDragRight()) {
             log.debug("Drag right...");
             double per = pixels != null ? pixels : Constants.getDragSpeed();
-            double newX = viewPort.getX() - per > 0 ? viewPort.getX() - per : 0;
-            viewPort.setRect(newX, viewPort.getY(),
-                    viewPort.getWidth() - per + (newX == 0 ? Math.abs(viewPort.getX() - per) : 0), viewPort.getHeight());
+            double newX = getViewPort().getX() - per > 0 ? getViewPort().getX() - per : 0;
+            getViewPort().setRect(newX, getViewPort().getY(),
+                    getViewPort().getWidth() - per + (newX == 0 ? Math.abs(getViewPort().getX() - per) : 0), getViewPort().getHeight());
         }
     }
 
@@ -512,10 +486,10 @@ public class GameCanvas extends FoxCanvas {
             log.debug("Drag up...");
             double per = pixels != null ? pixels : Constants.getDragSpeed();
             double mapHeight = gameController.getCurrentWorldMap().getHeight();
-            double newHeight = Math.min(viewPort.getHeight() + per, mapHeight);
-            viewPort.setRect(viewPort.getX(), viewPort.getY() + per - (newHeight == mapHeight
-                            ? Math.abs(viewPort.getHeight() + per - mapHeight) : 0),
-                    viewPort.getWidth(), newHeight);
+            double newHeight = Math.min(getViewPort().getHeight() + per, mapHeight);
+            getViewPort().setRect(getViewPort().getX(), getViewPort().getY() + per - (newHeight == mapHeight
+                            ? Math.abs(getViewPort().getHeight() + per - mapHeight) : 0),
+                    getViewPort().getWidth(), newHeight);
         }
     }
 
@@ -523,26 +497,26 @@ public class GameCanvas extends FoxCanvas {
         if (canDragDown()) {
             log.debug("Drag down...");
             double per = pixels != null ? pixels : Constants.getDragSpeed();
-            double newY = viewPort.getY() - per > 0 ? viewPort.getY() - per : 0;
-            viewPort.setRect(viewPort.getX(), newY, viewPort.getWidth(),
-                    viewPort.getHeight() - per + (newY == 0 ? Math.abs(viewPort.getY() - per) : 0));
+            double newY = getViewPort().getY() - per > 0 ? getViewPort().getY() - per : 0;
+            getViewPort().setRect(getViewPort().getX(), newY, getViewPort().getWidth(),
+                    getViewPort().getHeight() - per + (newY == 0 ? Math.abs(getViewPort().getY() - per) : 0));
         }
     }
 
     private boolean canDragDown() {
-        return viewPort.getY() > 0;
+        return getViewPort().getY() > 0;
     }
 
     private boolean canDragUp() {
-        return viewPort.getHeight() < gameController.getCurrentWorldMap().getHeight();
+        return getViewPort().getHeight() < gameController.getCurrentWorldMap().getHeight();
     }
 
     private boolean canDragLeft() {
-        return viewPort.getWidth() < gameController.getCurrentWorldMap().getWidth();
+        return getViewPort().getWidth() < gameController.getCurrentWorldMap().getWidth();
     }
 
     private boolean canDragRight() {
-        return viewPort.getX() > 0;
+        return getViewPort().getX() > 0;
     }
 
     @Override
@@ -742,10 +716,13 @@ public class GameCanvas extends FoxCanvas {
 
             reloadShapes(this);
             recalculateMenuRectangles();
-            recalculateSettingsPanes();
+            recreateSubPanes();
             recreateViewPort();
             moveViewToPlayer(0, 0);
             requestFocusInWindow();
+
+            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+            setRevolatileNeeds(true);
         });
         resizeThread.start();
     }
@@ -831,9 +808,5 @@ public class GameCanvas extends FoxCanvas {
     @Override
     public void keyTyped(KeyEvent e) {
 
-    }
-
-    public Rectangle2D getViewPort() {
-        return this.viewPort;
     }
 }

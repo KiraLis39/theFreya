@@ -34,9 +34,9 @@ public final class HeroMapper {
                 .heroName(dto.getHeroName())
                 .level(dto.getLevel())
                 .type(dto.getType())
-                .currentAttackPower(dto.getCurrentAttackPower())
+                .power(dto.getPower())
                 .experience(dto.getExperience())
-                .health(dto.getHealth())
+                .curHealth(dto.getCurHealth())
                 .maxHealth(dto.getMaxHealth())
                 .speed(dto.getSpeed())
                 .positionX(dto.getPosition().x)
@@ -46,6 +46,7 @@ public final class HeroMapper {
                 .worldUid(dto.getWorldUid())
                 .ownerUid(dto.getOwnerUid())
                 .inGameTime(dto.getInGameTime())
+                .lastPlayDate(dto.getLastPlayDate())
                 .build();
 
         try {
@@ -69,9 +70,9 @@ public final class HeroMapper {
                 .heroName(entity.getHeroName())
                 .level(entity.getLevel())
                 .type(entity.getType())
-                .currentAttackPower(entity.getCurrentAttackPower())
+                .power(entity.getPower())
                 .experience(entity.getExperience())
-                .health(entity.getHealth())
+                .curHealth(entity.getCurHealth())
                 .maxHealth(entity.getMaxHealth())
                 .speed(entity.getSpeed())
                 .position(new Point2D.Double(entity.getPositionX(), entity.getPositionY()))
@@ -80,6 +81,7 @@ public final class HeroMapper {
                 .worldUid(entity.getWorldUid())
                 .ownerUid(entity.getOwnerUid())
                 .inGameTime(entity.getInGameTime())
+                .lastPlayDate(entity.getLastPlayDate())
                 .build();
 
         try {

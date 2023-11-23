@@ -42,33 +42,29 @@ public class GameFrame implements WindowListener, WindowStateListener {
     private Dimension windowSize;
     private GameController gameController;
     private JFrame frame;
-    private FoxLogo logo;
 
     public void showMainMenu(GameController gameController) {
         this.gameController = gameController;
+
+        // показываем лого:
+        if (Constants.isShowStartLogo()) {
+            try (InputStream is = Constants.class.getResourceAsStream("/images/logo.png")) {
+                if (is != null) {
+                    Constants.setLogo(new FoxLogo());
+                    Constants.getLogo().start(gameController.getGameConfig().getAppVersion(),
+                            Constants.getUserConfig().isFullscreen() ? FoxLogo.IMAGE_STYLE.FILL : FoxLogo.IMAGE_STYLE.DEFAULT,
+                            FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
+                }
+            } catch (IOException e) {
+                throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/logo.png");
+            }
+        }
 
         Dimension monitorSize = Constants.MON.getConfiguration().getBounds().getSize();
         double delta = monitorSize.getWidth() / monitorSize.getHeight();
         double newWidth = monitorSize.getWidth() * 0.75d;
         double newHeight = newWidth / delta;
         windowSize = new Dimension((int) newWidth, (int) newHeight);
-
-        if (Constants.isShowStartLogo()) {
-            try {
-                logo = new FoxLogo();
-                InputStream is = Constants.class.getResourceAsStream("/images/logo.png");
-                if (is != null) {
-                    logo.start(gameController.getGameConfig().getAppVersion(),
-                            FoxLogo.IMAGE_STYLE.FILL, FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
-                    logo.getEngine().join(10_000);
-                }
-            } catch (IOException e) {
-                throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/logo.png");
-            } catch (InterruptedException e) {
-                log.error("Logo thread was interrupted: {}", ExceptionUtils.getFullExceptionMessage(e));
-                logo.getEngine().interrupt();
-            }
-        }
 
         frame = new JFrame(gameController.getGameConfig().getAppName().concat(" v.")
                 .concat(gameController.getGameConfig().getAppVersion()), Constants.getGraphicsConfiguration());
@@ -87,13 +83,15 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
         setInAc();
 
-        if (logo != null && logo.getEngine().isAlive()) {
+        // ждём пока кончится показ лого:
+        if (Constants.getLogo() != null && Constants.getLogo().getEngine().isAlive()) {
             try {
                 log.info("Logo finished await...");
-                logo.getEngine().join(10_000);
+                Constants.getLogo().getEngine().join(3_000);
+                Constants.getLogo().finalLogo();
             } catch (InterruptedException ie) {
                 log.warn("Logo thread joining was interrupted: {}", ExceptionUtils.getFullExceptionMessage(ie));
-                logo.getEngine().interrupt();
+                Constants.getLogo().getEngine().interrupt();
             }
         }
 
@@ -134,6 +132,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
         frame.setVisible(true);
         frame.setResizable(false);
+        frame.createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
     }
 
     private void setInAc() {

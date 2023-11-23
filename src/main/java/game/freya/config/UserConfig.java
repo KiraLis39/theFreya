@@ -161,6 +161,10 @@ public final class UserConfig {
     @Builder.Default
     private int bufferedDeep = 2;
 
+    @Setter
+    @Builder.Default
+    private int maxBufferedDeep = 2;
+
 
     // other:
     public int getBufferedDeep() {

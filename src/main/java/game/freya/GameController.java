@@ -15,7 +15,7 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
 import game.freya.gui.panes.GameCanvas;
-import game.freya.items.interfaces.iEntity;
+import game.freya.items.interfaces.iEnvironment;
 import game.freya.mappers.HeroMapper;
 import game.freya.mappers.WorldMapper;
 import game.freya.net.ClientDataDTO;
@@ -29,10 +29,8 @@ import game.freya.utils.ExceptionUtils;
 import game.freya.utils.Screenshoter;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.sqlite.SQLiteConnection;
 
 import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
@@ -48,7 +46,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -59,11 +56,10 @@ import java.util.UUID;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GameController {
+public class GameController extends GameControllerBase {
     private final PlayerService playerService;
     private final HeroService heroService;
     private final HeroMapper heroMapper;
-    private final SQLiteConnection conn;
     private final UserConfigService userConfigService;
     private final WorldService worldService;
     private final WorldMapper worldMapper;
@@ -71,10 +67,6 @@ public class GameController {
     private final GameFrame gameFrame;
     @Getter
     private final GameConfig gameConfig;
-    private Thread netDataTranslator;
-    @Getter
-    @Setter
-    private boolean isPlayerMovingUp = false, isPlayerMovingDown = false, isPlayerMovingLeft = false, isPlayerMovingRight = false;
 
     @PostConstruct
     public void init() throws IOException {
@@ -151,17 +143,7 @@ public class GameController {
         }
 
         // закрываем БД:
-        try {
-            if (conn != null) {
-                log.info("Connection to SQLite is closing...");
-                conn.close();
-                log.info("Connection to SQLite was closed successfully.");
-            } else {
-                log.warn("Connection is NULL and can`t be closed now.");
-            }
-        } catch (SQLException ex) {
-            log.error(ex.getMessage());
-        }
+        closeDataBaseConnection();
     }
 
     public void exitTheGame(WorldDTO world) {
@@ -196,80 +178,11 @@ public class GameController {
         if (screenType.equals(ScreenType.GAME_SCREEN) && worldService.getCurrentWorld().isNetAvailable()) {
             log.info("Начинается трансляция данных в сеть...");
             if (socketService.isServerOpen()) {
-                startServerBroadcast(); // если мы - Сервер.
+                startServerBroadcast(socketService); // если мы - Сервер.
             } else {
-                startClientBroadcast(); // если мы - клиент.
+                startClientBroadcast(socketService); // если мы - клиент.
             }
         }
-    }
-
-    /**
-     * Транслятор сервера.
-     * Не работает, когда выступаем в роли клиента?
-     */
-    private void startServerBroadcast() {
-        if (netDataTranslator == null) {
-            netDataTranslator = new Thread(() -> {
-                while (!netDataTranslator.isInterrupted()) {
-                    socketService.broadcast(buildNewDataPackage());
-
-                    try {
-                        Thread.sleep(Constants.NETWORK_DATA_TRANSLATE_DELAY);
-                    } catch (InterruptedException e) {
-                        log.warn("Прерывание потока бродкаста данных клиентам!");
-                    }
-                }
-            });
-            netDataTranslator.start();
-        } else if (!netDataTranslator.isAlive()) {
-            netDataTranslator.start();
-        } else {
-            log.error("Нельзя повторно запустить ещё живой поток!");
-        }
-    }
-
-    private void startClientBroadcast() {
-        if (netDataTranslator == null) {
-            netDataTranslator = new Thread(() -> {
-                while (!netDataTranslator.isInterrupted()) {
-                    socketService.toServer(buildNewDataPackage());
-
-                    try {
-                        Thread.sleep(Constants.NETWORK_DATA_TRANSLATE_DELAY);
-                    } catch (InterruptedException e) {
-                        log.warn("Прерывание потока отправки данных на сервер!");
-                    }
-                }
-            });
-            netDataTranslator.start();
-        } else if (!netDataTranslator.isAlive()) {
-            netDataTranslator.start();
-        } else {
-            log.error("Нельзя повторно запустить ещё живой поток!");
-        }
-    }
-
-    public void stopBroadcast() {
-        if (netDataTranslator != null && netDataTranslator.isAlive()) {
-            try {
-                netDataTranslator.interrupt();
-                netDataTranslator.join(1_000);
-            } catch (InterruptedException e) {
-                netDataTranslator.interrupt();
-            }
-            log.info("Транслятор данных остановлен: {}", netDataTranslator.isAlive());
-        }
-    }
-
-    private ClientDataDTO buildNewDataPackage() {
-        // собираем пакет данных для сервера и других игроков:
-        return ClientDataDTO.builder()
-                // ...
-                .build();
-    }
-
-    public WorldDTO updateWorld(WorldDTO worldDTO) {
-        return worldService.save(worldDTO);
     }
 
     public HeroDTO saveNewHero(HeroDTO aNewHeroDto) {
@@ -326,21 +239,23 @@ public class GameController {
             boolean isViewMovableY = plPos.y > visibleRect.getHeight() / 2d
                     && plPos.y < worldService.getCurrentWorld().getGameMap().getHeight() - (visibleRect.height - visibleRect.y) / 2d;
 
-            if (isPlayerMovingUp() && isPlayerCanGo(visibleRect, MovingVector.UP, canvas)) {
+            if (isPlayerMovingUp()) {
                 vector = isPlayerMovingRight() ? MovingVector.UP_RIGHT : isPlayerMovingLeft() ? MovingVector.LEFT_UP : MovingVector.UP;
-            } else if (isPlayerMovingDown() && isPlayerCanGo(visibleRect, MovingVector.DOWN, canvas)) {
+            } else if (isPlayerMovingDown()) {
                 vector = isPlayerMovingRight() ? MovingVector.RIGHT_DOWN : isPlayerMovingLeft() ? MovingVector.DOWN_LEFT : MovingVector.DOWN;
             }
 
-            if (isPlayerMovingRight() && isPlayerCanGo(visibleRect, MovingVector.RIGHT, canvas)) {
+            if (isPlayerMovingRight()) {
                 vector = isPlayerMovingUp() ? MovingVector.UP_RIGHT : isPlayerMovingDown() ? MovingVector.RIGHT_DOWN : MovingVector.RIGHT;
-            } else if (isPlayerMovingLeft() && isPlayerCanGo(visibleRect, MovingVector.LEFT, canvas)) {
+            } else if (isPlayerMovingLeft()) {
                 vector = isPlayerMovingUp() ? MovingVector.LEFT_UP : isPlayerMovingDown() ? MovingVector.DOWN_LEFT : MovingVector.LEFT;
             }
 
             // set hero vector:
             heroService.getCurrentHero().setVector(vector);
-            heroService.getCurrentHero().move();
+            if (isPlayerCanGo(visibleRect, vector, canvas)) {
+                heroService.getCurrentHero().move();
+            }
 
             // move map:
             switch (vector) {
@@ -401,15 +316,14 @@ public class GameController {
         }
     }
 
-    private boolean isPlayerMoving() {
-        return isPlayerMovingUp || isPlayerMovingDown || isPlayerMovingRight || isPlayerMovingLeft;
-    }
-
     private boolean isPlayerCanGo(Rectangle visibleRect, MovingVector vector, GameCanvas canvas) {
         Point2D.Double pos = heroService.getCurrentHero().getPosition();
+
+        // перемещаем камеру к ГГ:
         if (!visibleRect.contains(pos)) {
             canvas.moveViewToPlayer(0, 0);
         }
+
         BufferedImage gMap = worldService.getCurrentWorld().getGameMap();
         return switch (vector) {
             case UP -> pos.y > 0;
@@ -494,8 +408,8 @@ public class GameController {
         return heroService.getCurrentHeroes();
     }
 
-    public Set<iEntity> getWorldEntities(Rectangle rectangle) {
-        return worldService.getEntitiesFromRectangle(rectangle);
+    public Set<iEnvironment> getWorldEnvironments(Rectangle rectangle) {
+        return worldService.getEnvironmentsFromRectangle(rectangle);
     }
 
     public List<HeroDTO> findAllHeroesByWorldUid(UUID uid) {
@@ -628,7 +542,7 @@ public class GameController {
     }
 
     private float getCurrentHeroPower() {
-        return heroService.getCurrentHero().getCurrentAttackPower();
+        return heroService.getCurrentHero().getPower();
     }
 
     private short getCurrentHeroMaxHp() {
@@ -640,7 +554,7 @@ public class GameController {
     }
 
     private short getCurrentHeroHp() {
-        return heroService.getCurrentHero().getHealth();
+        return heroService.getCurrentHero().getCurHealth();
     }
 
     private float getCurrentHeroExperience() {

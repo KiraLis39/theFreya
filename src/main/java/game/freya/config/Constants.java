@@ -2,6 +2,7 @@ package game.freya.config;
 
 import fox.FoxFontBuilder;
 import fox.FoxFontBuilder.FONT;
+import fox.FoxLogo;
 import fox.FoxRender;
 import fox.VideoMonitor;
 import fox.components.FOptionPane;
@@ -46,8 +47,6 @@ public final class Constants {
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
     public static final int MAP_CELL_DIM = 64;
     public static final String DEFAULT_AVATAR_URL = "/images/defaultAvatar.png";
-
-
     // libraries objects:
     public static final VideoMonitor MON = new VideoMonitor();
     public static final FoxFontBuilder FFB = new FoxFontBuilder();
@@ -71,44 +70,35 @@ public final class Constants {
     public static final Font MENU_BUTTONS_FONT;
     public static final Font PROPAGANDA_FONT;
     public static final Font PROPAGANDA_BIG_FONT;
-
-
     // project:
     @Getter
     private static final String gameAuthor = "KiraLis39";
-
     @Getter
     private static final Path databaseRootDir = FileSystems.getDefault().getPath("./db/freya.db").toAbsolutePath();
-
     @Getter
     private static final String imageExtension = ".png"; // .png
-
     @Getter
     private static final String audioExtension = ".ogg"; // .ogg | .mp3 | .wav
-
-
     // audio:
     @Getter
     private static final FoxPlayer soundPlayer = new FoxPlayer("soundPlayer");
-
     @Getter
     private static final FoxPlayer musicPlayer = new FoxPlayer("musicPlayer");
-
     @Getter
     private static final double dragSpeed = 12D;
-
     @Getter
     private static final double scrollSpeed = 20D;
-
     @Getter
     private static final String userSave = "./saves/".concat(SystemUtils.getUserName()).concat("/save.json");
-
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
     private static final int SHIFT_FPS_ALLOWED = 2; // допустимый разброс FPS.
     private static final int MAX_FPS_ALLOWED = 120; // больше этой частоты нет смысла гнать точно.
     private static final AtomicInteger realFreshRate = new AtomicInteger(0);
     private static final AtomicLong delay = new AtomicLong(30L);
+    @Getter
+    @Setter
+    private static FoxLogo logo;
     @Getter
     private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.85f);
     @Getter
@@ -134,7 +124,7 @@ public final class Constants {
     @Getter
     private static boolean isPaused = false;
     @Getter
-    private static boolean isShowStartLogo = false;
+    private static boolean isShowStartLogo = true;
     @Getter
     private static volatile int fpsLimit;
     @Getter

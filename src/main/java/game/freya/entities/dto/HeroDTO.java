@@ -57,13 +57,13 @@ public class HeroDTO implements iHero {
     private HeroType type = HeroType.VOID;
 
     @Builder.Default
-    private float currentAttackPower = 1.0f;
+    private float power = 1.0f;
 
     @Builder.Default
     private float experience = 0f;
 
     @Builder.Default
-    private short health = 100;
+    private short curHealth = 100;
 
     @Builder.Default
     private short maxHealth = 100;
@@ -93,6 +93,11 @@ public class HeroDTO implements iHero {
     @Builder.Default
     private LocalDateTime createDate = LocalDateTime.now();
 
+    @Getter
+    @Setter
+    @Builder.Default
+    private LocalDateTime lastPlayDate = LocalDateTime.now();
+
     @Setter
     @Builder.Default
     private long inGameTime = 0;
@@ -108,9 +113,9 @@ public class HeroDTO implements iHero {
 
     @Override
     public void hurt(float hurtPoints) {
-        this.health -= hurtPoints;
-        if (this.health < 0) {
-            this.health = 0;
+        this.curHealth -= hurtPoints;
+        if (this.curHealth < 0) {
+            this.curHealth = 0;
         }
         recheckHurtLevel();
     }
@@ -121,9 +126,9 @@ public class HeroDTO implements iHero {
             log.warn("Can`t heal the dead corps of player {}!", getHeroName());
             return;
         }
-        this.health += healPoints;
-        if (this.health > maxHealth) {
-            this.health = maxHealth;
+        this.curHealth += healPoints;
+        if (this.curHealth > maxHealth) {
+            this.curHealth = maxHealth;
         }
         recheckHurtLevel();
     }
@@ -131,7 +136,7 @@ public class HeroDTO implements iHero {
     @Override
     public void attack(iEntity entity) {
         if (!entity.equals(this)) {
-            entity.hurt(currentAttackPower);
+            entity.hurt(power);
         } else {
             log.warn("Player {} can`t attack itself!", getHeroName());
         }
@@ -160,14 +165,14 @@ public class HeroDTO implements iHero {
     }
 
     private void recheckHurtLevel() {
-        if (this.health <= 0) {
+        if (this.curHealth <= 0) {
             this.hurtLevel = HurtLevel.DEAD;
             decreaseExp(getExperience() - getExperience() * 0.1f); // -10% exp by death
-        } else if (this.health <= maxHealth * 0.3f) {
+        } else if (this.curHealth <= maxHealth * 0.3f) {
             this.hurtLevel = HurtLevel.HARD_HURT;
-        } else if (this.health <= maxHealth * 0.6f) {
+        } else if (this.curHealth <= maxHealth * 0.6f) {
             this.hurtLevel = HurtLevel.MED_HURT;
-        } else if (this.health <= maxHealth * 0.9f) {
+        } else if (this.curHealth <= maxHealth * 0.9f) {
             this.hurtLevel = HurtLevel.LIGHT_HURT;
         } else {
             this.hurtLevel = HurtLevel.HEALTHFUL;
@@ -225,8 +230,8 @@ public class HeroDTO implements iHero {
         // level
     }
 
-    public void setCurrentAttackPower(float currentAttackPower) {
-        this.currentAttackPower = currentAttackPower;
+    public void setPower(float power) {
+        this.power = power;
     }
 
     private void moveUp() {

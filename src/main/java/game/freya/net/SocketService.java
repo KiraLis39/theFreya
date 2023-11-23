@@ -137,7 +137,7 @@ public class SocketService {
 
     // todo: получать количество игроков нужно всегда от Сервера.
     public long getPlayersCount() {
-        if (!isServerOpen() && (clients.size() > 0 || serverThread.isAlive())) {
+        if (!isServerOpen() && clients.size() > 0) {
             // если сервер внезапно умер:
             log.error("Сервер внезапно мёртв. Что случилось?..");
             close();
