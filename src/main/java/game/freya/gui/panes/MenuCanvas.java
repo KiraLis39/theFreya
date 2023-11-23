@@ -1,6 +1,5 @@
 package game.freya.gui.panes;
 
-import fox.FoxRender;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
@@ -29,8 +28,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.awt.image.BufferedImage;
-import java.awt.image.VolatileImage;
 import java.net.ConnectException;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -166,12 +163,8 @@ public class MenuCanvas extends FoxCanvas {
         do {
             do {
                 Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
-                        Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
-                drawBackground(g2D);
-                super.drawUI(g2D);
-                super.drawDebugInfo(g2D);
+                super.drawBackground(g2D);
+                g2D.dispose();
             } while (getBufferStrategy().contentsRestored());
             getBufferStrategy().show();
         } while (getBufferStrategy().contentsLost());
@@ -200,53 +193,6 @@ public class MenuCanvas extends FoxCanvas {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    private void drawBackground(Graphics2D g2D) {
-        if (getBackImage() == null || isRevolatileNeeds() || validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE) {
-            log.info("Recreating new volatile image by incompatible...");
-            setBackImage(createVolatileImage(getWidth(), getHeight()));
-            setRevolatileNeeds(false);
-        }
-        if (validateBackImage() == VolatileImage.IMAGE_RESTORED) {
-            log.info("Awaits while volatile image is restored...");
-            recreateBackImage(getBackImage().createGraphics());
-        } else {
-            recreateBackImage((Graphics2D) getBackImage().getGraphics());
-        }
-
-        // draw background image:
-        g2D.drawImage(getBackImage(), 0, 0, getWidth(), getHeight(), this);
-
-        // fill left gray polygon:
-        super.drawLeftGrayPoly(g2D);
-
-        // down right corner text:
-        g2D.setFont(Constants.INFO_FONT);
-        g2D.setColor(Color.WHITE);
-        g2D.drawString(getDownInfoString1(),
-                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString1()).getWidth() - 6), getHeight() - 9);
-        g2D.drawString(getDownInfoString2(),
-                (int) (getWidth() - Constants.FFB.getStringBounds(g2D, getDownInfoString2()).getWidth() - 6), getHeight() - 25);
-
-        // player`s info:
-        if (!isShadowBackNeeds()) {
-            super.drawAvatar(g2D);
-        }
-    }
-
-    private void recreateBackImage(Graphics2D g2D) {
-        Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-        g2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
-                0, 0, getWidth(), getHeight(), this);
-
-        if (Constants.isDebugInfoVisible()) {
-            g2D.setColor(Color.CYAN);
-            g2D.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
-        }
-
-        g2D.dispose();
     }
 
     @Override
@@ -313,7 +259,6 @@ public class MenuCanvas extends FoxCanvas {
             getNetworkListPane().setVisible(rect8IsVisible);
             getNetworkCreatingPane().setVisible(rect9IsVisible);
 
-            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             setRevolatileNeeds(true);
         });
         resizeThread.start();

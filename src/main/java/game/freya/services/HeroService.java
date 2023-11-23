@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -61,6 +62,10 @@ public class HeroService {
         return heroes;
     }
 
+    public Set<HeroDTO> getOnlineHeroes() {
+        return heroes.stream().filter(HeroDTO::isOnline).collect(Collectors.toSet());
+    }
+
     public boolean isCurrentHero(HeroDTO hero) {
         return getCurrentHero().equals(hero);
     }
@@ -70,7 +75,7 @@ public class HeroService {
         heroRepository.save(heroMapper.toEntity(getCurrentHero()));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public void offlineHero() {
         HeroDTO cHero = getCurrentHero();
         cHero.setOnline(false);

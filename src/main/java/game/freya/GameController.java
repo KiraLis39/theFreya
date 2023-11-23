@@ -41,6 +41,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.VolatileImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -212,15 +213,16 @@ public class GameController extends GameControllerBase {
     }
 
     public void drawHeroes(Graphics2D g2D, Rectangle visibleRect, GameCanvas canvas) {
-        for (HeroDTO hero : heroService.getCurrentHeroes()) {
+        // рисуем он-лайн героев:
+        for (HeroDTO hero : heroService.getOnlineHeroes()) {
             if (heroService.getCurrentHero() != null && heroService.isCurrentHero(hero)) {
-                // если это мой текущий герой:
+                // если это текущий герой:
                 if (!Constants.isPaused()) {
-                    moveHeroIfAvailable(visibleRect, canvas);
+                    moveHeroIfAvailable(visibleRect, canvas); // todo: узкое место!
                 }
                 heroService.getCurrentHero().draw(g2D);
-            } else if (isHeroActive(hero, visibleRect)) {
-                // если чужой герой (on-line и в пределах видимости):
+            } else if (visibleRect.contains(hero.getPosition())) {
+                // если чужой герой в пределах видимости:
                 hero.draw(g2D);
             }
         }
@@ -324,7 +326,7 @@ public class GameController extends GameControllerBase {
             canvas.moveViewToPlayer(0, 0);
         }
 
-        BufferedImage gMap = worldService.getCurrentWorld().getGameMap();
+        VolatileImage gMap = worldService.getCurrentWorld().getGameMap();
         return switch (vector) {
             case UP -> pos.y > 0;
             case UP_RIGHT -> pos.y > 0 && pos.x < gMap.getWidth();
@@ -420,12 +422,12 @@ public class GameController extends GameControllerBase {
         return worldService.getCurrentWorld().getTitle();
     }
 
-    public BufferedImage getCurrentWorldMap() {
+    public VolatileImage getCurrentWorldMap() {
         return worldService.getCurrentWorld().getGameMap();
     }
 
-    public void getDrawCurrentWorld(Graphics2D g2D) {
-        worldService.getCurrentWorld().draw(g2D);
+    public void getDrawCurrentWorld(Graphics2D v2D) {
+        worldService.getCurrentWorld().draw(v2D);
     }
 
     public void saveCurrentWorld() {

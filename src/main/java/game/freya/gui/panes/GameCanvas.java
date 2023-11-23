@@ -1,12 +1,9 @@
 package game.freya.gui.panes;
 
-import fox.FoxPointConverter;
-import fox.FoxRender;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig.HotKeys;
-import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -30,14 +27,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Point2D;
-import java.util.Set;
-
-import static game.freya.config.Constants.FFB;
 
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
 public class GameCanvas extends FoxCanvas {
-    private static final double infoStrut = 58d, infoStrutHardness = 40d;
     private final transient JFrame parentFrame;
     private final transient GameController gameController;
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
@@ -195,23 +188,7 @@ public class GameCanvas extends FoxCanvas {
         do {
             do {
                 Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                Constants.RENDER.setRender(g2D, FoxRender.RENDER.MED,
-                        Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
-                // draw the World:
-                drawWorld(g2D);
-
-                // рисуем UI:
-                super.drawUI(g2D);
-
-                // not-pause events and changes:
-                if (Constants.isPaused() && !isOptionsMenuSetVisible()) {
-                    drawPauseMode(g2D);
-                }
-
-                // draw debug info corner if debug mode on:
-                super.drawDebugInfo(g2D, gameController.getCurrentWorldTitle());
-
+                super.drawBackground(g2D);
                 g2D.dispose();
             } while (getBufferStrategy().contentsRestored());
             getBufferStrategy().show();
@@ -261,49 +238,6 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    private void drawWorld(Graphics2D g2D) {
-        // рисуем мир:
-        gameController.getDrawCurrentWorld(g2D);
-
-        // рисуем данные героев поверх игры:
-        drawHeroesData(g2D, gameController.getCurrentWorldHeroes());
-    }
-
-    private void drawHeroesData(Graphics2D g2D, Set<HeroDTO> heroes) {
-        int sMod = (int) (infoStrut - ((getViewPort().getHeight() - getViewPort().getY()) / infoStrutHardness));
-
-        g2D.setFont(Constants.DEBUG_FONT);
-        g2D.setColor(Color.WHITE);
-
-        // draw heroes data:
-        heroes.forEach(hero -> {
-            int strutMod = sMod;
-            if (gameController.isHeroActive(hero, getViewPort().getBounds())) {
-
-                // Преобразуем координаты героя из карты мира в координаты текущего холста:
-                Point2D relocatedPoint = FoxPointConverter.relocateOn(getViewPort(), getBounds(), hero.getPosition());
-
-                // draw hero name:
-                int halfName = (int) (FFB.getStringBounds(g2D, hero.getHeroName()).getWidth() / 2d);
-                g2D.drawString(hero.getHeroName(),
-                        (int) (relocatedPoint.getX() - halfName),
-                        (int) (relocatedPoint.getY() - strutMod));
-
-                strutMod += 24;
-
-                // draw hero HP:
-                g2D.setColor(Color.red);
-                g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
-                        (int) (relocatedPoint.getY() - strutMod),
-                        hero.getCurHealth() - 10, 9, 3, 3);
-                g2D.setColor(Color.black);
-                g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
-                        (int) (relocatedPoint.getY() - strutMod),
-                        hero.getMaxHealth(), 9, 3, 3);
-            }
-        });
-    }
-
     private void setGameActive() {
         init();
 
@@ -320,47 +254,6 @@ public class GameCanvas extends FoxCanvas {
 
         Constants.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
-    }
-
-    private void drawPauseMode(Graphics2D g2D) {
-        g2D.setFont(Constants.GAME_FONT_03);
-        g2D.setColor(new Color(0, 0, 0, 63));
-        g2D.drawString(getPausedString(),
-                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2 + 3);
-
-        g2D.setFont(Constants.GAME_FONT_02);
-        g2D.setColor(Color.DARK_GRAY);
-        g2D.drawString(getPausedString(),
-                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2);
-
-        // fill left gray menu polygon:
-        drawLeftGrayPoly(g2D);
-
-        drawEscMenu(g2D);
-    }
-
-    private void drawEscMenu(Graphics2D g2D) {
-        // buttons text:
-        g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getBackToGameButtonText(), getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-        g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getBackToGameButtonText(), getFirstButtonRect().x, getFirstButtonRect().y + 18);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getOptionsButtonText(), getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
-        g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getOptionsButtonText(), getSecondButtonRect().x, getSecondButtonRect().y + 18);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getSaveButtonText(), getThirdButtonRect().x - 1, getThirdButtonRect().y + 17);
-        g2D.setColor(isThirdButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getSaveButtonText(), getThirdButtonRect().x, getThirdButtonRect().y + 18);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
-        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
     private void zoomIn() {
@@ -721,7 +614,6 @@ public class GameCanvas extends FoxCanvas {
             moveViewToPlayer(0, 0);
             requestFocusInWindow();
 
-            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             setRevolatileNeeds(true);
         });
         resizeThread.start();

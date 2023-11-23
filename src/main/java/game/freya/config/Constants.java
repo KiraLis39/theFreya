@@ -95,7 +95,7 @@ public final class Constants {
     private static final int SHIFT_FPS_ALLOWED = 2; // допустимый разброс FPS.
     private static final int MAX_FPS_ALLOWED = 120; // больше этой частоты нет смысла гнать точно.
     private static final AtomicInteger realFreshRate = new AtomicInteger(0);
-    private static final AtomicLong delay = new AtomicLong(30L);
+    private static final AtomicLong delay = new AtomicLong(15L);
     @Getter
     @Setter
     private static FoxLogo logo;

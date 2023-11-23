@@ -21,6 +21,7 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.image.BufferedImage;
+import java.awt.image.VolatileImage;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Random;
@@ -68,7 +69,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @Getter
     @JsonIgnore
-    private BufferedImage gameMap;
+    private VolatileImage gameMap;
 
     @JsonIgnore
     private Image icon;
@@ -81,8 +82,8 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     public void init(GameCanvas canvas, GameController controller) {
         this.canvas = canvas;
 
-        this.gameMap = new BufferedImage(
-                dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM, BufferedImage.TYPE_INT_RGB);
+//        this.gameMap = new BufferedImage(
+//                dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM, BufferedImage.TYPE_INT_RGB);
         this.gameController = controller;
 
         log.info("World {} initialized successfully", getTitle());
@@ -92,32 +93,47 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
      * Основной метод рисования карты игры.
      * Для оптимизации указывается вьюпорт холста, чтобы игнорировать скрытое "за кадром".
      *
-     * @param g2D графика холста
+     * @param v2D volatile image холста
      */
     @Override
-    public void draw(Graphics2D g2D) {
-        Rectangle visibleRect = canvas.getViewPort().getBounds();
+    public void draw(Graphics2D v2D) {
+        Rectangle camera = canvas.getViewPort().getBounds();
+
         // рисуем готовый кадр мира:
-        g2D.drawImage(repaintMap(visibleRect), 0, 0, canvas.getWidth(), canvas.getHeight(),
-                visibleRect.x, visibleRect.y,
-                visibleRect.width, visibleRect.height,
+        v2D.drawImage(repaintMap(camera),
+
+                0, 0,
+                canvas.getWidth(), canvas.getHeight(),
+
+                camera.x, camera.y,
+                camera.width, camera.height,
+
                 canvas);
     }
 
-    private BufferedImage repaintMap(Rectangle visibleRect) {
+    private VolatileImage repaintMap(Rectangle camera) {
         final Color textColor = new Color(1, 158, 217, 191);
         final Color linesColor = new Color(0, 105, 210, 64);
         final Color backColor = new Color(52, 2, 52);
         final String scobe = ")";
 
+        Graphics2D m2D;
+        if (this.gameMap == null || this.gameMap.validate(canvas.getGraphicsConfiguration()) == VolatileImage.IMAGE_INCOMPATIBLE) {
+            this.gameMap = canvas.createVolatileImage(
+                    dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM);
+        }
+        if (this.gameMap.validate(canvas.getGraphicsConfiguration()) == VolatileImage.IMAGE_RESTORED) {
+            m2D = this.gameMap.createGraphics();
+        } else {
+            m2D = (Graphics2D) this.gameMap.getGraphics();
+        }
+
         // re-draw map:
-        Graphics2D m2D = (Graphics2D) this.gameMap.getGraphics();
-        m2D.clip(visibleRect);
         Constants.RENDER.setRender(m2D, FoxRender.RENDER.MED,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
         m2D.setColor(backColor);
-        m2D.fillRect(0, 0, gameMap.getWidth(), gameMap.getHeight());
+        m2D.fillRect(0, 0, camera.width, camera.height);
 
         int n = 1;
         m2D.setStroke(new BasicStroke(2f));
@@ -142,6 +158,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
             n++;
         }
 
+        // рисуем центральные оси:
         if (Constants.isDebugInfoVisible()) {
             m2D.setColor(Color.RED);
             m2D.setStroke(new BasicStroke(2f));
@@ -150,10 +167,10 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         }
 
         // рисуем окружение на карте:
-        drawEnvironments(m2D, visibleRect);
+        drawEnvironments(m2D, camera);
 
         // рисуем игроков из контроллера на карте:
-        gameController.drawHeroes(m2D, visibleRect, canvas);
+        gameController.drawHeroes(m2D, camera, canvas);
 
         m2D.dispose();
 
