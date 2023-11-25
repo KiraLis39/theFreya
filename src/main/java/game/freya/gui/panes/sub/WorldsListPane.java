@@ -8,7 +8,6 @@ import game.freya.entities.dto.WorldDTO;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.FButton;
-import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import game.freya.utils.ExceptionUtils;
@@ -19,16 +18,10 @@ import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
-import javax.swing.JTextPane;
 import javax.swing.border.EmptyBorder;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
@@ -43,6 +36,7 @@ public class WorldsListPane extends JPanel {
     private final transient FoxCanvas canvas;
     private final transient GameController gameController;
     private transient BufferedImage snap;
+    private transient ZLabel zlabel;
 
     public WorldsListPane(FoxCanvas canvas, GameController controller) {
         this.canvas = canvas;
@@ -102,64 +96,84 @@ public class WorldsListPane extends JPanel {
                 }, BorderLayout.WEST);
 
                 add(new SubPane("Мир:") {{
-                    setLayout(new FlowLayout(FlowLayout.LEFT, 1, 1));
+//                    setLayout(new FlowLayout(FlowLayout.LEFT, 1, 1));
                     setBorder(new EmptyBorder(-6, 3, 3, 3));
 
-                    add(new ZLabel(("<html><pre>"
+                    zlabel = new ZLabel(("<html><pre>"
                             + "Название:<font color=#F8CF43><b> %s</b></font>"
                             + "<br>Уровень:<font color=#43F8C9><b>  %s</b></font>"
                             + "<br>Сетевой:<font color=#239BEE><b>  %s</b></font>"
                             + "</pre></html>")
                             .formatted(world.getTitle(), world.getLevel().getDescription(), world.isNetAvailable()),
-                            null));
+                            null);
+
+                    add(zlabel, BorderLayout.WEST);
 
                     List<HeroDTO> hers = gameController.findAllHeroesByWorldUid(world.getUid());
                     if (hers.isEmpty()) {
-                        add(new JTexztArea("Герои: (нет)", 1, 30), BorderLayout.CENTER);
+                        zlabel.setText(zlabel.getText().replace("</pre>",
+                                "<br>Герои:<font color=#99c7b5><b>    (нет)</b></font></pre>"));
                     } else {
-                        JTextPane textPane = new JTextPane() {{
-                            setBorder(new EmptyBorder(3, 3, 3, 3));
-                            setFocusable(false);
-                            setOpaque(false);
-                            setBackground(new Color(0, 0, 0, 0));
-                            setForeground(Color.WHITE);
-                            setFont(Constants.DEBUG_FONT);
-                            setIgnoreRepaint(true);
-                        }};
-                        StyledDocument doc = textPane.getStyledDocument();
-                        Style styleRed = textPane.addStyle("red Style", null);
-                        Style styleBlue = textPane.addStyle("blue Style", null);
-                        Style styleGreen = textPane.addStyle("green Style", null);
-                        Style styleYellow = textPane.addStyle("yellow Style", null);
-                        Style styleMagenta = textPane.addStyle("magenta Style", null);
-                        StyleConstants.setForeground(styleRed, Color.red);
-                        StyleConstants.setForeground(styleBlue, Color.blue);
-                        StyleConstants.setForeground(styleGreen, Color.green);
-                        StyleConstants.setForeground(styleYellow, Color.yellow);
-                        StyleConstants.setForeground(styleMagenta, Color.magenta);
+//                        JTextPane textPane = new JTextPane() {{
+//                            setBorder(new EmptyBorder(3, 3, 3, 3));
+//                            setFocusable(false);
+//                            setOpaque(false);
+//                            setBackground(new Color(0, 0, 0, 0));
+//                            setForeground(Color.WHITE);
+//                            setFont(Constants.DEBUG_FONT);
+//                            setIgnoreRepaint(true);
+//                        }};
+//                        StyledDocument doc = textPane.getStyledDocument();
+//                        Style styleRed = textPane.addStyle("red Style", null);
+//                        Style styleBlue = textPane.addStyle("blue Style", null);
+//                        Style styleGreen = textPane.addStyle("green Style", null);
+//                        Style styleYellow = textPane.addStyle("yellow Style", null);
+//                        Style styleMagenta = textPane.addStyle("magenta Style", null);
+//                        StyleConstants.setForeground(styleRed, Color.red);
+//                        StyleConstants.setForeground(styleBlue, Color.blue);
+//                        StyleConstants.setForeground(styleGreen, Color.green);
+//                        StyleConstants.setForeground(styleYellow, Color.yellow);
+//                        StyleConstants.setForeground(styleMagenta, Color.magenta);
 
-                        try {
-                            doc.insertString(doc.getLength(), "Герои: ", null);
-                            boolean isFirst = true;
-                            for (HeroDTO her : hers) {
-                                if (!isFirst) {
-                                    doc.insertString(doc.getLength(), " | ", null);
-                                }
-                                switch (her.getType()) {
-                                    case SNIPER -> doc.insertString(doc.getLength(), her.getHeroName(), styleBlue);
-                                    case TOWER -> doc.insertString(doc.getLength(), her.getHeroName(), styleRed);
-                                    case FIXER -> doc.insertString(doc.getLength(), her.getHeroName(), styleYellow);
-                                    case HUNTER -> doc.insertString(doc.getLength(), her.getHeroName(), styleGreen);
-                                    case HACKER -> doc.insertString(doc.getLength(), her.getHeroName(), styleMagenta);
-                                    default -> doc.insertString(doc.getLength(), her.getHeroName(), null);
-                                }
-                                isFirst = false;
+                        StringBuilder heroes = new StringBuilder("<br>Герои:    ");
+//                        try {
+//                            doc.insertString(doc.getLength(), "Герои: ", null);
+                        boolean isFirst = true;
+                        for (HeroDTO her : hers) {
+                            if (!isFirst) {
+//                                    doc.insertString(doc.getLength(), " | ", null);
+                                heroes.append("<font color=#000000> | </font>");
                             }
-                        } catch (BadLocationException ble) {
-                            log.error("Ble: {}", ble.getMessage());
+//                                switch (her.getType()) {
+//                                    case SNIPER -> doc.insertString(doc.getLength(), her.getHeroName(), styleBlue);
+//                                    case TOWER -> doc.insertString(doc.getLength(), her.getHeroName(), styleRed);
+//                                    case FIXER -> doc.insertString(doc.getLength(), her.getHeroName(), styleYellow);
+//                                    case HUNTER -> doc.insertString(doc.getLength(), her.getHeroName(), styleGreen);
+//                                    case HACKER -> doc.insertString(doc.getLength(), her.getHeroName(), styleMagenta);
+//                                    default -> doc.insertString(doc.getLength(), her.getHeroName(), null);
+//                                }
+                            switch (her.getType()) {
+                                case SNIPER ->
+                                        heroes.append("<font color=#f0ec22><b>").append(her.getHeroName()).append("</b></font>");
+                                case TOWER ->
+                                        heroes.append("<font color=#0f294d><b>").append(her.getHeroName()).append("</b></font>");
+                                case FIXER ->
+                                        heroes.append("<font color=#bcd918><b>").append(her.getHeroName()).append("</b></font>");
+                                case HUNTER ->
+                                        heroes.append("<font color=#d95818><b>").append(her.getHeroName()).append("</b></font>");
+                                case HACKER ->
+                                        heroes.append("<font color=#223df0><b>").append(her.getHeroName()).append("</b></font>");
+                                default ->
+                                        heroes.append("<font color=#545454><b>").append(her.getHeroName()).append("</b></font>");
+                            }
+                            isFirst = false;
                         }
+//                        } catch (BadLocationException ble) {
+//                            log.error("Ble: {}", ble.getMessage());
+//                        }
 
-                        add(textPane, BorderLayout.CENTER);
+//                        add(textPane, BorderLayout.CENTER);
+                        zlabel.setText(zlabel.getText().replace("</pre>", "%s</pre>".formatted(heroes)));
                     }
                 }});
 
@@ -222,7 +236,8 @@ public class WorldsListPane extends JPanel {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 if (canvas instanceof MenuCanvas mCanvas) {
-                                    mCanvas.getOrCreateHeroForSelectedWorldAndCloseThat(world.getUid());
+                                    mCanvas.chooseOrCreateHeroForWorld(world.getUid());
+                                    WorldsListPane.this.setVisible(false);
                                 }
                             }
                         });

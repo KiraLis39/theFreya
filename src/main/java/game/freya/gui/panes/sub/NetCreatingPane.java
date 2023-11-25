@@ -2,6 +2,7 @@ package game.freya.gui.panes.sub;
 
 import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
+import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -15,7 +16,6 @@ import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
-import javax.swing.JPasswordField;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
@@ -27,6 +27,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -46,7 +49,7 @@ public class NetCreatingPane extends WorldCreator {
     private boolean isNetAvailable = true;
 
     @Getter
-    private int netPasswordHash = -1;
+    private int netPasswordHash;
 
     public NetCreatingPane(FoxCanvas canvas) {
         setName("Net creating pane");
@@ -86,11 +89,11 @@ public class NetCreatingPane extends WorldCreator {
             add(Box.createVerticalStrut(18));
 
             add(new SubPane("Сетевой пароль:") {{
-                add(new JPasswordField(String.valueOf(netPasswordHash), 20) {{
+                add(new JTextField() {{
                     addKeyListener(new KeyAdapter() {
                         @Override
                         public void keyReleased(KeyEvent e) {
-                            netPasswordHash = Arrays.hashCode(getPassword());
+                            netPasswordHash = getText().isBlank() ? -1 : getText().hashCode();
                         }
                     });
                 }});
@@ -113,7 +116,25 @@ public class NetCreatingPane extends WorldCreator {
                         @Override
                         public void actionPerformed(ActionEvent e) {
                             if (canvas instanceof MenuCanvas mCanvas) {
-                                mCanvas.createNewWorldAndCloseThatPanel(NetCreatingPane.this);
+                                String curLocAddr;
+                                try {
+                                    curLocAddr = InetAddress.getLocalHost().toString().split("/")[1];
+
+                                    WorldDTO aNewWorld = WorldDTO.builder()
+                                            .author(canvas.getGameController().getCurrentPlayerUid())
+                                            .createDate(LocalDateTime.now())
+                                            .title(getWorldName())
+                                            .level(getHardnessLevel())
+                                            .isLocalWorld(true)
+                                            .isNetAvailable(true)
+                                            .passwordHash(getNetPasswordHash())
+                                            .networkAddress(curLocAddr)
+                                            .build();
+                                    mCanvas.saveNewWorldAndCreateHero(aNewWorld);
+                                    setVisible(false);
+                                } catch (UnknownHostException ex) {
+                                    log.error("Не удалось создать мир на текущем локальном адресе");
+                                }
                             }
                         }
                     });

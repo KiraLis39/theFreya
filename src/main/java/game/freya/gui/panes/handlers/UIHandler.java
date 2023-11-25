@@ -5,7 +5,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.enums.MovingVector;
 import game.freya.gui.panes.MenuCanvas;
-import game.freya.net.ClientHandler;
+import game.freya.net.ConnectedPlayer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -248,7 +248,7 @@ public final class UIHandler {
         // draw minimap:
         Graphics2D m2D = (Graphics2D) minimapImage.getGraphics();
         m2D.clearRect(0, 0, minimapImage.getWidth(), minimapImage.getHeight());
-        Constants.RENDER.setRender(m2D, FoxRender.RENDER.MED);
+        Constants.RENDER.setRender(m2D, FoxRender.RENDER.OFF);
 
         // отображаем себя на миникарте:
         AffineTransform grTrMem = m2D.getTransform();
@@ -260,8 +260,8 @@ public final class UIHandler {
 
         // отображаем других игроков на миникарте:
         m2D.setColor(Color.YELLOW);
-        for (ClientHandler client : gameController.getConnectedPlayers()) {
-            Point2D.Double heroPos = client.getHeroDto().getPosition();
+        for (ConnectedPlayer connectedPlayer : gameController.getConnectedPlayers()) {
+            Point2D.Double heroPos = connectedPlayer.getHeroDto().getPosition();
             m2D.fillRect((int) (heroPos.x - 3), (int) (heroPos.y - 3), 6, 6);
         }
 

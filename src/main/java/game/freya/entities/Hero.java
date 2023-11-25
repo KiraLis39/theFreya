@@ -115,12 +115,12 @@ public class Hero {
     @CreatedDate
     @CreationTimestamp
     @Comment("Дата создания героя")
-    @Column(name = "create_date")
+    @Column(name = "create_date", columnDefinition = "TIMESTAMP")
     private LocalDateTime createDate = LocalDateTime.now();
 
     @Builder.Default
     @Comment("Дата последнего входа в игру")
-    @Column(name = "last_play_date")
+    @Column(name = "last_play_date", columnDefinition = "TIMESTAMP")
     private LocalDateTime lastPlayDate = LocalDateTime.now();
 
 

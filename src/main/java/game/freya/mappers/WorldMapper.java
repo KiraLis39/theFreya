@@ -28,6 +28,8 @@ public class WorldMapper {
                 .isNetAvailable(entity.isNetAvailable())
                 .passwordHash(entity.getPasswordHash())
                 .createDate(entity.getCreateDate())
+                .isLocalWorld(entity.isLocalWorld())
+                .networkAddress(entity.getNetworkAddress())
                 .build();
     }
 
@@ -52,6 +54,9 @@ public class WorldMapper {
                 .dimensionHeight(dto.getDimension().height)
                 .level(dto.getLevel())
                 .createDate(dto.getCreateDate())
+                .isLocalWorld(dto.isLocalWorld())
+                .networkAddress(dto.getNetworkAddress())
+//                .environments(dto.getEnvironments())
                 .build();
     }
 }

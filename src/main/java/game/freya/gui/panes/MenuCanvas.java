@@ -3,7 +3,6 @@ package game.freya.gui.panes;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.config.UserConfig;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.ScreenType;
@@ -12,11 +11,9 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.gui.panes.sub.HeroCreatingPane;
-import game.freya.gui.panes.sub.NetworkListPane;
-import game.freya.gui.panes.sub.templates.WorldCreator;
+import game.freya.net.NetConnectTemplate;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
@@ -59,6 +56,10 @@ public class MenuCanvas extends FoxCanvas {
         new Thread(this).start();
 
         // запуск вспомогательного потока процессов игры:
+        runSecondThread();
+    }
+
+    private void runSecondThread() {
         setSecondThread("Menu second thread", new Thread(() -> {
             if (!initialized) {
                 init();
@@ -78,11 +79,15 @@ public class MenuCanvas extends FoxCanvas {
                     Thread.currentThread().interrupt();
                 }
             }
+            log.info("Завершена работа вспомогательного потока меню.");
         }));
+        getSecondThread().setUncaughtExceptionHandler((t, e) ->
+                log.error("Ошибка вспомогательного потока главного меню: {}", ExceptionUtils.getFullExceptionMessage(e)));
         getSecondThread().start();
     }
 
-    private void init() {
+    @Override
+    public void init() {
         reloadShapes(this);
         recalculateMenuRectangles();
         recreateSubPanes();
@@ -113,9 +118,11 @@ public class MenuCanvas extends FoxCanvas {
                         if (getHeroesListPane().isVisible()) {
                             playWithThisHero(
                                     gameController.findAllHeroesByWorldUid(gameController.getCurrentWorldUid()).get(0));
+                            getHeroesListPane().setVisible(false);
                         } else if (getWorldsListPane().isVisible()) {
-                            getOrCreateHeroForSelectedWorldAndCloseThat(
+                            chooseOrCreateHeroForWorld(
                                     gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
+                            getWorldsListPane().setVisible(false);
                         } else {
                             getWorldsListPane().setVisible(true);
                         }
@@ -129,8 +136,12 @@ public class MenuCanvas extends FoxCanvas {
         long timeout = System.currentTimeMillis();
         while (getParent() == null || !isDisplayable() || !initialized) {
             Thread.yield();
-            if (System.currentTimeMillis() - timeout > 9_000) {
-                throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
+            if (System.currentTimeMillis() - timeout > 3_000) {
+                timeout = System.currentTimeMillis();
+                log.error("Не удалось запустить поток {} за отведённое время!", getName());
+                if (!getSecondThread().isAlive()) {
+                    runSecondThread();
+                }
             }
         }
 
@@ -143,6 +154,10 @@ public class MenuCanvas extends FoxCanvas {
 
             try {
                 drawNextFrame();
+
+                if (isConnectionAwait()) {
+                    getNetworkListPane().repaint();
+                }
             } catch (Exception e) {
                 throwExceptionAndYield(e);
             }
@@ -168,31 +183,6 @@ public class MenuCanvas extends FoxCanvas {
             } while (getBufferStrategy().contentsRestored());
             getBufferStrategy().show();
         } while (getBufferStrategy().contentsLost());
-    }
-
-    private void throwExceptionAndYield(Exception e) {
-        log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-        increaseDrawErrorCount(); // при неуспешной отрисовке
-        if (getDrawErrorCount() > 100) {
-            new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
-                    "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
-                    FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-//                    gameController.exitTheGame(null);
-            throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
-        }
-        Thread.yield();
-    }
-
-    private void doDrawDelay() {
-        try {
-            if (Constants.getDelay() > 1) {
-                Thread.sleep(Constants.getDelay());
-            } else {
-                Thread.yield();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     @Override
@@ -223,9 +213,7 @@ public class MenuCanvas extends FoxCanvas {
 
             log.debug("Resizing of menu canvas...");
 
-            if (Constants.getUserConfig().isFullscreen()
-                    && Constants.getUserConfig().getFullscreenType().equals(UserConfig.FullscreenType.EXCLUSIVE)
-            ) {
+            if (Constants.getUserConfig().isFullscreen()) {
                 setSize(parentFrame.getSize());
             } else {
                 setSize(parentFrame.getRootPane().getSize());
@@ -264,129 +252,11 @@ public class MenuCanvas extends FoxCanvas {
         resizeThread.start();
         try {
             resizeThread.join(500);
+            // parentFrame.createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
         } catch (InterruptedException e) {
             resizeThread.interrupt();
         }
-    }
-
-    /**
-     * Когда создаём новый мир - идём сюда, для его сохранения и указания как текущий мир в контроллере.
-     *
-     * @param newWorldTemplate модель нового мира для сохранения.
-     */
-    public void createNewWorldAndCloseThatPanel(WorldCreator newWorldTemplate) {
-        WorldDTO aNewWorld = WorldDTO.builder()
-                .title(newWorldTemplate.getWorldName())
-                .level(newWorldTemplate.getHardnessLevel())
-                .isNetAvailable(newWorldTemplate.isNetAvailable())
-                .passwordHash(newWorldTemplate.getNetPasswordHash())
-                .build();
-
-        gameController.setCurrentWorld(gameController.saveNewWorld(aNewWorld));
-
-        // скрываем панель создания мира, показываем панель создания первого героя для нового мира:
-        getWorldCreatingPane().setVisible(false);
-        getHeroCreatingPane().setVisible(true);
-    }
-
-    public void connectToWorldAndCloseThatPanel(@NotNull NetworkListPane connectionTemplate) {
-        setConnectionAwait(true);
-
-        // 1) приходим сюда с host:port для подключения
-        String address = connectionTemplate.getAddress().trim();
-
-        try {
-            String h, password;
-            Integer p;
-            if (!address.isBlank()) {
-                password = connectionTemplate.getPassword();
-                h = address.contains(":") ? address.split(":")[0] : address;
-                p = address.contains(":") ? Integer.parseInt(address.split(":")[1].trim()) : null;
-
-                // 2) подключаемся к серверу, авторизуемся там и получаем мир для сохранения локально
-                if (gameController.connectToServer(h.trim(), p, password)) {
-                    // здесь уже проставлен currentWorld с сервера:
-                    setConnectionAwait(false);
-                    getNetworkListPane().setVisible(false);
-
-                    // 3) если у нас нет героя в этом мире - создаём
-                    if (gameController.findAllHeroesByWorldUid(gameController.getCurrentWorldUid()).isEmpty()) {
-                        getHeroCreatingPane().setVisible(true);
-                    } else {
-                        getHeroesListPane().setVisible(true);
-                    }
-                } else {
-                    setConnectionAwait(false);
-                    new FOptionPane().buildFOptionPane("Отказ:", "Сервер отклонил подключение!", 5, true);
-                    throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, "connect to remote game");
-                }
-            }
-        } catch (ConnectException ce) {
-            new FOptionPane().buildFOptionPane("Не доступно:", "Адрес не доступен.", FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-            log.warn("Server address connection failed: {}", ExceptionUtils.getFullExceptionMessage(ce));
-        } catch (Exception e) {
-            new FOptionPane().buildFOptionPane("Ошибка данных:", ("Ошибка адреса подключения '%s'.\n"
-                    + "Верно: <host_ip> или <host_ip>:<port> (192.168.0.10:13958)")
-                    .formatted(e.getMessage()), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-            log.error("Server aim address to connect error: {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
-    }
-
-    /**
-     * После выбора уже существующего мира - приходим сюда для создания нового героя или выбора
-     * существующего, для игры в данном мире.
-     *
-     * @param selectedWorldUuid uuid выбранного для игры мира.
-     */
-    public void getOrCreateHeroForSelectedWorldAndCloseThat(UUID selectedWorldUuid) {
-        gameController.setCurrentWorld(selectedWorldUuid);
-
-        if (gameController.findAllHeroesByWorldUid(selectedWorldUuid).isEmpty()) {
-            getHeroCreatingPane().setVisible(true);
-        } else {
-            getHeroesListPane().setVisible(true);
-        }
-
-        getNetworkListPane().setVisible(false);
-        getWorldsListPane().setVisible(false);
-    }
-
-    /**
-     * После создания нового мира - приходим сюда для создания и нового героя для игры.
-     *
-     * @param newHeroTemplate модель нового героя для игры в новом мире.
-     */
-    public void createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane newHeroTemplate) {
-        HeroDTO savedNewHeroDto = gameController.saveNewHero(HeroDTO.builder()
-                .heroName(newHeroTemplate.getHeroName())
-                .ownerUid(gameController.getCurrentPlayerUid())
-                .worldUid(newHeroTemplate.getWorldUid())
-                .build());
-
-        gameController.setCurrentWorld(newHeroTemplate.getWorldUid()); // again?..
-
-        // начинаем игру сохраненным и указанным как текущим героем в указанном как текущем мире:
-        playWithThisHero(savedNewHeroDto);
-    }
-
-    /**
-     * После выбора или создания мира (и указания его как текущего в контроллере) и выбора или создания героя, которым
-     * будем играть в выбранном мире - попадаем сюда для последних приготовлений и
-     * загрузки холста мира (собственно, начала игры).
-     *
-     * @param hero выбранный герой для игры в выбранном ранее мире.
-     */
-    public void playWithThisHero(HeroDTO hero) {
-        hero.setLastPlayDate(LocalDateTime.now());
-
-        gameController.setCurrentHero(hero); // again?..
-        gameController.setCurrentWorld(hero.getWorldUid()); // again?..
-        gameController.setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());
-
-        getHeroCreatingPane().setVisible(false);
-
-        // здесь у героя уже должны быть заполнены все нужные поля (мир, владелец, он-лайн и т.п.).
-        gameController.loadScreen(ScreenType.GAME_SCREEN);
     }
 
     public void deleteExistsWorldAndCloseThatPanel(UUID worldUid) {
@@ -549,5 +419,137 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void keyReleased(KeyEvent e) {
+    }
+
+
+    // ready to game methods:
+
+    /**
+     * Когда создаём новый мир - идём сюда, для его сохранения и указания как текущий мир в контроллере.
+     *
+     * @param newWorld модель нового мира для сохранения.
+     */
+    public void saveNewWorldAndCreateHero(WorldDTO newWorld) {
+        gameController.setCurrentWorld(gameController.saveNewWorld(newWorld));
+
+        // показываем панель создания первого героя:
+        getHeroCreatingPane().setVisible(true);
+    }
+
+    public void connectToNetworkWorld(NetConnectTemplate connectionTemplate) {
+        if (connectionTemplate.address().isBlank()) {
+            new FOptionPane().buildFOptionPane("Ошибка адреса:", "Адрес сервера не может быть пустым.", 10, true);
+        }
+
+        // 0) Если игра по сети, но Сервер - мы, и ещё не запускался:
+        if (connectionTemplate.worldUid() != null) {
+            gameController.setCurrentWorld(connectionTemplate.worldUid());
+        }
+        if (gameController.isCurrentWorldIsLocal() && gameController.isCurrentWorldIsNetwork() && !gameController.isServerIsOpen()) {
+            gameController.openServer();
+        }
+
+        try {
+            // 1) приходим сюда с host:port для подключения
+            String address = connectionTemplate.address().trim();
+            String h = address.contains(":") ? address.split(":")[0].trim() : address;
+            Integer p = address.contains(":") ? Integer.parseInt(address.split(":")[1].trim()) : null;
+
+            // 2) подключаемся к серверу, авторизуемся там и получаем мир для сохранения локально
+            if (gameController.connectToServer(h.trim(), p, connectionTemplate.passwordHash())) {
+                // снимаем флаг анимации подключения с листа серверов:
+                setConnectionAwait(false);
+                getNetworkListPane().setVisible(false);
+
+                // 3) проверка героя в этом мире:
+                chooseOrCreateHeroForWorld(gameController.getCurrentWorldUid());
+            } else {
+                setConnectionAwait(false);
+                new FOptionPane().buildFOptionPane("Отказ:", "Сервер отклонил подключение!", 5, true);
+                throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, "connect to remote game");
+            }
+        } catch (ConnectException ce) {
+            setConnectionAwait(false);
+            new FOptionPane().buildFOptionPane("Не доступно:", "Адрес не доступен.", FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            log.warn("Server address connection failed: {}", ExceptionUtils.getFullExceptionMessage(ce));
+        } catch (Exception e) {
+            setConnectionAwait(false);
+            new FOptionPane().buildFOptionPane("Ошибка данных:", ("Ошибка адреса подключения '%s'.\n"
+                    + "Верно: <host_ip> или <host_ip>:<port> (192.168.0.10:13958)")
+                    .formatted(e.getMessage()), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            log.error("Server aim address to connect error: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+    }
+
+    /**
+     * После выбора уже существующего мира - приходим сюда для создания нового героя или выбора
+     * существующего, для игры в данном мире.
+     *
+     * @param worldUid uuid выбранного для игры мира.
+     */
+    public void chooseOrCreateHeroForWorld(UUID worldUid) {
+        gameController.setCurrentWorld(worldUid); // на всякий случай.
+
+        if (gameController.findAllHeroesByWorldUid(worldUid).isEmpty()) {
+            getHeroCreatingPane().setVisible(true);
+        } else {
+            getHeroesListPane().setVisible(true);
+        }
+    }
+
+    /**
+     * После создания нового мира - приходим сюда для создания и нового героя для игры.
+     *
+     * @param newHeroTemplate модель нового героя для игры в новом мире.
+     */
+    public void createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane newHeroTemplate) {
+        HeroDTO savedNewHeroDto = gameController.saveNewHero(HeroDTO.builder()
+                .heroName(newHeroTemplate.getHeroName())
+                .ownerUid(gameController.getCurrentPlayerUid())
+                .worldUid(newHeroTemplate.getWorldUid())
+                .build());
+
+        gameController.setCurrentWorld(newHeroTemplate.getWorldUid()); // again?..
+
+        // начинаем игру сохраненным и указанным как текущим героем в указанном как текущем мире:
+        if (gameController.isCurrentWorldIsNetwork()) {
+            connectToNetworkWorld(NetConnectTemplate.builder()
+                    .worldUid(newHeroTemplate.getWorldUid())
+                    .address(gameController.getCurrentWorldAddress())
+                    .passwordHash(gameController.getCurrentWorldPassword())
+                    .build());
+        } else {
+            playWithThisHero(savedNewHeroDto);
+        }
+    }
+
+    /**
+     * После выбора или создания мира (и указания его как текущего в контроллере) и выбора или создания героя, которым
+     * будем играть в выбранном мире - попадаем сюда для последних приготовлений и
+     * загрузки холста мира (собственно, начала игры).
+     *
+     * @param hero выбранный герой для игры в выбранном ранее мире.
+     */
+    public void playWithThisHero(HeroDTO hero) {
+        hero.setLastPlayDate(LocalDateTime.now());
+
+        gameController.setCurrentHero(hero); // again?..
+        gameController.setCurrentWorld(hero.getWorldUid()); // again?..
+        gameController.setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());
+
+        // если этот мир по сети:
+        if (gameController.isCurrentWorldIsNetwork()) {
+            // шлем на Сервер своего выбранного Героя:
+            if (gameController.registerCurrentHeroOnServer()) {
+                gameController.loadScreen(ScreenType.GAME_SCREEN);
+            }
+//            if (gameController.openServer()) {
+//                log.warn("Сервер сетевой игры успешно активирован");
+//            } else {
+//                log.warn("Что-то пошло не так при активации сетевого сервера");
+//            }
+        } else {
+            gameController.loadScreen(ScreenType.GAME_SCREEN);
+        }
     }
 }

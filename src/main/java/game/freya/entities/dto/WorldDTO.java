@@ -51,7 +51,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     @Setter
     @Getter
     @Builder.Default
-    private int passwordHash = -1;
+    private int passwordHash = 0;
     @Setter
     @Getter
     @Builder.Default
@@ -60,9 +60,19 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     @Getter
     @Builder.Default
     private HardnessLevel level = HardnessLevel.EASY;
+
     @Getter
     @Builder.Default
     private LocalDateTime createDate = LocalDateTime.now();
+
+    @Getter
+    @Builder.Default
+    private boolean isLocalWorld = true;
+
+    @Getter
+    @Setter
+    private String networkAddress;
+
     // custom fields:
     @JsonIgnore
     private GameCanvas canvas;
@@ -76,7 +86,6 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @JsonIgnore
     private GameController gameController;
-
 
     @Override
     public void init(GameCanvas canvas, GameController controller) {

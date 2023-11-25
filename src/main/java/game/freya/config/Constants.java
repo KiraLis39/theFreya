@@ -39,7 +39,7 @@ public final class Constants {
     public static final int SERVER_PORT = 13958;
     public static final int SOCKET_BUFFER_SIZE = 10240; // 65536
     public static final long NETWORK_DATA_TRANSLATE_DELAY = 5_000L; // сколько миллисекунд ждать между отправками данных на сервер
-    public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 300_000; // сколько миллисекунд сервер ждёт подключений
+    public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 600_000; // сколько миллисекунд сервер ждёт подключений
 
 
     // other:

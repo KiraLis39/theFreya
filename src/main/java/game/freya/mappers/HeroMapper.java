@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Component
 public final class HeroMapper {
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
 
     public Hero toEntity(HeroDTO dto) {
         if (dto == null) {

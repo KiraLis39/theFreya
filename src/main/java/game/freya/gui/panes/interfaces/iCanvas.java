@@ -10,4 +10,6 @@ public interface iCanvas extends MouseListener, MouseMotionListener, MouseWheelL
     void incrementFramesCounter();
 
     void stop();
+
+    void init();
 }

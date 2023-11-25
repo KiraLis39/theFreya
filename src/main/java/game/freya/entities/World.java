@@ -33,7 +33,7 @@ import java.util.UUID;
 public class World {
     @Builder.Default
     @ElementCollection
-    private final Set<String> entities = HashSet.newHashSet(100);
+    private final Set<String> environments = HashSet.newHashSet(100);
     @Id
     @Builder.Default
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -43,23 +43,36 @@ public class World {
     private UUID author;
     @Column(name = "title", length = 64, unique = true, nullable = false)
     private String title;
+
     @Builder.Default
-    @Column(name = "is_net_available")
+    @Column(name = "is_net_available", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean isNetAvailable = false;
+
     @Column(name = "password_hash")
     private int passwordHash;
+
     @Builder.Default
     @Column(name = "dimension_w")
     private int dimensionWidth = 64; // 64 = 2048 cells | 128 = 4096 cells
+
     @Builder.Default
     @Column(name = "dimension_h")
     private int dimensionHeight = 32; // 32 = 1024 cells | 128 = 4096 cells
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private HardnessLevel level = HardnessLevel.EASY;
+
     @Builder.Default
     @CreatedDate
     @CreationTimestamp
-    @Column(name = "create_date", nullable = false)
+    @Column(name = "create_date", nullable = false, columnDefinition = "TIMESTAMP")
     private LocalDateTime createDate = LocalDateTime.now();
+
+    @Builder.Default
+    @Column(name = "is_local_world", columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private boolean isLocalWorld = true;
+
+    @Column(name = "network_address")
+    private String networkAddress;
 }

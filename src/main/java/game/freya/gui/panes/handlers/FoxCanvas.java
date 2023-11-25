@@ -6,6 +6,8 @@ import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.interfaces.iCanvas;
@@ -43,7 +45,8 @@ import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static game.freya.config.Constants.FFB;
@@ -70,6 +73,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private final transient JLayeredPane parentLayers;
     private final transient UIHandler uiHandler;
     private final Color grayBackColor = new Color(0, 0, 0, 223);
+    private final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
     private transient Thread secondThread;
     private transient Rectangle2D viewPort;
     private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
@@ -84,7 +88,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
             heroesListPane, networkListPane, networkCreatingPane;
     private float downShift = 0;
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
-    private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false, isConnectionAwait = false;
+    private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false;
 
     protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller, JLayeredPane layeredPane, UIHandler uiHandler) {
         super(gConf);
@@ -200,7 +204,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         drawUI(v2D, getName());
         drawDebugInfo(v2D, null);
 
-        if (Constants.isFpsInfoVisible()) {
+        if (Constants.isFpsInfoVisible() && isDisplayable()) {
             drawFps(v2D);
         }
     }
@@ -210,7 +214,10 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         gameController.getDrawCurrentWorld(v2D);
 
         // рисуем данные героев поверх игры:
-        drawHeroesData(v2D, gameController.getCurrentWorldHeroes());
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+
+        drawHeroesData(v2D);
         drawUI(v2D, getName());
         drawDebugInfo(v2D, gameController.getCurrentWorldTitle());
 
@@ -219,11 +226,18 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         }
     }
 
-    private void drawHeroesData(Graphics2D g2D, Set<HeroDTO> heroes) {
+    private void drawHeroesData(Graphics2D g2D) {
         int sMod = (int) (infoStrut - ((getViewPort().getHeight() - getViewPort().getY()) / infoStrutHardness));
 
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.setColor(Color.WHITE);
+
+        List<HeroDTO> heroes;
+        if (gameController.isCurrentHeroOnline()) {
+            heroes = gameController.getConnectedHeroes();
+        } else {
+            heroes = List.of(gameController.getCurrentHero());
+        }
 
         // draw heroes data:
         heroes.forEach(hero -> {
@@ -282,21 +296,23 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         // graphics info:
         BufferCapabilities gCap = getBufferStrategy().getCapabilities();
         g2D.drawString("Front accelerated: %s".formatted(gCap.getFrontBufferCapabilities().isAccelerated()),
-                getWidth() - leftShift, getHeight() - 350);
+                getWidth() - leftShift, getHeight() - 370);
         g2D.drawString("Front is true volatile: %s".formatted(gCap.getFrontBufferCapabilities().isTrueVolatile()),
-                getWidth() - leftShift, getHeight() - 330);
+                getWidth() - leftShift, getHeight() - 350);
         g2D.drawString("Back accelerated: %s".formatted(gCap.getBackBufferCapabilities().isAccelerated()),
-                getWidth() - leftShift, getHeight() - 305);
+                getWidth() - leftShift, getHeight() - 325);
         g2D.drawString("Back is true volatile: %s".formatted(gCap.getBackBufferCapabilities().isTrueVolatile()),
-                getWidth() - leftShift, getHeight() - 285);
-        g2D.drawString("Fullscreen required: %s".formatted(gCap.isFullScreenRequired()), getWidth() - leftShift, getHeight() - 260);
-        g2D.drawString("Multi-buffer available: %s".formatted(gCap.isMultiBufferAvailable()), getWidth() - leftShift, getHeight() - 240);
-        g2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 220);
+                getWidth() - leftShift, getHeight() - 305);
+        g2D.drawString("Fullscreen required: %s".formatted(gCap.isFullScreenRequired()), getWidth() - leftShift, getHeight() - 280);
+        g2D.drawString("Multi-buffer available: %s".formatted(gCap.isMultiBufferAvailable()), getWidth() - leftShift, getHeight() - 260);
+        g2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 240);
 
         // server info:
         g2D.setColor(gameController.isServerIsOpen() ? Color.GREEN : Color.DARK_GRAY);
-        g2D.drawString("Server open: %s".formatted(gameController.isServerIsOpen()), getWidth() - leftShift, getHeight() - 190);
-        g2D.drawString("Connected players: %s".formatted(gameController.getConnectedPlayersCount()),
+        g2D.drawString("Server open: %s".formatted(gameController.isServerIsOpen()), getWidth() - leftShift, getHeight() - 210);
+        g2D.drawString("Connected clients: %s".formatted(gameController.getConnectedClientsCount()),
+                getWidth() - leftShift, getHeight() - 190);
+        g2D.drawString("Connected players: %s".formatted(gameController.getConnectedPlayers().size()),
                 getWidth() - leftShift, getHeight() - 170);
         g2D.setColor(Color.GRAY);
 
@@ -682,5 +698,53 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         this.secondThread = secondThread;
         this.secondThread.setName(threadName);
         this.secondThread.setDaemon(true);
+    }
+
+    /**
+     * Проверка доступности удалённого сервера:
+     *
+     * @param host адрес, куда стучимся для получения pong.
+     * @param port адрес, куда стучимся для получения pong.
+     * @return успешность получения pong от удалённого Сервера.
+     */
+    public boolean ping(String host, Integer port) {
+        return gameController.ping(host, port);
+    }
+
+    public boolean isConnectionAwait() {
+        return isConnectionAwait.get();
+    }
+
+    public void setConnectionAwait(boolean b) {
+        isConnectionAwait.set(b);
+        if (!b) {
+            // очищаем от анимации панели:
+            getNetworkListPane().repaint();
+        }
+    }
+
+    public void doDrawDelay() {
+        try {
+            if (Constants.getDelay() > 1) {
+                Thread.sleep(Constants.getDelay());
+            } else {
+                Thread.yield();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public void throwExceptionAndYield(Exception e) {
+        log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+        increaseDrawErrorCount(); // при неуспешной отрисовке
+        if (getDrawErrorCount() > 100) {
+            new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
+                    "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
+                    FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+//                    gameController.exitTheGame(null);
+            throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
+        }
+        Thread.yield();
     }
 }

@@ -2,6 +2,7 @@ package game.freya.gui.panes.sub;
 
 import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
+import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -28,6 +29,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -47,7 +49,7 @@ public class WorldCreatingPane extends WorldCreator {
     private boolean isNetAvailable = false;
 
     @Getter
-    private int netPasswordHash = -1;
+    private int netPasswordHash;
 
     private SubPane netPassPane;
 
@@ -82,7 +84,8 @@ public class WorldCreatingPane extends WorldCreator {
             add(new SubPane("Уровень сложности:") {{
                 add(new JComboBox<>(Arrays.stream(HardnessLevel.values()).map(HardnessLevel::getDescription).toArray()) {{
                     addActionListener(e -> hardnessLevel = Arrays.stream(HardnessLevel.values())
-                            .filter(hl -> hl.getDescription().equals(getSelectedItem().toString())).findFirst().get());
+                            .filter(hl -> hl.getDescription().equals(getSelectedItem().toString())).findFirst()
+                            .orElseThrow());
                 }});
             }});
 
@@ -134,7 +137,16 @@ public class WorldCreatingPane extends WorldCreator {
                         @Override
                         public void actionPerformed(ActionEvent e) {
                             if (canvas instanceof MenuCanvas mCanvas) {
-                                mCanvas.createNewWorldAndCloseThatPanel(WorldCreatingPane.this);
+                                WorldDTO aNewWorld = WorldDTO.builder()
+                                        .author(canvas.getGameController().getCurrentPlayerUid())
+                                        .createDate(LocalDateTime.now())
+                                        .title(getWorldName())
+                                        .level(getHardnessLevel())
+                                        .isNetAvailable(false)
+                                        .isLocalWorld(true)
+                                        .build();
+                                mCanvas.saveNewWorldAndCreateHero(aNewWorld);
+                                setVisible(false);
                             }
                         }
                     });

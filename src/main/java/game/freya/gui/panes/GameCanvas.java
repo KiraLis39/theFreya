@@ -9,7 +9,6 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
-import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
@@ -92,6 +91,12 @@ public class GameCanvas extends FoxCanvas {
             }
         }));
         getSecondThread().start();
+
+        // network check:
+        if (gameController.getCurrentWorld().isNetAvailable()) {
+            log.info("Начинается трансляция данных в сеть...");
+            gameController.startClientBroadcast(); // если мы - клиент.
+        }
     }
 
     private void setInAc() {
@@ -156,31 +161,6 @@ public class GameCanvas extends FoxCanvas {
         log.info("Thread of Game canvas is finalized.");
     }
 
-    private void doDrawDelay() {
-        try {
-            if (Constants.getDelay() > 1) {
-                Thread.sleep(Constants.getDelay());
-            } else {
-                Thread.yield();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private void throwExceptionAndYield(Exception e) {
-        log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-        increaseDrawErrorCount(); // при неуспешной отрисовке
-        if (getDrawErrorCount() > 100) {
-            new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
-                    "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
-                    FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-//                    gameController.exitTheGame(null);
-            throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
-        }
-        Thread.yield();
-    }
-
     /**
      * Основной цикл отрисовки игрового окна.
      */
@@ -195,7 +175,8 @@ public class GameCanvas extends FoxCanvas {
         } while (getBufferStrategy().contentsLost());
     }
 
-    private void init() {
+    @Override
+    public void init() {
         log.info("Do canvas re-initialization...");
 
         // проводим основную инициализацию класса текущего мира:
@@ -429,7 +410,7 @@ public class GameCanvas extends FoxCanvas {
 
             // если игра сетевая - останавливаем сервер:
             if (gameController.isCurrentWorldIsNetwork()) {
-                if (gameController.closeNet()) {
+                if (gameController.closeServer()) {
                     log.info("Сервер успешно остановлен");
                 } else {
                     log.warn("Возникла ошибка при закрытии сервера.");
@@ -510,8 +491,8 @@ public class GameCanvas extends FoxCanvas {
                 getGameplayPane().setVisible(false);
             } else {
                 // нет нужды в паузе здесь, просто сохраняемся:
-                Constants.setPaused(false);
                 justSave();
+                Constants.setPaused(false);
                 new FOptionPane().buildFOptionPane("Успешно", "Игра сохранена!",
                         FOptionPane.TYPE.INFO, null, Constants.getDefaultCursor(), 3, false);
             }

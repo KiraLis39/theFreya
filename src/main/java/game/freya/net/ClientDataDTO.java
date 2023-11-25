@@ -9,6 +9,7 @@ import lombok.Builder;
 
 import java.awt.geom.Point2D;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -33,9 +34,11 @@ public record ClientDataDTO(
         boolean isOnline,
         String explanation,
         World world,
-//        BufferedImage gameMap,
-//        BufferedImage icon,
-        int passwordHash
+        int passwordHash,
+        LocalDateTime createDate,
+        LocalDateTime lastPlayDate
+        // BufferedImage gameMap,
+        // BufferedImage icon
 ) implements Serializable {
     @Override
     public boolean equals(Object o) {

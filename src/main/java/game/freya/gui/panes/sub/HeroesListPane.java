@@ -53,10 +53,8 @@ public class HeroesListPane extends JPanel {
     private void reloadHeroes(FoxCanvas canvas) {
         HeroesListPane.this.removeAll();
 
-        int i = 0;
         for (HeroDTO hero : gameController.findAllHeroesByWorldUid(gameController.getCurrentWorldUid())) {
-            i++;
-            add(new SubPane("Hero 0" + i) {{
+            add(new SubPane(hero.getHeroName(), hero.getType().getColor()) {{
                 add(new JPanel() {
                     @Override
                     protected void paintComponent(Graphics g) {
@@ -73,7 +71,9 @@ public class HeroesListPane extends JPanel {
                     }
                 }, BorderLayout.WEST);
 
-                add(new JTexztArea("Герой '%s'".formatted(hero.getHeroName()), 1, 30), BorderLayout.CENTER);
+                add(new JTexztArea(hero.getType().getDescription(), 1, 30) {{
+                    setBorder(new EmptyBorder(0, 6, 0, 0));
+                }}, BorderLayout.CENTER);
 
                 add(new JPanel() {{
                     setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
@@ -112,10 +112,8 @@ public class HeroesListPane extends JPanel {
                                             "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                     ) {
-                                        if (canvas instanceof MenuCanvas mCanvas) {
-                                            mCanvas.deleteExistsPlayerHero(hero.getUid());
-                                            reloadHeroes(mCanvas);
-                                        }
+                                        ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getUid());
+                                        reloadHeroes(canvas);
                                     }
                                 }
                             });
@@ -136,6 +134,7 @@ public class HeroesListPane extends JPanel {
                             public void actionPerformed(ActionEvent e) {
                                 if (canvas instanceof MenuCanvas mCanvas) {
                                     mCanvas.playWithThisHero(hero);
+                                    HeroesListPane.this.setVisible(false);
                                 }
                             }
                         });
