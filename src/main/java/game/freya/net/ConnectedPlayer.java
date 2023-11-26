@@ -7,14 +7,16 @@ import game.freya.GameController;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.NetDataType;
+import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.UUID;
@@ -32,7 +34,7 @@ public class ConnectedPlayer extends Thread implements Runnable {
     private final Server server;
     private final InetAddress inetAddress;
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
-    private DataOutputStream outputStream;
+    private ObjectOutputStream oos;
     @Getter
     private UUID playerUid;
     // это тот самый удалённый игрок, данные которого обновляются при каждом SYNC-запросе с клиента:
@@ -52,6 +54,13 @@ public class ConnectedPlayer extends Thread implements Runnable {
         this.inetAddress = client.getInetAddress();
         this.clientUid = UUID.randomUUID();
 
+        try {
+            this.oos = new ObjectOutputStream(client.getOutputStream());
+            push(ClientDataDTO.builder().type(NetDataType.PONG).build());
+        } catch (IOException e) {
+            log.error("Не удалось получить исходящий поток данных сокетного подключения {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+
         //setDaemon(true);
         setUncaughtExceptionHandler((t, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));
         start();
@@ -60,11 +69,10 @@ public class ConnectedPlayer extends Thread implements Runnable {
     @Override
     public void run() {
         log.info("Запущен новый поток для клиента {}...", clientUid);
-        try (DataInputStream inputStream = new DataInputStream(client.getInputStream())) {
-            this.outputStream = new DataOutputStream(client.getOutputStream());
 
+        try (ObjectInputStream ois = new ObjectInputStream(client.getInputStream())) {
             ClientDataDTO readed;
-            while ((readed = mapper.readValue(inputStream.readUTF(), ClientDataDTO.class)) != null && !doClose) {
+            while ((readed = (ClientDataDTO) ois.readObject()) != null && !doClose) {
                 log.info("Income client`s data here: {}", readed);
 
                 NetDataType mesType = readed.type();
@@ -87,9 +95,14 @@ public class ConnectedPlayer extends Thread implements Runnable {
             this.client.close();
 
         } catch (IOException e) {
-            log.warn("Something wrong with client`s data stream: {}", ExceptionUtils.getFullExceptionMessage(e));
-            new FOptionPane().buildFOptionPane("Подключение разорвано",
-                    "Связь с удалённым Сервером утеряна.", 30, false);
+            if (!this.doClose) {
+                // если закрыли соединение не умышленно, не сами:
+                log.warn("Something wrong with client`s data stream: {}", ExceptionUtils.getFullExceptionMessage(e));
+                new FOptionPane().buildFOptionPane("Подключение разорвано",
+                        "Связь с удалённым Сервером утеряна.", 30, false);
+            }
+        } catch (ClassNotFoundException cnf) {
+            log.warn("Client`s input stream thread cant read class: {}", ExceptionUtils.getFullExceptionMessage(cnf));
         } catch (InterruptedException e) {
             log.warn("Client`s input stream thread was interrupted: {}", ExceptionUtils.getFullExceptionMessage(e));
             interrupt();
@@ -114,7 +127,7 @@ public class ConnectedPlayer extends Thread implements Runnable {
         }
     }
 
-    private void saveConnectedHero(ClientDataDTO readed) throws IOException {
+    private void saveConnectedHero(ClientDataDTO readed) {
         this.connectedHero = HeroDTO.builder()
                 .uid(readed.heroUuid())
                 .heroName(readed.heroName())
@@ -145,8 +158,14 @@ public class ConnectedPlayer extends Thread implements Runnable {
 //        gameController.saveNewHero(this.heroDto);
     }
 
-    public void push(ClientDataDTO data) throws IOException {
-        outputStream.writeUTF(mapper.writeValueAsString(data));
+    public void push(ClientDataDTO data) {
+        try {
+            oos.writeObject(data);
+        } catch (NotSerializableException nse) {
+            log.warn("Output stream not serializable exception: {}", ExceptionUtils.getFullExceptionMessage(nse));
+        } catch (IOException io) {
+            log.warn("Output stream closing error: {}", ExceptionUtils.getFullExceptionMessage(io));
+        }
     }
 
     public void kill() {
@@ -154,10 +173,10 @@ public class ConnectedPlayer extends Thread implements Runnable {
         this.doClose = true;
 
         try {
-            if (this.outputStream != null) {
+            if (this.oos != null) {
                 push(ClientDataDTO.builder().type(NetDataType.DIE).build());
-                this.outputStream.flush();
-                this.outputStream.close();
+                this.oos.flush();
+                this.oos.close();
             }
         } catch (IOException e) {
             log.warn("Output stream closing error: {}", ExceptionUtils.getFullExceptionMessage(e));

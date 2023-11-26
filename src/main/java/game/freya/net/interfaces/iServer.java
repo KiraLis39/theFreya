@@ -1,8 +1,8 @@
 package game.freya.net.interfaces;
 
 import game.freya.GameController;
-import game.freya.net.ClientDataDTO;
 import game.freya.net.ConnectedPlayer;
+import game.freya.net.data.ClientDataDTO;
 
 import java.net.Socket;
 import java.util.Set;

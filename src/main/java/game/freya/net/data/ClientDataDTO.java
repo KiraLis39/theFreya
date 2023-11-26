@@ -1,4 +1,4 @@
-package game.freya.net;
+package game.freya.net.data;
 
 import game.freya.entities.World;
 import game.freya.enums.HeroType;
@@ -36,7 +36,8 @@ public record ClientDataDTO(
         World world,
         int passwordHash,
         LocalDateTime createDate,
-        LocalDateTime lastPlayDate
+        LocalDateTime lastPlayDate,
+        String chat
         // BufferedImage gameMap,
         // BufferedImage icon
 ) implements Serializable {

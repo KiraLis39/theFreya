@@ -130,7 +130,8 @@ public class NetCreatingPane extends WorldCreator {
                                             .passwordHash(getNetPasswordHash())
                                             .networkAddress(curLocAddr)
                                             .build();
-                                    mCanvas.saveNewWorldAndCreateHero(aNewWorld);
+                                    // mCanvas.saveNewWorldAndCreateHero(aNewWorld);
+                                    mCanvas.serverUp(aNewWorld);
                                     setVisible(false);
                                 } catch (UnknownHostException ex) {
                                     log.error("Не удалось создать мир на текущем локальном адресе");

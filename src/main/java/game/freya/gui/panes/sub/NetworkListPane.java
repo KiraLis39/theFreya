@@ -11,8 +11,7 @@ import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import game.freya.gui.panes.sub.templates.WorldCreator;
-import game.freya.net.NetConnectTemplate;
-import game.freya.utils.ExceptionUtils;
+import game.freya.net.data.NetConnectTemplate;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,8 +28,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 
 import static game.freya.config.Constants.FFB;
@@ -42,6 +39,7 @@ public class NetworkListPane extends WorldCreator {
     private final transient GameController gameController;
     private final SubPane centerList;
     private final String[] dot = new String[]{".", "..", "..."};
+    private final String connectionString = "- CONNECTION -";
     private transient BufferedImage snap;
     @Getter
     private String address;
@@ -75,17 +73,17 @@ public class NetworkListPane extends WorldCreator {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     address = (String) new FOptionPane()
-                            .buildFOptionPane("Подключиться:", "Адрес сервера:",
+                            .buildFOptionPane("Подключиться по IP:", "Адрес сервера:",
                                     FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
                     if (address.isBlank()) {
                         return;
                     }
                     if (canvas instanceof MenuCanvas mCanvas) {
                         password = (String) new FOptionPane()
-                                .buildFOptionPane("Подключиться:", "Пароль сервера:",
+                                .buildFOptionPane("Подключиться по IP:", "Пароль сервера:",
                                         FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
                         mCanvas.setConnectionAwait(true);
-                        new Thread(() -> mCanvas.connectToNetworkWorld(NetConnectTemplate.builder()
+                        new Thread(() -> mCanvas.socketConnect(NetConnectTemplate.builder()
                                 .address(address)
                                 .worldUid(null)
                                 .passwordHash(password.hashCode())
@@ -125,7 +123,7 @@ public class NetworkListPane extends WorldCreator {
                         @Override
                         protected void paintComponent(Graphics g) {
                             if (getWorld().getIcon() != null) {
-                                g.drawImage(getWorld().getIcon(), 0, 2, maxElementsDim, maxElementsDim, this);
+                                g.drawImage(getWorld().getIcon(), 0, 0, maxElementsDim, maxElementsDim, this);
                                 g.dispose();
                             }
                         }
@@ -154,6 +152,7 @@ public class NetworkListPane extends WorldCreator {
                     setFocusable(false);
                     setDoubleBuffered(false);
                     setIgnoreRepaint(true);
+                    setBorder(null);
 
                     add(new JPanel(new BorderLayout(1, 1)) {
                         {
@@ -207,32 +206,29 @@ public class NetworkListPane extends WorldCreator {
                         setBackground(Color.GREEN);
                         setForeground(Color.WHITE);
                         setFocusPainted(false);
-                        setMinimumSize(new Dimension(64, getHeight()));
-                        setMaximumSize(new Dimension(96, getHeight()));
+                        setMinimumSize(new Dimension(96, 96));
+                        setPreferredSize(new Dimension(96, 96));
+                        setMaximumSize(new Dimension(96, 96));
                         setAlignmentY(TOP_ALIGNMENT);
 
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 if (canvas instanceof MenuCanvas mCanvas) {
-//                                    address = getWorld().getNetworkAddress(); // todo: по идее должно работать так, просто надо сначала включать сервер!
-                                    if (!getWorld().isLocalWorld()) {
+                                    if (getWorld().isLocalWorld()) {
+                                        // address = InetAddress.getLocalHost().toString().split("/")[1]; // 127.0.0.1 | 0.0.0.0
+                                        mCanvas.serverUp(world);
+                                    } else {
                                         address = getWorld().getNetworkAddress();
                                         password = (String) new FOptionPane()
                                                 .buildFOptionPane("Подключиться:", "Пароль сервера:",
                                                         FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
-                                    } else {
-                                        try {
-                                            address = InetAddress.getLocalHost().toString().split("/")[1]; // 127.0.0.1 | 0.0.0.0
-                                        } catch (UnknownHostException ex) {
-                                            log.error("Не удается получить локальный хост: {}", ExceptionUtils.getFullExceptionMessage(ex));
-                                        }
+                                        mCanvas.socketConnect(NetConnectTemplate.builder()
+                                                .address(address)
+                                                .worldUid(world.getUid())
+                                                .passwordHash(password.hashCode())
+                                                .build());
                                     }
-                                    mCanvas.connectToNetworkWorld(NetConnectTemplate.builder()
-                                            .address(address)
-                                            .worldUid(world.getUid())
-                                            .passwordHash(password.hashCode())
-                                            .build());
                                 }
                             }
                         });
@@ -263,14 +259,14 @@ public class NetworkListPane extends WorldCreator {
             g.setFont(Constants.PROPAGANDA_BIG_FONT);
 
             g.setColor(Color.BLACK);
-            g.drawString("- CONNECTION -",
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, "- CONNECTION -")) - 3, getHeight() / 2);
+            g.drawString(connectionString,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, connectionString)) - 3, getHeight() / 2);
             g.drawString(dot[dots],
                     (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 3, getHeight() / 2 + 16);
 
             g.setColor(Color.WHITE);
-            g.drawString("- CONNECTION -",
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, "- CONNECTION -")) - 3, getHeight() / 2);
+            g.drawString(connectionString,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, connectionString)) - 3, getHeight() / 2);
             g.drawString(dot[dots],
                     (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 3, getHeight() / 2 + 16);
 

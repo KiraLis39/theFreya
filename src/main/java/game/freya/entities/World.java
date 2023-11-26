@@ -18,8 +18,10 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,17 +32,20 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "worlds")
-public class World {
+public class World implements Serializable {
     @Builder.Default
     @ElementCollection
     private final Set<String> environments = HashSet.newHashSet(100);
+
     @Id
     @Builder.Default
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false, insertable = false, updatable = false)
     private UUID uid = UUID.randomUUID();
+
     @Column(name = "author")
     private UUID author;
+
     @Column(name = "title", length = 64, unique = true, nullable = false)
     private String title;
 
@@ -75,4 +80,21 @@ public class World {
 
     @Column(name = "network_address")
     private String networkAddress;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        World world = (World) o;
+        return Objects.equals(getUid(), world.getUid()) && Objects.equals(getCreateDate(), world.getCreateDate());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getUid(), getCreateDate());
+    }
 }

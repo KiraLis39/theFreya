@@ -23,13 +23,14 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 
+import static game.freya.config.Constants.ONE_TURN_PI;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public final class UIHandler {
     private static final int minimapDim = 1024;
     private static final int halfDim = (int) (minimapDim / 2d);
-    private static final double ONE_TURN_PI = Math.PI / 4d;
     private GameController gameController;
     private BufferedImage minimapImage;
     private Rectangle minimapRect;
@@ -262,7 +263,7 @@ public final class UIHandler {
         m2D.setColor(Color.YELLOW);
         for (ConnectedPlayer connectedPlayer : gameController.getConnectedPlayers()) {
             Point2D.Double heroPos = connectedPlayer.getHeroDto().getPosition();
-            m2D.fillRect((int) (heroPos.x - 3), (int) (heroPos.y - 3), 6, 6);
+            m2D.fillRect((int) (heroPos.x - 6), (int) (heroPos.y - 6), 12, 12); // todo: не надо рисовать себя и поправить координаты!
         }
 
         // сканируем все сущности указанного квадранта:

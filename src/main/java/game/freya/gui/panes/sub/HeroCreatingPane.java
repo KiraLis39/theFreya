@@ -37,8 +37,8 @@ import java.util.UUID;
 @Slf4j
 public class HeroCreatingPane extends JPanel {
     private static final Random r = new Random();
-    private final float hnrci = 0.18f;
-    private final Color hnrc = new Color(hnrci, hnrci, hnrci, 0.75f);
+    private static final float rgb = 0.18f;
+    private final Color hnrc = new Color(rgb, rgb, rgb, 0.75f);
     private transient BufferedImage snap;
     @Getter
     private UUID worldUid;
@@ -134,9 +134,7 @@ public class HeroCreatingPane extends JPanel {
                             if (existsHero != null) {
                                 new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
                             } else {
-                                if (canvas instanceof MenuCanvas mCanvas) {
-                                    mCanvas.createNewHeroForNewWorldAndCloseThatPanel(HeroCreatingPane.this);
-                                }
+                                ((MenuCanvas) canvas).saveNewHeroAndPlay(HeroCreatingPane.this);
                             }
                         }
                     });

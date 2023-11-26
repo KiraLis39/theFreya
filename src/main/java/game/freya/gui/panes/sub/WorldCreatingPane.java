@@ -145,7 +145,7 @@ public class WorldCreatingPane extends WorldCreator {
                                         .isNetAvailable(false)
                                         .isLocalWorld(true)
                                         .build();
-                                mCanvas.saveNewWorldAndCreateHero(aNewWorld);
+                                mCanvas.saveNewLocalWorldAndCreateHero(aNewWorld);
                                 setVisible(false);
                             }
                         }

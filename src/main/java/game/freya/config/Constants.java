@@ -47,6 +47,9 @@ public final class Constants {
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
     public static final int MAP_CELL_DIM = 64;
     public static final String DEFAULT_AVATAR_URL = "/images/defaultAvatar.png";
+
+    public static final double ONE_TURN_PI = Math.PI / 4d;
+
     // libraries objects:
     public static final VideoMonitor MON = new VideoMonitor();
     public static final FoxFontBuilder FFB = new FoxFontBuilder();

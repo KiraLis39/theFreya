@@ -1,4 +1,4 @@
-package game.freya.net;
+package game.freya.net.data;
 
 import lombok.Builder;
 

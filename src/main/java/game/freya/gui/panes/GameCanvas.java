@@ -55,6 +55,16 @@ public class GameCanvas extends FoxCanvas {
         addMouseListener(this);
         addKeyListener(this);
 
+        if (gameController.isCurrentWorldIsNetwork()) {
+            if (gameController.isCurrentWorldIsLocal() && !gameController.isServerIsOpen()) {
+                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но Сервер ещё не запущен!");
+            }
+
+            if (!gameController.isSocketIsOpen()) {
+                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но соединения с Сервером ещё нет!");
+            }
+        }
+
         new Thread(this).start();
 
         // запуск вспомогательного потока процессов игры:
@@ -93,7 +103,7 @@ public class GameCanvas extends FoxCanvas {
         getSecondThread().start();
 
         // network check:
-        if (gameController.getCurrentWorld().isNetAvailable()) {
+        if (gameController.getCurrentWorld().isNetAvailable() && gameController.isSocketIsOpen()) {
             log.info("Начинается трансляция данных в сеть...");
             gameController.startClientBroadcast(); // если мы - клиент.
         }
@@ -127,7 +137,7 @@ public class GameCanvas extends FoxCanvas {
         long timeout = System.currentTimeMillis();
         while (getParent() == null || !isDisplayable()) {
             Thread.yield();
-            if (System.currentTimeMillis() - timeout > 6_000) {
+            if (System.currentTimeMillis() - timeout > 60_000) {
                 throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
             }
         }
@@ -408,6 +418,9 @@ public class GameCanvas extends FoxCanvas {
             // останавливаем отрисовку мира:
             this.isGameActive = false;
 
+            gameController.setHeroOfflineAndSave(getDuration());
+            gameController.closeSocket();
+
             // если игра сетевая - останавливаем сервер:
             if (gameController.isCurrentWorldIsNetwork()) {
                 if (gameController.closeServer()) {
@@ -417,8 +430,6 @@ public class GameCanvas extends FoxCanvas {
                 }
             }
 
-            // сохраняем всё и всех:
-            gameController.setHeroOfflineAndSave(getDuration());
             gameController.saveCurrentWorld();
 
             // закрываем и выходим в меню:

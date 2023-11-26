@@ -1,5 +1,6 @@
 package game.freya.entities.dto;
 
+import fox.FoxRender;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iHero;
 import game.freya.enums.HeroType;
@@ -19,9 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.validation.constraints.NotNull;
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
@@ -32,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import static game.freya.config.Constants.ONE_TURN_PI;
 
 @Slf4j
 @Getter
@@ -106,6 +109,8 @@ public class HeroDTO implements iHero {
     @Builder.Default
     private boolean isOnline = false;
 
+    private BufferedImage image;
+
     @Override
     public boolean isDead() {
         return this.hurtLevel.equals(HurtLevel.DEAD);
@@ -145,23 +150,29 @@ public class HeroDTO implements iHero {
     @Override
     public void draw(Graphics2D g2D) {
         Shape playerShape = new Ellipse2D.Double(
-                (int) this.position.x - Constants.MAP_CELL_DIM / 4d,
-                (int) this.position.y - Constants.MAP_CELL_DIM / 4d,
-                Constants.MAP_CELL_DIM / 2d, Constants.MAP_CELL_DIM / 2d);
+                (int) this.position.x - Constants.MAP_CELL_DIM / 3d,
+                (int) this.position.y - Constants.MAP_CELL_DIM / 3d,
+                Constants.MAP_CELL_DIM / 1.5d, Constants.MAP_CELL_DIM / 1.5d);
 
-        // draw shadow:
-        g2D.setColor(new Color(0, 0, 0, 36));
-        g2D.fillOval(playerShape.getBounds().x + 3, playerShape.getBounds().y + 6,
-                playerShape.getBounds().width, playerShape.getBounds().height);
+        if (image == null) {
+            BufferedImage pre = (BufferedImage) Constants.CACHE.get("player_0");
+            image = new BufferedImage(pre.getWidth(), pre.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D i2D = image.createGraphics();
+            Constants.RENDER.setRender(i2D, FoxRender.RENDER.HIGH,
+                    Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+            i2D.drawImage(pre, 0, 0, null);
+            i2D.dispose();
+        }
 
-        // fill body:
-        g2D.setColor(Color.GREEN);
-        g2D.fill(playerShape);
+        AffineTransform tr = g2D.getTransform();
+        g2D.rotate(ONE_TURN_PI * vector.ordinal(),
+                playerShape.getBounds().x + playerShape.getBounds().width / 2d,
+                playerShape.getBounds().y + playerShape.getBounds().height / 2d);
 
-        // draw border:
-//        g2D.setStroke(new BasicStroke(2f));
-        g2D.setColor(Color.ORANGE);
-        g2D.draw(playerShape);
+        g2D.drawImage(image,
+                playerShape.getBounds().x, playerShape.getBounds().y,
+                playerShape.getBounds().width, playerShape.getBounds().height, null);
+        g2D.setTransform(tr);
     }
 
     private void recheckHurtLevel() {

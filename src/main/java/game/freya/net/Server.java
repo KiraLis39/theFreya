@@ -6,6 +6,7 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
+import game.freya.net.data.ClientDataDTO;
 import game.freya.net.interfaces.iServer;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class Server implements iServer {
     private final Map<InetAddress, ConnectedPlayer> clients = HashMap.newHashMap(3);
     private Thread diedClientsCleaner, serverThread;
     private GameController gameController;
+    private volatile boolean doStop;
 
     @PostConstruct
     public void init() {
@@ -55,6 +57,7 @@ public class Server implements iServer {
         this.gameController = gameController;
 
         if (serverThread == null) {
+            this.doStop = false;
             serverThread = new Thread(() -> {
                 log.info("Создание Сервера...");
                 try (ServerSocket serverSocket = new ServerSocket(Constants.SERVER_PORT)) {
@@ -63,7 +66,7 @@ public class Server implements iServer {
                     serverSocket.setSoTimeout(Constants.SERVER_CONNECTION_AWAIT_TIMEOUT);
                     log.info("Создан сервер на порту {} (buffer: {})", serverSocket.getLocalPort(), serverSocket.getReceiveBufferSize());
 
-                    while (!serverThread.isInterrupted()) {
+                    while (!serverThread.isInterrupted() && !doStop) {
                         log.info("Awaits a new connections...");
                         acceptNewClient(serverSocket.accept());
                     }
@@ -96,12 +99,20 @@ public class Server implements iServer {
 
         log.info("Остановка основного потока Сервера...");
         if (isOpen()) {
+            this.doStop = true;
             serverThread.interrupt();
         }
 
         log.info("Убийство всех клиентов...");
         clients.values().forEach(ConnectedPlayer::kill);
         clients.clear();
+    }
+
+    @SuppressWarnings("removal")
+    public void hardStop() {
+        if (serverThread.isAlive()) {
+            serverThread.stop();
+        }
     }
 
     @Override
@@ -118,7 +129,8 @@ public class Server implements iServer {
 
         String cliHostName = socket.getInetAddress().getHostName();
         log.info("Подключился новый клиент: {} ({})", cliHostName, socket);
-        return clients.put(socket.getInetAddress(), new ConnectedPlayer(this, socket, gameController));
+        clients.put(socket.getInetAddress(), new ConnectedPlayer(this, socket, gameController));
+        return clients.get(socket.getInetAddress());
     }
 
     @Override
@@ -144,11 +156,7 @@ public class Server implements iServer {
                 continue; // не слать самому себе.
             }
 
-            try {
-                connectedPlayer.push(dataDto);
-            } catch (IOException e) {
-                log.error("Ошибка рассылки данных {} клиенту {}", dataDto, connectedPlayer.getPlayerName());
-            }
+            connectedPlayer.push(dataDto);
         }
     }
 

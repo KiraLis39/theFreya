@@ -108,6 +108,9 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     public void draw(Graphics2D v2D) {
         Rectangle camera = canvas.getViewPort().getBounds();
 
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+
         // рисуем готовый кадр мира:
         v2D.drawImage(repaintMap(camera),
 
@@ -121,9 +124,9 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     }
 
     private VolatileImage repaintMap(Rectangle camera) {
-        final Color textColor = new Color(1, 158, 217, 191);
-        final Color linesColor = new Color(0, 105, 210, 64);
-        final Color backColor = new Color(52, 2, 52);
+        final Color textColor = new Color(58, 175, 217, 191);
+        final Color linesColor = new Color(47, 84, 3, 64);
+        final Color backColor = new Color(31, 31, 31);
         final String scobe = ")";
 
         Graphics2D m2D;
@@ -138,7 +141,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         }
 
         // re-draw map:
-        Constants.RENDER.setRender(m2D, FoxRender.RENDER.MED,
+        Constants.RENDER.setRender(m2D, FoxRender.RENDER.HIGH,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
         m2D.setColor(backColor);
