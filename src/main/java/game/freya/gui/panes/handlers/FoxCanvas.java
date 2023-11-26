@@ -374,7 +374,10 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.setColor(Color.BLACK);
-        g2D.drawString("Delay fps: " + Constants.getDelay(), rightShift, downShift - 24);
+        if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
+            g2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 48);
+        }
+        g2D.drawString("Delay fps: " + Constants.getDelay(), rightShift - 1f, downShift - 24);
         g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
@@ -383,6 +386,9 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
             g2D.setColor(Color.RED);
         } else {
             g2D.setColor(Color.GRAY);
+        }
+        if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
+            g2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
         }
         g2D.drawString("Delay fps: " + Constants.getDelay(), rightShift, downShift - 25);
         g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"

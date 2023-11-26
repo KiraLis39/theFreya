@@ -55,7 +55,7 @@ public class NetworkListPane extends WorldCreator {
         setName("Network list pane");
         setVisible(false);
         setDoubleBuffered(false);
-        setIgnoreRepaint(true);
+//        setIgnoreRepaint(true);
 
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
@@ -110,8 +110,10 @@ public class NetworkListPane extends WorldCreator {
                 setHeaderLabel(new ZLabel(("<html><pre>"
                         + "Уровень:<font color=#43F8C9><b>    %s</b></font>"
                         + "<br>Создано:<font color=#8805A8><b>    %s</b></font>"
+                        + "<br>Адрес:<font color=#fcba03><b>      %s</b></font>"
                         + "</pre></html>")
-                        .formatted(getWorld().getLevel().getDescription(), getWorld().getCreateDate().format(Constants.DATE_FORMAT_3)),
+                        .formatted(getWorld().getLevel().getDescription(), getWorld().getCreateDate().format(Constants.DATE_FORMAT_3),
+                                getWorld().getNetworkAddress()),
                         null));
                 add(new JPanel() {{
                     setOpaque(false);
@@ -246,6 +248,7 @@ public class NetworkListPane extends WorldCreator {
 
     @Override
     public void paintComponent(Graphics g) {
+        super.paintComponent(g);
         if (snap == null) {
             log.info("Net list snap...");
             BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
@@ -295,17 +298,18 @@ public class NetworkListPane extends WorldCreator {
             SubPane sp = (SubPane) spn;
             ZLabel spHeader = sp.getHeaderLabel();
             new Thread(() -> {
-                String add = "<br>Доступен:<font color=#239BEE><b>   %s</b></font></pre>";
+                String add = "<br>Доступен:%s</b></font></pre>";
 
                 if (sp.getWorld().isLocalWorld()) {
-                    add = add.formatted("(локальный)");
+                    add = add.formatted("<font color=#394b5e><b>   (локальный)");
                 } else if (sp.getWorld().isNetAvailable()) {
                     String nad = sp.getWorld().getNetworkAddress();
                     String host = nad.contains(":") ? nad.split(":")[0] : nad;
                     Integer port = nad.contains(":") ? Integer.parseInt(nad.split(":")[1]) : null;
-                    add = add.formatted(canvas.ping(host, port) ? "(доступен)" : "(не доступен)");
+                    add = add.formatted(canvas.ping(host, port)
+                            ? "<font color=#07ad3c><b>   (доступен)" : "<font color=#a31c25><b>   (не доступен)");
                 } else {
-                    add = add.formatted("(не известно)");
+                    add = add.formatted("<font color=#239BEE><b>   (не известно)");
                 }
 
                 spHeader.setText(spHeader.getText().replace("</pre>", add));

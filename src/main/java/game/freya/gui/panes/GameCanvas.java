@@ -57,10 +57,12 @@ public class GameCanvas extends FoxCanvas {
 
         if (gameController.isCurrentWorldIsNetwork()) {
             if (gameController.isCurrentWorldIsLocal() && !gameController.isServerIsOpen()) {
+                gameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но Сервер ещё не запущен!");
             }
 
             if (!gameController.isSocketIsOpen()) {
+                gameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но соединения с Сервером ещё нет!");
             }
         }
@@ -104,8 +106,8 @@ public class GameCanvas extends FoxCanvas {
 
         // network check:
         if (gameController.getCurrentWorld().isNetAvailable() && gameController.isSocketIsOpen()) {
-            log.info("Начинается трансляция данных в сеть...");
-            gameController.startClientBroadcast(); // если мы - клиент.
+            log.info("Начинается трансляция данных на Сервер...");
+            gameController.startClientBroadcast();
         }
     }
 

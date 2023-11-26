@@ -20,7 +20,7 @@ public class SubPane extends JPanel {
     public SubPane(String title, Color borderColor) {
         setLayout(new BorderLayout(3, 3));
         setOpaque(false);
-        setIgnoreRepaint(true);
+//        setIgnoreRepaint(true);
         setDoubleBuffered(false);
 
         if (title != null) {

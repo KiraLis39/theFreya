@@ -454,7 +454,7 @@ public class MenuCanvas extends FoxCanvas {
 
         if (gameController.isCurrentWorldIsLocal() && gameController.isCurrentWorldIsNetwork() && !gameController.isServerIsOpen()) {
             if (gameController.openServer()) {
-                log.info("Сервер сетевой игры успешно активирован");
+                log.info("Сервер сетевой игры успешно активирован на {}", gameController.getServerAddress());
             } else {
                 log.warn("Что-то пошло не так при активации Сервера.");
             }
@@ -481,32 +481,37 @@ public class MenuCanvas extends FoxCanvas {
             // 2) подключаемся к серверу, авторизуемся там и получаем мир для сохранения локально
             if (gameController.connectToServer(h.trim(), p, connectionTemplate.passwordHash())) {
                 // снимаем флаг анимации подключения с листа серверов:
-                setConnectionAwait(false);
                 getNetworkListPane().setVisible(false);
 
                 // 3) проверка героя в этом мире:
                 chooseOrCreateHeroForWorld(gameController.getCurrentWorldUid());
             } else {
-                setConnectionAwait(false);
                 new FOptionPane().buildFOptionPane("Отказ:", "Сервер отклонил подключение!", 5, true);
                 throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, "connect to remote game");
             }
+        } catch (GlobalServiceException gse) {
+            log.warn("GSE here: {}", gse.getMessage());
+            if (gse.getErrorCode().equals("ER07")) {
+                new FOptionPane().buildFOptionPane("Не доступно:",
+                        "Адрес %s не доступен.".formatted(gameController.getCurrentWorldAddress()),
+                        FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            }
+        } catch (IllegalThreadStateException tse) {
+            log.error("Connection Thread state exception: {}", ExceptionUtils.getFullExceptionMessage(tse));
+        } catch (Exception e) {
+            new FOptionPane().buildFOptionPane("Ошибка данных:", ("Ошибка подключения '%s'.\n"
+                    + "Верно: <host_ip> или <host_ip>:<port> (192.168.0.10/13:13958)")
+                    .formatted(ExceptionUtils.getFullExceptionMessage(e)), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            log.error("Server aim address to connect error: {}", ExceptionUtils.getFullExceptionMessage(e));
+            // gameController.closeServer();
+        } finally {
+            setConnectionAwait(false);
         }
 //        catch (ConnectException ce) {
 //            setConnectionAwait(false);
 //            new FOptionPane().buildFOptionPane("Не доступно:", "Адрес не доступен.", FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
 //            log.warn("Server address connection failed: {}", ExceptionUtils.getFullExceptionMessage(ce));
 //        }
-        catch (GlobalServiceException gse) {
-            log.warn("GSE here: {}", gse.getMessage());
-        } catch (Exception e) {
-            setConnectionAwait(false);
-            new FOptionPane().buildFOptionPane("Ошибка данных:", ("Ошибка адреса подключения '%s'.\n"
-                    + "Верно: <host_ip> или <host_ip>:<port> (192.168.0.10:13958)")
-                    .formatted(e.getMessage()), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-            log.error("Server aim address to connect error: {}", ExceptionUtils.getFullExceptionMessage(e));
-            // gameController.closeServer();
-        }
     }
 
 
@@ -574,6 +579,8 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     public void startGame() {
+//        getNetworkListPane().setVisible(false);
+//        getHeroesListPane().setVisible(false);
         gameController.loadScreen(ScreenType.GAME_SCREEN);
     }
 }

@@ -231,7 +231,7 @@ public class GameController extends GameControllerBase {
         log.info("Начало вещания на Сервер...");
         if (getNetDataTranslator() == null) {
             setNetDataTranslator(new Thread(() -> {
-                while (!getNetDataTranslator().isInterrupted()) {
+                while (!getNetDataTranslator().isInterrupted() && isSocketIsOpen()) {
                     clientService.toServer(buildNewDataPackage(this));
 
                     try {
@@ -608,6 +608,12 @@ public class GameController extends GameControllerBase {
         // подключаемся к серверу:
         if (!isSocketIsOpen()) {
             clientService.openSocket(host, port, this);
+        } else {
+            log.warn("Сокетное подключение уже открыто, пробуем использовать {}", clientService.getActiveHost());
+        }
+
+        if (isSocketIsOpen() && !host.equals(getCurrentSocketHost())) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current socket host address");
         }
 
         // передаём свои данные для авторизации:
@@ -666,6 +672,10 @@ public class GameController extends GameControllerBase {
         }
     }
 
+    private String getCurrentSocketHost() {
+        return clientService.getActiveHost();
+    }
+
     public boolean ping(String host, Integer port) {
         // подключаемся к серверу:
         try {
@@ -692,8 +702,10 @@ public class GameController extends GameControllerBase {
         } catch (InterruptedException e) {
             pingThread.interrupt();
             return false;
-        } finally {
+        } catch (GlobalServiceException gse) {
+            log.warn("GSE here: {}", gse.getMessage());
             clientService.kill();
+            return false;
         }
     }
 
@@ -827,5 +839,9 @@ public class GameController extends GameControllerBase {
 
     public UUID getCurrentPlayerLastPlayedWorld() {
         return playerService.getCurrentPlayer().getLastPlayedWorldUid();
+    }
+
+    public String getServerAddress() {
+        return server.getAddress();
     }
 }

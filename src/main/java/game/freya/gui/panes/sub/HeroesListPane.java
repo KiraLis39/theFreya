@@ -38,7 +38,7 @@ public class HeroesListPane extends JPanel {
         setName("Heroes list pane");
         setVisible(false);
         setDoubleBuffered(false);
-        setIgnoreRepaint(true);
+//        setIgnoreRepaint(true);
 
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
@@ -99,7 +99,7 @@ public class HeroesListPane extends JPanel {
                             setBackground(Color.RED.darker().darker());
                             setForeground(Color.PINK.brighter());
                             setFocusPainted(false);
-                            setIgnoreRepaint(true);
+//                            setIgnoreRepaint(true);
                             setMinimumSize(new Dimension(24, 24));
                             setPreferredSize(new Dimension(24, 24));
                             setMaximumSize(new Dimension(24, 24));

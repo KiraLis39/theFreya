@@ -30,6 +30,7 @@ public class Server implements iServer {
     private Thread diedClientsCleaner, serverThread;
     private GameController gameController;
     private volatile boolean doStop;
+    private String address;
 
     @PostConstruct
     public void init() {
@@ -64,8 +65,9 @@ public class Server implements iServer {
                     serverSocket.setReuseAddress(true);
                     serverSocket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
                     serverSocket.setSoTimeout(Constants.SERVER_CONNECTION_AWAIT_TIMEOUT);
-                    log.info("Создан сервер на порту {} (buffer: {})", serverSocket.getLocalPort(), serverSocket.getReceiveBufferSize());
-
+                    this.address = serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort();
+                    log.info("Создан сервер на {} (buffer: {})", address, serverSocket.getReceiveBufferSize());
+                    // InetAddress.anyLocalAddress()
                     while (!serverThread.isInterrupted() && !doStop) {
                         log.info("Awaits a new connections...");
                         acceptNewClient(serverSocket.accept());
@@ -74,6 +76,8 @@ public class Server implements iServer {
                     log.info("Connection server is shutting down...");
                 } catch (Exception e) {
                     handleException(e);
+                } finally {
+                    log.warn("Сервер прекратил свою работу."); // или нет?
                 }
             });
             serverThread.start();
@@ -87,7 +91,7 @@ public class Server implements iServer {
 
     @Override
     public boolean isOpen() {
-        return serverThread != null && serverThread.isAlive();
+        return serverThread != null && serverThread.isAlive() && !serverThread.isInterrupted();
     }
 
     @Override
@@ -101,6 +105,7 @@ public class Server implements iServer {
         if (isOpen()) {
             this.doStop = true;
             serverThread.interrupt();
+            serverThread = null;
         }
 
         log.info("Убийство всех клиентов...");
@@ -117,7 +122,7 @@ public class Server implements iServer {
 
     @Override
     public boolean isClosed() {
-        return serverThread == null || serverThread.isInterrupted() || !serverThread.isAlive();
+        return !isOpen();
     }
 
     @Override
@@ -213,5 +218,9 @@ public class Server implements iServer {
 
     public Set<HeroDTO> getHeroes() {
         return getPlayers().stream().map(ConnectedPlayer::getHeroDto).collect(Collectors.toSet());
+    }
+
+    public String getAddress() {
+        return this.address;
     }
 }

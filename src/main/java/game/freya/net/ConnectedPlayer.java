@@ -7,6 +7,8 @@ import game.freya.GameController;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.NetDataType;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
@@ -99,7 +101,7 @@ public class ConnectedPlayer extends Thread implements Runnable {
                 // если закрыли соединение не умышленно, не сами:
                 log.warn("Something wrong with client`s data stream: {}", ExceptionUtils.getFullExceptionMessage(e));
                 new FOptionPane().buildFOptionPane("Подключение разорвано",
-                        "Связь с удалённым Сервером утеряна.", 30, false);
+                        "Связь с удалённым Сервером утеряна.", 60, false);
             }
         } catch (ClassNotFoundException cnf) {
             log.warn("Client`s input stream thread cant read class: {}", ExceptionUtils.getFullExceptionMessage(cnf));
@@ -115,6 +117,9 @@ public class ConnectedPlayer extends Thread implements Runnable {
 
         // подготовка игрового мира, проверка пароля:
         World cw = gameController.getCurrentWorld();
+        if (cw == null) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current world");
+        }
         if (cw.getPasswordHash() != 0 && cw.getPasswordHash() != readed.passwordHash()) {
             log.error("Игрок {} ({}) ввёл не верный пароль. В доступе отказано! (пароль мира {} - пароль клиента {})",
                     playerName, playerUid, cw.getPasswordHash(), readed.passwordHash());
@@ -123,6 +128,9 @@ public class ConnectedPlayer extends Thread implements Runnable {
         } else {
             log.info("Игрок {} ({}) успешно авторизован", readed.playerName(), readed.playerUid());
             isAuthorized.set(true);
+            // для создателя этот мир - Локальный:
+            // для удалённого игрока этот мир не может быть Локальным:
+            cw.setLocalWorld(playerUid.equals(cw.getAuthor()));
             push(ClientDataDTO.builder().type(NetDataType.AUTH_SUCCESS).world(cw).build());
         }
     }

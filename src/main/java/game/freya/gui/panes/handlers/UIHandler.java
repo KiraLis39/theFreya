@@ -262,8 +262,14 @@ public final class UIHandler {
         // отображаем других игроков на миникарте:
         m2D.setColor(Color.YELLOW);
         for (ConnectedPlayer connectedPlayer : gameController.getConnectedPlayers()) {
+            if (gameController.getCurrentPlayerUid().equals(connectedPlayer.getPlayerUid())) {
+                continue;
+            }
             Point2D.Double heroPos = connectedPlayer.getHeroDto().getPosition();
-            m2D.fillRect((int) (heroPos.x - 6), (int) (heroPos.y - 6), 12, 12); // todo: не надо рисовать себя и поправить координаты!
+            m2D.fillRect(
+                    (int) (heroPos.x - hPos.x) - 6,
+                    (int) (heroPos.y - hPos.y) - 6,
+                    12, 12);
         }
 
         // сканируем все сущности указанного квадранта:
