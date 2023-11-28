@@ -221,6 +221,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
         if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                 "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
         ) {
+            gameController.saveCurrentWorld();
             gameController.exitTheGame(null);
         }
     }

@@ -50,7 +50,7 @@ public class HeroCreatingPane extends JPanel {
         setName("Hero creating pane");
         setVisible(false);
         setDoubleBuffered(false);
-        setIgnoreRepaint(true);
+//        setIgnoreRepaint(true);
 
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
@@ -117,7 +117,7 @@ public class HeroCreatingPane extends JPanel {
 
             add(new JPanel() {{
                 setLayout(new BorderLayout(3, 3));
-                setIgnoreRepaint(true);
+//                setIgnoreRepaint(true);
                 setOpaque(false);
                 setBackground(new Color(0, 0, 0, 0));
                 setDoubleBuffered(false);
@@ -193,6 +193,7 @@ public class HeroCreatingPane extends JPanel {
     @Override
     public void setVisible(boolean isVisible) {
         if (super.isVisible() == isVisible) {
+            repaint();
             return;
         }
 

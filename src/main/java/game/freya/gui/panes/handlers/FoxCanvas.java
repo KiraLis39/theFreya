@@ -21,6 +21,7 @@ import game.freya.gui.panes.sub.NetworkListPane;
 import game.freya.gui.panes.sub.VideoSettingsPane;
 import game.freya.gui.panes.sub.WorldCreatingPane;
 import game.freya.gui.panes.sub.WorldsListPane;
+import game.freya.gui.panes.sub.components.Chat;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,6 +47,7 @@ import java.awt.image.VolatileImage;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -74,6 +76,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private final transient UIHandler uiHandler;
     private final Color grayBackColor = new Color(0, 0, 0, 223);
     private final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
+    private final AtomicBoolean isPingAwait = new AtomicBoolean(false);
     private transient Thread secondThread;
     private transient Rectangle2D viewPort;
     private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
@@ -89,6 +92,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private float downShift = 0;
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
     private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false;
+    private transient Chat chat;
 
     protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller, JLayeredPane layeredPane, UIHandler uiHandler) {
         super(gConf);
@@ -361,6 +365,10 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     }
 
     private void drawFps(Graphics2D g2D) {
+        if (!isVisible() || !isDisplayable() || !isShowing()) {
+            return;
+        }
+
         // FPS check:
         incrementFramesCounter();
         if (System.currentTimeMillis() >= timeStamp + 1000L) {
@@ -611,16 +619,16 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
         // добавляем панели на слой:
         try {
-            parentLayers.add(getAudiosPane(), PALETTE_LAYER);
-            parentLayers.add(getVideosPane(), PALETTE_LAYER);
-            parentLayers.add(getHotkeysPane(), PALETTE_LAYER);
-            parentLayers.add(getGameplayPane(), PALETTE_LAYER);
-            parentLayers.add(getHeroCreatingPane(), PALETTE_LAYER);
-            parentLayers.add(getWorldCreatingPane(), PALETTE_LAYER);
-            parentLayers.add(getWorldsListPane(), PALETTE_LAYER);
-            parentLayers.add(getHeroesListPane(), PALETTE_LAYER);
-            parentLayers.add(getNetworkListPane(), PALETTE_LAYER);
-            parentLayers.add(getNetworkCreatingPane(), PALETTE_LAYER);
+            parentLayers.add(getAudiosPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getVideosPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getHotkeysPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getGameplayPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getHeroCreatingPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getWorldCreatingPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getWorldsListPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getHeroesListPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getNetworkListPane(), PALETTE_LAYER, 1);
+            parentLayers.add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
             recreateSubPanes();
@@ -713,8 +721,8 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
      * @param port адрес, куда стучимся для получения pong.
      * @return успешность получения pong от удалённого Сервера.
      */
-    public boolean ping(String host, Integer port) {
-        return gameController.ping(host, port);
+    public boolean ping(String host, Integer port, UUID reqWorldUid) {
+        return gameController.ping(host, port, reqWorldUid);
     }
 
     public boolean isConnectionAwait() {
@@ -723,6 +731,18 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     public void setConnectionAwait(boolean b) {
         isConnectionAwait.set(b);
+        if (!b) {
+            // очищаем от анимации панели:
+            getNetworkListPane().repaint();
+        }
+    }
+
+    public boolean isPingAwait() {
+        return isPingAwait.get();
+    }
+
+    public void setPingAwait(boolean b) {
+        isPingAwait.set(b);
         if (!b) {
             // очищаем от анимации панели:
             getNetworkListPane().repaint();
@@ -752,5 +772,13 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
             throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
         }
         Thread.yield();
+    }
+
+    public Chat getChat() {
+        return this.chat;
+    }
+
+    public void createChat(GameCanvas gameCanvas) {
+        this.chat = new Chat(gameCanvas);
     }
 }

@@ -27,10 +27,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.Random;
 
 @Slf4j
@@ -115,28 +121,43 @@ public class NetCreatingPane extends WorldCreator {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            if (canvas instanceof MenuCanvas mCanvas) {
-                                String curLocAddr;
-                                try {
-                                    curLocAddr = InetAddress.getLocalHost().toString().split("/")[1];
+                            ArrayList<String> addresses = new ArrayList<>();
+                            try {
+                                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                                while (interfaces.hasMoreElements()) {
+                                    NetworkInterface iface = interfaces.nextElement();
+                                    // filters out 127.0.0.1 and inactive interfaces
+                                    if (iface.isLoopback() || iface.isVirtual() || !iface.isUp()) { //  || iface.getDisplayName().contains("Radmin")
+                                        continue;
+                                    }
 
-                                    WorldDTO aNewWorld = WorldDTO.builder()
-                                            .author(canvas.getGameController().getCurrentPlayerUid())
-                                            .createDate(LocalDateTime.now())
-                                            .title(getWorldName())
-                                            .level(getHardnessLevel())
-                                            .isLocalWorld(true)
-                                            .isNetAvailable(true)
-                                            .passwordHash(getNetPasswordHash())
-                                            .networkAddress(curLocAddr)
-                                            .build();
-                                    // mCanvas.saveNewWorldAndCreateHero(aNewWorld);
-                                    mCanvas.serverUp(aNewWorld);
-                                    setVisible(false);
-                                } catch (UnknownHostException ex) {
-                                    log.error("Не удалось создать мир на текущем локальном адресе");
+                                    Iterator<InetAddress> addrIterator = iface.getInetAddresses().asIterator();
+                                    while (addrIterator.hasNext()) {
+                                        if (addrIterator.next() instanceof Inet4Address naf) {
+                                            addresses.add(naf.getHostAddress());
+                                        }
+                                    }
                                 }
+
+                                if (addresses.isEmpty()) {
+                                    addresses.add(InetAddress.getLocalHost().toString().split("/")[1]);
+                                }
+                            } catch (SocketException | UnknownHostException ex) {
+                                addresses.add("localhost");
                             }
+
+                            log.warn("Найдено сетей для размещения Сервера: {}. Будет использован адрес {}", addresses.size(), addresses.get(0));
+                            WorldDTO aNewWorld = WorldDTO.builder()
+                                    .author(canvas.getGameController().getCurrentPlayerUid())
+                                    .createDate(LocalDateTime.now())
+                                    .title(getWorldName())
+                                    .level(getHardnessLevel())
+                                    .isLocalWorld(true)
+                                    .isNetAvailable(true)
+                                    .passwordHash(getNetPasswordHash())
+                                    .networkAddress(addresses.get(0))
+                                    .build();
+                            ((MenuCanvas) canvas).serverUp(aNewWorld);
                         }
                     });
                 }});

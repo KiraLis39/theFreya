@@ -30,11 +30,6 @@ public class WorldService {
     @Getter
     private WorldDTO currentWorld;
 
-    @Transactional(readOnly = true)
-    public List<WorldDTO> findAll() {
-        return worldMapper.toDto(worldRepository.findAll());
-    }
-
     @Transactional
     public WorldDTO save(WorldDTO world) {
         World w = worldMapper.toEntity(world);
@@ -61,7 +56,10 @@ public class WorldService {
 
     @Transactional
     public void saveCurrentWorld() {
-        worldRepository.save(worldMapper.toEntity(currentWorld));
+        World worldToSave = worldMapper.toEntity(currentWorld);
+        if (worldToSave != null) {
+            worldRepository.save(worldToSave);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -76,5 +74,9 @@ public class WorldService {
     public WorldDTO setCurrentWorld(WorldDTO currentWorld) {
         this.currentWorld = currentWorld;
         return this.currentWorld;
+    }
+
+    public boolean isWorldExist(UUID worldUid) {
+        return worldRepository.existsById(worldUid);
     }
 }

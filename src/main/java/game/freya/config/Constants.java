@@ -7,7 +7,6 @@ import fox.FoxRender;
 import fox.VideoMonitor;
 import fox.components.FOptionPane;
 import fox.images.FoxCursor;
-import fox.images.FoxSpritesCombiner;
 import fox.player.FoxPlayer;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
@@ -36,11 +35,13 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public final class Constants {
     // net:
-    public static final int SERVER_PORT = 13958;
-    public static final int SOCKET_BUFFER_SIZE = 10240; // 65536
-    public static final long NETWORK_DATA_TRANSLATE_DELAY = 5_000L; // сколько миллисекунд ждать между отправками данных на сервер
-    public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд сервер ждёт подключений
-    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 30_000; // сколько миллисекунд сервер ждёт подключений
+    public static final int DEFAULT_SERVER_PORT = 13958;
+    public static final int SOCKET_BUFFER_SIZE = 16384; // 65536
+    public static final long SERVER_BROADCAST_DELAY = 5_000L; // миллисекунд ждать между отправками данных
+    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 60_000; // сколько миллисекунд клиент ждёт данные от Сервера
+
+    // public static final int CONNECTED_CLIENT_STREAM_READ_DELAY = 500; // сколько ждать перед следующим чтением из подключения к Серверу.
+    // public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд Сервер ждёт данные от Клиента
 
 
     // other:
@@ -57,9 +58,11 @@ public final class Constants {
     public static final FoxRender RENDER = new FoxRender();
     public static final MediaCache CACHE = MediaCache.getInstance();
     public static final InputAction INPUT_ACTION = new InputAction();
-    public static final FoxSpritesCombiner COMBINER = new FoxSpritesCombiner();
+
+    // public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
+
     // public static final FoxExperience EXP = new FoxExperience();
-    public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
+
     // public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.of("ru"));
     public static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("День dd (HH:mm)", Locale.of("ru"));
     public static final DateTimeFormatter DATE_FORMAT_3 = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm", Locale.of("ru"));

@@ -33,12 +33,12 @@ public record ClientDataDTO(
         float power,
         boolean isOnline,
         String explanation,
+        UUID worldUid,
         World world,
         int passwordHash,
         LocalDateTime createDate,
         LocalDateTime lastPlayDate,
-        String chat
-        // BufferedImage gameMap,
+        String chatMessage
         // BufferedImage icon
 ) implements Serializable {
     @Override

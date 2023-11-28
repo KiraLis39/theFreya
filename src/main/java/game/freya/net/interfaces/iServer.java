@@ -1,10 +1,11 @@
 package game.freya.net.interfaces;
 
 import game.freya.GameController;
-import game.freya.net.ConnectedPlayer;
+import game.freya.net.ConnectedServerPlayer;
 import game.freya.net.data.ClientDataDTO;
 
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Set;
 
 public interface iServer {
@@ -16,17 +17,17 @@ public interface iServer {
 
     boolean isClosed();
 
-    ConnectedPlayer acceptNewClient(Socket socket);
+    ConnectedServerPlayer acceptNewClient(Socket socket) throws SocketException;
 
-    int connected();
+    long connected();
 
-    void destroyClient(ConnectedPlayer connectedPlayerToDestroy);
+    void destroyClient(ConnectedServerPlayer connectedServerPlayerToDestroy);
 
     void clearDiedClients();
 
     void handleException(Exception e);
 
-    Set<ConnectedPlayer> getPlayers();
+    Set<ConnectedServerPlayer> getPlayers();
 
-    void broadcast(ClientDataDTO dataDto, ConnectedPlayer excludedPlayer);
+    void broadcast(ClientDataDTO dataDto, ConnectedServerPlayer excludedPlayer);
 }

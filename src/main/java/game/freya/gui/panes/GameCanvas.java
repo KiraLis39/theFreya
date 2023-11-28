@@ -33,7 +33,7 @@ public class GameCanvas extends FoxCanvas {
     private final transient JFrame parentFrame;
     private final transient GameController gameController;
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
-    private boolean isGameActive = false, isControlsMapped = false, isMovingKeyActive = false;
+    private boolean isControlsMapped = false, isMovingKeyActive = false;
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
     private double parentHeightMemory = 0;
     private transient Thread resizeThread = null;
@@ -51,9 +51,9 @@ public class GameCanvas extends FoxCanvas {
 
         addMouseMotionListener(this);
         addMouseWheelListener(this);
-        addComponentListener(this);
         addMouseListener(this);
         addKeyListener(this);
+//        addComponentListener(this);
 
         if (gameController.isCurrentWorldIsNetwork()) {
             if (gameController.isCurrentWorldIsLocal() && !gameController.isServerIsOpen()) {
@@ -73,14 +73,14 @@ public class GameCanvas extends FoxCanvas {
         setSecondThread("Game second thread", new Thread(() -> {
             // ждём пока основной поток игры запустится:
             long timeout = System.currentTimeMillis();
-            while (!isGameActive) {
+            while (!gameController.isGameIsActive()) {
                 Thread.yield();
                 if (System.currentTimeMillis() - timeout > 7_000) {
                     throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
                 }
             }
 
-            while (isGameActive && !getSecondThread().isInterrupted()) {
+            while (gameController.isGameIsActive() && !getSecondThread().isInterrupted()) {
                 // check gameplay duration:
                 checkGameplayDuration(gameController.getCurrentHeroInGameTime());
 
@@ -148,7 +148,7 @@ public class GameCanvas extends FoxCanvas {
         setGameActive();
 
         // старт потока рисования игры:
-        while (isGameActive) {
+        while (gameController.isGameIsActive() && !Thread.currentThread().isInterrupted()) {
             if (!parentFrame.isActive()) {
                 Thread.yield();
                 continue;
@@ -234,19 +234,20 @@ public class GameCanvas extends FoxCanvas {
     private void setGameActive() {
         init();
 
-        this.isGameActive = true;
+        gameController.setGameIsActive(true);
         setVisible(true);
         requestFocusInWindow();
 
-        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-
         // если более двух буфферов не позволительно:
+        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
         if (!getBufferStrategy().getCapabilities().isMultiBufferAvailable()) {
             Constants.getUserConfig().setMaxBufferedDeep(2);
         }
 
         Constants.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
+
+        super.createChat(this);
     }
 
     private void zoomIn() {
@@ -407,36 +408,10 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public synchronized void stop() {
-        if (this.isGameActive || isVisible()) {
-            boolean paused = Constants.isPaused();
-            boolean debug = Constants.isDebugInfoVisible();
-
-            Constants.setPaused(false);
-            Constants.setDebugInfoVisible(false);
-            gameController.doScreenShot(parentFrame.getLocation(), getBounds());
-            Constants.setPaused(paused);
-            Constants.setDebugInfoVisible(debug);
-
-            // останавливаем отрисовку мира:
-            this.isGameActive = false;
-
-            gameController.setHeroOfflineAndSave(getDuration());
-            gameController.closeSocket();
-
-            // если игра сетевая - останавливаем сервер:
-            if (gameController.isCurrentWorldIsNetwork()) {
-                if (gameController.closeServer()) {
-                    log.info("Сервер успешно остановлен");
-                } else {
-                    log.warn("Возникла ошибка при закрытии сервера.");
-                }
-            }
-
-            gameController.saveCurrentWorld();
-
+        if (gameController.isGameIsActive() || isVisible()) {
             // закрываем и выходим в меню:
             setVisible(false);
-            gameController.loadScreen(ScreenType.MENU_SCREEN);
+            gameController.exitToMenu(parentFrame, this, getDuration());
         }
     }
 

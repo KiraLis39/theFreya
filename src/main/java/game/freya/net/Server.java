@@ -4,6 +4,7 @@ import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
+import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
@@ -12,70 +13,56 @@ import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class Server implements iServer {
-    private final Map<InetAddress, ConnectedPlayer> clients = HashMap.newHashMap(3);
+    private final Map<InetAddress, ConnectedServerPlayer> clients = HashMap.newHashMap(3);
     private Thread diedClientsCleaner, serverThread;
     private GameController gameController;
-    private volatile boolean doStop;
+    private ServerSocket serverSocket;
     private String address;
-
-    @PostConstruct
-    public void init() {
-        // запуск вспомогательного потока чистки мертвых клиентов:
-        if (diedClientsCleaner == null) {
-            diedClientsCleaner = new Thread(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
-                    try {
-                        clearDiedClients();
-                        Thread.sleep(3_000);
-                    } catch (InterruptedException e) {
-                        log.error("Прерван поток {}", Thread.currentThread().getName());
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            });
-            diedClientsCleaner.setName("Died clients cleaner thread");
-            diedClientsCleaner.setDaemon(true);
-            diedClientsCleaner.start();
-        }
-    }
+    private boolean isServerCloseAccepted = false;
 
     @Override
     public void open(GameController gameController) {
         this.gameController = gameController;
 
-        if (serverThread == null) {
-            this.doStop = false;
+        if (!isOpen()) {
+            // запуск вспомогательного потока чистки мертвых клиентов:
+            startDiedClientsCleaner();
+
             serverThread = new Thread(() -> {
                 log.info("Создание Сервера...");
-                try (ServerSocket serverSocket = new ServerSocket(Constants.SERVER_PORT)) {
-                    serverSocket.setReuseAddress(true);
-                    serverSocket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
-                    serverSocket.setSoTimeout(Constants.SERVER_CONNECTION_AWAIT_TIMEOUT);
+                try (ServerSocket socket = new ServerSocket(Constants.DEFAULT_SERVER_PORT)) {
+                    this.serverSocket = socket;
+                    this.serverSocket.setReuseAddress(true);
+                    this.serverSocket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
+
                     this.address = serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort();
                     log.info("Создан сервер на {} (buffer: {})", address, serverSocket.getReceiveBufferSize());
-                    // InetAddress.anyLocalAddress()
-                    while (!serverThread.isInterrupted() && !doStop) {
+
+                    while (!serverThread.isInterrupted() && !this.serverSocket.isClosed()) {
                         log.info("Awaits a new connections...");
                         acceptNewClient(serverSocket.accept());
                     }
 
                     log.info("Connection server is shutting down...");
                 } catch (Exception e) {
-                    handleException(e);
+                    if (!isServerCloseAccepted) {
+                        handleException(e);
+                    }
                 } finally {
                     log.warn("Сервер прекратил свою работу."); // или нет?
                 }
@@ -89,63 +76,83 @@ public class Server implements iServer {
         }
     }
 
-    @Override
-    public boolean isOpen() {
-        return serverThread != null && serverThread.isAlive() && !serverThread.isInterrupted();
+    private void startDiedClientsCleaner() {
+        if (diedClientsCleaner != null) {
+            try {
+                diedClientsCleaner.interrupt();
+                diedClientsCleaner.join();
+            } catch (InterruptedException e) {
+                diedClientsCleaner.interrupt();
+                diedClientsCleaner = null;
+            }
+        }
+
+        diedClientsCleaner = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    clearDiedClients();
+                    Thread.sleep(6_000);
+                } catch (InterruptedException e) {
+                    log.error("Прерван поток {}", Thread.currentThread().getName());
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+        diedClientsCleaner.setName("Died clients cleaner thread");
+        diedClientsCleaner.setDaemon(true);
+        diedClientsCleaner.start();
     }
 
     @Override
     public void close() {
+        isServerCloseAccepted = true;
+
         log.info("Остановка вспомогательного потока чистки клиентов...");
         if (diedClientsCleaner != null && diedClientsCleaner.isAlive()) {
             diedClientsCleaner.interrupt();
         }
 
-        log.info("Остановка основного потока Сервера...");
-        if (isOpen()) {
-            this.doStop = true;
-            serverThread.interrupt();
-            serverThread = null;
+        // stop the broadcasting:
+        if (gameController != null) {
+            gameController.stopBroadcast();
         }
 
-        log.info("Убийство всех клиентов...");
-        clients.values().forEach(ConnectedPlayer::kill);
+        log.info("Остановка основного потока Сервера...");
+        if (isOpen()) {
+            clients.values().forEach(c -> {
+                // просим всех подключенных клиентов умереть:
+                c.push(ClientDataDTO.builder().type(NetDataType.DIE).build());
+                c.kill();
+            });
+
+            try {
+                this.serverSocket.close();
+            } catch (IOException e) {
+                log.info("Ошибка остановки Сервера.");
+            } catch (Exception e) {
+                log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+            }
+        }
         clients.clear();
     }
 
-    @SuppressWarnings("removal")
-    public void hardStop() {
-        if (serverThread.isAlive()) {
-            serverThread.stop();
+    @Override
+    public ConnectedServerPlayer acceptNewClient(Socket socket) {
+        try {
+            if (clients.containsKey(socket.getInetAddress()) && !clients.get(socket.getInetAddress()).isClosed()) {
+                log.warn("Клиент уже есть в карте клиентов! Возвращаем...");
+            } else {
+                log.info("Подключился новый клиент: {} ({})", socket.getInetAddress().getHostName(), socket);
+                clients.put(socket.getInetAddress(), new ConnectedServerPlayer(this, socket, gameController));
+            }
+
+            return clients.get(socket.getInetAddress());
+        } catch (IOException e) {
+            log.info("Ошибка при принятии нового подключения Клиента: {}", ExceptionUtils.getFullExceptionMessage(e));
+        } catch (Exception e) {
+            log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
-    }
-
-    @Override
-    public boolean isClosed() {
-        return !isOpen();
-    }
-
-    @Override
-    public ConnectedPlayer acceptNewClient(Socket socket) {
-        if (clients.containsKey(socket.getInetAddress())) {
-            log.error("В клиентах уже числится Клиент {}", socket.getInetAddress());
-            return null;
-        }
-
-        String cliHostName = socket.getInetAddress().getHostName();
-        log.info("Подключился новый клиент: {} ({})", cliHostName, socket);
-        clients.put(socket.getInetAddress(), new ConnectedPlayer(this, socket, gameController));
-        return clients.get(socket.getInetAddress());
-    }
-
-    @Override
-    public int connected() {
-        return clients.size();
-    }
-
-    @Override
-    public Set<ConnectedPlayer> getPlayers() {
-        return clients.values().stream().filter(ConnectedPlayer::isAuthorized).collect(Collectors.toSet());
+        return null;
     }
 
     /**
@@ -154,32 +161,32 @@ public class Server implements iServer {
      * @param dataDto данные об изменениях серверной версии мира.
      */
     @Override
-    public void broadcast(ClientDataDTO dataDto, ConnectedPlayer excludedPlayer) {
+    public void broadcast(ClientDataDTO dataDto, ConnectedServerPlayer excludedPlayer) {
         log.info("Бродкастим инфо всем клиентам...");
-        for (ConnectedPlayer connectedPlayer : getPlayers()) {
-            if (connectedPlayer.getClientUid().equals(excludedPlayer.getClientUid())) {
-                continue; // не слать самому себе.
+        for (ConnectedServerPlayer connectedServerPlayer : getPlayers()) {
+            if (connectedServerPlayer.getClientUid().equals(excludedPlayer.getClientUid())) {
+                // connectedPlayer.push(ClientDataDTO.builder().type(NetDataType.PING).build());
+                continue; // не слать себе свои же данные. Только пинг, если нужно.
             }
 
-            connectedPlayer.push(dataDto);
+            connectedServerPlayer.push(dataDto);
         }
     }
 
     @Override
-    public void destroyClient(ConnectedPlayer playerToDestroy) {
-        for (ConnectedPlayer connectedPlayer : clients.values()) {
-            if (connectedPlayer.getClientUid().equals(playerToDestroy.getClientUid())) {
-                connectedPlayer.kill();
-                clients.remove(connectedPlayer.getInetAddress());
-                break;
+    public void destroyClient(ConnectedServerPlayer playerToDestroy) {
+        clients.entrySet().iterator().forEachRemaining(entry -> {
+            if (entry.getValue().getClientUid().equals(playerToDestroy.getClientUid())) {
+                entry.getValue().kill();
+                clients.remove(entry.getKey());
             }
-        }
+        });
     }
 
     @Override
     public void clearDiedClients() {
         clients.values().iterator().forEachRemaining(client -> {
-            if (client.isInterrupted()) {
+            if (client.isClosed() || client.isInterrupted()) {
                 log.info("Удаляем игрока {} ({}) из списка подключенных, т.к. его поток прерван.",
                         client.getPlayerName(), client.getPlayerUid());
                 destroyClient(client);
@@ -189,14 +196,8 @@ public class Server implements iServer {
 
     @Override
     public void handleException(Exception e) {
-        if (e instanceof SocketTimeoutException ste) {
-            if (!serverThread.isInterrupted()) {
-                log.warn("Завершение работы сервера по SoTimeout: {}", ExceptionUtils.getFullExceptionMessage(ste));
-                new FOptionPane().buildFOptionPane("Нет подключений:", "Не обнаружено входящих подключений за %s секунд."
-                                .formatted(Constants.SERVER_CONNECTION_AWAIT_TIMEOUT), FOptionPane.TYPE.INFO,
-                        Constants.getDefaultCursor(), 5, false);
-            }
-            throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, ExceptionUtils.getFullExceptionMessage(ste));
+        if (e instanceof BindException) {
+            new FOptionPane().buildFOptionPane("Адрес занят", "Перезапустите игру или попробуйте ещё раз");
         } else if (e instanceof IOException io) {
             log.warn("Завершение работы сервера по IOException: {}", ExceptionUtils.getFullExceptionMessage(io));
             throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, ExceptionUtils.getFullExceptionMessage(io));
@@ -208,19 +209,64 @@ public class Server implements iServer {
         }
     }
 
-    public void untilAlive(int waitTime) {
-        try {
-            serverThread.join(waitTime);
-        } catch (InterruptedException e) {
-            serverThread.interrupt();
+    public void untilOpen(int waitTime) {
+        if (serverThread != null) {
+            try {
+                final long was = System.currentTimeMillis();
+                while (!isOpen() && System.currentTimeMillis() - was < waitTime) {
+                    serverThread.join(250);
+                }
+            } catch (InterruptedException e) {
+                serverThread.interrupt();
+            }
         }
     }
 
+    public void untilClose(int waitTime) {
+        if (serverThread != null) {
+            try {
+                final long was = System.currentTimeMillis();
+                while (!isClosed() && System.currentTimeMillis() - was < waitTime) {
+                    serverThread.join(250);
+                }
+            } catch (InterruptedException e) {
+                serverThread.interrupt();
+            }
+        }
+    }
+
+    @Override
+    public Set<ConnectedServerPlayer> getPlayers() {
+        return clients.values().stream().filter(ConnectedServerPlayer::isAccepted).collect(Collectors.toSet());
+    }
+
     public Set<HeroDTO> getHeroes() {
-        return getPlayers().stream().map(ConnectedPlayer::getHeroDto).collect(Collectors.toSet());
+        return getPlayers().stream().map(ConnectedServerPlayer::getHeroDto)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     public String getAddress() {
         return this.address;
+    }
+
+    @Override
+    public boolean isClosed() {
+        return (serverThread == null || !serverThread.isAlive()) && (serverSocket == null || serverSocket.isClosed());
+    }
+
+    @Override
+    public boolean isOpen() {
+        return serverThread != null && serverThread.isAlive() && serverSocket != null && !serverSocket.isClosed();
+    }
+
+    @Override
+    public long connected() {
+        return clients.values().stream().filter(ConnectedServerPlayer::isAuthorized).count();
+    }
+
+    public HeroDTO getHero(UUID uuid) {
+        return getPlayers().stream().map(ConnectedServerPlayer::getHeroDto)
+                .filter(h -> h != null && h.getUid().equals(uuid)).findFirst().orElse(null);
     }
 }

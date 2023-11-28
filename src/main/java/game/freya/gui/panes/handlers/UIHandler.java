@@ -3,9 +3,9 @@ package game.freya.gui.panes.handlers;
 import fox.FoxRender;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.MovingVector;
 import game.freya.gui.panes.MenuCanvas;
-import game.freya.net.ConnectedPlayer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +36,7 @@ public final class UIHandler {
     private Rectangle minimapRect;
     private Rectangle minimapDebugRect, upLeftPaneRect, upCenterPaneRect, upRightPaneRect, downCenterPaneRect;
     private double heightMemory;
-    private String startGameButtonText, coopPlayButtonText, optionsButtonText, randomButtonText, resetButtonText, createNewButtonText;
+    private String startGameButtonText, coopPlayButtonText, optionsButtonText, randomButtonText, resetButtonText, createNewButtonText, repingButtonText;
 
     @Autowired
     public void setGameController(@Lazy GameController gameController) {
@@ -49,6 +49,7 @@ public final class UIHandler {
         createNewButtonText = "Создать";
         randomButtonText = "Случайно";
         resetButtonText = "Сброс";
+        repingButtonText = "Обновить";
     }
 
     public void drawUI(Graphics2D g2D, FoxCanvas canvas) {
@@ -128,6 +129,9 @@ public final class UIHandler {
             } else {
                 canvas.drawPauseMode(g2D);
             }
+
+            // draw chat:
+            canvas.getChat().draw(g2D);
         }
     }
 
@@ -183,6 +187,11 @@ public final class UIHandler {
             g2D.drawString(createNewButtonText, canvas.getFirstButtonRect().x - 1, canvas.getFirstButtonRect().y + 17);
             g2D.setColor(canvas.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(createNewButtonText, canvas.getFirstButtonRect().x, canvas.getFirstButtonRect().y + 18);
+
+            g2D.setColor(Color.BLACK);
+            g2D.drawString(repingButtonText, canvas.getSecondButtonRect().x - 1, canvas.getSecondButtonRect().y + 17);
+            g2D.setColor(canvas.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.drawString(repingButtonText, canvas.getSecondButtonRect().x, canvas.getSecondButtonRect().y + 18);
         } else if (canvas.getNetworkCreatingPane() != null && canvas.getNetworkCreatingPane().isVisible()) {
             canvas.drawHeader(g2D, "Создание подключения");
         } else if (canvas.getHeroCreatingPane() != null && canvas.getHeroCreatingPane().isVisible()) {
@@ -261,11 +270,11 @@ public final class UIHandler {
 
         // отображаем других игроков на миникарте:
         m2D.setColor(Color.YELLOW);
-        for (ConnectedPlayer connectedPlayer : gameController.getConnectedPlayers()) {
-            if (gameController.getCurrentPlayerUid().equals(connectedPlayer.getPlayerUid())) {
+        for (HeroDTO connectedHero : gameController.getConnectedHeroes()) {
+            if (gameController.getCurrentHeroUid().equals(connectedHero.getUid())) {
                 continue;
             }
-            Point2D.Double heroPos = connectedPlayer.getHeroDto().getPosition();
+            Point2D.Double heroPos = connectedHero.getPosition();
             m2D.fillRect(
                     (int) (heroPos.x - hPos.x) - 6,
                     (int) (heroPos.y - hPos.y) - 6,

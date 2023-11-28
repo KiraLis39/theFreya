@@ -16,11 +16,12 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
 import game.freya.gui.panes.GameCanvas;
+import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.items.interfaces.iEnvironment;
 import game.freya.mappers.HeroMapper;
 import game.freya.mappers.WorldMapper;
-import game.freya.net.ClientService;
-import game.freya.net.ConnectedPlayer;
+import game.freya.net.ConnectedServerPlayer;
+import game.freya.net.LocalSocketConnection;
 import game.freya.net.Server;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.services.HeroService;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
+import javax.swing.JFrame;
 import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.Graphics2D;
@@ -64,7 +66,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GameController extends GameControllerBase {
     private final PlayerService playerService;
-    private final ClientService clientService;
     private final HeroService heroService;
     private final HeroMapper heroMapper;
     private final UserConfigService userConfigService;
@@ -74,7 +75,9 @@ public class GameController extends GameControllerBase {
     private final Server server;
     @Getter
     private final GameConfig gameConfig;
+    private LocalSocketConnection localSocketConnection;
     private Thread pingThread;
+    private volatile boolean isGameActive = false;
 
     @PostConstruct
     public void init() throws IOException {
@@ -145,6 +148,8 @@ public class GameController extends GameControllerBase {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
 
+        this.localSocketConnection = new LocalSocketConnection();
+
         log.info("The game is started!");
         this.gameFrame.showMainMenu(this);
     }
@@ -189,23 +194,18 @@ public class GameController extends GameControllerBase {
     }
 
     private void closeConnections() {
-        // закрываем соединения:
-        if (isSocketIsOpen()) {
-            clientService.kill();
-        }
-
         // закрываем Сервер:
         if (isServerIsOpen()) {
             server.close();
         }
 
+        // закрываем соединения:
+        if (isSocketIsOpen()) {
+            localSocketConnection.killSelf();
+        }
+
         // закрываем БД:
         closeDataBaseConnection();
-
-        // добиваем Сервер, если он не смог самостоятельно остановиться:
-        if (isServerIsOpen()) {
-            server.hardStop();
-        }
     }
 
     private void saveTheGame(WorldDTO world) {
@@ -232,10 +232,10 @@ public class GameController extends GameControllerBase {
         if (getNetDataTranslator() == null) {
             setNetDataTranslator(new Thread(() -> {
                 while (!getNetDataTranslator().isInterrupted() && isSocketIsOpen()) {
-                    clientService.toServer(buildNewDataPackage(this));
+                    localSocketConnection.toServer(buildNewDataPackage(this));
 
                     try {
-                        Thread.sleep(Constants.NETWORK_DATA_TRANSLATE_DELAY);
+                        Thread.sleep(Constants.SERVER_BROADCAST_DELAY);
                     } catch (InterruptedException e) {
                         log.warn("Прерывание потока отправки данных на сервер!");
                         Thread.currentThread().interrupt();
@@ -253,10 +253,14 @@ public class GameController extends GameControllerBase {
     private ClientDataDTO buildNewDataPackage(GameController controller) {
         // собираем пакет данных для сервера и других игроков:
         return ClientDataDTO.builder()
+                .id(UUID.randomUUID())
                 .type(NetDataType.SYNC)
 
                 .playerUid(controller.getCurrentPlayerUid())
+                .playerName(controller.getCurrentPlayerNickName())
+
                 .heroUuid(controller.getCurrentHeroUid())
+                .heroName(controller.getCurrentHeroName())
                 .heroType(controller.getCurrentHeroType())
                 .hp(controller.getCurrentHeroHp())
                 .maxHp(controller.getCurrentHeroMaxHp())
@@ -266,6 +270,9 @@ public class GameController extends GameControllerBase {
                 .position(controller.getCurrentHeroPosition())
                 .experience(controller.getCurrentHeroExperience())
                 .level(controller.getCurrentHeroLevel())
+                .hurtLevel(controller.getCurrentHeroHurtLevel())
+
+                .chatMessage(null)
 
                 .isOnline(controller.isCurrentHeroOnline())
                 .build();
@@ -447,10 +454,6 @@ public class GameController extends GameControllerBase {
         heroService.deleteHeroByUuid(heroUid);
     }
 
-    public void setCurrentPlayerLastPlayedWorldUid(UUID uid) {
-        playerService.getCurrentPlayer().setLastPlayedWorldUid(uid);
-    }
-
     public BufferedImage getCurrentPlayerAvatar() {
         return playerService.getCurrentPlayer().getAvatar();
     }
@@ -466,25 +469,24 @@ public class GameController extends GameControllerBase {
 
     public boolean openServer() {
         server.open(this);
-        server.untilAlive(3_000);
+        server.untilOpen(6_000);
         return server.isOpen();
     }
 
     public boolean closeServer() {
         server.close();
-        server.untilAlive(3_000);
-        stopBroadcast();
+        server.untilClose(6_000);
         return server.isClosed();
     }
 
-    private void stopBroadcast() {
-        if (getNetDataTranslator().isAlive()) {
+    public void stopBroadcast() {
+        if (getNetDataTranslator() != null && getNetDataTranslator().isAlive()) {
             getNetDataTranslator().interrupt();
         }
     }
 
     public void closeSocket() {
-        clientService.kill();
+        localSocketConnection.killSelf();
     }
 
     public UUID getCurrentPlayerUid() {
@@ -508,16 +510,16 @@ public class GameController extends GameControllerBase {
         playerService.getCurrentPlayer().setLastPlayedWorldUid(lastWorldUuid);
     }
 
-    public List<HeroDTO> getCurrentWorldHeroes() {
-        return heroService.findAllByWorldUuid(worldService.getCurrentWorld().getUid());
-    }
-
     public Set<iEnvironment> getWorldEnvironments(Rectangle rectangle) {
         return worldService.getEnvironmentsFromRectangle(rectangle);
     }
 
     public List<HeroDTO> findAllHeroesByWorldUid(UUID uid) {
         return heroService.findAllByWorldUuid(uid);
+    }
+
+    public List<HeroDTO> getCurrentWorldHeroes() {
+        return heroService.findAllByWorldUuid(worldService.getCurrentWorld().getUid());
     }
 
     public String getCurrentWorldTitle() {
@@ -585,19 +587,21 @@ public class GameController extends GameControllerBase {
     }
 
     public boolean isSocketIsOpen() {
-        return clientService.isOpen();
+        return localSocketConnection.isOpen();
     }
 
     public long getConnectedClientsCount() {
         return server.connected();
     }
 
-    public Set<ConnectedPlayer> getConnectedPlayers() {
+    public Set<ConnectedServerPlayer> getConnectedPlayers() {
         return server.getPlayers();
     }
 
     public List<HeroDTO> getConnectedHeroes() {
-        return server.getPlayers().stream().map(ConnectedPlayer::getHeroDto).collect(Collectors.toList());
+        return server.getPlayers().stream().map(ConnectedServerPlayer::getHeroDto)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     public MovingVector getCurrentHeroVector() {
@@ -606,52 +610,41 @@ public class GameController extends GameControllerBase {
 
     public boolean connectToServer(String host, Integer port, int passwordHash) {
         // подключаемся к серверу:
-        if (!isSocketIsOpen()) {
-            clientService.openSocket(host, port, this);
+        if (isSocketIsOpen() && localSocketConnection.getActiveHost().equals(host)) {
+            log.warn("Сокетное подключение уже открыто, пробуем использовать {}", localSocketConnection.getActiveHost());
         } else {
-            log.warn("Сокетное подключение уже открыто, пробуем использовать {}", clientService.getActiveHost());
+            localSocketConnection.openSocket(host, port, this);
         }
 
         if (isSocketIsOpen() && !host.equals(getCurrentSocketHost())) {
             throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current socket host address");
         }
 
+        // ждём пока сокет откроется и будет готов к работе:
+        if (!isSocketIsOpen()) {
+            long was = System.currentTimeMillis();
+            while (!isSocketIsOpen() && System.currentTimeMillis() - was < 30_000) {
+                Thread.yield();
+            }
+            if (!isSocketIsOpen()) {
+                throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, "No reached this socket connection");
+            }
+        }
+
         // передаём свои данные для авторизации:
-        clientService.toServer(ClientDataDTO.builder()
+        localSocketConnection.toServer(ClientDataDTO.builder()
                 .id(UUID.randomUUID())
                 .type(NetDataType.AUTH_REQUEST)
 
                 .playerUid(getCurrentPlayerUid()) // not null ?
                 .playerName(getCurrentPlayerNickName())
-
                 .passwordHash(passwordHash)
+
                 .isOnline(true)
-
-//                .heroUuid(getCurrentHeroUid())
-//                .heroName(getCurrentHeroName())
-//                .heroType(getCurrentHeroType())
-//                .level(getCurrentHeroLevel())
-//                .experience(getCurrentHeroExperience())
-//                .hp(getCurrentHeroHp())
-//                .hurtLevel(getCurrentHeroHurtLevel())
-//                .maxHp(getCurrentHeroMaxHp())
-//                .position(getCurrentHeroPosition())
-//                .vector(getCurrentHeroVector())
-//                .speed(getCurrentHeroSpeed())
-//                .power(getCurrentHeroPower())
-//                .createDate(getCurrentHeroCreateDate())
-
-                // not realized:
-//                .buffs(readed.buffs())
-//                .inventory(readed.inventory())
-//                .inGameTime(readed.inGameTime())
-//                .ownerUid(readed.ownerUid())
-//                .worldUid(readed.wUid())
-
                 .build());
 
         Thread authThread = new Thread(() -> {
-            while (!clientService.isAuthorized() && !Thread.currentThread().isInterrupted()) {
+            while (!localSocketConnection.isAuthorized() && !Thread.currentThread().isInterrupted()) {
                 Thread.yield();
             }
         });
@@ -673,22 +666,25 @@ public class GameController extends GameControllerBase {
     }
 
     private String getCurrentSocketHost() {
-        return clientService.getActiveHost();
+        return localSocketConnection.getActiveHost();
     }
 
-    public boolean ping(String host, Integer port) {
+    public boolean ping(String host, Integer port, UUID requestWorldUid) {
         // подключаемся к серверу:
         try {
-            clientService.openSocket(host, port, this);
+            localSocketConnection.openSocket(host, port, this);
 
             // пингуемся:
-            clientService.toServer(ClientDataDTO.builder().type(NetDataType.PING).build());
+            localSocketConnection.toServer(ClientDataDTO.builder()
+                    .type(NetDataType.PING)
+                    .worldUid(requestWorldUid)
+                    .build());
 
             pingThread = new Thread(() -> {
-                while (!clientService.isPongReceived()) {
+                while (!localSocketConnection.isPongReceived()) {
                     Thread.yield();
                 }
-                clientService.resetPong();
+                localSocketConnection.resetPong();
             });
             pingThread.start();
 
@@ -704,7 +700,7 @@ public class GameController extends GameControllerBase {
             return false;
         } catch (GlobalServiceException gse) {
             log.warn("GSE here: {}", gse.getMessage());
-            clientService.kill();
+            localSocketConnection.killSelf();
             return false;
         }
     }
@@ -763,7 +759,7 @@ public class GameController extends GameControllerBase {
 
     public boolean registerCurrentHeroOnServer() {
         log.info("Отправка данных текущего героя на Сервер...");
-        clientService.toServer(ClientDataDTO.builder()
+        localSocketConnection.toServer(ClientDataDTO.builder()
                 .type(NetDataType.HERO_REQUEST)
                 .playerUid(getCurrentPlayerUid())
 
@@ -788,7 +784,7 @@ public class GameController extends GameControllerBase {
                 .build());
 
         Thread heroCheckThread = new Thread(() -> {
-            while (!clientService.isAccepted() && !Thread.currentThread().isInterrupted()) {
+            while (!localSocketConnection.isAccepted() && !Thread.currentThread().isInterrupted()) {
                 Thread.yield();
             }
         });
@@ -837,11 +833,90 @@ public class GameController extends GameControllerBase {
         return worldService.getCurrentWorld().isLocalWorld();
     }
 
-    public UUID getCurrentPlayerLastPlayedWorld() {
+    public UUID getCurrentPlayerLastPlayedWorldUid() {
         return playerService.getCurrentPlayer().getLastPlayedWorldUid();
+    }
+
+    public void setCurrentPlayerLastPlayedWorldUid(UUID uid) {
+        playerService.getCurrentPlayer().setLastPlayedWorldUid(uid);
     }
 
     public String getServerAddress() {
         return server.getAddress();
+    }
+
+    /**
+     * В этот метод приходят данные обновлений сетевого мира (Сервера).
+     * Здесь собираются все изменения, движения игроков, атаки, лечения, взаимодействия и т.п. для
+     * мержа с мирами других сетевых участников.
+     *
+     * @param data модель обновлений для сетевого мира от другого участника игры.
+     */
+    public void syncServerDataWithCurrentWorld(ClientDataDTO data) {
+        log.info("Получены данные для синхронизации мира от {}'s {} ({})", data.playerName(), data.heroName(), data.playerUid());
+        // Обновляем позицию другого игрока:
+        server.getHero(data.heroUuid()).setPosition(data.position());
+        server.getHero(data.heroUuid()).setVector(data.vector());
+
+        // Обновляем здоровье, максимальное здоровье, силу, бафы-дебафы, текущий инструмент в руках и т.п. другого игрока:
+        // ...
+
+        // Обновляем окружение, выросшие-срубленные деревья, снесенные, построенные постройки, их характеристики и т.п.:
+        // ...
+
+        // Обновляем данные квестов, задач, групп, союзов, обменов и т.п.:
+        // ...
+
+        // Обновляем статусы он-лайн, ветхость, таймауты и прочее...
+        // ...
+    }
+
+    public void exitToMenu(JFrame parentFrame, FoxCanvas canvas, Duration duration) {
+        if (parentFrame != null && canvas != null) {
+            boolean paused = Constants.isPaused();
+            boolean debug = Constants.isDebugInfoVisible();
+
+            Constants.setPaused(false);
+            Constants.setDebugInfoVisible(false);
+            doScreenShot(parentFrame.getLocation(), canvas.getBounds());
+            Constants.setPaused(paused);
+            Constants.setDebugInfoVisible(debug);
+        }
+
+        if (duration != null) {
+            setHeroOfflineAndSave(duration);
+        }
+
+        // если локальная игра сетевая - останавливаем сервер при выходе из игры:
+        if (isCurrentWorldIsNetwork()) {
+            if (isCurrentWorldIsLocal()) {
+                if (closeServer()) {
+                    log.info("Сервер успешно остановлен");
+                } else {
+                    log.warn("Возникла ошибка при закрытии сервера.");
+                }
+            } else if (isSocketIsOpen()) {
+                closeSocket();
+            }
+        }
+
+        saveCurrentWorld();
+
+        if (isGameActive) {
+            isGameActive = false;
+            loadScreen(ScreenType.MENU_SCREEN);
+        }
+    }
+
+    public boolean isGameIsActive() {
+        return this.isGameActive;
+    }
+
+    public void setGameIsActive(boolean isGameActive) {
+        this.isGameActive = isGameActive;
+    }
+
+    public boolean isWorldExist(UUID worldUid) {
+        return worldService.isWorldExist(worldUid);
     }
 }

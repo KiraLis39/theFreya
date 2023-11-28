@@ -5,12 +5,13 @@ import game.freya.entities.dto.WorldDTO;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
-import javax.swing.border.BevelBorder;
+import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
 
 public class SubPane extends JPanel {
     private ZLabel headerLabel;
+    private FButton connButton;
     private transient WorldDTO worldDTO;
 
     public SubPane(String title) {
@@ -23,7 +24,13 @@ public class SubPane extends JPanel {
 //        setIgnoreRepaint(true);
         setDoubleBuffered(false);
 
-        if (title != null) {
+        if (title == null) {
+            setBorder(new EmptyBorder(0, 0, 3, 3));
+//            setBorder(BorderFactory.createCompoundBorder(
+//                    BorderFactory.createEtchedBorder(BevelBorder.RAISED, Color.BLACK, Color.DARK_GRAY),
+//                    BorderFactory.createEmptyBorder(0, 0, 3, 3)
+//            ));
+        } else {
             if (title.length() == 1) {
                 setBorder(BorderFactory.createTitledBorder(
                         BorderFactory.createLineBorder(borderColor, 1, true),
@@ -33,14 +40,9 @@ public class SubPane extends JPanel {
                         BorderFactory.createTitledBorder(
                                 BorderFactory.createLineBorder(borderColor, 3, true),
                                 title, 1, 2, Constants.DEBUG_FONT, Color.WHITE),
-                        BorderFactory.createEmptyBorder(0, 3, 3, 3)
+                        BorderFactory.createEmptyBorder(-3, 3, 3, 3)
                 ));
             }
-        } else {
-            setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createEtchedBorder(BevelBorder.RAISED, Color.BLACK, Color.DARK_GRAY),
-                    BorderFactory.createEmptyBorder(0, 0, 3, 3)
-            ));
         }
     }
 
@@ -50,6 +52,14 @@ public class SubPane extends JPanel {
 
     public void setHeaderLabel(ZLabel headerLabel) {
         this.headerLabel = headerLabel;
+    }
+
+    public FButton getConnButton() {
+        return connButton;
+    }
+
+    public void setConnButton(FButton connButton) {
+        this.connButton = connButton;
     }
 
     public WorldDTO getWorld() {

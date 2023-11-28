@@ -10,6 +10,7 @@ import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
+import game.freya.net.data.NetConnectTemplate;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
@@ -53,7 +54,7 @@ public class HeroesListPane extends JPanel {
     private void reloadHeroes(FoxCanvas canvas) {
         HeroesListPane.this.removeAll();
 
-        for (HeroDTO hero : gameController.findAllHeroesByWorldUid(gameController.getCurrentWorldUid())) {
+        for (HeroDTO hero : gameController.getCurrentWorldHeroes()) {
             add(new SubPane(hero.getHeroName(), hero.getType().getColor()) {{
                 add(new JPanel() {
                     @Override
@@ -132,10 +133,16 @@ public class HeroesListPane extends JPanel {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                if (canvas instanceof MenuCanvas mCanvas) {
-                                    mCanvas.playWithThisHero(hero);
-                                    HeroesListPane.this.setVisible(false);
+                                if (gameController.isCurrentWorldIsNetwork() && !gameController.isSocketIsOpen()) {
+                                    ((MenuCanvas) canvas).connectToServer(NetConnectTemplate.builder()
+                                            .address(gameController.getCurrentWorldAddress())
+                                            .worldUid(gameController.getCurrentWorldUid())
+                                            .passwordHash(gameController.getCurrentWorldPassword())
+                                            .build());
+                                } else {
+                                    ((MenuCanvas) canvas).playWithThisHero(hero);
                                 }
+                                HeroesListPane.this.setVisible(false);
                             }
                         });
                     }});

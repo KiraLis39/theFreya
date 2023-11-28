@@ -168,7 +168,7 @@ public final class UserConfig {
 
     // other:
     public int getBufferedDeep() {
-        return isMultiBufferEnabled ? bufferedDeep : 1;
+        return isMultiBufferEnabled ? Math.max(bufferedDeep, maxBufferedDeep) : 1;
     }
 
     public void resetControlKeys() {

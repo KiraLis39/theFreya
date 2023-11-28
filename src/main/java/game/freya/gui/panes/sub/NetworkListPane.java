@@ -1,6 +1,7 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
+import fox.components.tools.VerticalFlowLayout;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
@@ -17,8 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JViewport;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -29,17 +31,19 @@ import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import java.util.List;
 
 import static game.freya.config.Constants.FFB;
 
 @Slf4j
 public class NetworkListPane extends WorldCreator {
+    private static final String connectionString = "- CONNECTION -";
+    private static final String pingString = "- PING -";
     private static final int maxElementsDim = 96;
     private final transient FoxCanvas canvas;
     private final transient GameController gameController;
     private final SubPane centerList;
     private final String[] dot = new String[]{".", "..", "..."};
-    private final String connectionString = "- CONNECTION -";
     private transient BufferedImage snap;
     @Getter
     private String address;
@@ -62,10 +66,38 @@ public class NetworkListPane extends WorldCreator {
         setLayout(new BorderLayout(1, 1));
         setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));
 
-        centerList = new SubPane("Сетевые миры:") {{
-            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        centerList = new SubPane(null) {{
+//            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+            setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 1, 1));
+//            setOpaque(true);
+            setBackground(Color.PINK);
         }};
-        add(centerList, BorderLayout.CENTER);
+
+        JScrollPane centerScroll = new JScrollPane(centerList) {
+            {
+                setBackground(Color.ORANGE);
+                setBorder(null);
+
+                getVerticalScrollBar().setUnitIncrement(16);
+
+                JViewport vp = getViewport();
+                vp.setOpaque(false);
+                vp.setBackground(Color.BLUE);
+                vp.setBorder(null);
+
+                vp.setFocusable(false);
+                vp.setAutoscrolls(true);
+            }
+
+            @Override
+            public void paint(Graphics g) {
+                super.paintChildren(g);
+            }
+        };
+
+        add(new SubPane("Сетевые миры:", Color.BLACK) {{
+            add(centerScroll);
+        }}, BorderLayout.CENTER);
 
         add(new FButton("Новое подключение", null) {{
             setBackground(Color.MAGENTA.darker().darker());
@@ -83,7 +115,7 @@ public class NetworkListPane extends WorldCreator {
                                 .buildFOptionPane("Подключиться по IP:", "Пароль сервера:",
                                         FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
                         mCanvas.setConnectionAwait(true);
-                        new Thread(() -> mCanvas.socketConnect(NetConnectTemplate.builder()
+                        new Thread(() -> mCanvas.connectToServer(NetConnectTemplate.builder()
                                 .address(address)
                                 .worldUid(null)
                                 .passwordHash(password.hashCode())
@@ -95,17 +127,22 @@ public class NetworkListPane extends WorldCreator {
 
         if (isVisible()) {
             reloadNet(canvas);
-            pingServers();
         }
     }
 
-    private void reloadNet(FoxCanvas canvas) {
+    public void reloadNet(FoxCanvas canvas) {
         centerList.removeAll();
-        centerList.add(Box.createVerticalStrut(9));
+        centerList.add(Box.createVerticalStrut(6));
 
-        for (WorldDTO world : gameController.findAllWorldsByNetworkAvailable(true)) {
+        List<WorldDTO> worlds = gameController.findAllWorldsByNetworkAvailable(true);
+        for (WorldDTO world : worlds) {
             centerList.add(new SubPane(world.getTitle()) {{
                 setWorld(world);
+                setPreferredSize(new Dimension(
+                        Constants.getUserConfig().isFullscreen()
+                                ? (worlds.size() > 5 ? centerList.getWidth() - 8 : centerList.getWidth() - 4)
+                                : (worlds.size() > 5 ? centerList.getWidth() - 24 : centerList.getWidth() - 8),
+                        128));
 
                 setHeaderLabel(new ZLabel(("<html><pre>"
                         + "Уровень:<font color=#43F8C9><b>    %s</b></font>"
@@ -114,12 +151,17 @@ public class NetworkListPane extends WorldCreator {
                         + "</pre></html>")
                         .formatted(getWorld().getLevel().getDescription(), getWorld().getCreateDate().format(Constants.DATE_FORMAT_3),
                                 getWorld().getNetworkAddress()),
-                        null));
+                        null) {{
+//                            setOpaque(true);
+                    setBackground(Color.CYAN);
+                }});
                 add(new JPanel() {{
                     setOpaque(false);
+                    setBackground(Color.YELLOW);
                     setFocusable(false);
                     setDoubleBuffered(false);
                     setIgnoreRepaint(true);
+                    setBorder(new EmptyBorder(-6, -3, -6, -3));
 
                     add(new JPanel() {
                         @Override
@@ -132,6 +174,7 @@ public class NetworkListPane extends WorldCreator {
 
                         {
                             setOpaque(false);
+                            setBackground(Color.CYAN.darker());
                             setIgnoreRepaint(true);
                             setDoubleBuffered(false);
                             setMinimumSize(new Dimension(maxElementsDim, maxElementsDim));
@@ -151,6 +194,7 @@ public class NetworkListPane extends WorldCreator {
 
                 add(new JPanel(new BorderLayout(1, 1)) {{
                     setOpaque(false);
+                    setBackground(Color.MAGENTA);
                     setFocusable(false);
                     setDoubleBuffered(false);
                     setIgnoreRepaint(true);
@@ -159,6 +203,7 @@ public class NetworkListPane extends WorldCreator {
                     add(new JPanel(new BorderLayout(1, 1)) {
                         {
                             setOpaque(false);
+                            setBackground(Color.BLUE);
                             setFocusable(false);
                             setDoubleBuffered(false);
                             setIgnoreRepaint(true);
@@ -195,7 +240,6 @@ public class NetworkListPane extends WorldCreator {
                                             ) {
                                                 mCanvas.deleteExistsWorldAndCloseThatPanel(getWorld().getUid());
                                                 reloadNet(canvas);
-                                                pingServers();
                                                 NetworkListPane.this.revalidate();
                                             }
                                         }
@@ -204,8 +248,9 @@ public class NetworkListPane extends WorldCreator {
                             }, BorderLayout.NORTH);
                         }
                     }, BorderLayout.CENTER);
-                    add(new FButton(" CONN ") {{
-                        setBackground(Color.GREEN);
+
+                    setConnButton(new FButton(" CONN ") {{
+                        setBackground(Color.YELLOW);
                         setForeground(Color.WHITE);
                         setFocusPainted(false);
                         setMinimumSize(new Dimension(96, 96));
@@ -216,33 +261,32 @@ public class NetworkListPane extends WorldCreator {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                if (canvas instanceof MenuCanvas mCanvas) {
-                                    if (getWorld().isLocalWorld()) {
-                                        // address = InetAddress.getLocalHost().toString().split("/")[1]; // 127.0.0.1 | 0.0.0.0
-                                        mCanvas.serverUp(world);
-                                    } else {
-                                        address = getWorld().getNetworkAddress();
-                                        password = (String) new FOptionPane()
-                                                .buildFOptionPane("Подключиться:", "Пароль сервера:",
-                                                        FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
-                                        mCanvas.socketConnect(NetConnectTemplate.builder()
-                                                .address(address)
-                                                .worldUid(world.getUid())
-                                                .passwordHash(password.hashCode())
-                                                .build());
-                                    }
+                                gameController.setCurrentWorld(world.getUid());
+                                canvas.setConnectionAwait(true);
+
+                                if (getWorld().isLocalWorld()) {
+                                    // address = InetAddress.getLocalHost().toString().split("/")[1]; // 127.0.0.1 | 0.0.0.0
+                                    ((MenuCanvas) canvas).serverUp(world);
+                                } else {
+                                    address = getWorld().getNetworkAddress();
+                                    password = (String) new FOptionPane()
+                                            .buildFOptionPane("Подключиться:", "Пароль сервера:",
+                                                    FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
+                                    ((MenuCanvas) canvas).connectToServer(NetConnectTemplate.builder()
+                                            .address(address)
+                                            .worldUid(world.getUid())
+                                            .passwordHash(password.hashCode())
+                                            .build());
                                 }
                             }
                         });
-                    }}, BorderLayout.EAST);
+                    }});
+                    add(getConnButton(), BorderLayout.EAST);
                 }}, BorderLayout.EAST);
             }});
-
-            centerList.add(Box.createVerticalStrut(6));
         }
 
-        centerList.add(Box.createVerticalStrut(canvas.getHeight()));
-
+        pingServers();
         NetworkListPane.this.revalidate();
     }
 
@@ -258,18 +302,20 @@ public class NetworkListPane extends WorldCreator {
         g.clearRect(0, 0, getWidth(), getHeight());
         g.drawImage(snap, 0, 0, getWidth(), getHeight(), this);
 
-        if (canvas.isConnectionAwait()) {
+        if (canvas.isConnectionAwait() || canvas.isPingAwait()) {
             g.setFont(Constants.PROPAGANDA_BIG_FONT);
 
             g.setColor(Color.BLACK);
-            g.drawString(connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, connectionString)) - 3, getHeight() / 2);
+            g.drawString(canvas.isPingAwait() ? pingString : connectionString,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g,
+                            canvas.isPingAwait() ? pingString : connectionString)) - 3, getHeight() / 2);
             g.drawString(dot[dots],
                     (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 3, getHeight() / 2 + 16);
 
             g.setColor(Color.WHITE);
-            g.drawString(connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, connectionString)) - 3, getHeight() / 2);
+            g.drawString(canvas.isPingAwait() ? pingString : connectionString,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g,
+                            canvas.isPingAwait() ? pingString : connectionString)) - 3, getHeight() / 2);
             g.drawString(dot[dots],
                     (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 3, getHeight() / 2 + 16);
 
@@ -287,34 +333,38 @@ public class NetworkListPane extends WorldCreator {
         }
         if (isVisible) {
             reloadNet(canvas);
-            pingServers();
         }
         super.setVisible(isVisible);
     }
 
-    private void pingServers() {
-        // пинг нелокальных миров...
-        Arrays.stream(centerList.getComponents()).filter(SubPane.class::isInstance).iterator().forEachRemaining(spn -> {
-            SubPane sp = (SubPane) spn;
-            ZLabel spHeader = sp.getHeaderLabel();
-            new Thread(() -> {
+    private synchronized void pingServers() {
+        canvas.setPingAwait(true);
+
+        new Thread(() -> {
+            // пинг нелокальных миров...
+            Arrays.stream(centerList.getComponents()).filter(SubPane.class::isInstance).iterator().forEachRemaining(spn -> {
                 String add = "<br>Доступен:%s</b></font></pre>";
 
+                SubPane sp = (SubPane) spn;
+                FButton connButton = sp.getConnButton();
                 if (sp.getWorld().isLocalWorld()) {
                     add = add.formatted("<font color=#394b5e><b>   (локальный)");
-                } else if (sp.getWorld().isNetAvailable()) {
+                    connButton.setBackground(Color.BLUE);
+                } else {
                     String nad = sp.getWorld().getNetworkAddress();
                     String host = nad.contains(":") ? nad.split(":")[0] : nad;
                     Integer port = nad.contains(":") ? Integer.parseInt(nad.split(":")[1]) : null;
-                    add = add.formatted(canvas.ping(host, port)
-                            ? "<font color=#07ad3c><b>   (доступен)" : "<font color=#a31c25><b>   (не доступен)");
-                } else {
-                    add = add.formatted("<font color=#239BEE><b>   (не известно)");
+                    boolean isPingOk = canvas.ping(host, port, sp.getWorld().getUid());
+                    add = add.formatted(isPingOk ? "<font color=#07ad3c><b>   (доступен)" : "<font color=#a31c25><b>   (не доступен)");
+                    connButton.setBackground(isPingOk ? Color.GREEN : Color.GRAY);
+                    connButton.setEnabled(isPingOk);
                 }
 
+                ZLabel spHeader = sp.getHeaderLabel();
                 spHeader.setText(spHeader.getText().replace("</pre>", add));
-            }).start();
-        });
+            });
+            canvas.setPingAwait(false);
+        }).start();
     }
 
     @Override

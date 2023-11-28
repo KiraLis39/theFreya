@@ -11,6 +11,7 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.gui.panes.sub.HeroCreatingPane;
+import game.freya.gui.panes.sub.NetworkListPane;
 import game.freya.net.data.NetConnectTemplate;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -122,12 +123,16 @@ public class MenuCanvas extends FoxCanvas {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         if (getHeroesListPane().isVisible()) {
-                            playWithThisHero(
-                                    gameController.findAllHeroesByWorldUid(gameController.getCurrentWorldUid()).get(0));
+                            playWithThisHero(gameController.getCurrentWorldHeroes().get(0));
                             getHeroesListPane().setVisible(false);
                         } else if (getWorldsListPane().isVisible()) {
-                            chooseOrCreateHeroForWorld(
-                                    gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
+                            UUID lastWorldUid = gameController.getCurrentPlayerLastPlayedWorldUid();
+                            if (gameController.isWorldExist(lastWorldUid)) {
+                                chooseOrCreateHeroForWorld(lastWorldUid);
+                            } else {
+                                chooseOrCreateHeroForWorld(
+                                        gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
+                            }
                             getWorldsListPane().setVisible(false);
                         } else {
                             getWorldsListPane().setVisible(true);
@@ -153,7 +158,7 @@ public class MenuCanvas extends FoxCanvas {
 
         this.isMenuActive = true;
         while (isMenuActive) {
-            if (!parentFrame.isActive()) {
+            if (!parentFrame.isActive() || getBufferStrategy() == null) {
                 Thread.yield();
                 continue;
             }
@@ -167,8 +172,13 @@ public class MenuCanvas extends FoxCanvas {
                     drawNextFrame();
                 }
 
-                if (isConnectionAwait()) {
-                    getNetworkListPane().repaint();
+                if (getNetworkListPane().isVisible()) {
+                    if (isConnectionAwait()) {
+                        getNetworkListPane().repaint();
+                    }
+                    if (isPingAwait()) {
+                        getNetworkListPane().repaint();
+                    }
                 }
             } catch (Exception e) {
                 throwExceptionAndYield(e);
@@ -321,6 +331,8 @@ public class MenuCanvas extends FoxCanvas {
                 }
             } else if (getHeroCreatingPane().isVisible()) {
                 Constants.showNFP();
+            } else if (getNetworkListPane().isVisible()) {
+                ((NetworkListPane) getNetworkListPane()).reloadNet(this);
             } else {
                 getNetworkListPane().setVisible(true);
             }
@@ -452,6 +464,7 @@ public class MenuCanvas extends FoxCanvas {
         // Если игра по сети, но Сервер - мы, и ещё не запускался:
         gameController.setCurrentWorld(gameController.saveNewWorld(newNetworkWorld));
 
+        // Открываем локальный Сервер:
         if (gameController.isCurrentWorldIsLocal() && gameController.isCurrentWorldIsNetwork() && !gameController.isServerIsOpen()) {
             if (gameController.openServer()) {
                 log.info("Сервер сетевой игры успешно активирован на {}", gameController.getServerAddress());
@@ -460,29 +473,34 @@ public class MenuCanvas extends FoxCanvas {
             }
         }
 
-        socketConnect(NetConnectTemplate.builder()
+        if (gameController.isSocketIsOpen()) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Socket should was closed here!");
+        }
+
+        // Подключаемся к локальному Серверу как новый Клиент:
+        connectToServer(NetConnectTemplate.builder()
                 .address(newNetworkWorld.getNetworkAddress())
                 .passwordHash(newNetworkWorld.getPasswordHash())
                 .worldUid(newNetworkWorld.getUid())
                 .build());
     }
 
-    public void socketConnect(NetConnectTemplate connectionTemplate) {
+    public void connectToServer(NetConnectTemplate connectionTemplate) {
+        getNetworkListPane().repaint(); // костыль для отображения анимации
+
         if (connectionTemplate.address().isBlank()) {
             new FOptionPane().buildFOptionPane("Ошибка адреса:", "Адрес сервера не может быть пустым.", 10, true);
         }
 
+        // 1) приходим сюда с host:port для подключения
+        String address = connectionTemplate.address().trim();
+        String h = address.contains(":") ? address.split(":")[0].trim() : address;
+        Integer p = address.contains(":") ? Integer.parseInt(address.split(":")[1].trim()) : null;
+        getNetworkListPane().repaint(); // костыль для отображения анимации
         try {
-            // 1) приходим сюда с host:port для подключения
-            String address = connectionTemplate.address().trim();
-            String h = address.contains(":") ? address.split(":")[0].trim() : address;
-            Integer p = address.contains(":") ? Integer.parseInt(address.split(":")[1].trim()) : null;
-
             // 2) подключаемся к серверу, авторизуемся там и получаем мир для сохранения локально
-            if (gameController.connectToServer(h.trim(), p, connectionTemplate.passwordHash())) {
-                // снимаем флаг анимации подключения с листа серверов:
-                getNetworkListPane().setVisible(false);
-
+            boolean connectedToServer = gameController.connectToServer(h.trim(), p, connectionTemplate.passwordHash());
+            if (connectedToServer) {
                 // 3) проверка героя в этом мире:
                 chooseOrCreateHeroForWorld(gameController.getCurrentWorldUid());
             } else {
@@ -493,7 +511,7 @@ public class MenuCanvas extends FoxCanvas {
             log.warn("GSE here: {}", gse.getMessage());
             if (gse.getErrorCode().equals("ER07")) {
                 new FOptionPane().buildFOptionPane("Не доступно:",
-                        "Адрес %s не доступен.".formatted(gameController.getCurrentWorldAddress()),
+                        "Адрес %s не доступен либо Сервер не ответил вовремя.".formatted(gameController.getCurrentWorldAddress()),
                         FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
             }
         } catch (IllegalThreadStateException tse) {
@@ -503,15 +521,10 @@ public class MenuCanvas extends FoxCanvas {
                     + "Верно: <host_ip> или <host_ip>:<port> (192.168.0.10/13:13958)")
                     .formatted(ExceptionUtils.getFullExceptionMessage(e)), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
             log.error("Server aim address to connect error: {}", ExceptionUtils.getFullExceptionMessage(e));
-            // gameController.closeServer();
         } finally {
+            // gameController.closeSocket();
             setConnectionAwait(false);
         }
-//        catch (ConnectException ce) {
-//            setConnectionAwait(false);
-//            new FOptionPane().buildFOptionPane("Не доступно:", "Адрес не доступен.", FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-//            log.warn("Server address connection failed: {}", ExceptionUtils.getFullExceptionMessage(ce));
-//        }
     }
 
 
@@ -524,9 +537,11 @@ public class MenuCanvas extends FoxCanvas {
      * @param worldUid uuid выбранного для игры мира.
      */
     public void chooseOrCreateHeroForWorld(UUID worldUid) {
-        gameController.setCurrentWorld(worldUid); // на всякий случай.
+        getNetworkListPane().setVisible(false);
+        getNetworkCreatingPane().setVisible(false);
 
-        if (gameController.findAllHeroesByWorldUid(worldUid).isEmpty()) {
+        gameController.setCurrentWorld(worldUid);
+        if (gameController.getCurrentWorldHeroes().isEmpty()) {
             getHeroCreatingPane().setVisible(true);
         } else {
             getHeroesListPane().setVisible(true);
@@ -571,6 +586,8 @@ public class MenuCanvas extends FoxCanvas {
                 startGame();
             } else {
                 log.error("Сервер не принял нашего Героя");
+                getHeroCreatingPane().repaint();
+                getHeroesListPane().repaint();
             }
         } else {
             // иначе просто запускаем мир и играем локально:
@@ -579,8 +596,6 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     public void startGame() {
-//        getNetworkListPane().setVisible(false);
-//        getHeroesListPane().setVisible(false);
         gameController.loadScreen(ScreenType.GAME_SCREEN);
     }
 }
