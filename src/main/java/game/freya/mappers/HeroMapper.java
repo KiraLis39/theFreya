@@ -94,7 +94,7 @@ public final class HeroMapper {
                 result.addBuff(buff);
             }
             result.setInventory(mapper.readValue(entity.getInventoryJson(), Backpack.class));
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Err in hero mapper: {}", ExceptionUtils.getFullExceptionMessage(e));
             throw new GlobalServiceException(ErrorMessages.JSON_PARSE_ERR);
         }

@@ -474,7 +474,8 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         if (gameController.isSocketIsOpen()) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Socket should was closed here!");
+            log.error("Socket should was closed here! Closing...");
+            gameController.closeSocket();
         }
 
         // Подключаемся к локальному Серверу как новый Клиент:
@@ -537,6 +538,7 @@ public class MenuCanvas extends FoxCanvas {
      * @param worldUid uuid выбранного для игры мира.
      */
     public void chooseOrCreateHeroForWorld(UUID worldUid) {
+        getWorldCreatingPane().setVisible(false);
         getNetworkListPane().setVisible(false);
         getNetworkCreatingPane().setVisible(false);
 

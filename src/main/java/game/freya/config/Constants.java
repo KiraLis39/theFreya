@@ -38,7 +38,7 @@ public final class Constants {
     public static final int DEFAULT_SERVER_PORT = 13958;
     public static final int SOCKET_BUFFER_SIZE = 16384; // 65536
     public static final long SERVER_BROADCAST_DELAY = 5_000L; // миллисекунд ждать между отправками данных
-    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 60_000; // сколько миллисекунд клиент ждёт данные от Сервера
+    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 30_000; // сколько миллисекунд клиент ждёт данные от Сервера
 
     // public static final int CONNECTED_CLIENT_STREAM_READ_DELAY = 500; // сколько ждать перед следующим чтением из подключения к Серверу.
     // public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд Сервер ждёт данные от Клиента
@@ -231,14 +231,6 @@ public final class Constants {
         return realFreshRate.get() < fpsLimit - SHIFT_FPS_ALLOWED;
     }
 
-    private static boolean isCurrentFpsIsLessThanMonitorRate() {
-        return realFreshRate.get() < MON.getRefreshRate();
-    }
-
-    private static boolean isCurrentFpsIsGreaterThanMonitorRate() {
-        return realFreshRate.get() > MON.getRefreshRate();
-    }
-
     public static int getRealFreshRate() {
         return realFreshRate.get();
     }
@@ -256,5 +248,13 @@ public final class Constants {
 
     public static boolean isLowFpsAlarm() {
         return isFpsLimited() && delay.get() <= 3;
+    }
+
+    boolean isCurrentFpsIsLessThanMonitorRate() {
+        return realFreshRate.get() < MON.getRefreshRate();
+    }
+
+    boolean isCurrentFpsIsGreaterThanMonitorRate() {
+        return realFreshRate.get() > MON.getRefreshRate();
     }
 }

@@ -43,55 +43,40 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @AllArgsConstructor
 public class HeroDTO implements iHero {
     @NotNull
+    @Builder.Default
+    private final List<Buff> buffs = new ArrayList<>(9);
+    @NotNull
     @Setter
     private UUID uid;
-
     @NotNull
     private String heroName;
-
     @Setter
     @Builder.Default
     private Backpack inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"));
-
     @Builder.Default
     private short level = 1;
-
     @Builder.Default
     private HeroType type = HeroType.VOID;
-
     @Builder.Default
     private float power = 1.0f;
-
     @Builder.Default
     private float experience = 0f;
-
     @Builder.Default
     private short curHealth = 100;
-
     @Builder.Default
     private short maxHealth = 100;
-
     @Builder.Default
     private short curOil = 100;
-
     @Builder.Default
     private short maxOil = 100;
-
     @Builder.Default
     private byte speed = 6;
-
     @Builder.Default
     private Point2D.Double position = new Point2D.Double(384d, 384d);
-
     @Builder.Default
     private MovingVector vector = MovingVector.UP;
-
     @Builder.Default
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
-
-    @Builder.Default
-    private List<Buff> buffs = new ArrayList<>(9);
-
     @Setter
     private UUID worldUid;
 

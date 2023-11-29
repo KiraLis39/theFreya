@@ -40,7 +40,9 @@ public record ClientDataDTO(
         int passwordHash,
         LocalDateTime createDate,
         LocalDateTime lastPlayDate,
-        String chatMessage
+        String chatMessage,
+        String buffsJson,
+        String inventoryJson
         // BufferedImage icon
 ) implements Serializable {
     @Override

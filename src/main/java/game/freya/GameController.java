@@ -1,5 +1,7 @@
 package game.freya;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fox.FoxLogo;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
@@ -22,6 +24,7 @@ import game.freya.mappers.HeroMapper;
 import game.freya.mappers.WorldMapper;
 import game.freya.net.ConnectedServerPlayer;
 import game.freya.net.LocalSocketConnection;
+import game.freya.net.PlayedHeroesService;
 import game.freya.net.Server;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.services.HeroService;
@@ -34,6 +37,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -55,27 +59,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class GameController extends GameControllerBase {
     private final PlayerService playerService;
+    private final ObjectMapper mapper;
     private final HeroService heroService;
     private final HeroMapper heroMapper;
     private final UserConfigService userConfigService;
+    private final PlayedHeroesService playedHeroesService;
     private final WorldService worldService;
     private final WorldMapper worldMapper;
     private final GameFrame gameFrame;
     private final Server server;
     @Getter
     private final GameConfig gameConfig;
+    @Getter
     private LocalSocketConnection localSocketConnection;
     private Thread pingThread;
     private volatile boolean isGameActive = false;
@@ -173,14 +180,14 @@ public class GameController extends GameControllerBase {
         }
         playerService.setCurrentPlayer(found);
 
-        // set current world:
-        Optional<World> wOpt = worldService.findByUid(playerService.getCurrentPlayer().getLastPlayedWorldUid());
-        worldService.setCurrentWorld(worldMapper.toDto(wOpt.orElse(null)));
-
-        // если последний мир был удалён:
-        if (worldService.getCurrentWorld() == null && playerService.getCurrentPlayer().getLastPlayedWorldUid() != null) {
-            playerService.getCurrentPlayer().setLastPlayedWorldUid(null);
-        }
+//        // set current world:
+//        Optional<World> wOpt = worldService.findByUid(playerService.getCurrentPlayer().getLastPlayedWorldUid());
+//        worldService.setCurrentWorld(worldMapper.toDto(wOpt.orElse(null)));
+//
+//        // если последний мир был удалён:
+//        if (worldService.getCurrentWorld() == null && playerService.getCurrentPlayer().getLastPlayedWorldUid() != null) {
+//            playerService.getCurrentPlayer().setLastPlayedWorldUid(null);
+//        }
 
         // если сменили никнейм в конфиге:
         playerService.getCurrentPlayer().setNickName(Constants.getUserConfig().getUserName());
@@ -273,11 +280,31 @@ public class GameController extends GameControllerBase {
                 .experience(getCurrentHeroExperience())
                 .level(getCurrentHeroLevel())
                 .hurtLevel(getCurrentHeroHurtLevel())
+                .buffsJson(getCurrentHeroBuffsJson())
+                .inventoryJson(getCurrentHeroInventoryJson())
 
                 .chatMessage(null)
 
                 .isOnline(isCurrentHeroOnline())
                 .build();
+    }
+
+    private String getCurrentHeroInventoryJson() {
+        try {
+            return mapper.writeValueAsString(heroService.getCurrentHero().getInventory());
+        } catch (JsonProcessingException e) {
+            log.error("Произошла ошибка при парсинге инвентаря героя {} ({})", getCurrentHeroName(), getCurrentHeroUid());
+            return "{}";
+        }
+    }
+
+    private String getCurrentHeroBuffsJson() {
+        try {
+            return mapper.writeValueAsString(heroService.getCurrentHero().getBuffs());
+        } catch (JsonProcessingException e) {
+            log.error("Произошла ошибка при парсинге бафов героя {} ({})", getCurrentHeroName(), getCurrentHeroUid());
+            return "{}";
+        }
     }
 
     private short getCurrentHeroMaxOil() {
@@ -322,27 +349,26 @@ public class GameController extends GameControllerBase {
     /**
      * Метод отрисовки всех героев подключенных к миру и авторизованных игроков.
      *
-     * @param g2D         хост для отрисовки.
-     * @param visibleRect объектив камеры холста.
-     * @param canvas      класс холста.
+     * @param g2D    хост для отрисовки.
+     * @param canvas класс холста.
      */
-    public void drawHeroes(Graphics2D g2D, Rectangle visibleRect, GameCanvas canvas) {
+    public void drawHeroes(Graphics2D g2D, GameCanvas canvas) {
         if (isCurrentHeroOnline()) { // если игра по сети:
-            for (HeroDTO hero : server.getHeroes()) {
+            for (HeroDTO hero : playedHeroesService.getHeroes()) {
                 if (heroService.getCurrentHero() != null && heroService.isCurrentHero(hero)) {
                     // если это текущий герой:
                     if (!Constants.isPaused()) {
-                        moveHeroIfAvailable(visibleRect, canvas); // todo: узкое место!
+                        moveHeroIfAvailable(canvas); // todo: узкое место!
                     }
                     heroService.getCurrentHero().draw(g2D);
-                } else if (visibleRect.contains(hero.getPosition())) {
+                } else if (canvas.getViewPort().getBounds().contains(hero.getPosition())) {
                     // если чужой герой в пределах видимости:
                     hero.draw(g2D);
                 }
             }
         } else { // если не-сетевая игра:
             if (!Constants.isPaused()) {
-                moveHeroIfAvailable(visibleRect, canvas); // todo: узкое место!
+                moveHeroIfAvailable(canvas); // todo: узкое место!
             }
             heroService.getCurrentHero().draw(g2D);
         }
@@ -352,14 +378,17 @@ public class GameController extends GameControllerBase {
         return visibleRect.contains(hero.getPosition()) && (!isCurrentHeroOnline() || (isCurrentHeroOnline() && hero.isOnline()));
     }
 
-    private void moveHeroIfAvailable(Rectangle visibleRect, GameCanvas canvas) {
+    private void moveHeroIfAvailable(GameCanvas canvas) {
         if (isPlayerMoving()) {
+            Rectangle visibleRect = canvas.getViewPort().getBounds();
             MovingVector vector = heroService.getCurrentHero().getVector();
             Point2D.Double plPos = heroService.getCurrentHero().getPosition();
-            boolean isViewMovableX = plPos.x > visibleRect.getWidth() / 2d
-                    && plPos.x < worldService.getCurrentWorld().getGameMap().getWidth() - (visibleRect.width - visibleRect.x) / 2d;
-            boolean isViewMovableY = plPos.y > visibleRect.getHeight() / 2d
-                    && plPos.y < worldService.getCurrentWorld().getGameMap().getHeight() - (visibleRect.height - visibleRect.y) / 2d;
+
+            double hrc = (visibleRect.x + ((visibleRect.getWidth() - visibleRect.x) / 2d));
+            boolean isViewMovableX = plPos.x > hrc - 30 || plPos.x < hrc + 30;
+
+            double vrc = (visibleRect.y + ((visibleRect.getHeight() - visibleRect.y) / 2d));
+            boolean isViewMovableY = plPos.y > vrc - 30 || plPos.y < vrc + 30;
 
             if (isPlayerMovingUp()) {
                 vector = isPlayerMovingRight() ? MovingVector.UP_RIGHT : isPlayerMovingLeft() ? MovingVector.LEFT_UP : MovingVector.UP;
@@ -608,9 +637,7 @@ public class GameController extends GameControllerBase {
     }
 
     public List<HeroDTO> getConnectedHeroes() {
-        return server.getPlayers().stream().map(ConnectedServerPlayer::getHeroDto)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return new ArrayList<>(playedHeroesService.getHeroes());
     }
 
     public MovingVector getCurrentHeroVector() {
@@ -660,7 +687,7 @@ public class GameController extends GameControllerBase {
         authThread.start();
 
         try {
-            authThread.join(15_000);
+            authThread.join(12_000);
             if (authThread.isAlive()) {
                 log.error("Так и не получили успешной авторизации от Сервера.");
                 authThread.interrupt();
@@ -681,6 +708,7 @@ public class GameController extends GameControllerBase {
     public boolean ping(String host, Integer port, UUID requestWorldUid) {
         // подключаемся к серверу:
         try {
+            localSocketConnection.setPing(true);
             localSocketConnection.openSocket(host, port, this);
 
             // пингуемся:
@@ -696,7 +724,6 @@ public class GameController extends GameControllerBase {
                 localSocketConnection.resetPong();
             });
             pingThread.start();
-
             pingThread.join(6_000);
             if (pingThread.isAlive()) {
                 pingThread.interrupt();
@@ -711,6 +738,8 @@ public class GameController extends GameControllerBase {
             log.warn("GSE here: {}", gse.getMessage());
             localSocketConnection.killSelf();
             return false;
+        } finally {
+            localSocketConnection.killSelf();
         }
     }
 
@@ -758,8 +787,16 @@ public class GameController extends GameControllerBase {
         worldService.setCurrentWorld(newWorld);
     }
 
-    public void setCurrentWorld(World world) {
-        worldService.setCurrentWorld(worldService.save(worldMapper.toDto(world)));
+    public void saveServerWorldAndSetAsCurrent(World world) {
+        Optional<World> wOpt = worldService.findByUid(world.getUid());
+        if (wOpt.isPresent()) { // тут происходит подмена worldUuid?
+            World old = wOpt.get();
+            BeanUtils.copyProperties(world, old);
+            worldService.setCurrentWorld(worldMapper.toDto(old));
+            worldService.saveCurrentWorld();
+        } else {
+            worldService.setCurrentWorld(worldService.save(worldMapper.toDto(world)));
+        }
     }
 
     public boolean isCurrentHeroOnline() {
@@ -862,10 +899,16 @@ public class GameController extends GameControllerBase {
      * @param data модель обновлений для сетевого мира от другого участника игры.
      */
     public void syncServerDataWithCurrentWorld(@NotNull ClientDataDTO data) {
-        log.info("Получены данные для синхронизации мира от {}'s {} ({})", data.playerName(), data.heroName(), data.playerUid());
+        log.info("Получены данные для синхронизации мира {} игрока {}'s (герой {})", data.worldUid(), data.playerName(), data.heroName());
+
+        HeroDTO aim = playedHeroesService.getHero(data);
+        if (aim == null) {
+            throw new GlobalServiceException(ErrorMessages.HERO_NOT_FOUND, data.heroUuid());
+        }
+
         // Обновляем позицию другого игрока:
-        server.getHero(data.heroUuid()).setPosition(data.position());
-        server.getHero(data.heroUuid()).setVector(data.vector());
+        aim.setPosition(data.position());
+        aim.setVector(data.vector());
 
         // Обновляем здоровье, максимальное здоровье, силу, бафы-дебафы, текущий инструмент в руках и т.п. другого игрока:
         // ...
@@ -927,5 +970,9 @@ public class GameController extends GameControllerBase {
 
     public boolean isWorldExist(UUID worldUid) {
         return worldService.isWorldExist(worldUid);
+    }
+
+    public PlayedHeroesService getPlayedHeroesService() {
+        return playedHeroesService;
     }
 }

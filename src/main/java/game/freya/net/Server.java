@@ -3,7 +3,6 @@ package game.freya.net;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -18,17 +17,15 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class Server implements iServer {
-    private final Map<InetAddress, ConnectedServerPlayer> clients = HashMap.newHashMap(3);
+    private final Map<InetAddress, ConnectedServerPlayer> clients = new ConcurrentHashMap<>();
     private Thread diedClientsCleaner, serverThread;
     private GameController gameController;
     private ServerSocket serverSocket;
@@ -39,7 +36,9 @@ public class Server implements iServer {
     public void open(GameController gameController) {
         this.gameController = gameController;
 
-        if (!isOpen()) {
+        if (isOpen()) {
+            log.warn("Server is opened already. And can`t open again now.");
+        } else {
             // запуск вспомогательного потока чистки мертвых клиентов:
             startDiedClientsCleaner();
 
@@ -51,13 +50,12 @@ public class Server implements iServer {
                     this.serverSocket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
 
                     this.address = serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort();
-                    log.info("Создан сервер на {} (buffer: {})", address, serverSocket.getReceiveBufferSize());
 
+                    log.info("Создан сервер на {} (buffer: {})", address, serverSocket.getReceiveBufferSize());
                     while (!serverThread.isInterrupted() && !this.serverSocket.isClosed()) {
                         log.info("Awaits a new connections...");
                         acceptNewClient(serverSocket.accept());
                     }
-
                     log.info("Connection server is shutting down...");
                 } catch (Exception e) {
                     if (!isServerCloseAccepted) {
@@ -68,11 +66,6 @@ public class Server implements iServer {
                 }
             });
             serverThread.start();
-        } else if (!serverThread.isAlive()) {
-            log.info("Перезапуск прерванного ранее Сервера...");
-            serverThread.start();
-        } else {
-            log.warn("Server is opened already. And can`t open again now.");
         }
     }
 
@@ -80,23 +73,24 @@ public class Server implements iServer {
         if (diedClientsCleaner != null) {
             try {
                 diedClientsCleaner.interrupt();
-                diedClientsCleaner.join();
+                diedClientsCleaner.join(12_000);
             } catch (InterruptedException e) {
                 diedClientsCleaner.interrupt();
-                diedClientsCleaner = null;
             }
         }
 
         diedClientsCleaner = new Thread(() -> {
+            log.info("Поток чистки Клиентов начал свою работу.");
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     clearDiedClients();
-                    Thread.sleep(6_000);
+                    Thread.sleep(12_000);
                 } catch (InterruptedException e) {
                     log.error("Прерван поток {}", Thread.currentThread().getName());
                     Thread.currentThread().interrupt();
                 }
             }
+            log.info("Поток чистки Клиентов завершил свою работу.");
         });
         diedClientsCleaner.setName("Died clients cleaner thread");
         diedClientsCleaner.setDaemon(true);
@@ -130,7 +124,7 @@ public class Server implements iServer {
             } catch (IOException e) {
                 log.info("Ошибка остановки Сервера.");
             } catch (Exception e) {
-                log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+                log.warn("Not handled exception here (2): {}", ExceptionUtils.getFullExceptionMessage(e));
             }
         }
         clients.clear();
@@ -150,7 +144,7 @@ public class Server implements iServer {
         } catch (IOException e) {
             log.info("Ошибка при принятии нового подключения Клиента: {}", ExceptionUtils.getFullExceptionMessage(e));
         } catch (Exception e) {
-            log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+            log.warn("Not handled exception here (3): {}", ExceptionUtils.getFullExceptionMessage(e));
         }
         return null;
     }
@@ -168,6 +162,9 @@ public class Server implements iServer {
                 // connectedPlayer.push(ClientDataDTO.builder().type(NetDataType.PING).build());
                 continue; // не слать себе свои же данные. Только пинг, если нужно.
             }
+            if (!connectedServerPlayer.isAccepted()) {
+                continue; // не слать синхро тем, кто еще не загрузил своего Героя - будет исключение!
+            }
 
             connectedServerPlayer.push(dataDto);
         }
@@ -176,8 +173,13 @@ public class Server implements iServer {
     @Override
     public void destroyClient(ConnectedServerPlayer playerToDestroy) {
         clients.entrySet().iterator().forEachRemaining(entry -> {
-            if (entry.getValue().getClientUid().equals(playerToDestroy.getClientUid())) {
-                entry.getValue().kill();
+            if (entry.getValue() == null || entry.getValue().getClientUid().equals(playerToDestroy.getClientUid())) {
+                if (entry.getValue() != null) {
+                    log.info("Удаление из карты клиентов Клиента {}...", entry.getValue().getPlayerName());
+                    entry.getValue().kill();
+                } else {
+                    log.info("Удаление из карты клиентов Клиента {}...", entry.getKey());
+                }
                 clients.remove(entry.getKey());
             }
         });
@@ -240,12 +242,6 @@ public class Server implements iServer {
         return clients.values().stream().filter(ConnectedServerPlayer::isAccepted).collect(Collectors.toSet());
     }
 
-    public Set<HeroDTO> getHeroes() {
-        return getPlayers().stream().map(ConnectedServerPlayer::getHeroDto)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-    }
-
     public String getAddress() {
         return this.address;
     }
@@ -263,10 +259,5 @@ public class Server implements iServer {
     @Override
     public long connected() {
         return clients.values().stream().filter(ConnectedServerPlayer::isAuthorized).count();
-    }
-
-    public HeroDTO getHero(UUID uuid) {
-        return getPlayers().stream().map(ConnectedServerPlayer::getHeroDto)
-                .filter(h -> h != null && h.getUid().equals(uuid)).findFirst().orElse(null);
     }
 }

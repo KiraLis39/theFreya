@@ -62,4 +62,8 @@ public class HeroService {
     public Optional<Hero> findHeroByNameAndWorld(String heroName, UUID worldUid) {
         return heroRepository.findByHeroNameAndWorldUid(heroName, worldUid);
     }
+
+    public Optional<Hero> findHeroByUuid(UUID uuid) {
+        return heroRepository.findByUid(uuid);
+    }
 }

@@ -4,10 +4,14 @@ import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.World;
+import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.NetDataType;
+import game.freya.enums.ScreenType;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedInputStream;
@@ -20,6 +24,8 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -28,20 +34,28 @@ public class LocalSocketConnection {
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
     private final AtomicBoolean isAccepted = new AtomicBoolean(false);
     private final AtomicBoolean isPongReceived = new AtomicBoolean(false);
+    @Getter
+    private final Set<HeroDTO> otherHeroes = HashSet.newHashSet(3);
     private volatile ObjectOutputStream oos;
     private Thread connectionThread;
     private volatile Socket socket;
     private String host;
+    private GameController gameController;
+    @Setter
+    private volatile boolean isPing;
 
     public synchronized void openSocket(String host, Integer port, GameController gameController) {
+        this.gameController = gameController;
+        this.host = host;
+
         // убиваемся, если кто-то запустил нас ранее и не закрыл:
         killSelf();
-
-        this.host = host;
 
         this.isPongReceived.set(false);
         this.isAuthorized.set(false);
         this.isAccepted.set(false);
+
+        this.isPing = false;
 
         connectionThread = new Thread(() -> {
             try (Socket client = new Socket(host, port != null ? port : Constants.DEFAULT_SERVER_PORT)) {
@@ -59,7 +73,7 @@ public class LocalSocketConnection {
 
                 try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()))) {
                     this.oos = outs;
-                    log.info("Socket connection from {} to '{}:{}' is prepared. Connect...", client.getInetAddress().getHostName(), host, port);
+                    log.info("Socket connection to '{}:{}' is ready! Send pong message...", host, port);
                     // сразу шлём Серверу сигнал, для "прокачки" соединения:
                     toServer(ClientDataDTO.builder().type(NetDataType.PONG).build());
 
@@ -75,12 +89,12 @@ public class LocalSocketConnection {
                                             .formatted(readed.explanation()), 15, true);
                                 }
                                 case AUTH_SUCCESS -> {
-                                    this.isAuthorized.set(true);
                                     World serverWorld = readed.world();
                                     serverWorld.setUid(readed.worldUid());
                                     serverWorld.setNetworkAddress(host + ":" + (port == null ? Constants.DEFAULT_SERVER_PORT : port));
-                                    gameController.setCurrentWorld(serverWorld);
-                                    log.info("Сервер принял запрос авторизации");
+                                    gameController.saveServerWorldAndSetAsCurrent(serverWorld);
+                                    this.isAuthorized.set(true);
+                                    log.info("Сервер принял запрос авторизации, его мир установлен как текущий.");
                                 }
                                 case HERO_ACCEPTED -> {
                                     this.isAccepted.set(true);
@@ -93,7 +107,7 @@ public class LocalSocketConnection {
                                             .formatted(readed.explanation()), 15, true);
                                 }
                                 case SYNC -> {
-                                    log.info("Приняты данные синхронизации от Сервера: {}", readed);
+                                    log.info("Приняты данные синхронизации от игрока: {}", readed.playerName());
                                     gameController.syncServerDataWithCurrentWorld(readed);
                                 }
                                 case CHAT -> {
@@ -127,8 +141,10 @@ public class LocalSocketConnection {
             } catch (ConnectException ce) {
                 log.error("Ошибка подключения: {}", ExceptionUtils.getFullExceptionMessage(ce));
             } catch (SocketException e) {
-                // надо бы как-то понять, если это умышленное завершение:
-                log.error("Ошибка сокета: {}", ExceptionUtils.getFullExceptionMessage(e));
+                if (notAcceptedStop()) {
+                    // надо бы как-то понять, если это умышленное завершение:
+                    log.error("Ошибка сокета: {}", ExceptionUtils.getFullExceptionMessage(e));
+                }
             } catch (UnknownHostException e) {
                 log.error("Ошибка хоста: {}", ExceptionUtils.getFullExceptionMessage(e));
             } catch (IOException e) {
@@ -136,13 +152,18 @@ public class LocalSocketConnection {
             } catch (ClassNotFoundException e) {
                 log.error("Ошибка чтения в класс: {}", ExceptionUtils.getFullExceptionMessage(e));
             } catch (Exception e) {
-                log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+                log.warn("Not handled exception here (6): {}", ExceptionUtils.getFullExceptionMessage(e));
             }
 
             killSelf();
+            gameController.getLocalSocketConnection().setPing(false);
         });
         connectionThread.setName("Socket connection thread");
         connectionThread.start();
+    }
+
+    private boolean notAcceptedStop() {
+        return !isPing;
     }
 
     /**
@@ -152,6 +173,13 @@ public class LocalSocketConnection {
      */
     public synchronized void toServer(ClientDataDTO dataDTO) {
         log.info("Шлём свои данные на Сервер...");
+
+        if (this.oos == null) {
+            long was = System.currentTimeMillis();
+            while (this.oos == null && System.currentTimeMillis() - was < 3_000) {
+                Thread.yield();
+            }
+        }
 
         try {
             this.oos.writeObject(dataDTO);
@@ -170,7 +198,7 @@ public class LocalSocketConnection {
             log.error("Ошибка отправки данных {} на Сервер", dataDTO);
             killSelf();
         } catch (Exception e) {
-            log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+            log.warn("Not handled exception here (1): {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 
@@ -187,6 +215,10 @@ public class LocalSocketConnection {
 
         if (connectionThread != null && !connectionThread.isInterrupted()) {
             connectionThread.interrupt();
+        }
+
+        if (gameController.isGameIsActive()) {
+            gameController.loadScreen(ScreenType.MENU_SCREEN);
         }
     }
 

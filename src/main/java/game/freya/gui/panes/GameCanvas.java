@@ -91,10 +91,6 @@ public class GameCanvas extends FoxCanvas {
                     parentHeightMemory = parentFrame.getBounds().getHeight();
                 }
 
-                if (!Constants.isPaused()) {
-                    dragViewIfNeeds();
-                }
-
                 try {
                     Thread.sleep(SECOND_THREAD_SLEEP_MILLISECONDS);
                 } catch (InterruptedException e) {
@@ -152,6 +148,10 @@ public class GameCanvas extends FoxCanvas {
             if (!parentFrame.isActive()) {
                 Thread.yield();
                 continue;
+            }
+
+            if (!Constants.isPaused()) {
+                dragViewIfNeeds();
             }
 
             try {

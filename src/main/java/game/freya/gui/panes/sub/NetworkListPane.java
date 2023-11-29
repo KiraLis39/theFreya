@@ -136,7 +136,7 @@ public class NetworkListPane extends WorldCreator {
 
         List<WorldDTO> worlds = gameController.findAllWorldsByNetworkAvailable(true);
         for (WorldDTO world : worlds) {
-            centerList.add(new SubPane(world.getTitle()) {{
+            centerList.add(new SubPane(world.getTitle() + " (" + world.getUid() + ")") {{
                 setWorld(world);
                 setPreferredSize(new Dimension(
                         Constants.getUserConfig().isFullscreen()
@@ -261,7 +261,7 @@ public class NetworkListPane extends WorldCreator {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                gameController.setCurrentWorld(world.getUid());
+                                gameController.setCurrentWorld(world.getUid()); // проверить корректный uuid
                                 canvas.setConnectionAwait(true);
 
                                 if (getWorld().isLocalWorld()) {
@@ -308,16 +308,16 @@ public class NetworkListPane extends WorldCreator {
             g.setColor(Color.BLACK);
             g.drawString(canvas.isPingAwait() ? pingString : connectionString,
                     (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g,
-                            canvas.isPingAwait() ? pingString : connectionString)) - 3, getHeight() / 2);
+                            canvas.isPingAwait() ? pingString : connectionString)) - 6, getHeight() / 2);
             g.drawString(dot[dots],
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 3, getHeight() / 2 + 16);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 6, getHeight() / 2 + 16);
 
             g.setColor(Color.WHITE);
             g.drawString(canvas.isPingAwait() ? pingString : connectionString,
                     (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g,
-                            canvas.isPingAwait() ? pingString : connectionString)) - 3, getHeight() / 2);
+                            canvas.isPingAwait() ? pingString : connectionString)) - 6, getHeight() / 2);
             g.drawString(dot[dots],
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 3, getHeight() / 2 + 16);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 6, getHeight() / 2 + 16);
 
             if (System.currentTimeMillis() - was > 1000) {
                 was = System.currentTimeMillis();

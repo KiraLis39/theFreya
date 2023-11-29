@@ -21,6 +21,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -43,6 +44,7 @@ public class Hero {
     @Column(name = "hero_name", length = 16)
     private String heroName;
 
+    @NotNull
     @Comment("Инвентарь героя")
     @Column(name = "inventory_json", length = 1024)
     private String inventoryJson;
@@ -96,6 +98,7 @@ public class Hero {
     @Enumerated(EnumType.STRING)
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
+    @NotNull
     @Comment("Имеющиеся бафы героя")
     @Column(name = "buffs_json", length = 1024)
     private String buffsJson;

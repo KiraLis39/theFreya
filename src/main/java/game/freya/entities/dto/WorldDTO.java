@@ -36,26 +36,33 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     @Builder.Default
     private final Set<iEnvironment> environments = HashSet.newHashSet(30);
     @Getter
-    private UUID uid;
+    @Builder.Default
+    private UUID uid = UUID.randomUUID();
+
     @Setter
     @Getter
     private UUID author;
+
     @Setter
     @Getter
     @Builder.Default
     private String title = "world_demo_" + r.nextInt(1000);
+
     @Setter
     @Getter
     @Builder.Default
     private boolean isNetAvailable = false;
+
     @Setter
     @Getter
     @Builder.Default
     private int passwordHash = 0;
+
     @Setter
     @Getter
     @Builder.Default
     private Dimension dimension = new Dimension(32, 32);
+
     @Setter
     @Getter
     @Builder.Default
@@ -182,7 +189,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         drawEnvironments(m2D, camera);
 
         // рисуем игроков из контроллера на карте:
-        gameController.drawHeroes(m2D, camera, canvas);
+        gameController.drawHeroes(m2D, canvas);
 
         m2D.dispose();
 

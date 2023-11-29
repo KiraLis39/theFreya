@@ -14,10 +14,9 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -33,51 +32,45 @@ import java.util.UUID;
 @Entity
 @Table(name = "worlds")
 public class World implements Serializable {
+    @NotNull
     @Builder.Default
     @ElementCollection
     private final Set<String> environments = HashSet.newHashSet(100);
-
     @Id
-    @Builder.Default
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @NotNull
+    // @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false, insertable = false, updatable = false)
-    private UUID uid = UUID.randomUUID();
-
-    @Column(name = "author")
+    private UUID uid;
+    @NotNull
+    @Column(name = "author", nullable = false, updatable = false)
     private UUID author;
-
+    @NotNull
     @Column(name = "title", length = 64, unique = true, nullable = false)
     private String title;
-
     @Builder.Default
     @Column(name = "is_net_available", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean isNetAvailable = false;
-
     @Column(name = "password_hash")
     private int passwordHash;
-
     @Builder.Default
     @Column(name = "dimension_w")
     private int dimensionWidth = 64; // 64 = 2048 cells | 128 = 4096 cells
-
     @Builder.Default
     @Column(name = "dimension_h")
     private int dimensionHeight = 32; // 32 = 1024 cells | 128 = 4096 cells
-
+    @NotNull
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private HardnessLevel level = HardnessLevel.EASY;
-
+    @NotNull
     @Builder.Default
     @CreatedDate
     @CreationTimestamp
-    @Column(name = "create_date", nullable = false, columnDefinition = "TIMESTAMP")
+    @Column(name = "create_date", nullable = false, columnDefinition = "TIMESTAMP", updatable = false)
     private LocalDateTime createDate = LocalDateTime.now();
-
     @Builder.Default
     @Column(name = "is_local_world", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean isLocalWorld = true;
-
     @Column(name = "network_address")
     private String networkAddress;
 

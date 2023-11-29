@@ -322,11 +322,16 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         g2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 240);
 
         // server info:
-        g2D.setColor(gameController.isServerIsOpen() ? Color.GREEN : Color.DARK_GRAY);
-        g2D.drawString("Server open: %s".formatted(gameController.isServerIsOpen()), getWidth() - leftShift, getHeight() - 210);
-        g2D.drawString("Connected clients: %s".formatted(gameController.getConnectedClientsCount()),
-                getWidth() - leftShift, getHeight() - 190);
-        g2D.drawString("Connected players: %s".formatted(gameController.getConnectedPlayers().size()),
+        boolean isServerIsOpen = gameController.isServerIsOpen();
+        boolean isSocketIsConnected = !gameController.getPlayedHeroesService().getHeroes().isEmpty();
+        g2D.setColor(isServerIsOpen || isSocketIsConnected ? Color.GREEN : Color.DARK_GRAY);
+        g2D.drawString("Server open: %s".formatted(isServerIsOpen), getWidth() - leftShift, getHeight() - 210);
+        if (isServerIsOpen) {
+            g2D.drawString("Connected clients: %s".formatted(gameController.getConnectedClientsCount()),
+                    getWidth() - leftShift, getHeight() - 190);
+        }
+        g2D.drawString("Connected players: %s".formatted(isServerIsOpen
+                        ? gameController.getConnectedPlayers().size() : gameController.getPlayedHeroesService().getHeroes().size()),
                 getWidth() - leftShift, getHeight() - 170);
         g2D.setColor(Color.GRAY);
 
@@ -790,5 +795,21 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     public void createChat(GameCanvas gameCanvas) {
         this.chat = new Chat(gameCanvas);
+    }
+
+    private boolean canDragDown() {
+        return this.viewPort.getY() > 0;
+    }
+
+    private boolean canDragUp() {
+        return this.viewPort.getHeight() < gameController.getCurrentWorldMap().getHeight();
+    }
+
+    private boolean canDragLeft() {
+        return this.viewPort.getWidth() < gameController.getCurrentWorldMap().getWidth();
+    }
+
+    private boolean canDragRight() {
+        return this.viewPort.getX() > 0;
     }
 }

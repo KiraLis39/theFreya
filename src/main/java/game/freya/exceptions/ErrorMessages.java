@@ -19,7 +19,8 @@ public enum ErrorMessages {
     PLAYER_NOT_FOUND("ER10", "Не обнаружен в базе денных игрок"),
     DRAW_ERROR("ER11", "В процессе рисования произошла ошибка"),
     RESOURCE_READ_ERROR("ER12", "Ошибка чтения ресурса игры"),
-    WRONG_STATE("ER13", "Не верный статус приложения");
+    WRONG_STATE("ER13", "Не верный статус приложения"),
+    HERO_NOT_FOUND("ER14", "Не обнаружен Герой");
 
     private final String errorCode;
     private final String errorCause;

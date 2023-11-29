@@ -31,7 +31,9 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
+import java.util.UUID;
 
 @Slf4j
 public class WorldCreatingPane extends WorldCreator {
@@ -84,7 +86,8 @@ public class WorldCreatingPane extends WorldCreator {
             add(new SubPane("Уровень сложности:") {{
                 add(new JComboBox<>(Arrays.stream(HardnessLevel.values()).map(HardnessLevel::getDescription).toArray()) {{
                     addActionListener(e -> hardnessLevel = Arrays.stream(HardnessLevel.values())
-                            .filter(hl -> hl.getDescription().equals(getSelectedItem().toString())).findFirst()
+                            .filter(hl -> hl.getDescription()
+                                    .equals(Objects.requireNonNull(getSelectedItem()).toString())).findFirst()
                             .orElseThrow());
                 }});
             }});
@@ -138,6 +141,7 @@ public class WorldCreatingPane extends WorldCreator {
                         public void actionPerformed(ActionEvent e) {
                             if (canvas instanceof MenuCanvas mCanvas) {
                                 WorldDTO aNewWorld = WorldDTO.builder()
+                                        .uid(UUID.randomUUID())
                                         .author(canvas.getGameController().getCurrentPlayerUid())
                                         .createDate(LocalDateTime.now())
                                         .title(getWorldName())

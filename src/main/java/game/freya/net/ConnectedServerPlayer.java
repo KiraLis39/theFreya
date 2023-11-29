@@ -35,6 +35,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private final ObjectMapper mapper;
     private final GameController gameController;
+    private final PlayedHeroesService playedHeroesService;
     private final Socket client;
     private final Server server;
     private final AtomicBoolean isAccepted = new AtomicBoolean(false);
@@ -44,9 +45,6 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
     @Getter
     private UUID playerUid;
 
-    // это тот самый удалённый игрок, данные которого обновляются при каждом SYNC-запросе с клиента:
-    private HeroDTO connectedHero;
-
     @Getter
     private String playerName;
 
@@ -55,6 +53,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.mapper.registerModule(new JavaTimeModule());
 
         this.server = server;
+        this.playedHeroesService = gameController.getPlayedHeroesService();
         this.gameController = gameController;
         this.clientUid = UUID.randomUUID();
 
@@ -65,8 +64,6 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 //        this.client.setReuseAddress(true);
 //        this.client.setKeepAlive(true);
         this.client.setTcpNoDelay(true);
-
-//        this.inetAddress = client.getInetAddress();
 
         //setDaemon(true);
         setUncaughtExceptionHandler((t, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));
@@ -122,7 +119,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             new FOptionPane().buildFOptionPane("Подключение разорвано",
                     "Подключение с Клиентом %s было разорвано: %s".formatted(clientUid, e.getMessage()), 60, false);
         } catch (Exception e) {
-            log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+            log.warn("Not handled exception here (4): {}", ExceptionUtils.getFullExceptionMessage(e));
         }
 
         log.warn("Player's {} connection is full closed now.", clientUid);
@@ -156,7 +153,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
     }
 
     private void saveConnectedHero(ClientDataDTO readed) {
-        this.connectedHero = HeroDTO.builder()
+        playedHeroesService.addHero(HeroDTO.builder()
                 .uid(readed.heroUuid())
                 .heroName(readed.heroName())
                 .type(readed.heroType())
@@ -177,16 +174,13 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                 .lastPlayDate(readed.lastPlayDate())
                 .createDate(readed.createDate())
                 .isOnline(readed.isOnline())
-                .build();
+                .build());
 
         this.isAccepted.set(true);
         push(ClientDataDTO.builder().type(NetDataType.HERO_ACCEPTED).build());
 
 //        this.isAccepted.set(false);
 //        push(ClientDataDTO.builder().type(NetDataType.HERO_RESTRICTED).build());
-
-        // надо ли?
-//        gameController.saveNewHero(this.heroDto);
     }
 
     public void push(ClientDataDTO data) {
@@ -201,7 +195,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         } catch (IOException io) {
             log.warn("Output stream closing error: {}", ExceptionUtils.getFullExceptionMessage(io));
         } catch (Exception e) {
-            log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+            log.warn("Not handled exception here (6): {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 
@@ -225,10 +219,6 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         }
 
         Thread.currentThread().interrupt();
-    }
-
-    public HeroDTO getHeroDto() {
-        return isAccepted.get() ? this.connectedHero : null;
     }
 
     public boolean isAccepted() {
