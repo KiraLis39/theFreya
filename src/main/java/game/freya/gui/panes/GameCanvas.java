@@ -139,7 +139,7 @@ public class GameCanvas extends FoxCanvas {
         long timeout = System.currentTimeMillis();
         while (getParent() == null || !isDisplayable()) {
             Thread.yield();
-            if (System.currentTimeMillis() - timeout > 60_000) {
+            if (System.currentTimeMillis() - timeout > 30_000) {
                 throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
             }
         }

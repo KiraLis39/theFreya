@@ -229,25 +229,23 @@ public class GameController extends GameControllerBase {
 
     public void startClientBroadcast() {
         log.info("Начало вещания на Сервер...");
-        if (getNetDataTranslator() == null) {
-            setNetDataTranslator(new Thread(() -> {
-                while (!getNetDataTranslator().isInterrupted() && isSocketIsOpen()) {
-                    localSocketConnection.toServer(buildNewDataPackage(this));
-
-                    try {
-                        Thread.sleep(Constants.SERVER_BROADCAST_DELAY);
-                    } catch (InterruptedException e) {
-                        log.warn("Прерывание потока отправки данных на сервер!");
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }));
-            getNetDataTranslator().start();
-        } else if (!getNetDataTranslator().isAlive()) {
-            getNetDataTranslator().start();
-        } else {
-            log.error("Нельзя повторно запустить ещё живой поток!");
+        if (getNetDataTranslator() != null && !getNetDataTranslator().isInterrupted()) {
+            getNetDataTranslator().interrupt();
         }
+
+        setNetDataTranslator(new Thread(() -> {
+            while (!getNetDataTranslator().isInterrupted() && isSocketIsOpen()) {
+                localSocketConnection.toServer(buildNewDataPackage(this));
+
+                try {
+                    Thread.sleep(Constants.SERVER_BROADCAST_DELAY);
+                } catch (InterruptedException e) {
+                    log.warn("Прерывание потока отправки данных на сервер!");
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }));
+        getNetDataTranslator().start();
     }
 
     private ClientDataDTO buildNewDataPackage(GameController controller) {
@@ -651,7 +649,7 @@ public class GameController extends GameControllerBase {
         authThread.start();
 
         try {
-            authThread.join(30_000);
+            authThread.join(15_000);
             if (authThread.isAlive()) {
                 log.error("Так и не получили успешной авторизации от Сервера.");
                 authThread.interrupt();

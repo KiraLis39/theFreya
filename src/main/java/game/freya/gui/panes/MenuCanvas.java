@@ -522,7 +522,7 @@ public class MenuCanvas extends FoxCanvas {
                     .formatted(ExceptionUtils.getFullExceptionMessage(e)), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
             log.error("Server aim address to connect error: {}", ExceptionUtils.getFullExceptionMessage(e));
         } finally {
-            // gameController.closeSocket();
+            //gameController.closeSocket();
             setConnectionAwait(false);
         }
     }

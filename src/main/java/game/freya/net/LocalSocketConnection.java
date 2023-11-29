@@ -28,9 +28,9 @@ public class LocalSocketConnection {
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
     private final AtomicBoolean isAccepted = new AtomicBoolean(false);
     private final AtomicBoolean isPongReceived = new AtomicBoolean(false);
-    private ObjectOutputStream oos;
+    private volatile ObjectOutputStream oos;
     private Thread connectionThread;
-    private Socket socket;
+    private volatile Socket socket;
     private String host;
 
     public synchronized void openSocket(String host, Integer port, GameController gameController) {
@@ -48,8 +48,8 @@ public class LocalSocketConnection {
                 this.socket = client;
                 this.socket.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
                 this.socket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
-                this.socket.setReuseAddress(true);
-                this.socket.setKeepAlive(true);
+//                this.socket.setReuseAddress(true);
+//                this.socket.setKeepAlive(true);
                 this.socket.setTcpNoDelay(true);
 
                 if (!gameController.isServerIsOpen()) {
@@ -105,7 +105,7 @@ public class LocalSocketConnection {
                                 case DIE -> {
                                     log.info("Сервер изъявил своё желание покончить с нами. Сворачиваемся...");
                                     toServer(ClientDataDTO.builder().type(NetDataType.DIE).build());
-                                    return;
+                                    killSelf();
                                 }
                                 case PING ->
                                         toServer(ClientDataDTO.builder().type(NetDataType.PONG).build()); // поддержка канала связи.
@@ -152,11 +152,23 @@ public class LocalSocketConnection {
      */
     public synchronized void toServer(ClientDataDTO dataDTO) {
         log.info("Шлём свои данные на Сервер...");
+
         try {
             this.oos.writeObject(dataDTO);
             this.oos.flush();
+        } catch (SocketException se) {
+            log.error("Ошибка сокета. Он точно закрыт? {}", this.socket.isClosed());
+            if (!this.socket.isClosed() && this.oos != null) {
+                try {
+                    this.oos.writeObject(dataDTO);
+                    this.oos.flush();
+                } catch (Exception e) {
+                    log.warn("Какого хера?! {}", ExceptionUtils.getFullExceptionMessage(e));
+                }
+            }
         } catch (IOException e) {
             log.error("Ошибка отправки данных {} на Сервер", dataDTO);
+            killSelf();
         } catch (Exception e) {
             log.warn("Not handled exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
@@ -181,8 +193,6 @@ public class LocalSocketConnection {
     public boolean isOpen() {
         return this.socket != null
                 && !this.socket.isClosed()
-                && !this.socket.isConnected()
-                && this.oos != null
                 && !this.socket.isOutputShutdown()
                 && !this.socket.isInputShutdown();
     }

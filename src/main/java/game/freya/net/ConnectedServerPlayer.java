@@ -54,16 +54,16 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule());
 
+        this.server = server;
         this.gameController = gameController;
         this.clientUid = UUID.randomUUID();
 
-        this.server = server;
         this.client = client;
         this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
         this.client.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
-        this.client.setReuseAddress(true);
-        this.client.setKeepAlive(true);
+//        this.client.setReuseAddress(true);
+//        this.client.setKeepAlive(true);
         this.client.setTcpNoDelay(true);
 
 //        this.inetAddress = client.getInetAddress();
