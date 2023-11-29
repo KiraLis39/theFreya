@@ -112,11 +112,12 @@ public final class UIHandler {
                     g2D.setColor(Color.CYAN);
                     g2D.draw(minimapRect);
 
-                    g2D.setFont(Constants.LITTLE_UNICODE_FONT);
-                    g2D.drawString(Constants.getNotRealizedString(),
-                            (int) (minimapRect.x + (minimapRect.width / 2d - Constants.FFB
-                                    .getStringBounds(g2D, Constants.getNotRealizedString()).getWidth() / 2)),
-                            minimapRect.y + minimapRect.height / 2);
+                    // надпись на миникарте "Не реализовано ещё":
+//                    g2D.setFont(Constants.LITTLE_UNICODE_FONT);
+//                    g2D.drawString(Constants.getNotRealizedString(),
+//                            (int) (minimapRect.x + (minimapRect.width / 2d - Constants.FFB
+//                                    .getStringBounds(g2D, Constants.getNotRealizedString()).getWidth() / 2)),
+//                            minimapRect.y + minimapRect.height / 2);
                 } else {
                     g2D.setStroke(new BasicStroke(1.75f));
                     g2D.setColor(Color.BLACK);

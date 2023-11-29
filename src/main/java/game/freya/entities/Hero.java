@@ -78,6 +78,16 @@ public class Hero {
     private short maxHealth = 100;
 
     @Builder.Default
+    @Comment("Текущий запас масла героя")
+    @Column(name = "cur_oil")
+    private short curOil = 100;
+
+    @Builder.Default
+    @Comment("Максимальный запас масла героя")
+    @Column(name = "max_oil")
+    private short maxOil = 100;
+
+    @Builder.Default
     @Comment("Скорость героя")
     @Column(name = "speed")
     private byte speed = 6;

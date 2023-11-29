@@ -33,6 +33,7 @@ import game.freya.utils.Screenshoter;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -233,9 +234,10 @@ public class GameController extends GameControllerBase {
             getNetDataTranslator().interrupt();
         }
 
+        // создаётся поток текущего состояния на Сервер:
         setNetDataTranslator(new Thread(() -> {
             while (!getNetDataTranslator().isInterrupted() && isSocketIsOpen()) {
-                localSocketConnection.toServer(buildNewDataPackage(this));
+                localSocketConnection.toServer(buildNewDataPackage());
 
                 try {
                     Thread.sleep(Constants.SERVER_BROADCAST_DELAY);
@@ -248,32 +250,42 @@ public class GameController extends GameControllerBase {
         getNetDataTranslator().start();
     }
 
-    private ClientDataDTO buildNewDataPackage(GameController controller) {
+    private ClientDataDTO buildNewDataPackage() {
         // собираем пакет данных для сервера и других игроков:
         return ClientDataDTO.builder()
                 .id(UUID.randomUUID())
                 .type(NetDataType.SYNC)
 
-                .playerUid(controller.getCurrentPlayerUid())
-                .playerName(controller.getCurrentPlayerNickName())
+                .playerUid(getCurrentPlayerUid())
+                .playerName(getCurrentPlayerNickName())
 
-                .heroUuid(controller.getCurrentHeroUid())
-                .heroName(controller.getCurrentHeroName())
-                .heroType(controller.getCurrentHeroType())
-                .hp(controller.getCurrentHeroHp())
-                .maxHp(controller.getCurrentHeroMaxHp())
-                .power(controller.getCurrentHeroPower())
-                .speed(controller.getCurrentHeroSpeed())
-                .vector(controller.getCurrentHeroVector())
-                .position(controller.getCurrentHeroPosition())
-                .experience(controller.getCurrentHeroExperience())
-                .level(controller.getCurrentHeroLevel())
-                .hurtLevel(controller.getCurrentHeroHurtLevel())
+                .heroUuid(getCurrentHeroUid())
+                .heroName(getCurrentHeroName())
+                .heroType(getCurrentHeroType())
+                .hp(getCurrentHeroHp())
+                .maxHp(getCurrentHeroMaxHp())
+                .oil(getCurrentHeroOil())
+                .maxOil(getCurrentHeroMaxOil())
+                .power(getCurrentHeroPower())
+                .speed(getCurrentHeroSpeed())
+                .vector(getCurrentHeroVector())
+                .position(getCurrentHeroPosition())
+                .experience(getCurrentHeroExperience())
+                .level(getCurrentHeroLevel())
+                .hurtLevel(getCurrentHeroHurtLevel())
 
                 .chatMessage(null)
 
-                .isOnline(controller.isCurrentHeroOnline())
+                .isOnline(isCurrentHeroOnline())
                 .build();
+    }
+
+    private short getCurrentHeroMaxOil() {
+        return heroService.getCurrentHero().getMaxOil();
+    }
+
+    private short getCurrentHeroOil() {
+        return heroService.getCurrentHero().getCurOil();
     }
 
     public HeroDTO saveNewHero(HeroDTO aNewHeroDto) {
@@ -315,8 +327,7 @@ public class GameController extends GameControllerBase {
      * @param canvas      класс холста.
      */
     public void drawHeroes(Graphics2D g2D, Rectangle visibleRect, GameCanvas canvas) {
-        // рисуем он-лайн героев:
-        if (isCurrentHeroOnline()) {
+        if (isCurrentHeroOnline()) { // если игра по сети:
             for (HeroDTO hero : server.getHeroes()) {
                 if (heroService.getCurrentHero() != null && heroService.isCurrentHero(hero)) {
                     // если это текущий герой:
@@ -329,7 +340,7 @@ public class GameController extends GameControllerBase {
                     hero.draw(g2D);
                 }
             }
-        } else {
+        } else { // если не-сетевая игра:
             if (!Constants.isPaused()) {
                 moveHeroIfAvailable(visibleRect, canvas); // todo: узкое место!
             }
@@ -850,7 +861,7 @@ public class GameController extends GameControllerBase {
      *
      * @param data модель обновлений для сетевого мира от другого участника игры.
      */
-    public void syncServerDataWithCurrentWorld(ClientDataDTO data) {
+    public void syncServerDataWithCurrentWorld(@NotNull ClientDataDTO data) {
         log.info("Получены данные для синхронизации мира от {}'s {} ({})", data.playerName(), data.heroName(), data.playerUid());
         // Обновляем позицию другого игрока:
         server.getHero(data.heroUuid()).setPosition(data.position());

@@ -72,6 +72,12 @@ public class HeroDTO implements iHero {
     private short maxHealth = 100;
 
     @Builder.Default
+    private short curOil = 100;
+
+    @Builder.Default
+    private short maxOil = 100;
+
+    @Builder.Default
     private byte speed = 6;
 
     @Builder.Default

@@ -258,12 +258,22 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
                 strutMod += 24;
 
-                // draw hero HP:
-                g2D.setColor(Color.red);
+                // draw hero OIL:
+                g2D.setColor(Color.YELLOW);
                 g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
                         (int) (relocatedPoint.getY() - strutMod),
-                        hero.getCurHealth() - 10, 9, 3, 3);
-                g2D.setColor(Color.black);
+                        hero.getCurHealth(), 9, 3, 3);
+                g2D.setColor(Color.WHITE);
+                g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
+                        (int) (relocatedPoint.getY() - strutMod),
+                        hero.getMaxHealth(), 9, 3, 3);
+
+                // draw hero HP:
+                g2D.setColor(Color.RED);
+                g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
+                        (int) (relocatedPoint.getY() - strutMod),
+                        hero.getCurHealth(), 9, 3, 3);
+                g2D.setColor(Color.WHITE);
                 g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
                         (int) (relocatedPoint.getY() - strutMod),
                         hero.getMaxHealth(), 9, 3, 3);
