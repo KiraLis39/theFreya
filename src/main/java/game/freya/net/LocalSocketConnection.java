@@ -144,6 +144,7 @@ public class LocalSocketConnection {
                         ExceptionUtils.getFullExceptionMessage(eof));
             } catch (ConnectException ce) {
                 log.error("Ошибка подключения: {}", ExceptionUtils.getFullExceptionMessage(ce));
+                // рвется подключение ping. Бросок исключения помогает не дойти до метода прерывания подключенной в это время игры (killSelf()):
                 throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, host + ": " + ExceptionUtils.getFullExceptionMessage(ce));
             } catch (SocketException e) {
                 // надо бы как-то понять, если это умышленное завершение:
@@ -249,7 +250,7 @@ public class LocalSocketConnection {
         return this.host;
     }
 
-    public boolean isPongNotReceived() {
+    public boolean isPongReceived() {
         return isPongReceived.get();
     }
 

@@ -2,7 +2,6 @@ package game.freya.net;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import game.freya.entities.Hero;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
@@ -40,8 +39,9 @@ public class PlayedHeroesService {
 
     public HeroDTO getHero(ClientDataDTO data) {
         if (!heroes.containsKey(data.heroUuid())) {
-            Hero otherHero = heroService.save(data);
-            addHero(heroMapper.toDto(otherHero));
+            HeroDTO dto = heroMapper.toDto(heroService.save(data));
+            dto.setOnline(data.isOnline()); // фикс transient-поля (либо добавить его уже в БД, но зачем)
+            addHero(dto);
         }
         return heroes.get(data.heroUuid());
     }
@@ -104,6 +104,8 @@ public class PlayedHeroesService {
             heroService.saveHero(otherHero);
             heroes.remove(otherHero.getUid());
             log.info("Удалён из карты игровых героев Герой {}", currentHeroUid);
+        } else {
+            log.warn("Нужно было отключить Героя {}, но его уже тут нет!", playerUid);
         }
     }
 

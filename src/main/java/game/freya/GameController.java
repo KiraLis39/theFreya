@@ -526,15 +526,6 @@ public class GameController extends GameControllerBase {
         return playerService.getCurrentPlayer().getUid();
     }
 
-    public void setCurrentWorld(UUID selectedWorldUuid) {
-        Optional<World> selected = worldService.findByUid(selectedWorldUuid);
-        if (selected.isPresent()) {
-            setLastPlayedWorldUuid(selectedWorldUuid);
-            worldService.setCurrentWorld(worldMapper.toDto(selected.get()));
-        }
-        throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid);
-    }
-
     public UUID getCurrentWorldUid() {
         return worldService.getCurrentWorld().getUid();
     }
@@ -725,7 +716,7 @@ public class GameController extends GameControllerBase {
             pingThread.join();
 
             // проверяем получен ли ответ:
-            if (localSocketConnection.isPongNotReceived()) {
+            if (!localSocketConnection.isPongReceived()) {
                 pingThread.interrupt();
                 log.warn("Пинг к Серверу {}:{} не прошел (1): {}", host, port, localSocketConnection.getLastExplanation());
                 return false;
@@ -792,6 +783,16 @@ public class GameController extends GameControllerBase {
 
     public World getCurrentWorld() {
         return worldMapper.toEntity(worldService.getCurrentWorld());
+    }
+
+    public void setCurrentWorld(UUID selectedWorldUuid) {
+        Optional<World> selected = worldService.findByUid(selectedWorldUuid);
+        if (selected.isPresent()) {
+            setLastPlayedWorldUuid(selectedWorldUuid);
+            worldService.setCurrentWorld(worldMapper.toDto(selected.get()));
+            return;
+        }
+        throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid);
     }
 
     public void setCurrentWorld(WorldDTO newWorld) {
