@@ -172,13 +172,17 @@ public class WorldCreatingPane extends WorldCreator {
     @Override
     public void setVisible(boolean isVisible) {
         if (super.isVisible() == isVisible) {
+            repaint();
             return;
         }
 
         this.worldName = "World_%s".formatted(r.nextInt(1000));
+        super.setVisible(isVisible);
+
         if (ntf != null) {
             ntf.setText(this.worldName);
+            ntf.requestFocusInWindow();
+            ntf.selectAll();
         }
-        super.setVisible(isVisible);
     }
 }

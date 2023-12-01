@@ -54,10 +54,12 @@ public class MenuCanvas extends FoxCanvas {
 //        addMouseWheelListener(this); // если понадобится - можно включить.
 
         if (gameController.isServerIsOpen()) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в меню, но Сервер ещё запущен!");
+            gameController.closeServer();
+            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в меню, но Сервер ещё запущен! Закрытие Сервера...");
         }
         if (gameController.isSocketIsOpen()) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в меню, но соединение с Сервером ещё запущено!");
+            gameController.closeSocket();
+            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в меню, но соединение с Сервером ещё запущено! Закрытие подключения...");
         }
 
         new Thread(this).start();
@@ -587,7 +589,7 @@ public class MenuCanvas extends FoxCanvas {
         if (gameController.isCurrentWorldIsNetwork()) {
             // шлем на Сервер своего выбранного Героя:
             if (gameController.registerCurrentHeroOnServer()) {
-//                gameController.getPlayedHeroesService().addHero(gameController.getCurrentHero());
+                gameController.getPlayedHeroesService().addHero(gameController.getCurrentHero());
                 startGame();
             } else {
                 log.error("Сервер не принял нашего Героя: {}", gameController.getLocalSocketConnection().getLastExplanation());

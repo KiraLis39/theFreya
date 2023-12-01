@@ -196,10 +196,12 @@ public class HeroCreatingPane extends JPanel {
         }
 
         this.heroName = "Hero_%s".formatted(r.nextInt(1000));
+        super.setVisible(isVisible);
+
         if (ntf != null) {
             ntf.setText(this.heroName);
+            ntf.requestFocusInWindow();
+            ntf.selectAll();
         }
-
-        super.setVisible(isVisible);
     }
 }

@@ -183,9 +183,12 @@ public class NetCreatingPane extends WorldCreator {
         }
 
         this.worldName = "Net_World_%s".formatted(r.nextInt(1000));
+        super.setVisible(isVisible);
+
         if (ntf != null) {
             ntf.setText(this.worldName);
+            ntf.requestFocusInWindow();
+            ntf.selectAll();
         }
-        super.setVisible(isVisible);
     }
 }
