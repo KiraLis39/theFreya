@@ -266,7 +266,8 @@ public class GameController extends GameControllerBase {
                 .power(getCurrentHeroPower())
                 .speed(getCurrentHeroSpeed())
                 .vector(getCurrentHeroVector())
-                .position(getCurrentHeroPosition())
+                .positionX(getCurrentHeroPosition().x)
+                .positionY(getCurrentHeroPosition().y)
                 .experience(getCurrentHeroExperience())
                 .level(getCurrentHeroLevel())
                 .hurtLevel(getCurrentHeroHurtLevel())
@@ -347,7 +348,7 @@ public class GameController extends GameControllerBase {
                 if (playedHeroesService.isCurrentHero(hero)) {
                     // если это текущий герой:
                     if (!Constants.isPaused()) {
-                        moveHeroIfAvailable(canvas); // todo: узкое место!
+                        moveHeroIfAvailable(canvas); // узкое место!
                     }
                     hero.draw(g2D);
                 } else if (canvas.getViewPort().getBounds().contains(hero.getPosition())) {
@@ -357,7 +358,7 @@ public class GameController extends GameControllerBase {
             }
         } else { // если не-сетевая игра:
             if (!Constants.isPaused()) {
-                moveHeroIfAvailable(canvas); // todo: узкое место!
+                moveHeroIfAvailable(canvas); // узкое место!
             }
 
             if (!playedHeroesService.isCurrentHeroNotNull()) {
@@ -525,11 +526,11 @@ public class GameController extends GameControllerBase {
         return playerService.getCurrentPlayer().getUid();
     }
 
-    public WorldDTO setCurrentWorld(UUID selectedWorldUuid) {
+    public void setCurrentWorld(UUID selectedWorldUuid) {
         Optional<World> selected = worldService.findByUid(selectedWorldUuid);
         if (selected.isPresent()) {
             setLastPlayedWorldUuid(selectedWorldUuid);
-            return worldService.setCurrentWorld(worldMapper.toDto(selected.get()));
+            worldService.setCurrentWorld(worldMapper.toDto(selected.get()));
         }
         throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid);
     }
@@ -716,27 +717,31 @@ public class GameController extends GameControllerBase {
             // ждём пока получим ответ PONG от Сервера:
             pingThread = new Thread(() -> {
                 long was = System.currentTimeMillis();
-                while (!localSocketConnection.isPongReceived() && !pingThread.isInterrupted() && System.currentTimeMillis() - was < 9_000) {
+                while (localSocketConnection.isPongNotReceived() && !pingThread.isInterrupted() && System.currentTimeMillis() - was < 9_000) {
                     Thread.yield();
                 }
-                localSocketConnection.killSelf();
             });
             pingThread.start();
-            pingThread.join(6_000);
+            pingThread.join();
 
             // проверяем получен ли ответ:
-            if (pingThread.isAlive()) {
+            if (localSocketConnection.isPongNotReceived()) {
                 pingThread.interrupt();
+                log.warn("Пинг к Серверу {}:{} не прошел (1): {}", host, port, localSocketConnection.getLastExplanation());
                 return false;
             } else {
+                log.warn("Пинг к Серверу {}:{} прошел успешно!", host, port);
+                localSocketConnection.resetPong();
                 return true;
             }
         } catch (InterruptedException e) {
             pingThread.interrupt();
+            log.warn("Пинг к Серверу {}:{} не прошел (2): {}", host, port, localSocketConnection.getLastExplanation());
             return false;
         } catch (GlobalServiceException gse) {
             log.warn("GSE here: {}", gse.getMessage());
             localSocketConnection.killSelf();
+            log.warn("Пинг к Серверу {}:{} не прошел (3): {}", host, port, localSocketConnection.getLastExplanation());
             return false;
         } finally {
             localSocketConnection.killSelf();
@@ -826,14 +831,15 @@ public class GameController extends GameControllerBase {
                 .power(getCurrentHeroPower())
                 .speed(getCurrentHeroSpeed())
                 .vector(getCurrentHeroVector())
-                .position(getCurrentHeroPosition())
+                .positionX(getCurrentHeroPosition().x)
+                .positionY(getCurrentHeroPosition().y)
                 .experience(getCurrentHeroExperience())
                 .level(getCurrentHeroLevel())
                 .createDate(getCurrentHeroCreateDate())
                 .buffsJson(getCurrentHeroBuffsJson())
                 .inventoryJson(getCurrentHeroInventoryJson())
 //                .inGameTime(readed.inGameTime())
-                .isOnline(isCurrentHeroOnline())
+                .isOnline(true)
                 .build());
 
         Thread heroCheckThread = new Thread(() -> {
@@ -916,7 +922,7 @@ public class GameController extends GameControllerBase {
         }
 
         // Обновляем позицию другого игрока:
-        aim.setPosition(data.position());
+        aim.setPosition(new Point2D.Double(data.positionX(), data.positionY()));
         aim.setVector(data.vector());
 
         // Обновляем здоровье, максимальное здоровье, силу, бафы-дебафы, текущий инструмент в руках и т.п. другого игрока:

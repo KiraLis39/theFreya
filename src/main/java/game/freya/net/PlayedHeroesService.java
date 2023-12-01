@@ -47,6 +47,10 @@ public class PlayedHeroesService {
     }
 
     public void addHero(final HeroDTO heroDTO) {
+        if (!heroDTO.isOnline()) {
+            log.error("Почему это герой не он-лайн? Это норм?");
+        }
+
         if (heroes.containsKey(heroDTO.getUid())) {
             log.info("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getOwnerUid());
             heroes.replace(heroDTO.getUid(), heroDTO);

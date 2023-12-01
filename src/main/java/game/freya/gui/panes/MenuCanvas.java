@@ -511,7 +511,7 @@ public class MenuCanvas extends FoxCanvas {
                 chooseOrCreateHeroForWorld(gameController.getCurrentWorldUid());
             } else {
                 new FOptionPane().buildFOptionPane("Отказ:", "Сервер отклонил подключение!", 5, true);
-                throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, "connect to remote game");
+                throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, gameController.getLocalSocketConnection().getLastExplanation());
             }
         } catch (GlobalServiceException gse) {
             log.warn("GSE here: {}", gse.getMessage());

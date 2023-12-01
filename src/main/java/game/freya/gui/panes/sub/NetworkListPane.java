@@ -264,16 +264,17 @@ public class NetworkListPane extends WorldCreator {
                             public void actionPerformed(ActionEvent e) {
                                 pingActionThread.interrupt();
                                 gameController.setCurrentWorld(world.getUid());
-                                canvas.setConnectionAwait(true);
 
                                 if (getWorld().isLocalWorld()) {
-                                    // address = InetAddress.getLocalHost().toString().split("/")[1]; // 127.0.0.1 | 0.0.0.0
+                                    canvas.setConnectionAwait(true);
                                     ((MenuCanvas) canvas).serverUp(world);
                                 } else {
                                     address = getWorld().getNetworkAddress();
                                     password = (String) new FOptionPane()
                                             .buildFOptionPane("Подключиться:", "Пароль сервера:",
                                                     FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
+
+                                    canvas.setConnectionAwait(true);
                                     ((MenuCanvas) canvas).connectToServer(NetConnectTemplate.builder()
                                             .address(address)
                                             .worldUid(world.getUid())

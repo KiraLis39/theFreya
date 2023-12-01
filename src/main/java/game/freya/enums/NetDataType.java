@@ -11,5 +11,6 @@ public enum NetDataType {
     SYNC,
     PING,
     PONG,
+    WRONG_WORLD_PING,
     DIE
 }

@@ -7,7 +7,6 @@ import game.freya.enums.MovingVector;
 import game.freya.enums.NetDataType;
 import lombok.Builder;
 
-import java.awt.geom.Point2D;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -29,7 +28,8 @@ public record ClientDataDTO(
         HurtLevel hurtLevel,
         short maxHp,
         short maxOil,
-        Point2D.Double position,
+        double positionX,
+        double positionY,
         MovingVector vector,
         byte speed,
         float power,

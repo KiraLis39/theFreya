@@ -37,16 +37,18 @@ public class LocalSocketConnection {
     private final AtomicBoolean isPongReceived = new AtomicBoolean(false);
     @Getter
     private final Set<HeroDTO> otherHeroes = HashSet.newHashSet(3);
-    private volatile ObjectOutputStream oos;
+    private ObjectOutputStream oos;
     private Thread connectionThread;
-    private volatile Socket socket;
+    private Socket socket;
     private String host;
+    private Integer port;
     private GameController gameController;
     private volatile String lastExplanation;
 
     public synchronized void openSocket(String host, Integer port, GameController gameController) {
         this.gameController = gameController;
         this.host = host;
+        this.port = port;
 
         // убиваемся, если кто-то запустил нас ранее и не закрыл:
         killSelf();
@@ -62,14 +64,14 @@ public class LocalSocketConnection {
 
                 if (!gameController.isServerIsOpen()) {
                     // если сервер локальный - нет смысла ставить себе таймаут, т.к. broadcast Сервера всё равно не возвращается обратно:
-                    // this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // todo: включить после отладки
+                    this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // включить после отладки
                 }
 
                 try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()))) {
                     this.oos = outs;
                     log.info("Socket connection to '{}:{}' is ready! Send pong message...", host, port);
                     // сразу шлём Серверу сигнал, для "прокачки" соединения:
-                    toServer(ClientDataDTO.builder().type(NetDataType.PONG).build());
+//                    toServer(ClientDataDTO.builder().type(NetDataType.PONG).build());
 
                     try (ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))) {
                         ClientDataDTO readed;
@@ -78,7 +80,8 @@ public class LocalSocketConnection {
                             switch (readed.type()) {
                                 case AUTH_DENIED -> {
                                     this.isAuthorized.set(false);
-                                    log.error("Сервер отказал в авторизации по причине: {}", readed.explanation());
+                                    this.lastExplanation = readed.explanation();
+                                    log.error("Сервер отказал в авторизации по причине: {}", lastExplanation);
                                     new FOptionPane().buildFOptionPane("Отказ:", "Сервер отклонил запрос на авторизацию: %s"
                                             .formatted(readed.explanation()), 15, true);
                                 }
@@ -112,6 +115,7 @@ public class LocalSocketConnection {
                                     }
                                 }
                                 case DIE -> {
+                                    this.lastExplanation = readed.explanation();
                                     log.info("Сервер изъявил своё желание покончить с нами. Сворачиваемся...");
                                     toServer(ClientDataDTO.builder().type(NetDataType.DIE).build());
                                     killSelf();
@@ -119,6 +123,11 @@ public class LocalSocketConnection {
                                 case PING ->
                                         toServer(ClientDataDTO.builder().type(NetDataType.PONG).build()); // поддержка канала связи.
                                 case PONG -> this.isPongReceived.set(true);
+                                case WRONG_WORLD_PING -> {
+                                    this.lastExplanation = readed.explanation();
+                                    this.isPongReceived.set(false);
+                                    killSelf();
+                                }
                                 default -> log.error("От Сервера пришел необработанный тип данных: {}", readed.type());
                             }
                         }
@@ -161,13 +170,24 @@ public class LocalSocketConnection {
      * @param dataDTO данные об изменениях локальной версии мира.
      */
     public synchronized void toServer(ClientDataDTO dataDTO) {
-        log.info("Шлём свои данные на Сервер...");
+        // PONG никому не интересен, лишь мешает логу.
+        if (!dataDTO.type().equals(NetDataType.PONG)) {
+            if (!dataDTO.type().equals(NetDataType.PING)) {
+                log.info("Пингуем Мир {} Сервера {}:{}...", dataDTO.worldUid(), host, port);
+            } else {
+                log.info("Шлём на Сервер свои данные ({})...", dataDTO.type());
+            }
+        }
 
         if (this.oos == null) {
             long was = System.currentTimeMillis();
             while (this.oos == null && System.currentTimeMillis() - was < 3_000) {
                 Thread.yield();
             }
+        }
+
+        if (dataDTO.type().equals(NetDataType.PING)) {
+            resetPong();
         }
 
         try {
@@ -229,11 +249,12 @@ public class LocalSocketConnection {
         return this.host;
     }
 
-    public boolean isPongReceived() {
+    public boolean isPongNotReceived() {
         return isPongReceived.get();
     }
 
     public void resetPong() {
+        log.warn("Сброс статуса PONG на false по-умолчанию...");
         this.isPongReceived.set(false);
     }
 
