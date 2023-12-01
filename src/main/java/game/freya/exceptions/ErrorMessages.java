@@ -20,7 +20,8 @@ public enum ErrorMessages {
     DRAW_ERROR("ER11", "В процессе рисования произошла ошибка"),
     RESOURCE_READ_ERROR("ER12", "Ошибка чтения ресурса игры"),
     WRONG_STATE("ER13", "Не верный статус приложения"),
-    HERO_NOT_FOUND("ER14", "Не обнаружен Герой");
+    HERO_NOT_FOUND("ER14", "Не обнаружен Герой"),
+    SOCKET_CLOSED("ER15", "Сокет закрыт и не может быть использован");
 
     private final String errorCode;
     private final String errorCause;
