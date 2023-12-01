@@ -47,6 +47,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     @Getter
     private String playerName;
+    private NetDataType lastType;
 
     public ConnectedServerPlayer(Server server, Socket client, GameController gameController) throws SocketException {
         this.mapper = new ObjectMapper();
@@ -85,23 +86,23 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                 while ((readed = (ClientDataDTO) inps.readObject()) != null && this.client.isConnected() && !Thread.currentThread().isInterrupted()) {
                     log.info("Income client`s data here: {}", readed);
 
-                    NetDataType mesType = readed.type();
-                    if (mesType.equals(NetDataType.AUTH_REQUEST)) {
+                    lastType = readed.type();
+                    if (lastType.equals(NetDataType.AUTH_REQUEST)) {
                         doPlayerAuth(readed);
-                    } else if (mesType.equals(NetDataType.HERO_REQUEST)) {
+                    } else if (lastType.equals(NetDataType.HERO_REQUEST)) {
                         saveConnectedHero(readed);
-                    } else if (mesType.equals(NetDataType.PING)) {
+                    } else if (lastType.equals(NetDataType.PING)) {
                         if (readed.worldUid().equals(gameController.getCurrentWorldUid())) {
                             // Сервер не знает в какой именно из его миров стучится клиент, который
                             //  сейчас загружен или другой, на этом же порту - потому сверяем.
                             log.info("Клиент пингует мир {}. Текущий мир Сервера {}", readed.worldUid(), gameController.getCurrentWorldUid());
                             push(ClientDataDTO.builder().type(NetDataType.PONG).build());
                         }
-                    } else if (mesType.equals(NetDataType.SYNC)) {
+                    } else if (lastType.equals(NetDataType.SYNC)) {
                         server.broadcast(readed, this);
-                    } else if (mesType.equals(NetDataType.DIE)) {
+                    } else if (lastType.equals(NetDataType.DIE)) {
                         log.warn("Клиент {} сообщил о скорой смерти соединения.", clientUid);
-                    } else if (mesType.equals(NetDataType.PONG)) {
+                    } else if (lastType.equals(NetDataType.PONG)) {
                         log.debug("Клиент {} прислал PONG в знак того, что он всё еще жив.", clientUid);
                     } else {
                         log.error("Неопознанный тип входящего пакета: {}", readed.type());
@@ -111,7 +112,9 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             } catch (ClassNotFoundException cnf) {
                 log.warn("Client`s input stream thread cant read class: {}", ExceptionUtils.getFullExceptionMessage(cnf));
             } catch (Exception inputStreamException) {
-                log.warn("Поймали ошибку входящего потока клиента: {}", ExceptionUtils.getFullExceptionMessage(inputStreamException));
+                if (!lastType.equals(NetDataType.PONG)) {
+                    log.warn("Поймали ошибку входящего потока клиента: {}", ExceptionUtils.getFullExceptionMessage(inputStreamException));
+                }
             }
             log.warn("Соединение-входной поток клиентского подключения завершено.");
         } catch (IOException e) {
@@ -202,6 +205,8 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     public void kill() {
         log.warn("Destroy the client {} connection...", clientUid);
+
+        gameController.getPlayedHeroesService().offlineSaveAndRemoveOtherHeroByPlayerUid(playerUid);
 
         if (!this.client.isClosed()) {
             try {

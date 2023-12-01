@@ -89,6 +89,15 @@ public class PlayedHeroesService {
         currentHeroUid = null;
     }
 
+    public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID playerUid) {
+        HeroDTO otherHero = heroes.values().stream().filter(h -> h.getOwnerUid().equals(playerUid)).findFirst().orElse(null);
+        if (otherHero != null) {
+            heroService.saveHero(otherHero);
+            heroes.remove(otherHero.getUid());
+            log.info("Удалён из карты игровых героев Герой {}", currentHeroUid);
+        }
+    }
+
     private void saveCurrentHeroToDB() {
         checkCHE();
         heroService.saveHero(heroes.get(currentHeroUid));

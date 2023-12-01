@@ -64,9 +64,6 @@ public class GameCanvas extends FoxCanvas {
             if (!gameController.isSocketIsOpen()) {
                 gameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но соединения с Сервером не существует!");
-            } else {
-                log.info("Начинается трансляция данных на Сервер...");
-                gameController.startClientBroadcast();
             }
         }
 
@@ -139,6 +136,9 @@ public class GameCanvas extends FoxCanvas {
 
         // инициализируем все для игры, отображаем окно игры:
         setGameActive();
+
+        log.info("Начинается трансляция данных на Сервер...");
+        gameController.startClientBroadcast();
 
         // старт потока рисования игры:
         while (gameController.isGameActive() && !Thread.currentThread().isInterrupted()) {

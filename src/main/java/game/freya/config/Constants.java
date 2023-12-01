@@ -38,7 +38,7 @@ public final class Constants {
     public static final int DEFAULT_SERVER_PORT = 13958;
     public static final int SOCKET_BUFFER_SIZE = 16384; // 65536
     public static final long SERVER_BROADCAST_DELAY = 5_000L; // миллисекунд ждать между отправками данных
-    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 15_000; // сколько миллисекунд клиент ждёт данные от Сервера
+    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 30_000; // сколько миллисекунд клиент ждёт данные от Сервера
 
     // public static final int CONNECTED_CLIENT_STREAM_READ_DELAY = 500; // сколько ждать перед следующим чтением из подключения к Серверу.
     // public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд Сервер ждёт данные от Клиента
