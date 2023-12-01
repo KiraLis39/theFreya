@@ -708,7 +708,11 @@ public class GameController extends GameControllerBase {
             // ждём пока получим ответ PONG от Сервера:
             pingThread = new Thread(() -> {
                 long was = System.currentTimeMillis();
-                while (localSocketConnection.isPongNotReceived() && !pingThread.isInterrupted() && System.currentTimeMillis() - was < 9_000) {
+                while (localSocketConnection.isOpen()
+                        && !localSocketConnection.isPongReceived()
+                        && !pingThread.isInterrupted()
+                        && System.currentTimeMillis() - was < 9_000
+                ) {
                     Thread.yield();
                 }
             });
