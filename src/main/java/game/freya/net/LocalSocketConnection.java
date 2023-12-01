@@ -69,9 +69,7 @@ public class LocalSocketConnection {
 
                 try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()))) {
                     this.oos = outs;
-                    log.info("Socket connection to '{}:{}' is ready! Send pong message...", host, port);
-                    // сразу шлём Серверу сигнал, для "прокачки" соединения:
-//                    toServer(ClientDataDTO.builder().type(NetDataType.PONG).build());
+                    log.info("Socket connection to '{}:{}' is ready!", host, port);
 
                     try (ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))) {
                         ClientDataDTO readed;
@@ -173,16 +171,16 @@ public class LocalSocketConnection {
     public synchronized void toServer(ClientDataDTO dataDTO) {
         // PONG никому не интересен, лишь мешает логу.
         if (!dataDTO.type().equals(NetDataType.PONG)) {
-            if (!dataDTO.type().equals(NetDataType.PING)) {
+            if (dataDTO.type().equals(NetDataType.PING)) {
                 log.info("Пингуем Мир {} Сервера {}:{}...", dataDTO.worldUid(), host, port);
             } else {
                 log.info("Шлём на Сервер свои данные ({})...", dataDTO.type());
             }
         }
 
-        if (this.oos == null) {
+        if (this.socket == null || this.socket.isClosed() || this.oos == null) {
             long was = System.currentTimeMillis();
-            while (this.oos == null && System.currentTimeMillis() - was < 3_000) {
+            while ((this.socket == null || this.socket.isClosed() || this.oos == null) && System.currentTimeMillis() - was < 6_000) {
                 Thread.yield();
             }
         }
@@ -195,15 +193,7 @@ public class LocalSocketConnection {
             this.oos.writeObject(dataDTO);
             this.oos.flush();
         } catch (SocketException se) {
-            log.error("Ошибка сокета. Он точно закрыт? {}", this.socket.isClosed());
-            if (!this.socket.isClosed() && this.oos != null) {
-                try {
-                    this.oos.writeObject(dataDTO);
-                    this.oos.flush();
-                } catch (Exception e) {
-                    log.warn("Какого хера?! {}", ExceptionUtils.getFullExceptionMessage(e));
-                }
-            }
+            log.error("Ошибка сокета. Он точно закрыт? {}: {}", this.socket.isClosed(), ExceptionUtils.getFullExceptionMessage(se));
         } catch (IOException e) {
             log.error("Ошибка отправки данных {} на Сервер", dataDTO);
             killSelf();
