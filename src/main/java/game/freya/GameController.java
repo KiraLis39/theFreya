@@ -704,8 +704,6 @@ public class GameController extends GameControllerBase {
 
     public boolean ping(String host, Integer port, UUID requestWorldUid) {
         try {
-            localSocketConnection.setPing(true);
-
             // подключаемся к серверу:
             localSocketConnection.openSocket(host, port, this);
 
@@ -848,7 +846,7 @@ public class GameController extends GameControllerBase {
         heroCheckThread.start();
 
         try {
-            heroCheckThread.join(6_000);
+            heroCheckThread.join(9_000);
             if (heroCheckThread.isAlive()) {
                 log.error("Не получили разрешения на Героя от Сервера.");
                 heroCheckThread.interrupt();
@@ -977,5 +975,13 @@ public class GameController extends GameControllerBase {
 
     public void clearConnectedHeroes() {
         playedHeroesService.clear();
+    }
+
+    public boolean isHeroExist(UUID uuid) {
+        return heroService.isHeroExist(uuid);
+    }
+
+    public HeroDTO getHeroByUid(UUID uuid) {
+        return heroService.getByUid(uuid);
     }
 }

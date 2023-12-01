@@ -47,8 +47,13 @@ public class PlayedHeroesService {
     }
 
     public void addHero(final HeroDTO heroDTO) {
-        log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getHeroName());
-        heroes.put(heroDTO.getUid(), heroDTO);
+        if (heroes.containsKey(heroDTO.getUid())) {
+            log.info("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getOwnerUid());
+            heroes.replace(heroDTO.getUid(), heroDTO);
+        } else {
+            log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getHeroName());
+            heroes.put(heroDTO.getUid(), heroDTO);
+        }
     }
 
     public Collection<HeroDTO> getHeroes() {

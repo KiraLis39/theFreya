@@ -73,4 +73,13 @@ public class HeroService {
                 .isOnline(data.isOnline())
                 .build());
     }
+
+    public boolean isHeroExist(UUID uuid) {
+        return heroRepository.existsById(uuid);
+    }
+
+    @Transactional(readOnly = true)
+    public HeroDTO getByUid(UUID uuid) {
+        return heroMapper.toDto(heroRepository.getReferenceById(uuid));
+    }
 }

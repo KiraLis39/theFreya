@@ -1,5 +1,7 @@
 package game.freya.net;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fox.components.FOptionPane;
@@ -10,6 +12,8 @@ import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
+import game.freya.items.containers.Backpack;
+import game.freya.items.logic.Buff;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
@@ -59,7 +63,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.clientUid = UUID.randomUUID();
 
         this.client = client;
-        this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
+//        this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // todo: включить после отладки
         this.client.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReuseAddress(true);
@@ -157,28 +161,47 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
     }
 
     private void saveConnectedHero(ClientDataDTO readed) {
-        playedHeroesService.addHero(HeroDTO.builder()
-                .uid(readed.heroUuid())
-                .heroName(readed.heroName())
-                .type(readed.heroType())
-                .power(readed.power())
-                .speed(readed.speed())
-                .position(readed.position())
-                .vector(readed.vector())
-                .level(readed.level())
-                .experience(readed.experience())
-                .curHealth(readed.hp())
-                .maxHealth(readed.maxHp())
-                .hurtLevel(readed.hurtLevel())
-//                .buffs(readed.buffs())
-//                .inventory(readed.inventory())
-//                .inGameTime(readed.inGameTime())
-                .worldUid(readed.world() == null ? gameController.getCurrentWorldUid() : readed.world().getUid())
-                .ownerUid(readed.playerUid())
-                .lastPlayDate(readed.lastPlayDate())
-                .createDate(readed.createDate())
-                .isOnline(readed.isOnline())
-                .build());
+        HeroDTO hero;
+        if (gameController.isHeroExist(readed.heroUuid())) {
+            hero = gameController.getHeroByUid(readed.heroUuid());
+        } else {
+            hero = HeroDTO.builder()
+                    .uid(readed.heroUuid())
+                    .heroName(readed.heroName())
+                    .type(readed.heroType())
+                    .power(readed.power())
+                    .speed(readed.speed())
+                    .position(readed.position())
+                    .vector(readed.vector())
+                    .level(readed.level())
+                    .experience(readed.experience())
+                    .curHealth(readed.hp())
+                    .maxHealth(readed.maxHp())
+                    .hurtLevel(readed.hurtLevel())
+                    // .inGameTime(readed.inGameTime())
+                    .worldUid(readed.world() == null ? gameController.getCurrentWorldUid() : readed.world().getUid())
+                    .ownerUid(readed.playerUid())
+                    .lastPlayDate(readed.lastPlayDate())
+                    .createDate(readed.createDate())
+                    .isOnline(readed.isOnline())
+                    .build();
+            try {
+                hero.setInventory(mapper.readValue(readed.inventoryJson(), Backpack.class));
+            } catch (JsonProcessingException e) {
+                log.error("Проблема при парсинге инвентаря Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
+            }
+            try {
+                JsonNode buffTree = mapper.readTree(readed.buffsJson());
+                buffTree.forEach(node -> hero.addBuff(mapper.convertValue(node, Buff.class)));
+//                for (Buff buff : mapper.readValue(entity.getBuffsJson(), Buff[].class)) {
+//                    result.addBuff(buff);
+//                }
+            } catch (JsonProcessingException e) {
+                log.error("Проблема при парсинге бафов Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
+            }
+        }
+
+        playedHeroesService.addHero(hero);
 
         this.isAccepted.set(true);
         push(ClientDataDTO.builder().type(NetDataType.HERO_ACCEPTED).build());

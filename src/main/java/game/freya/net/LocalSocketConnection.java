@@ -6,13 +6,13 @@ import game.freya.config.Constants;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.NetDataType;
+import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedInputStream;
@@ -42,8 +42,6 @@ public class LocalSocketConnection {
     private volatile Socket socket;
     private String host;
     private GameController gameController;
-    @Setter
-    private volatile boolean isPing;
     private volatile String lastExplanation;
 
     public synchronized void openSocket(String host, Integer port, GameController gameController) {
@@ -64,7 +62,7 @@ public class LocalSocketConnection {
 
                 if (!gameController.isServerIsOpen()) {
                     // если сервер локальный - нет смысла ставить себе таймаут, т.к. broadcast Сервера всё равно не возвращается обратно:
-                    this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
+                    // this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // todo: включить после отладки
                 }
 
                 try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()))) {
@@ -139,10 +137,8 @@ public class LocalSocketConnection {
                 log.error("Ошибка подключения: {}", ExceptionUtils.getFullExceptionMessage(ce));
                 throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, host + ": " + ExceptionUtils.getFullExceptionMessage(ce));
             } catch (SocketException e) {
-                if (notAcceptedStop()) {
-                    // надо бы как-то понять, если это умышленное завершение:
-                    log.error("Ошибка сокета: {}", ExceptionUtils.getFullExceptionMessage(e));
-                }
+                // надо бы как-то понять, если это умышленное завершение:
+                log.error("Ошибка сокета: {}", ExceptionUtils.getFullExceptionMessage(e));
             } catch (UnknownHostException e) {
                 log.error("Ошибка хоста: {}", ExceptionUtils.getFullExceptionMessage(e));
             } catch (IOException e) {
@@ -154,14 +150,9 @@ public class LocalSocketConnection {
             }
 
             killSelf();
-            gameController.getLocalSocketConnection().setPing(false);
         });
         connectionThread.setName("Socket connection thread");
         connectionThread.start();
-    }
-
-    private boolean notAcceptedStop() {
-        return !isPing;
     }
 
     /**
@@ -223,6 +214,7 @@ public class LocalSocketConnection {
             gameController.setGameActive(false);
             log.info("Переводим героя {} в статус offlile и сохраняем...", gameController.getCurrentHeroUid());
             gameController.setHeroOfflineAndSave(null);
+            gameController.loadScreen(ScreenType.MENU_SCREEN);
         }
     }
 
