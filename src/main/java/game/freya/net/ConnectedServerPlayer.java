@@ -62,7 +62,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.clientUid = UUID.randomUUID();
 
         this.client = client;
-        this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // включить после отладки
+        // this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // todo: включить после отладки
         this.client.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReuseAddress(true);
@@ -110,6 +110,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                         server.broadcast(readed, this);
                     } else if (lastType.equals(NetDataType.DIE)) {
                         log.warn("Клиент {} сообщил о скорой смерти соединения.", clientUid);
+                        // playedHeroesService.offlineSaveAndRemoveOtherHeroByPlayerUid(readed.heroUuid()); todo: zxc
                     } else if (lastType.equals(NetDataType.PONG)) {
                         log.debug("Клиент {} прислал PONG в знак того, что он еще жив.", clientUid);
                     } else {
@@ -225,6 +226,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         } catch (SocketException se) {
             // надо бы проверить как-то, если не мы сами, умышленно вызвали это прерывание:
             log.warn("Some connected socket error: {}", ExceptionUtils.getFullExceptionMessage(se));
+            // kill(); todo: zxc
         } catch (IOException io) {
             log.warn("Output stream closing error: {}", ExceptionUtils.getFullExceptionMessage(io));
         } catch (Exception e) {

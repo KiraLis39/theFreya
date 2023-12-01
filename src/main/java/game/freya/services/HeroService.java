@@ -7,6 +7,7 @@ import game.freya.net.data.ClientDataDTO;
 import game.freya.repositories.HeroRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +41,16 @@ public class HeroService {
 
     @Transactional
     public HeroDTO saveHero(HeroDTO heroDto) {
-        return heroMapper.toDto(heroRepository.save(heroMapper.toEntity(heroDto)));
+        HeroDTO aim;
+        Optional<Hero> old = heroRepository.findByUid(heroDto.getUid());
+        if (old.isPresent()) {
+            aim = heroMapper.toDto(old.get());
+            BeanUtils.copyProperties(heroDto, aim);
+        } else {
+            aim = heroDto;
+        }
+        log.info("Сохранение в БД героя {} ({})", heroDto.getUid(), heroDto.getHeroName());
+        return heroMapper.toDto(heroRepository.save(heroMapper.toEntity(aim)));
     }
 
     @Transactional(readOnly = true)

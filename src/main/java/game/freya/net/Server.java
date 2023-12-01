@@ -180,6 +180,7 @@ public class Server implements iServer {
                 log.info("Удаление из карты клиентов Клиента {}...", entry.getValue().getPlayerName());
                 entry.getValue().kill();
                 clients.remove(entry.getKey());
+                gameController.getPlayedHeroesService().offlineSaveAndRemoveOtherHeroByPlayerUid(playerToDestroy.getClientUid());
             }
         });
     }

@@ -64,7 +64,7 @@ public class LocalSocketConnection {
 
                 if (!gameController.isServerIsOpen()) {
                     // если сервер локальный - нет смысла ставить себе таймаут, т.к. broadcast Сервера всё равно не возвращается обратно:
-                    this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // включить после отладки
+                    // this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // todo: включить после отладки
                 }
 
                 try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()))) {
@@ -115,7 +115,6 @@ public class LocalSocketConnection {
                                 case DIE -> {
                                     this.lastExplanation = readed.explanation();
                                     log.info("Сервер изъявил своё желание покончить с нами. Сворачиваемся...");
-                                    toServer(ClientDataDTO.builder().type(NetDataType.DIE).build());
                                     killSelf();
                                 }
                                 case PING ->
@@ -184,6 +183,9 @@ public class LocalSocketConnection {
                 Thread.yield();
             }
         }
+        if (this.oos == null && (this.socket == null || this.socket.isClosed())) {
+            throw new GlobalServiceException(ErrorMessages.SOCKET_CLOSED);
+        }
 
         if (dataDTO.type().equals(NetDataType.PING)) {
             resetPong();
@@ -196,6 +198,9 @@ public class LocalSocketConnection {
             log.error("Ошибка сокета. Он точно закрыт? {}: {}", this.socket.isClosed(), ExceptionUtils.getFullExceptionMessage(se));
         } catch (IOException e) {
             log.error("Ошибка отправки данных {} на Сервер", dataDTO);
+            killSelf();
+        } catch (NullPointerException npe) {
+            log.warn("Подключение имеет проблемы и будет закрыто: {}", ExceptionUtils.getFullExceptionMessage(npe));
             killSelf();
         } catch (Exception e) {
             log.warn("Not handled exception here (1): {}", ExceptionUtils.getFullExceptionMessage(e));
@@ -210,6 +215,11 @@ public class LocalSocketConnection {
         this.isAccepted.set(false);
 
         if (this.socket != null && !this.socket.isClosed()) {
+            try {
+                toServer(ClientDataDTO.builder().type(NetDataType.DIE).build());
+            } catch (Exception e) {
+                log.error("Провал отправки посмертного предупреждения Серверу: {}", ExceptionUtils.getFullExceptionMessage(e));
+            }
             try {
                 this.socket.close();
             } catch (Exception e) {
