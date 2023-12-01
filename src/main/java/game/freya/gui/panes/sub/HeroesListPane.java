@@ -54,7 +54,7 @@ public class HeroesListPane extends JPanel {
     private void reloadHeroes(FoxCanvas canvas) {
         HeroesListPane.this.removeAll();
 
-        for (HeroDTO hero : gameController.getCurrentWorldHeroes()) {
+        for (HeroDTO hero : gameController.getMyCurrentWorldHeroes()) {
             add(new SubPane(hero.getHeroName(), hero.getType().getColor()) {{
                 add(new JPanel() {
                     @Override
@@ -124,7 +124,6 @@ public class HeroesListPane extends JPanel {
                     add(new FButton(" PLAY ") {{
                         setBackground(Color.BLUE.darker().darker().darker());
                         setForeground(Color.WHITE);
-                        setFocusPainted(false);
                         setMinimumSize(new Dimension(96, 96));
                         setPreferredSize(new Dimension(96, 96));
                         setMaximumSize(new Dimension(96, 96));
@@ -142,7 +141,6 @@ public class HeroesListPane extends JPanel {
                                 } else {
                                     ((MenuCanvas) canvas).playWithThisHero(hero);
                                 }
-                                HeroesListPane.this.setVisible(false);
                             }
                         });
                     }});

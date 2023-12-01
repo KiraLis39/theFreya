@@ -172,6 +172,8 @@ public final class UserConfig {
     }
 
     public void resetControlKeys() {
+        log.info("Выполняется сброс горячих клавиш на умолчания...");
+
         setKeyLookUp(KeyEvent.VK_UP);
         setKeyLookLeft(KeyEvent.VK_LEFT);
         setKeyLookRight(KeyEvent.VK_RIGHT);

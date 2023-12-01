@@ -6,7 +6,8 @@ import game.freya.config.Constants;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.NetDataType;
-import game.freya.enums.ScreenType;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
@@ -43,6 +44,7 @@ public class LocalSocketConnection {
     private GameController gameController;
     @Setter
     private volatile boolean isPing;
+    private volatile String lastExplanation;
 
     public synchronized void openSocket(String host, Integer port, GameController gameController) {
         this.gameController = gameController;
@@ -51,18 +53,12 @@ public class LocalSocketConnection {
         // убиваемся, если кто-то запустил нас ранее и не закрыл:
         killSelf();
 
-        this.isPongReceived.set(false);
-        this.isAuthorized.set(false);
-        this.isAccepted.set(false);
-
-        this.isPing = false;
-
         connectionThread = new Thread(() -> {
             try (Socket client = new Socket(host, port != null ? port : Constants.DEFAULT_SERVER_PORT)) {
                 this.socket = client;
                 this.socket.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
                 this.socket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
-//                this.socket.setReuseAddress(true);
+                this.socket.setReuseAddress(true);
 //                this.socket.setKeepAlive(true);
                 this.socket.setTcpNoDelay(true);
 
@@ -102,6 +98,7 @@ public class LocalSocketConnection {
                                 }
                                 case HERO_RESTRICTED -> {
                                     this.isAccepted.set(false);
+                                    this.lastExplanation = readed.explanation();
                                     log.error("Сервер отказал в выборе Героя по причине: {}", readed.explanation());
                                     new FOptionPane().buildFOptionPane("Отказ:", "Сервер отказал в выборе Героя: %s"
                                             .formatted(readed.explanation()), 15, true);
@@ -140,6 +137,7 @@ public class LocalSocketConnection {
                         ExceptionUtils.getFullExceptionMessage(eof));
             } catch (ConnectException ce) {
                 log.error("Ошибка подключения: {}", ExceptionUtils.getFullExceptionMessage(ce));
+                throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, host + ": " + ExceptionUtils.getFullExceptionMessage(ce));
             } catch (SocketException e) {
                 if (notAcceptedStop()) {
                     // надо бы как-то понять, если это умышленное завершение:
@@ -204,6 +202,10 @@ public class LocalSocketConnection {
 
     public void killSelf() {
         log.warn("Destroy the connection...");
+        resetPong();
+
+        this.isAuthorized.set(false);
+        this.isAccepted.set(false);
 
         if (this.socket != null && !this.socket.isClosed()) {
             try {
@@ -217,8 +219,10 @@ public class LocalSocketConnection {
             connectionThread.interrupt();
         }
 
-        if (gameController.isGameIsActive()) {
-            gameController.loadScreen(ScreenType.MENU_SCREEN);
+        if (gameController.isGameActive()) {
+            gameController.setGameActive(false);
+            log.info("Переводим героя {} в статус offlile и сохраняем...", gameController.getCurrentHeroUid());
+            gameController.setHeroOfflineAndSave(null);
         }
     }
 
@@ -247,5 +251,9 @@ public class LocalSocketConnection {
 
     public boolean isAccepted() {
         return isAccepted.get();
+    }
+
+    public String getLastExplanation() {
+        return this.lastExplanation;
     }
 }

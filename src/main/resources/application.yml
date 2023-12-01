@@ -33,7 +33,7 @@ spring:
 
   application:
     name: Freya the Game
-    version: 0.0.7
+    version: 0.0.8
     author: KiraLis39
     company: Multiverse-39 Group, 2023
 
@@ -110,7 +110,6 @@ spring:
     database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
 
 game:
-  doubleBuffered: ${DOUBLE_BUFFERED_ENABLED:false}
   dataBaseRootDir: ${DB_ROOT_DIRECTORY:./db/}
 
 springdoc:

@@ -61,7 +61,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
         this.client.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
-//        this.client.setReuseAddress(true);
+        this.client.setReuseAddress(true);
 //        this.client.setKeepAlive(true);
         this.client.setTcpNoDelay(true);
 
@@ -94,6 +94,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                         if (readed.worldUid().equals(gameController.getCurrentWorldUid())) {
                             // Сервер не знает в какой именно из его миров стучится клиент, который
                             //  сейчас загружен или другой, на этом же порту - потому сверяем.
+                            log.info("Клиент пингует мир {}. Текущий мир Сервера {}", readed.worldUid(), gameController.getCurrentWorldUid());
                             push(ClientDataDTO.builder().type(NetDataType.PONG).build());
                         }
                     } else if (mesType.equals(NetDataType.SYNC)) {
@@ -199,26 +200,24 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         }
     }
 
-    public synchronized void kill() {
+    public void kill() {
         log.warn("Destroy the client {} connection...", clientUid);
 
-        if (!this.client.isClosed() && !this.client.isOutputShutdown()) {
+        if (!this.client.isClosed()) {
             try {
                 // шлём подключенному Клиенту пожелание его смерти:
                 push(ClientDataDTO.builder().type(NetDataType.DIE).build());
             } catch (Exception e) {
                 log.warn("Push DIE-message error: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
-        }
-        if (!this.client.isClosed()) {
             try {
                 this.client.close();
             } catch (Exception e) {
-                log.warn("Output stream closing error: {}", ExceptionUtils.getFullExceptionMessage(e));
+                log.warn("Server client {} closing error: {}", clientUid, ExceptionUtils.getFullExceptionMessage(e));
             }
         }
 
-        Thread.currentThread().interrupt();
+        ConnectedServerPlayer.this.interrupt();
     }
 
     public boolean isAccepted() {

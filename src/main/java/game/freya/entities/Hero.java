@@ -15,8 +15,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
@@ -35,10 +33,9 @@ import java.util.UUID;
 public class Hero {
     @Id
     @Comment("UUID героя")
-    @Builder.Default
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false, insertable = false, updatable = false, unique = true)
-    private UUID uid = UUID.randomUUID();
+    //@GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id", nullable = false, updatable = false, unique = true)
+    private UUID uid;
 
     @Comment("Имя героя")
     @Column(name = "hero_name", length = 16)
@@ -116,8 +113,9 @@ public class Hero {
     @Column(name = "in_game_time", columnDefinition = "bigint default 0")
     private long inGameTime = 0;
 
+    @NotNull
     @Comment("Мир героя")
-    @Column(name = "world_uid")
+    @Column(name = "world_uid", nullable = false, updatable = false)
     private UUID worldUid;
 
     @Comment("Создатель героя")

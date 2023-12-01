@@ -46,6 +46,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,8 +66,6 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private static final short rightShift = 21;
     private static final double infoStrut = 58d, infoStrutHardness = 40d;
     private static long timeStamp = System.currentTimeMillis();
-    @Getter
-    private static byte drawErrorCount = 0;
     private final String name;
     private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
     private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
@@ -77,6 +76,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private final Color grayBackColor = new Color(0, 0, 0, 223);
     private final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
     private final AtomicBoolean isPingAwait = new AtomicBoolean(false);
+    private AtomicInteger drawErrors = new AtomicInteger(0);
     private transient Thread secondThread;
     private transient Rectangle2D viewPort;
     private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
@@ -140,14 +140,14 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     private Graphics2D getValidVolatileGraphic() {
         if (this.backImage == null || isRevolatileNeeds() || validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE) {
-            log.info("Recreating new volatile image by incompatible...");
+            log.debug("Recreating new volatile image by incompatible...");
             createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             this.backImage = createVolatileImage(getWidth(), getHeight());
             setRevolatileNeeds(false);
         }
 
         if (validateBackImage() == VolatileImage.IMAGE_RESTORED) {
-            log.info("Awaits while volatile image is restored...");
+            log.debug("Awaits while volatile image is restored...");
             return this.backImage.createGraphics();
         } else {
             return (Graphics2D) this.backImage.getGraphics();
@@ -236,7 +236,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.setColor(Color.WHITE);
 
-        List<HeroDTO> heroes;
+        Collection<HeroDTO> heroes;
         if (gameController.isCurrentHeroOnline()) {
             heroes = gameController.getConnectedHeroes();
         } else {
@@ -323,9 +323,9 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
         // server info:
         boolean isServerIsOpen = gameController.isServerIsOpen();
-        boolean isSocketIsConnected = !gameController.getPlayedHeroesService().getHeroes().isEmpty();
+        boolean isSocketIsConnected = gameController.isSocketIsOpen();
         g2D.setColor(isServerIsOpen || isSocketIsConnected ? Color.GREEN : Color.DARK_GRAY);
-        g2D.drawString("Server open: %s".formatted(isServerIsOpen), getWidth() - leftShift, getHeight() - 210);
+        g2D.drawString("Server open: %s".formatted(isServerIsOpen || isSocketIsConnected), getWidth() - leftShift, getHeight() - 210);
         if (isServerIsOpen) {
             g2D.drawString("Connected clients: %s".formatted(gameController.getConnectedClientsCount()),
                     getWidth() - leftShift, getHeight() - 190);
@@ -712,11 +712,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     }
 
     public void decreaseDrawErrorCount() {
-        drawErrorCount--;
-    }
-
-    public void increaseDrawErrorCount() {
-        drawErrorCount++;
+        drawErrors.decrementAndGet();
     }
 
     public void setSecondThread(String threadName, Thread secondThread) {
@@ -777,16 +773,17 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     }
 
     public void throwExceptionAndYield(Exception e) {
-        log.warn("Canvas draw bs exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-        increaseDrawErrorCount(); // при неуспешной отрисовке
-        if (getDrawErrorCount() > 100) {
+        // при неуспешной отрисовке
+        if (drawErrors.getAndIncrement() >= 100) {
             new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
                     "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
                     FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-//                    gameController.exitTheGame(null);
+            gameController.exitTheGame(null);
             throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
+        } else {
+            log.warn("Canvas draw bs exception ({}): {}", drawErrors.get(), ExceptionUtils.getFullExceptionMessage(e));
+            Thread.yield();
         }
-        Thread.yield();
     }
 
     public Chat getChat() {
@@ -797,19 +794,23 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         this.chat = new Chat(gameCanvas);
     }
 
-    private boolean canDragDown() {
-        return this.viewPort.getY() > 0;
+    public int getDrawErrors() {
+        return drawErrors.get();
     }
 
-    private boolean canDragUp() {
-        return this.viewPort.getHeight() < gameController.getCurrentWorldMap().getHeight();
-    }
-
-    private boolean canDragLeft() {
-        return this.viewPort.getWidth() < gameController.getCurrentWorldMap().getWidth();
-    }
-
-    private boolean canDragRight() {
-        return this.viewPort.getX() > 0;
-    }
+    //    private boolean canDragDown() {
+//        return this.viewPort.getY() > 0;
+//    }
+//
+//    private boolean canDragUp() {
+//        return this.viewPort.getHeight() < gameController.getCurrentWorldMap().getHeight();
+//    }
+//
+//    private boolean canDragLeft() {
+//        return this.viewPort.getWidth() < gameController.getCurrentWorldMap().getWidth();
+//    }
+//
+//    private boolean canDragRight() {
+//        return this.viewPort.getX() > 0;
+//    }
 }

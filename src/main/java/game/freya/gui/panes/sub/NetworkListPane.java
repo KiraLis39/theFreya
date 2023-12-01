@@ -51,6 +51,7 @@ public class NetworkListPane extends WorldCreator {
     private String password = "";
     private int dots = 0;
     private long was = System.currentTimeMillis();
+    private transient Thread pingActionThread;
 
     public NetworkListPane(FoxCanvas canvas, GameController controller) {
         this.canvas = canvas;
@@ -261,7 +262,8 @@ public class NetworkListPane extends WorldCreator {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                gameController.setCurrentWorld(world.getUid()); // проверить корректный uuid
+                                pingActionThread.interrupt();
+                                gameController.setCurrentWorld(world.getUid());
                                 canvas.setConnectionAwait(true);
 
                                 if (getWorld().isLocalWorld()) {
@@ -307,17 +309,17 @@ public class NetworkListPane extends WorldCreator {
 
             g.setColor(Color.BLACK);
             g.drawString(canvas.isPingAwait() ? pingString : connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g,
-                            canvas.isPingAwait() ? pingString : connectionString)) - 6, getHeight() / 2);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 8,
+                    getHeight() / 2);
             g.drawString(dot[dots],
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 6, getHeight() / 2 + 16);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 8, getHeight() / 2 + 16);
 
             g.setColor(Color.WHITE);
             g.drawString(canvas.isPingAwait() ? pingString : connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g,
-                            canvas.isPingAwait() ? pingString : connectionString)) - 6, getHeight() / 2);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 8,
+                    getHeight() / 2);
             g.drawString(dot[dots],
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 6, getHeight() / 2 + 16);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 8, getHeight() / 2 + 16);
 
             if (System.currentTimeMillis() - was > 1000) {
                 was = System.currentTimeMillis();
@@ -340,9 +342,15 @@ public class NetworkListPane extends WorldCreator {
     private synchronized void pingServers() {
         canvas.setPingAwait(true);
 
-        new Thread(() -> {
+        pingActionThread = new Thread(() -> {
             // пинг нелокальных миров...
             Arrays.stream(centerList.getComponents()).filter(SubPane.class::isInstance).iterator().forEachRemaining(spn -> {
+                if (pingActionThread.isInterrupted()) {
+                    gameController.breakPing();
+                    canvas.setPingAwait(false);
+                    return;
+                }
+
                 String add = "<br>Доступен:%s</b></font></pre>";
 
                 SubPane sp = (SubPane) spn;
@@ -364,7 +372,10 @@ public class NetworkListPane extends WorldCreator {
                 spHeader.setText(spHeader.getText().replace("</pre>", add));
             });
             canvas.setPingAwait(false);
-        }).start();
+        });
+        pingActionThread.setName("Ping action networkListPane thread");
+        pingActionThread.setDaemon(true);
+        pingActionThread.start();
     }
 
     @Override

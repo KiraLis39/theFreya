@@ -206,10 +206,7 @@ public class WorldsListPane extends JPanel {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                if (canvas instanceof MenuCanvas mCanvas) {
-                                    mCanvas.chooseOrCreateHeroForWorld(world.getUid());
-                                    WorldsListPane.this.setVisible(false);
-                                }
+                                ((MenuCanvas) canvas).chooseOrCreateHeroForWorld(world.getUid());
                             }
                         });
                     }});

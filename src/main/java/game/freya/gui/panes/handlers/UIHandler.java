@@ -275,10 +275,9 @@ public final class UIHandler {
             if (gameController.getCurrentHeroUid().equals(connectedHero.getUid())) {
                 continue;
             }
-            Point2D.Double heroPos = connectedHero.getPosition();
             m2D.fillRect(
-                    (int) (heroPos.x - hPos.x) - 6,
-                    (int) (heroPos.y - hPos.y) - 6,
+                    (int) (Math.min(0, connectedHero.getPosition().x - hPos.x) - 6d),
+                    (int) (Math.min(0, connectedHero.getPosition().y - hPos.y) - 6d),
                     12, 12);
         }
 

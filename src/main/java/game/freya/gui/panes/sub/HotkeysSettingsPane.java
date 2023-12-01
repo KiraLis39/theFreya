@@ -13,6 +13,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -35,45 +36,45 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener {
 
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
-        setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 9, 9));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 128, 128));
+        setLayout(new BorderLayout(3, 3));
 
-        for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
-            add(new SubPane(key.getDescription()) {{
-                setOpaque(false);
-                setIgnoreRepaint(true);
-                setDoubleBuffered(false);
-//                setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 3, 3));
-//                add(new JLabel(key.getDescription()) {{
-//                    setForeground(Color.WHITE);
-//                    setDoubleBuffered(false);
-//                }});
-                add(new JTextField((key.getMask() != 0
-                        ? (InputEvent.getModifiersExText(key.getMask()) + " + ") : "")
-                        + KeyEvent.getKeyText(key.getEvent()), 12) {{
-                    setHorizontalAlignment(CENTER);
-                    setDoubleBuffered(false);
-                    setFocusable(false);
-                    setEditable(false);
-                    setBackground(Color.DARK_GRAY);
-                    setForeground(Color.WHITE);
-                    setFont(Constants.DEBUG_FONT);
-                    setBorder(BorderFactory.createRaisedSoftBevelBorder());
-                    addMouseListener(HotkeysSettingsPane.this);
+        add(new SubPane("Горячие клавиши:") {{
+            setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 9, 9));
+
+            for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
+                add(new SubPane(key.getDescription()) {{
+                    setOpaque(false);
+                    setIgnoreRepaint(true);
+                    add(new JTextField((key.getMask() != 0
+                            ? (InputEvent.getModifiersExText(key.getMask()) + " + ") : "")
+                            + KeyEvent.getKeyText(key.getEvent()), canvas.getWidth() / 3 / 24 - 6) {{
+                        setHorizontalAlignment(CENTER);
+                        setDoubleBuffered(false);
+                        setFocusable(false);
+                        setEditable(false);
+                        setBackground(Color.DARK_GRAY);
+                        setForeground(Color.WHITE);
+                        setFont(Constants.DEBUG_FONT);
+                        setBorder(BorderFactory.createRaisedSoftBevelBorder());
+                        addMouseListener(HotkeysSettingsPane.this);
+                    }});
                 }});
-            }});
-        }
+            }
+        }}, BorderLayout.CENTER);
 
         add(new SubPane(null) {{
             add(new FButton("По умолчанию") {{
-                setAction(new AbstractAction() {
+                setPreferredSize(new Dimension(128, 32));
+
+                addActionListener(new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        log.info(Constants.getNotRealizedString());
+                        Constants.getUserConfig().resetControlKeys();
                     }
                 });
             }});
-        }});
+        }}, BorderLayout.SOUTH);
     }
 
     @Override

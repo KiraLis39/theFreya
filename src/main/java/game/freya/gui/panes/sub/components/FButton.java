@@ -21,7 +21,10 @@ public class FButton extends JButton {
         super(text, icon);
 
         setUI(new MyButtonUI());
+        setFocusPainted(false);
+        setDoubleBuffered(false);
         setForeground(Color.WHITE);
+        setBackground(Color.DARK_GRAY);
         setFont(Constants.DEBUG_FONT);
     }
 }

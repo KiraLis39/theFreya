@@ -58,12 +58,15 @@ public class GameCanvas extends FoxCanvas {
         if (gameController.isCurrentWorldIsNetwork()) {
             if (gameController.isCurrentWorldIsLocal() && !gameController.isServerIsOpen()) {
                 gameController.loadScreen(ScreenType.MENU_SCREEN);
-                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но Сервер ещё не запущен!");
+                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в локальной сетевой игре, но наш Сервер не запущен!");
             }
 
             if (!gameController.isSocketIsOpen()) {
                 gameController.loadScreen(ScreenType.MENU_SCREEN);
-                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но соединения с Сервером ещё нет!");
+                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но соединения с Сервером не существует!");
+            } else {
+                log.info("Начинается трансляция данных на Сервер...");
+                gameController.startClientBroadcast();
             }
         }
 
@@ -73,14 +76,14 @@ public class GameCanvas extends FoxCanvas {
         setSecondThread("Game second thread", new Thread(() -> {
             // ждём пока основной поток игры запустится:
             long timeout = System.currentTimeMillis();
-            while (!gameController.isGameIsActive()) {
+            while (!gameController.isGameActive()) {
                 Thread.yield();
                 if (System.currentTimeMillis() - timeout > 7_000) {
                     throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
                 }
             }
 
-            while (gameController.isGameIsActive() && !getSecondThread().isInterrupted()) {
+            while (gameController.isGameActive() && !getSecondThread().isInterrupted()) {
                 // check gameplay duration:
                 checkGameplayDuration(gameController.getCurrentHeroInGameTime());
 
@@ -99,12 +102,6 @@ public class GameCanvas extends FoxCanvas {
             }
         }));
         getSecondThread().start();
-
-        // network check:
-        if (gameController.getCurrentWorld().isNetAvailable() && gameController.isSocketIsOpen()) {
-            log.info("Начинается трансляция данных на Сервер...");
-            gameController.startClientBroadcast();
-        }
     }
 
     private void setInAc() {
@@ -135,7 +132,7 @@ public class GameCanvas extends FoxCanvas {
         long timeout = System.currentTimeMillis();
         while (getParent() == null || !isDisplayable()) {
             Thread.yield();
-            if (System.currentTimeMillis() - timeout > 30_000) {
+            if (System.currentTimeMillis() - timeout > 15_000) {
                 throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
             }
         }
@@ -144,7 +141,7 @@ public class GameCanvas extends FoxCanvas {
         setGameActive();
 
         // старт потока рисования игры:
-        while (gameController.isGameIsActive() && !Thread.currentThread().isInterrupted()) {
+        while (gameController.isGameActive() && !Thread.currentThread().isInterrupted()) {
             if (!parentFrame.isActive()) {
                 Thread.yield();
                 continue;
@@ -166,7 +163,7 @@ public class GameCanvas extends FoxCanvas {
             }
 
             // при успешной отрисовке:
-            if (getDrawErrorCount() > 0) {
+            if (getDrawErrors() > 0) {
                 decreaseDrawErrorCount();
             }
         }
@@ -234,7 +231,7 @@ public class GameCanvas extends FoxCanvas {
     private void setGameActive() {
         init();
 
-        gameController.setGameIsActive(true);
+        gameController.setGameActive(true);
         setVisible(true);
         requestFocusInWindow();
 
@@ -408,10 +405,19 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public synchronized void stop() {
-        if (gameController.isGameIsActive() || isVisible()) {
-            // закрываем и выходим в меню:
-            setVisible(false);
-            gameController.exitToMenu(parentFrame, this, getDuration());
+        if (gameController.isGameActive() || isVisible()) {
+
+            boolean paused = Constants.isPaused();
+            boolean debug = Constants.isDebugInfoVisible();
+
+            Constants.setPaused(false);
+            Constants.setDebugInfoVisible(false);
+            gameController.doScreenShot(parentFrame.getLocation(), getBounds());
+            Constants.setPaused(paused);
+            Constants.setDebugInfoVisible(debug);
+
+            getSecondThread().interrupt();
+            gameController.exitToMenu(getDuration());
         }
     }
 

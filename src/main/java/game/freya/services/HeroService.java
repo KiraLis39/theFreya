@@ -3,6 +3,7 @@ package game.freya.services;
 import game.freya.entities.Hero;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.mappers.HeroMapper;
+import game.freya.net.data.ClientDataDTO;
 import game.freya.repositories.HeroRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +22,6 @@ public class HeroService {
     private final HeroRepository heroRepository;
     private final HeroMapper heroMapper;
 
-    private HeroDTO currentHero;
-
-    @Transactional
-    public Hero save(Hero hero) {
-        return heroRepository.save(hero);
-    }
-
     @Modifying
     @Transactional
     public void deleteHeroByUuid(UUID heroUid) {
@@ -35,35 +29,48 @@ public class HeroService {
     }
 
     @Transactional(readOnly = true)
+    public List<HeroDTO> findAllByWorldUidAndOwnerUid(UUID uid, UUID ownerUid) {
+        return heroMapper.toDtos(heroRepository.findAllByWorldUidAndOwnerUid(uid, ownerUid));
+    }
+
+    @Transactional(readOnly = true)
     public List<HeroDTO> findAllByWorldUuid(UUID uid) {
         return heroMapper.toDtos(heroRepository.findAllByWorldUid(uid));
     }
 
-    public HeroDTO getCurrentHero() {
-        return this.currentHero;
-    }
-
     @Transactional
-    public void saveCurrentHero(HeroDTO currentHero) {
-        this.currentHero = heroMapper.toDto(heroRepository.save(heroMapper.toEntity(currentHero)));
-    }
-
-    public boolean isCurrentHero(HeroDTO hero) {
-        return getCurrentHero().equals(hero);
-    }
-
-    @Transactional
-    public void offlineHero() {
-        this.currentHero.setOnline(false);
-        this.currentHero = heroMapper.toDto(heroRepository.save(heroMapper.toEntity(this.currentHero)));
+    public HeroDTO saveHero(HeroDTO heroDto) {
+        return heroMapper.toDto(heroRepository.save(heroMapper.toEntity(heroDto)));
     }
 
     @Transactional(readOnly = true)
-    public Optional<Hero> findHeroByNameAndWorld(String heroName, UUID worldUid) {
-        return heroRepository.findByHeroNameAndWorldUid(heroName, worldUid);
+    public HeroDTO findHeroByNameAndWorld(String heroName, UUID worldUid) {
+        Optional<Hero> found = heroRepository.findByHeroNameAndWorldUid(heroName, worldUid);
+        return found.map(heroMapper::toDto).orElse(null);
     }
 
-    public Optional<Hero> findHeroByUuid(UUID uuid) {
-        return heroRepository.findByUid(uuid);
+    public Hero save(ClientDataDTO data) {
+        return heroRepository.save(Hero.builder()
+                .uid(data.heroUuid())
+                .heroName(data.heroName())
+                .type(data.heroType())
+                .power(data.power())
+                .speed(data.speed())
+                .positionX(data.position().x)
+                .positionY(data.position().y)
+                .level(data.level())
+                .experience(data.experience())
+                .curHealth(data.hp())
+                .maxHealth(data.maxHp())
+                .hurtLevel(data.hurtLevel())
+                .buffsJson(data.buffsJson())
+                .inventoryJson(data.inventoryJson())
+                // .inGameTime(data.inGameTime())
+                .worldUid(data.worldUid())
+                .ownerUid(data.playerUid())
+                .lastPlayDate(data.lastPlayDate())
+                .createDate(data.createDate())
+                .isOnline(data.isOnline())
+                .build());
     }
 }

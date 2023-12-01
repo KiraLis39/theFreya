@@ -17,5 +17,7 @@ public interface HeroRepository extends JpaRepository<Hero, UUID>, JpaSpecificat
 
     Optional<Hero> findByUid(UUID heroId);
 
+    List<Hero> findAllByWorldUidAndOwnerUid(UUID uid, UUID ownerUuid);
+
     List<Hero> findAllByWorldUid(UUID uid);
 }

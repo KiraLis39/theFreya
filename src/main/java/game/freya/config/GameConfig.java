@@ -10,9 +10,6 @@ public class GameConfig {
     @Value("${game.dataBaseRootDir}")
     private String databaseRootDir;
 
-    @Value("${game.doubleBuffered}")
-    private boolean isDoubleBuffered;
-
     @Value("${spring.datasource.url}")
     private String connectionUrl;
 

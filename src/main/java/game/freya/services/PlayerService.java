@@ -26,6 +26,7 @@ import java.util.UUID;
 public class PlayerService {
     private final PlayersRepository playersRepository;
     private final PlayerMapper playerMapper;
+    private final UserConfigService userConfigService;
 
     @Getter
     private PlayerDTO currentPlayer;
@@ -54,6 +55,8 @@ public class PlayerService {
 
     @Transactional
     public void updateCurrentPlayer() {
+        userConfigService.save();
+
         Optional<Player> playerToUpdate = playersRepository.findByUid(currentPlayer.getUid());
         if (playerToUpdate.isEmpty()) {
             throw new GlobalServiceException(ErrorMessages.PLAYER_NOT_FOUND, currentPlayer.getNickName());
@@ -82,5 +85,13 @@ public class PlayerService {
         }
         log.info("Новый пользователь {} успешно создан.", newPlayer.getNickName());
         return save(playerMapper.toEntity(newPlayer));
+    }
+
+    public void setCurrentPlayerLastPlayedWorldUid(UUID uid) {
+        if (this.currentPlayer.getLastPlayedWorldUid().equals(uid)) {
+            return;
+        }
+        this.currentPlayer.setLastPlayedWorldUid(uid);
+        this.currentPlayer = playerMapper.toDto(playersRepository.save(playerMapper.toEntity(currentPlayer)));
     }
 }

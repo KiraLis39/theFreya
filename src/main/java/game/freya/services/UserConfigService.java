@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +32,9 @@ public class UserConfigService {
         this.gameController = gameController;
     }
 
-    public void load(Path url) throws IOException {
+    @PostConstruct
+    public void load() throws IOException {
+        Path url = Path.of(Constants.getUserSave());
         try {
             log.debug("Loading the save file from a disc...");
             if (Files.notExists(url.getParent()) || Files.notExists(url)) {

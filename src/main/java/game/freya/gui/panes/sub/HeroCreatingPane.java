@@ -124,8 +124,6 @@ public class HeroCreatingPane extends JPanel {
 
                 add(new FButton("Готово") {{
                     setBackground(Color.GRAY);
-                    setFocusPainted(false);
-                    setDoubleBuffered(false);
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {

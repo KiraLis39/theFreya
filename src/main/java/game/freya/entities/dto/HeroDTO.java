@@ -329,6 +329,10 @@ public class HeroDTO implements iHero {
         this.position = position;
     }
 
+    public void setOnline(boolean b) {
+        this.isOnline = b;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -338,15 +342,12 @@ public class HeroDTO implements iHero {
             return false;
         }
         HeroDTO heroDTO = (HeroDTO) o;
-        return Objects.equals(getUid(), heroDTO.getUid()) && Objects.equals(getHeroName(), heroDTO.getHeroName());
+        return Objects.equals(getHeroName(), heroDTO.getHeroName())
+                && Objects.equals(getWorldUid(), heroDTO.getWorldUid()) && Objects.equals(getOwnerUid(), heroDTO.getOwnerUid());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getUid(), getHeroName());
-    }
-
-    public void setOnline(boolean b) {
-        this.isOnline = b;
+        return Objects.hash(getHeroName(), getWorldUid(), getOwnerUid());
     }
 }

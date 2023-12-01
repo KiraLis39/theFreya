@@ -50,8 +50,8 @@ public class Server implements iServer {
                     this.serverSocket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
 
                     this.address = serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort();
-
                     log.info("Создан сервер на {} (buffer: {})", address, serverSocket.getReceiveBufferSize());
+
                     while (!serverThread.isInterrupted() && !this.serverSocket.isClosed()) {
                         log.info("Awaits a new connections...");
                         acceptNewClient(serverSocket.accept());
@@ -62,7 +62,7 @@ public class Server implements iServer {
                         handleException(e);
                     }
                 } finally {
-                    log.warn("Сервер прекратил свою работу."); // или нет?
+                    log.warn("Сервер прекратил свою работу.");
                 }
             });
             serverThread.start();
@@ -73,7 +73,7 @@ public class Server implements iServer {
         if (diedClientsCleaner != null) {
             try {
                 diedClientsCleaner.interrupt();
-                diedClientsCleaner.join(12_000);
+                diedClientsCleaner.join(9_000);
             } catch (InterruptedException e) {
                 diedClientsCleaner.interrupt();
             }
@@ -84,7 +84,7 @@ public class Server implements iServer {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     clearDiedClients();
-                    Thread.sleep(12_000);
+                    Thread.sleep(9_000);
                 } catch (InterruptedException e) {
                     log.error("Прерван поток {}", Thread.currentThread().getName());
                     Thread.currentThread().interrupt();
@@ -114,7 +114,7 @@ public class Server implements iServer {
         log.info("Остановка основного потока Сервера...");
         if (isOpen()) {
             clients.values().forEach(c -> {
-                // просим всех подключенных клиентов умереть:
+                // просим всех подключенных клиентов умереть (и выйти в меню игры):
                 c.push(ClientDataDTO.builder().type(NetDataType.DIE).build());
                 c.kill();
             });
@@ -127,7 +127,10 @@ public class Server implements iServer {
                 log.warn("Not handled exception here (2): {}", ExceptionUtils.getFullExceptionMessage(e));
             }
         }
+
+        log.info("Финальная чистка героев и игроков...");
         clients.clear();
+        gameController.clearConnectedHeroes();
     }
 
     @Override
@@ -173,13 +176,9 @@ public class Server implements iServer {
     @Override
     public void destroyClient(ConnectedServerPlayer playerToDestroy) {
         clients.entrySet().iterator().forEachRemaining(entry -> {
-            if (entry.getValue() == null || entry.getValue().getClientUid().equals(playerToDestroy.getClientUid())) {
-                if (entry.getValue() != null) {
-                    log.info("Удаление из карты клиентов Клиента {}...", entry.getValue().getPlayerName());
-                    entry.getValue().kill();
-                } else {
-                    log.info("Удаление из карты клиентов Клиента {}...", entry.getKey());
-                }
+            if (entry.getValue().getClientUid().equals(playerToDestroy.getClientUid())) {
+                log.info("Удаление из карты клиентов Клиента {}...", entry.getValue().getPlayerName());
+                entry.getValue().kill();
                 clients.remove(entry.getKey());
             }
         });
