@@ -380,10 +380,10 @@ public class GameController extends GameControllerBase {
             Point2D.Double plPos = playedHeroesService.getCurrentHeroPosition();
 
             double hrc = (visibleRect.x + ((visibleRect.getWidth() - visibleRect.x) / 2d));
-            boolean isViewMovableX = plPos.x > hrc - 30 || plPos.x < hrc + 30;
+            boolean isViewMovableX = plPos.x > hrc - 30 && plPos.x < hrc + 30;
 
             double vrc = (visibleRect.y + ((visibleRect.getHeight() - visibleRect.y) / 2d));
-            boolean isViewMovableY = plPos.y > vrc - 30 || plPos.y < vrc + 30;
+            boolean isViewMovableY = plPos.y > vrc - 30 && plPos.y < vrc + 30;
 
             if (isPlayerMovingUp()) {
                 vector = isPlayerMovingRight() ? MovingVector.UP_RIGHT : isPlayerMovingLeft() ? MovingVector.LEFT_UP : MovingVector.UP;
