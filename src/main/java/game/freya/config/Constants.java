@@ -37,10 +37,11 @@ public final class Constants {
     // net:
     public static final int DEFAULT_SERVER_PORT = 13958;
     public static final int SOCKET_BUFFER_SIZE = 16384; // 65536
-    public static final long SERVER_BROADCAST_DELAY = 5_000L; // миллисекунд ждать между отправками данных
-    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 30_000; // сколько миллисекунд клиент ждёт данные от Сервера
+    public static final long SERVER_BROADCAST_DELAY = 500L; // миллисекунд ждать между отправками данных
+    public static final int SOCKET_PING_AWAIT_TIMEOUT = 6_000; // сколько миллисекунд клиент ждёт данные от Сервера
+    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 9_000; // сколько миллисекунд клиент ждёт данные от Сервера
+    public static final int NEED_FOR_SUCCESS_PING = 6_000; // сколько мс требуется дл корректного пинга Серверов обычно.
 
-    // public static final int CONNECTED_CLIENT_STREAM_READ_DELAY = 500; // сколько ждать перед следующим чтением из подключения к Серверу.
     // public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд Сервер ждёт данные от Клиента
 
 
@@ -49,8 +50,8 @@ public final class Constants {
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
     public static final int MAP_CELL_DIM = 64;
     public static final String DEFAULT_AVATAR_URL = "/images/defaultAvatar.png";
-
     public static final double ONE_TURN_PI = Math.PI / 4d;
+
 
     // libraries objects:
     public static final VideoMonitor MON = new VideoMonitor();
@@ -77,6 +78,7 @@ public final class Constants {
     public static final Font MENU_BUTTONS_FONT;
     public static final Font PROPAGANDA_FONT;
     public static final Font PROPAGANDA_BIG_FONT;
+
     // project:
     @Getter
     private static final String gameAuthor = "KiraLis39";
@@ -248,6 +250,10 @@ public final class Constants {
 
     public static boolean isLowFpsAlarm() {
         return isFpsLimited() && delay.get() <= 3;
+    }
+
+    public static long getMaxConnectionWasteTime() {
+        return SOCKET_CONNECTION_AWAIT_TIMEOUT - NEED_FOR_SUCCESS_PING;
     }
 
     boolean isCurrentFpsIsLessThanMonitorRate() {

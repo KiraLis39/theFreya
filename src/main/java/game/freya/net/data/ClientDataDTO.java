@@ -61,4 +61,17 @@ public record ClientDataDTO(
     public int hashCode() {
         return Objects.hash(id);
     }
+
+    @Override
+    public String toString() {
+        return "ClientDataDTO{"
+                + "type=" + type
+                + ", playerUid=" + playerUid
+                + ", playerName='" + playerName + '\''
+                + ", heroUuid=" + heroUuid
+                + ", heroName='" + heroName + '\''
+                + ", isOnline=" + isOnline
+                + ", worldUid=" + worldUid
+                + '}';
+    }
 }

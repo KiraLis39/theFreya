@@ -68,6 +68,7 @@ public class PlayerService {
 
     @Transactional
     public Player createPlayer() {
+        log.info("Создание нового пользователя {}...", Constants.getUserConfig().getUserName());
         PlayerDTO newPlayer = PlayerDTO.builder()
                 .uid(Constants.getUserConfig().getUserId())
                 .nickName(Constants.getUserConfig().getUserName())

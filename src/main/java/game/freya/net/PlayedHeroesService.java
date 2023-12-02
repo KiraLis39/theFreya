@@ -11,6 +11,7 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.HeroMapper;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.services.HeroService;
+import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,7 @@ public class PlayedHeroesService {
         }
 
         if (heroes.containsKey(heroDTO.getUid())) {
-            log.info("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getOwnerUid());
+            log.debug("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getOwnerUid());
             heroes.replace(heroDTO.getUid(), heroDTO);
         } else {
             log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getHeroName());
@@ -92,20 +93,25 @@ public class PlayedHeroesService {
     public void offlineSaveAndRemoveCurrentHero(Duration gameDuration) {
         setCurrentHeroInGameTime(gameDuration == null ? 0 : gameDuration.toMillis());
         setCurrentHeroOnline(false);
+        log.info("Локальный герой теперь offline.");
         saveCurrentHeroToDB();
         heroes.remove(currentHeroUid);
-        log.info("Удалён из карты игровых героев Герой {}", currentHeroUid);
+        log.info("Локальный герой был сохранён и удалён из карты героев.");
         currentHeroUid = null;
     }
 
     public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID playerUid) {
         HeroDTO otherHero = heroes.values().stream().filter(h -> h.getOwnerUid().equals(playerUid)).findFirst().orElse(null);
         if (otherHero != null) {
-            heroService.saveHero(otherHero);
-            heroes.remove(otherHero.getUid());
-            log.info("Удалён из карты игровых героев Герой {}", currentHeroUid);
+            try {
+                heroService.saveHero(otherHero);
+                heroes.remove(otherHero.getUid());
+                log.info("Удалён из карты игровых героев Герой {} ({})", otherHero.getHeroName(), otherHero.getUid());
+            } catch (Exception w) {
+                log.error("Что случилось? Выяснить: {}", ExceptionUtils.getFullExceptionMessage(w));
+            }
         } else {
-            log.warn("Нужно было отключить Героя {}, но его уже тут нет!", playerUid);
+            log.warn("Нужно было отключить Героя {}, но его тут нет!", playerUid);
         }
     }
 

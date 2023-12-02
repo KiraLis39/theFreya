@@ -152,8 +152,6 @@ public class GameController extends GameControllerBase {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
 
-        this.localSocketConnection = new LocalSocketConnection();
-
         log.info("The game is started!");
         this.gameFrame.showMainMenu(this);
     }
@@ -202,11 +200,11 @@ public class GameController extends GameControllerBase {
         }
 
         // set current player:
-//        Player found = curPlayer.orElse(null);
-//        if (found == null) {
-//            found = playerService.createPlayer();
-//        }
-        playerService.setCurrentPlayer(curPlayer.orElse(playerService.createPlayer()));
+        Player found = curPlayer.orElse(null);
+        if (found == null) {
+            found = playerService.createPlayer();
+        }
+        playerService.setCurrentPlayer(found);
 
         // если сменили никнейм в конфиге:
         playerService.getCurrentPlayer().setNickName(Constants.getUserConfig().getUserName());
@@ -608,7 +606,7 @@ public class GameController extends GameControllerBase {
     }
 
     public boolean isSocketIsOpen() {
-        return localSocketConnection.isOpen();
+        return localSocketConnection != null && localSocketConnection.isOpen();
     }
 
     public long getConnectedClientsCount() {
@@ -628,27 +626,20 @@ public class GameController extends GameControllerBase {
     }
 
     public boolean connectToServer(String host, Integer port, int passwordHash) {
+        this.localSocketConnection = new LocalSocketConnection();
+
         // подключаемся к серверу:
         if (isSocketIsOpen() && localSocketConnection.getActiveHost().equals(host)) {
             // верно ли подобное поведение?
             log.warn("Сокетное подключение уже открыто, пробуем использовать {}", localSocketConnection.getActiveHost());
         } else {
-            localSocketConnection.openSocket(host, port, this);
+            localSocketConnection.openSocket(host, port, this, false);
         }
 
-        // ждём пока сокет откроется и будет готов к работе:
         if (!isSocketIsOpen()) {
-            long was = System.currentTimeMillis();
-            while (!isSocketIsOpen() && System.currentTimeMillis() - was < 9_000) {
-                Thread.yield();
-            }
-            if (!isSocketIsOpen()) {
-                throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED,
-                        "No reached socket connection to " + host + (port == null ? "" : ":" + port));
-            }
-        }
-
-        if (isSocketIsOpen() && !host.equals(getCurrentSocketHost())) {
+            throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED,
+                    "No reached socket connection to " + host + (port == null ? "" : ":" + port));
+        } else if (!host.equals(getCurrentSocketHost())) {
             throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current socket host address");
         }
 
@@ -694,25 +685,16 @@ public class GameController extends GameControllerBase {
         return localSocketConnection.getActiveHost();
     }
 
-    public boolean ping(String host, Integer port, UUID requestWorldUid) {
+    public boolean ping(String host, Integer port) {
+        LocalSocketConnection pingConn = new LocalSocketConnection();
         try {
             // подключаемся к серверу:
-            localSocketConnection.openSocket(host, port, this);
-
-            // пингуемся:
-            localSocketConnection.toServer(ClientDataDTO.builder()
-                    .type(NetDataType.PING)
-                    .worldUid(requestWorldUid)
-                    .build());
+            pingConn.openSocket(host, port, this, true);
 
             // ждём пока получим ответ PONG от Сервера:
             pingThread = new Thread(() -> {
                 long was = System.currentTimeMillis();
-                while (localSocketConnection.isOpen()
-                        && !localSocketConnection.isPongReceived()
-                        && !pingThread.isInterrupted()
-                        && System.currentTimeMillis() - was < 9_000
-                ) {
+                while (!pingConn.isOpen() || (!pingConn.isPongReceived() && System.currentTimeMillis() - was < 6_000)) {
                     Thread.yield();
                 }
             });
@@ -720,26 +702,23 @@ public class GameController extends GameControllerBase {
             pingThread.join();
 
             // проверяем получен ли ответ:
-            if (!localSocketConnection.isPongReceived()) {
+            if (!pingConn.isPongReceived()) {
                 pingThread.interrupt();
-                log.warn("Пинг к Серверу {}:{} не прошел (1): {}", host, port, localSocketConnection.getLastExplanation());
+                log.warn("Пинг к Серверу {}:{} не прошел (1): {}", host, port, pingConn.getLastExplanation());
                 return false;
             } else {
                 log.warn("Пинг к Серверу {}:{} прошел успешно!", host, port);
-                localSocketConnection.resetPong();
                 return true;
             }
         } catch (InterruptedException e) {
             pingThread.interrupt();
-            log.warn("Пинг к Серверу {}:{} не прошел (2): {}", host, port, localSocketConnection.getLastExplanation());
+            log.warn("Пинг к Серверу {}:{} не прошел (2): {}", host, port, pingConn.getLastExplanation());
             return false;
         } catch (GlobalServiceException gse) {
-            log.warn("GSE here: {}", gse.getMessage());
-            localSocketConnection.killSelf();
-            log.warn("Пинг к Серверу {}:{} не прошел (3): {}", host, port, localSocketConnection.getLastExplanation());
+            log.warn("Пинг к Серверу {}:{} не прошел (3): {} ({})", host, port, gse.getMessage(), pingConn.getLastExplanation());
             return false;
         } finally {
-            localSocketConnection.killSelf();
+            pingConn.killSelf();
         }
     }
 
@@ -919,7 +898,7 @@ public class GameController extends GameControllerBase {
      * @param data модель обновлений для сетевого мира от другого участника игры.
      */
     public void syncServerDataWithCurrentWorld(@NotNull ClientDataDTO data) {
-        log.info("Получены данные для синхронизации мира {} игрока {}'s (герой {})", data.worldUid(), data.playerName(), data.heroName());
+        log.debug("Получены данные для синхронизации мира {} игрока {}'s (герой {})", data.worldUid(), data.playerName(), data.heroName());
 
         HeroDTO aim = playedHeroesService.getHero(data);
         if (aim == null) {
@@ -994,5 +973,9 @@ public class GameController extends GameControllerBase {
 
     public HeroDTO getHeroByUid(UUID uuid) {
         return heroService.getByUid(uuid);
+    }
+
+    public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID clientUid) {
+        playedHeroesService.offlineSaveAndRemoveOtherHeroByPlayerUid(clientUid);
     }
 }

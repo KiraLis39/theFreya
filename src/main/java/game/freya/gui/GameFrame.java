@@ -123,7 +123,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 UserConfig.HotKeys.FULLSCREEN.getEvent(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        log.info("Try to switch the fullscreen mode...");
+                        log.debug("Try to switch the fullscreen mode...");
                         Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
                         checkFullscreenMode();
                     }
@@ -228,7 +228,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     @Override
     public void windowClosed(WindowEvent e) {
-        log.warn("Окно закрыто!");
+        log.debug("Окно закрыто!");
     }
 
     @Override

@@ -48,7 +48,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -732,8 +731,8 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
      * @param port адрес, куда стучимся для получения pong.
      * @return успешность получения pong от удалённого Сервера.
      */
-    public boolean ping(String host, Integer port, UUID reqWorldUid) {
-        return gameController.ping(host, port, reqWorldUid);
+    public boolean ping(String host, Integer port) {
+        return gameController.ping(host, port);
     }
 
     public boolean isConnectionAwait() {

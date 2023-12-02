@@ -80,6 +80,7 @@ public class NetworkListPane extends WorldCreator {
                 setBorder(null);
 
                 getVerticalScrollBar().setUnitIncrement(16);
+                setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
 
                 JViewport vp = getViewport();
                 vp.setOpaque(false);
@@ -363,7 +364,7 @@ public class NetworkListPane extends WorldCreator {
                     String nad = sp.getWorld().getNetworkAddress();
                     String host = nad.contains(":") ? nad.split(":")[0] : nad;
                     Integer port = nad.contains(":") ? Integer.parseInt(nad.split(":")[1]) : null;
-                    boolean isPingOk = canvas.ping(host, port, sp.getWorld().getUid());
+                    boolean isPingOk = canvas.ping(host, port);
                     add = add.formatted(isPingOk ? "<font color=#07ad3c><b>   (доступен)" : "<font color=#a31c25><b>   (не доступен)");
                     connButton.setBackground(isPingOk ? Color.GREEN : Color.GRAY);
                     connButton.setEnabled(isPingOk);

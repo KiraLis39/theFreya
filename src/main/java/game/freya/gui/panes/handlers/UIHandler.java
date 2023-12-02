@@ -29,7 +29,7 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @Component
 @RequiredArgsConstructor
 public final class UIHandler {
-    private static final int minimapDim = 1024;
+    private static final int minimapDim = 2048;
     private static final int halfDim = (int) (minimapDim / 2d);
     private GameController gameController;
     private BufferedImage minimapImage;
@@ -251,22 +251,20 @@ public final class UIHandler {
     }
 
     private void updateMiniMap() {
-        Point2D.Double hPos = gameController.getCurrentHeroPosition();
+        Point2D.Double myPos = gameController.getCurrentHeroPosition();
         MovingVector cVector = gameController.getCurrentHeroVector();
-        int srcX = (int) (hPos.x - halfDim);
-        int srcY = (int) (hPos.y - halfDim);
+        int srcX = (int) (myPos.x - halfDim);
+        int srcY = (int) (myPos.y - halfDim);
 
         // draw minimap:
         Graphics2D m2D = (Graphics2D) minimapImage.getGraphics();
         m2D.clearRect(0, 0, minimapImage.getWidth(), minimapImage.getHeight());
-        Constants.RENDER.setRender(m2D, FoxRender.RENDER.OFF);
+        Constants.RENDER.setRender(m2D, FoxRender.RENDER.LOW);
 
         // отображаем себя на миникарте:
         AffineTransform grTrMem = m2D.getTransform();
         m2D.rotate(ONE_TURN_PI * cVector.ordinal(), minimapImage.getWidth() / 2d, minimapImage.getHeight() / 2d); // Math.toRadians(90)
-        m2D.drawImage((Image) Constants.CACHE.get("green_arrow"),
-                minimapImage.getWidth() / 2 - 32, minimapImage.getHeight() / 2 - 32,
-                64, 64, null);
+        m2D.drawImage((Image) Constants.CACHE.get("green_arrow"), halfDim - 64, halfDim - 64, 128, 128, null);
         m2D.setTransform(grTrMem);
 
         // отображаем других игроков на миникарте:
@@ -275,10 +273,10 @@ public final class UIHandler {
             if (gameController.getCurrentHeroUid().equals(connectedHero.getUid())) {
                 continue;
             }
-            m2D.fillRect(
-                    (int) (Math.min(0, connectedHero.getPosition().x - hPos.x) - 6d),
-                    (int) (Math.min(0, connectedHero.getPosition().y - hPos.y) - 6d),
-                    12, 12);
+            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getPosition().x));
+            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getPosition().y));
+            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
+            m2D.fillRect(otherHeroPosX - 6, otherHeroPosY - 6, 12, 12);
         }
 
         // сканируем все сущности указанного квадранта:

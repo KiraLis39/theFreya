@@ -62,12 +62,12 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.clientUid = UUID.randomUUID();
 
         this.client = client;
-        // this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // todo: включить после отладки
         this.client.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReuseAddress(true);
-//        this.client.setKeepAlive(true);
+        // this.client.setKeepAlive(true);
         this.client.setTcpNoDelay(true);
+        // this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
 
         //setDaemon(true);
         setUncaughtExceptionHandler((t, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));
@@ -82,35 +82,23 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             this.oos = outs;
 
             // сразу шлём подключенному Клиенту сигнал, для "прокачки" соединения:
-            push(ClientDataDTO.builder().type(NetDataType.PING).build());
+            push(ClientDataDTO.builder().type(NetDataType.PONG).worldUid(gameController.getCurrentWorldUid()).build());
 
             try (ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))) {
                 ClientDataDTO readed;
                 while ((readed = (ClientDataDTO) inps.readObject()) != null && this.client.isConnected() && !Thread.currentThread().isInterrupted()) {
-                    log.info("Income client`s data here: {}", readed);
-
+                    log.debug("Клиент {} (Герой '{}') прислал на Сервер данные: {}", clientUid, readed.heroName(), readed);
                     lastType = readed.type();
                     if (lastType.equals(NetDataType.AUTH_REQUEST)) {
                         doPlayerAuth(readed);
                     } else if (lastType.equals(NetDataType.HERO_REQUEST)) {
                         saveConnectedHero(readed); // убедиться, что игрок online!
                     } else if (lastType.equals(NetDataType.PING)) {
-                        if (readed.worldUid().equals(gameController.getCurrentWorldUid())) {
-                            // Сервер не знает в какой именно из его миров стучится клиент, который
-                            //  сейчас загружен или другой, на этом же порту - потому сверяем.
-                            log.info("Клиент успешно пингует мир {}", readed.worldUid());
-                            push(ClientDataDTO.builder().type(NetDataType.PONG).build());
-                        } else {
-                            log.info("Пингуется не тот мир, потому WRONG_WORLD_PING");
-                            push(ClientDataDTO.builder().type(NetDataType.WRONG_WORLD_PING)
-                                    .explanation("Возможно, вы ищете другой мир, запущенный на этом Сервере данный момент. "
-                                            + "Пожалуйста, уточните данные для подключения у администраторов Сервера.").build());
-                        }
+                        doPongAnswerToClient(readed.worldUid());
                     } else if (lastType.equals(NetDataType.SYNC)) {
                         server.broadcast(readed, this);
                     } else if (lastType.equals(NetDataType.DIE)) {
                         log.warn("Клиент {} сообщил о скорой смерти соединения.", clientUid);
-                        // playedHeroesService.offlineSaveAndRemoveOtherHeroByPlayerUid(readed.heroUuid()); todo: zxc
                     } else if (lastType.equals(NetDataType.PONG)) {
                         log.debug("Клиент {} прислал PONG в знак того, что он еще жив.", clientUid);
                     } else {
@@ -118,25 +106,38 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                     }
                 }
                 log.warn("Соединение данного клиентского подключения завершено.");
-            } catch (ClassNotFoundException cnf) {
-                log.warn("Client`s input stream thread cant read class: {}", ExceptionUtils.getFullExceptionMessage(cnf));
-            } catch (Exception inputStreamException) {
-                if (!lastType.equals(NetDataType.PONG)) {
-                    log.warn("Поймали ошибку входящего потока клиента: {}", ExceptionUtils.getFullExceptionMessage(inputStreamException));
-                }
             }
             log.warn("Соединение-входной поток клиентского подключения завершено.");
         } catch (IOException e) {
-            // надо бы проверить как-то, если закрыли соединение не умышленно, не сами:
             log.warn("Something wrong with client`s data stream: {}", ExceptionUtils.getFullExceptionMessage(e));
-            new FOptionPane().buildFOptionPane("Подключение разорвано",
-                    "Подключение с Клиентом %s было разорвано: %s".formatted(clientUid, e.getMessage()), 60, false);
+            if (playerName != null && !playerName.equals(gameController.getCurrentPlayerNickName())) {
+                new FOptionPane().buildFOptionPane("Подключение разорвано",
+                        "Подключение с %s было разорвано".formatted(playerName), 60, false);
+            }
+        } catch (ClassNotFoundException cnf) {
+            log.warn("Client`s input stream thread cant read class: {}", ExceptionUtils.getFullExceptionMessage(cnf));
         } catch (Exception e) {
-            log.warn("Not handled exception here (4): {}", ExceptionUtils.getFullExceptionMessage(e));
+            if (!lastType.equals(NetDataType.PONG) && !lastType.equals(NetDataType.DIE)) {
+                log.warn("Поймали ошибку потока клиента: {}", ExceptionUtils.getFullExceptionMessage(e));
+            }
         }
 
         log.warn("Player's {} connection is full closed now.", clientUid);
         kill();
+    }
+
+    private void doPongAnswerToClient(UUID uuid) {
+        if (uuid != null && uuid.equals(gameController.getCurrentWorldUid())) {
+            // Сервер не знает в какой именно из его миров стучится клиент, который
+            //  сейчас загружен или другой, на этом же порту - потому сверяем.
+            log.debug("Клиент успешно пингует мир {}", uuid);
+            push(ClientDataDTO.builder().type(NetDataType.PONG).build());
+        } else {
+            log.debug("Пингуется не тот мир, потому WRONG_WORLD_PING");
+            push(ClientDataDTO.builder().type(NetDataType.WRONG_WORLD_PING)
+                    .explanation("Возможно, вы ищете другой мир, запущенный на этом Сервере данный момент. "
+                            + "Пожалуйста, уточните данные для подключения у администраторов Сервера.").build());
+        }
     }
 
     private void doPlayerAuth(ClientDataDTO readed) throws IOException {
@@ -224,7 +225,6 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         } catch (NotSerializableException nse) {
             log.warn("Output stream not serializable exception: {}", ExceptionUtils.getFullExceptionMessage(nse));
         } catch (SocketException se) {
-            // надо бы проверить как-то, если не мы сами, умышленно вызвали это прерывание:
             log.warn("Some connected socket error: {}", ExceptionUtils.getFullExceptionMessage(se));
             // kill(); todo: zxc
         } catch (IOException io) {

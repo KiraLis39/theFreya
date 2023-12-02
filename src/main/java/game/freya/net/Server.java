@@ -3,7 +3,6 @@ package game.freya.net;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
@@ -53,7 +52,7 @@ public class Server implements iServer {
                     log.info("Создан сервер на {} (buffer: {})", address, serverSocket.getReceiveBufferSize());
 
                     while (!serverThread.isInterrupted() && !this.serverSocket.isClosed()) {
-                        log.info("Awaits a new connections...");
+                        log.debug("Awaits a new connections...");
                         acceptNewClient(serverSocket.accept());
                     }
                     log.info("Connection server is shutting down...");
@@ -62,7 +61,7 @@ public class Server implements iServer {
                         handleException(e);
                     }
                 } finally {
-                    log.warn("Сервер прекратил свою работу.");
+                    log.warn("Сервер прекратил свою работу.\n");
                 }
             });
             serverThread.start();
@@ -106,18 +105,14 @@ public class Server implements iServer {
             diedClientsCleaner.interrupt();
         }
 
-        // stop the broadcasting:
+        log.info("Остановка бродкаст-потока Сервера...");
         if (gameController != null) {
             gameController.stopBroadcast();
         }
 
         log.info("Остановка основного потока Сервера...");
         if (isOpen()) {
-            clients.values().forEach(c -> {
-                // просим всех подключенных клиентов умереть (и выйти в меню игры):
-                c.push(ClientDataDTO.builder().type(NetDataType.DIE).build());
-                c.kill();
-            });
+            clients.values().forEach(ConnectedServerPlayer::kill);
 
             try {
                 this.serverSocket.close();
@@ -159,7 +154,7 @@ public class Server implements iServer {
      */
     @Override
     public void broadcast(ClientDataDTO dataDto, ConnectedServerPlayer excludedPlayer) {
-        log.info("Бродкастим инфо всем клиентам...");
+        log.debug("Бродкастим инфо всем клиентам...");
         for (ConnectedServerPlayer connectedServerPlayer : getPlayers()) {
             if (connectedServerPlayer.getClientUid().equals(excludedPlayer.getClientUid())) {
                 // connectedPlayer.push(ClientDataDTO.builder().type(NetDataType.PING).build());
@@ -180,7 +175,9 @@ public class Server implements iServer {
                 log.info("Удаление из карты клиентов Клиента {}...", entry.getValue().getPlayerName());
                 entry.getValue().kill();
                 clients.remove(entry.getKey());
-                gameController.getPlayedHeroesService().offlineSaveAndRemoveOtherHeroByPlayerUid(playerToDestroy.getClientUid());
+
+                log.info("Удаление из карты игровых героев Героя Клиента {}...", entry.getValue().getPlayerName());
+                gameController.offlineSaveAndRemoveOtherHeroByPlayerUid(playerToDestroy.getClientUid());
             }
         });
     }
