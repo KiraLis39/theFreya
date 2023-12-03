@@ -1,5 +1,6 @@
 package game.freya.services;
 
+import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.Hero;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.mappers.HeroMapper;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @Service
 public class HeroService {
     private final HeroRepository heroRepository;
+
     private final HeroMapper heroMapper;
 
     @Modifying
@@ -59,6 +61,7 @@ public class HeroService {
         return found.map(heroMapper::toDto).orElse(null);
     }
 
+    @HeroDataBuilder
     public Hero save(ClientDataDTO data) {
         return heroRepository.save(Hero.builder()
                 .uid(data.heroUuid())

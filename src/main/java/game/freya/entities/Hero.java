@@ -52,11 +52,13 @@ public class Hero {
     @Column(name = "second_color")
     private Color secondColor;
 
+    @NotNull
     @Builder.Default
     @Comment("Тип корпуса героя")
     @Enumerated(EnumType.STRING)
     private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
 
+    @NotNull
     @Builder.Default
     @Comment("Тип периферии героя")
     @Enumerated(EnumType.STRING)

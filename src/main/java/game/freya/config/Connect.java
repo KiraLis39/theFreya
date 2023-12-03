@@ -15,6 +15,7 @@ import java.sql.SQLException;
 @RequiredArgsConstructor
 public final class Connect {
     private final GameConfig config;
+
     private SQLiteConnection conn;
 
     @Bean(name = "SQLiteConnection")

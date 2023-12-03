@@ -34,9 +34,11 @@ import java.util.UUID;
 @Builder
 public class WorldDTO extends ComponentAdapter implements iWorld {
     private static final Random r = new Random(100);
+
     @Getter
     @Builder.Default
     private final Set<iEnvironment> environments = HashSet.newHashSet(30);
+
     @Getter
     @Builder.Default
     private UUID uid = UUID.randomUUID();

@@ -34,9 +34,13 @@ import java.util.UUID;
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, Runnable
 public class MenuCanvas extends FoxCanvas {
     private final transient GameController gameController;
+
     private final transient JFrame parentFrame;
+
     private transient Thread resizeThread = null;
+
     private volatile boolean isMenuActive, initialized = false;
+
     private double parentHeightMemory = 0;
 
     public MenuCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
@@ -56,11 +60,11 @@ public class MenuCanvas extends FoxCanvas {
 
         if (gameController.isServerIsOpen()) {
             gameController.closeServer();
-            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в меню, но Сервер ещё запущен! Закрытие Сервера...");
+            log.error("Мы в меню, но Сервер ещё запущен! Закрытие Сервера...");
         }
         if (gameController.isSocketIsOpen()) {
             gameController.closeSocket();
-            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в меню, но соединение с Сервером ещё запущено! Закрытие подключения...");
+            log.error("Мы в меню, но соединение с Сервером ещё запущено! Закрытие подключения...");
         }
 
         new Thread(this).start();
@@ -94,18 +98,6 @@ public class MenuCanvas extends FoxCanvas {
         getSecondThread().setUncaughtExceptionHandler((t, e) ->
                 log.error("Ошибка вспомогательного потока главного меню: {}", ExceptionUtils.getFullExceptionMessage(e)));
         getSecondThread().start();
-    }
-
-    @Override
-    public void init() {
-        reloadShapes(this);
-        recalculateMenuRectangles();
-        recreateSubPanes();
-        inAc();
-
-        setVisible(true);
-        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-        this.initialized = true;
     }
 
     private void inAc() {
@@ -210,17 +202,23 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     @Override
-    public void mouseMoved(MouseEvent e) {
-        setFirstButtonOver(getFirstButtonRect() != null && getFirstButtonRect().contains(e.getPoint()));
-        setSecondButtonOver(getSecondButtonRect() != null && getSecondButtonRect().contains(e.getPoint()));
-        setThirdButtonOver(getThirdButtonRect() != null && getThirdButtonRect().contains(e.getPoint()));
-        setFourthButtonOver(getFourthButtonRect() != null && getFourthButtonRect().contains(e.getPoint()));
-        setExitButtonOver(getExitButtonRect() != null && getExitButtonRect().contains(e.getPoint()));
+    public void componentResized(ComponentEvent e) {
+        onResize();
     }
 
     @Override
-    public void componentResized(ComponentEvent e) {
-        onResize();
+    public void componentMoved(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void componentShown(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void componentHidden(ComponentEvent e) {
+
     }
 
     private void onResize() {
@@ -290,6 +288,80 @@ public class MenuCanvas extends FoxCanvas {
 
     public void deleteExistsPlayerHero(UUID heroUid) {
         gameController.deleteHero(heroUid);
+    }
+
+    public void openCreatingNewHeroPane(HeroDTO template) {
+        getHeroesListPane().setVisible(false);
+        getHeroCreatingPane().setVisible(true);
+        if (template != null) {
+            ((HeroCreatingPane) getHeroCreatingPane()).load(template);
+        }
+    }
+
+    public void exitTheGame() {
+        stop();
+        gameController.exitTheGame(null);
+    }
+
+    @Override
+    public void stop() {
+        this.isMenuActive = false;
+        dropOldPanesFromLayer();
+        closeBackImage();
+        setVisible(false);
+    }
+
+    @Override
+    public void init() {
+        reloadShapes(this);
+        recalculateMenuRectangles();
+        recreateSubPanes();
+        inAc();
+
+        setVisible(true);
+        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+        this.initialized = true;
+    }
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        setFirstButtonOver(getFirstButtonRect() != null && getFirstButtonRect().contains(e.getPoint()));
+        setSecondButtonOver(getSecondButtonRect() != null && getSecondButtonRect().contains(e.getPoint()));
+        setThirdButtonOver(getThirdButtonRect() != null && getThirdButtonRect().contains(e.getPoint()));
+        setFourthButtonOver(getFourthButtonRect() != null && getFourthButtonRect().contains(e.getPoint()));
+        setExitButtonOver(getExitButtonRect() != null && getExitButtonRect().contains(e.getPoint()));
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+
     }
 
     @Override
@@ -375,61 +447,6 @@ public class MenuCanvas extends FoxCanvas {
         }
     }
 
-    public void openCreatingNewHeroPane(HeroDTO template) {
-        getHeroesListPane().setVisible(false);
-        getHeroCreatingPane().setVisible(true);
-        if (template != null) {
-            ((HeroCreatingPane) getHeroCreatingPane()).load(template);
-        }
-    }
-
-    public void exitTheGame() {
-        stop();
-        gameController.exitTheGame(null);
-    }
-
-    @Override
-    public void stop() {
-        this.isMenuActive = false;
-        dropOldPanesFromLayer();
-        closeBackImage();
-        setVisible(false);
-    }
-
-
-    @Override
-    public void componentMoved(ComponentEvent e) {
-
-    }
-
-    @Override
-    public void componentShown(ComponentEvent e) {
-
-    }
-
-    @Override
-    public void componentHidden(ComponentEvent e) {
-
-    }
-
-    @Override
-    public void mouseWheelMoved(MouseWheelEvent e) {
-
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent e) {
-
-    }
-
     @Override
     public void mouseEntered(MouseEvent e) {
 
@@ -438,20 +455,6 @@ public class MenuCanvas extends FoxCanvas {
     @Override
     public void mouseExited(MouseEvent e) {
 
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
     }
 
 
@@ -606,7 +609,7 @@ public class MenuCanvas extends FoxCanvas {
                 startGame();
             } else {
                 log.error("Сервер не принял нашего Героя: {}", gameController.getLocalSocketConnection().getLastExplanation());
-                gameController.setHeroOfflineAndSave(null);
+                gameController.setCurrentHeroOfflineAndSave(null);
                 getHeroCreatingPane().repaint();
                 getHeroesListPane().repaint();
             }

@@ -42,7 +42,9 @@ import java.util.Random;
 @Slf4j
 public class NetCreatingPane extends WorldCreator {
     private static final Random r = new Random();
+
     private transient BufferedImage snap;
+
     @Getter
     private String worldName;
 

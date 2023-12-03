@@ -46,6 +46,10 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @AllArgsConstructor
 public class HeroDTO implements iHero {
     @NotNull
+    @Builder.Default
+    private final List<Buff> buffs = new ArrayList<>(9);
+
+    @NotNull
     @Setter
     private UUID uid;
 
@@ -59,10 +63,12 @@ public class HeroDTO implements iHero {
     private Color secondColor;
 
     @Setter
+    @NotNull
     @Builder.Default
     private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
 
     @Setter
+    @NotNull
     @Builder.Default
     private HeroPeriferiaType periferiaType = HeroPeriferiaType.COMPACT;
 
@@ -124,10 +130,6 @@ public class HeroDTO implements iHero {
     @Builder.Default
     private Backpack inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"));
 
-    @NotNull
-    @Builder.Default
-    private final List<Buff> buffs = new ArrayList<>(9);
-
     @Setter
     @Builder.Default
     private long inGameTime = 0;
@@ -137,6 +139,34 @@ public class HeroDTO implements iHero {
     private boolean isOnline = false;
 
     private BufferedImage image;
+
+    private void recheckHurtLevel() {
+        if (this.curHealth <= 0) {
+            this.hurtLevel = HurtLevel.DEAD;
+            decreaseExp(getExperience() - getExperience() * 0.1f); // -10% exp by death
+        } else if (this.curHealth <= maxHealth * 0.3f) {
+            this.hurtLevel = HurtLevel.HARD_HURT;
+        } else if (this.curHealth <= maxHealth * 0.6f) {
+            this.hurtLevel = HurtLevel.MED_HURT;
+        } else if (this.curHealth <= maxHealth * 0.9f) {
+            this.hurtLevel = HurtLevel.LIGHT_HURT;
+        } else {
+            this.hurtLevel = HurtLevel.HEALTHFUL;
+        }
+    }
+
+    @Override
+    public BufferedImage getAvatar() {
+        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
+            if (avatarResource != null) {
+                return ImageIO.read(avatarResource);
+            }
+            throw new IOException(Constants.DEFAULT_AVATAR_URL);
+        } catch (IOException e) {
+            log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+        }
+    }
 
     @Override
     public boolean isDead() {
@@ -202,34 +232,6 @@ public class HeroDTO implements iHero {
         g2D.setTransform(tr);
     }
 
-    private void recheckHurtLevel() {
-        if (this.curHealth <= 0) {
-            this.hurtLevel = HurtLevel.DEAD;
-            decreaseExp(getExperience() - getExperience() * 0.1f); // -10% exp by death
-        } else if (this.curHealth <= maxHealth * 0.3f) {
-            this.hurtLevel = HurtLevel.HARD_HURT;
-        } else if (this.curHealth <= maxHealth * 0.6f) {
-            this.hurtLevel = HurtLevel.MED_HURT;
-        } else if (this.curHealth <= maxHealth * 0.9f) {
-            this.hurtLevel = HurtLevel.LIGHT_HURT;
-        } else {
-            this.hurtLevel = HurtLevel.HEALTHFUL;
-        }
-    }
-
-    @Override
-    public BufferedImage getAvatar() {
-        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
-            if (avatarResource != null) {
-                return ImageIO.read(avatarResource);
-            }
-            throw new IOException(Constants.DEFAULT_AVATAR_URL);
-        } catch (IOException e) {
-            log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
-        }
-    }
-
     @Override
     public void increaseExp(float increaseValue) {
         if (isDead()) {
@@ -286,20 +288,6 @@ public class HeroDTO implements iHero {
 
     private void moveRight() {
         this.position.setLocation(position.x + 1, position.y);
-    }
-
-    @Override
-    public String toString() {
-        return "HeroDTO{"
-                + "uid=" + uid
-                + ", heroName='" + heroName + '\''
-                + ", level=" + level
-                + ", experience=" + experience
-                + ", maxHealth=" + maxHealth
-                + ", speed=" + speed
-                + ", position=" + position
-                + ", hurtLevel=" + hurtLevel
-                + '}';
     }
 
     public Icon getIcon() {
@@ -370,6 +358,11 @@ public class HeroDTO implements iHero {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(getHeroName(), getWorldUid(), getOwnerUid());
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -383,8 +376,17 @@ public class HeroDTO implements iHero {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(getHeroName(), getWorldUid(), getOwnerUid());
+    public String toString() {
+        return "HeroDTO{"
+                + "uid=" + uid
+                + ", heroName='" + heroName + '\''
+                + ", level=" + level
+                + ", experience=" + experience
+                + ", maxHealth=" + maxHealth
+                + ", speed=" + speed
+                + ", position=" + position
+                + ", hurtLevel=" + hurtLevel
+                + '}';
     }
 
     public void setInventory(Backpack inventory) {

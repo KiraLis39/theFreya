@@ -36,43 +36,59 @@ public class World implements Serializable {
     @Builder.Default
     @ElementCollection
     private final Set<String> environments = HashSet.newHashSet(100);
+
     @Id
     @NotNull
     // @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false, insertable = false, updatable = false)
     private UUID uid;
+
     @NotNull
     @Column(name = "author", nullable = false, updatable = false)
     private UUID author;
+
     @NotNull
     @Column(name = "title", length = 64, unique = true, nullable = false)
     private String title;
+
     @Builder.Default
     @Column(name = "is_net_available", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean isNetAvailable = false;
+
     @Column(name = "password_hash")
     private int passwordHash;
+
     @Builder.Default
     @Column(name = "dimension_w")
     private int dimensionWidth = 64; // 64 = 2048 cells | 128 = 4096 cells
+
     @Builder.Default
     @Column(name = "dimension_h")
     private int dimensionHeight = 32; // 32 = 1024 cells | 128 = 4096 cells
+
     @NotNull
     @Builder.Default
     @Enumerated(EnumType.STRING)
     private HardnessLevel level = HardnessLevel.EASY;
+
     @NotNull
     @Builder.Default
     @CreatedDate
     @CreationTimestamp
     @Column(name = "create_date", nullable = false, columnDefinition = "TIMESTAMP", updatable = false)
     private LocalDateTime createDate = LocalDateTime.now();
+
     @Builder.Default
     @Column(name = "is_local_world", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean isLocalWorld = true;
+
     @Column(name = "network_address")
     private String networkAddress;
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getUid(), getCreateDate());
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -84,10 +100,5 @@ public class World implements Serializable {
         }
         World world = (World) o;
         return Objects.equals(getUid(), world.getUid()) && Objects.equals(getCreateDate(), world.getCreateDate());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getUid(), getCreateDate());
     }
 }

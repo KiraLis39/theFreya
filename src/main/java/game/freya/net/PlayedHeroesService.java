@@ -3,6 +3,8 @@ package game.freya.net;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import game.freya.entities.dto.HeroDTO;
+import game.freya.enums.HeroCorpusType;
+import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.awt.Color;
 import java.awt.geom.Point2D;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -30,8 +33,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PlayedHeroesService {
     private static final Map<UUID, HeroDTO> heroes = new HashMap<>();
+
     private final HeroService heroService;
+
     private final HeroMapper heroMapper;
+
     private final ObjectMapper mapper;
 
     @Getter
@@ -222,5 +228,30 @@ public class PlayedHeroesService {
     public boolean isCurrentHeroNotNull() {
         log.info("Проверка факта, что currentHero != NULL: currentHero = {}", currentHeroUid);
         return currentHeroUid != null;
+    }
+
+    public Color getCurrentHeroBaseColor() {
+        checkCHE();
+        return heroes.get(currentHeroUid).getBaseColor();
+    }
+
+    public Color getCurrentHeroSecondColor() {
+        checkCHE();
+        return heroes.get(currentHeroUid).getSecondColor();
+    }
+
+    public HeroCorpusType getCurrentHeroCorpusType() {
+        checkCHE();
+        return heroes.get(currentHeroUid).getCorpusType();
+    }
+
+    public HeroPeriferiaType getCurrentHeroPeriferiaType() {
+        checkCHE();
+        return heroes.get(currentHeroUid).getPeriferiaType();
+    }
+
+    public short getCurrentHeroPeriferiaSize() {
+        checkCHE();
+        return heroes.get(currentHeroUid).getPeriferiaSize();
     }
 }

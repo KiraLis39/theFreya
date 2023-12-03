@@ -64,35 +64,64 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 250;
 
     private static final AtomicInteger frames = new AtomicInteger(0);
+
     private static final short rightShift = 21;
+
     private static final double infoStrut = 58d, infoStrutHardness = 40d;
+
     private static long timeStamp = System.currentTimeMillis();
+
     private final String name;
+
     private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
+
     private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
+
     private final String pausedString, downInfoString1, downInfoString2;
+
     private final transient GameController gameController;
+
     private final transient JLayeredPane parentLayers;
+
     private final transient UIHandler uiHandler;
+
     private final Color grayBackColor = new Color(0, 0, 0, 223);
+
     private final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
+
     private final AtomicBoolean isPingAwait = new AtomicBoolean(false);
+
     private AtomicInteger drawErrors = new AtomicInteger(0);
+
     private transient Thread secondThread;
+
     private transient Rectangle2D viewPort;
+
     private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
+
     private transient Rectangle avatarRect;
+
     private transient BufferedImage pAvatar;
+
     private transient VolatileImage backImage;
+
     private transient Polygon leftGrayMenuPoly;
+
     private transient Polygon headerPoly;
+
     private transient Duration duration;
+
     private transient Area area;
+
     private transient JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane,
             heroesListPane, networkListPane, networkCreatingPane;
+
     private float downShift = 0;
+
     private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
+
     private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false;
+
     private transient Chat chat;
 
     protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller, JLayeredPane layeredPane, UIHandler uiHandler) {
@@ -419,6 +448,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
 
+        g2D.setColor(Color.GRAY);
         if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
             g2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
         }

@@ -12,7 +12,9 @@ import java.sql.SQLException;
 @Setter
 public class GameControllerBase {
     private SQLiteConnection conn;
+
     private Thread netDataTranslator;
+
     private boolean isPlayerMovingUp = false, isPlayerMovingDown = false, isPlayerMovingLeft = false, isPlayerMovingRight = false;
 
 

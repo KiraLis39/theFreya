@@ -38,7 +38,9 @@ import java.util.UUID;
 @Slf4j
 public class WorldCreatingPane extends WorldCreator {
     private static final Random r = new Random();
+
     private transient BufferedImage snap;
+
     @Getter
     private String worldName;
 

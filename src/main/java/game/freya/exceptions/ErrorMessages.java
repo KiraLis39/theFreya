@@ -24,5 +24,6 @@ public enum ErrorMessages {
     SOCKET_CLOSED("ER15", "Сокет закрыт и не может быть использован");
 
     private final String errorCode;
+
     private final String errorCause;
 }

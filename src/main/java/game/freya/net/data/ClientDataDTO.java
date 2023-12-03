@@ -1,5 +1,6 @@
 package game.freya.net.data;
 
+import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.World;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
@@ -16,6 +17,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Builder
+@HeroDataBuilder
 public record ClientDataDTO(
         UUID id,
         NetDataType type,

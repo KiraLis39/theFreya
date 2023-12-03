@@ -11,6 +11,8 @@ import java.util.Date;
 @AllArgsConstructor
 public class UserErrorMessage {
     private Date timestamp;
+
     private String errorCode;
+
     private String errorCause;
 }

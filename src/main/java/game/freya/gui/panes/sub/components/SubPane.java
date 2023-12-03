@@ -11,7 +11,9 @@ import java.awt.Color;
 
 public class SubPane extends JPanel {
     private ZLabel headerLabel;
+
     private FButton connButton;
+
     private transient WorldDTO worldDTO;
 
     public SubPane(String title) {

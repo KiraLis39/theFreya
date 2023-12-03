@@ -10,9 +10,10 @@ public abstract class Tool extends Storable implements iTools {
 
     @Setter
     private String name;
+
     private boolean isBroken;
 
-    public Tool(UUID suid, String name) {
+    protected Tool(UUID suid, String name) {
         super(suid, name);
     }
 

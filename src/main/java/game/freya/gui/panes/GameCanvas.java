@@ -33,11 +33,17 @@ import java.awt.geom.Point2D;
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
 public class GameCanvas extends FoxCanvas {
     private final transient JFrame parentFrame;
+
     private final transient GameController gameController;
+
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
+
     private boolean isControlsMapped = false, isMovingKeyActive = false;
+
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
+
     private double parentHeightMemory = 0;
+
     private transient Thread resizeThread = null;
 
 
@@ -192,31 +198,6 @@ public class GameCanvas extends FoxCanvas {
             } while (getBufferStrategy().contentsRestored());
             getBufferStrategy().show();
         } while (getBufferStrategy().contentsLost());
-    }
-
-    @Override
-    public void init() {
-        log.info("Do canvas re-initialization...");
-
-        // проводим основную инициализацию класса текущего мира:
-        gameController.initCurrentWorld(this);
-
-        reloadShapes(this);
-        recalculateMenuRectangles();
-
-        // если не создан вьюпорт - создаём:
-        if (getViewPort() == null) {
-            recreateViewPort();
-        }
-
-        if (!isControlsMapped) {
-            // назначаем горячие клавиши управления:
-            setInAc();
-        }
-
-        moveViewToPlayer(0, 0);
-
-        requestFocus();
     }
 
     private void recreateViewPort() {
@@ -431,30 +412,39 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
+    @Override
+    public void init() {
+        log.info("Do canvas re-initialization...");
+
+        // проводим основную инициализацию класса текущего мира:
+        gameController.initCurrentWorld(this);
+
+        reloadShapes(this);
+        recalculateMenuRectangles();
+
+        // если не создан вьюпорт - создаём:
+        if (getViewPort() == null) {
+            recreateViewPort();
+        }
+
+        if (!isControlsMapped) {
+            // назначаем горячие клавиши управления:
+            setInAc();
+        }
+
+        moveViewToPlayer(0, 0);
+
+        requestFocus();
+    }
+
     private void justSave() {
         gameController.justSaveOnlineHero(getDuration());
         gameController.saveCurrentWorld();
     }
 
     @Override
-    public void mouseMoved(MouseEvent e) {
-        Point p = e.getPoint();
+    public void mouseClicked(MouseEvent e) {
 
-        if (Constants.isPaused()) {
-            // если пауза - проверяем меню:
-            setFirstButtonOver(getFirstButtonRect().contains(p));
-            setSecondButtonOver(getSecondButtonRect().contains(p));
-            setThirdButtonOver(getThirdButtonRect().contains(p));
-            setFourthButtonOver(getFourthButtonRect().contains(p));
-            setExitButtonOver(getExitButtonRect().contains(p));
-        } else { // иначе мониторим наведение на край окна для прокрутки поля:
-            if (!isMovingKeyActive && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
-                isMouseLeftEdgeOver = p.getX() <= 20 && (Constants.getUserConfig().isFullscreen() || p.getX() > 1);
-                isMouseRightEdgeOver = p.getX() >= getWidth() - 20 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1);
-                isMouseUpEdgeOver = p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1);
-                isMouseDownEdgeOver = p.getY() >= getHeight() - 20 && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1);
-            }
-        }
     }
 
     @Override
@@ -522,11 +512,6 @@ public class GameCanvas extends FoxCanvas {
     }
 
     @Override
-    public void mouseClicked(MouseEvent e) {
-
-    }
-
-    @Override
     public void mouseEntered(MouseEvent e) {
 
     }
@@ -555,6 +540,27 @@ public class GameCanvas extends FoxCanvas {
     }
 
     @Override
+    public void mouseMoved(MouseEvent e) {
+        Point p = e.getPoint();
+
+        if (Constants.isPaused()) {
+            // если пауза - проверяем меню:
+            setFirstButtonOver(getFirstButtonRect().contains(p));
+            setSecondButtonOver(getSecondButtonRect().contains(p));
+            setThirdButtonOver(getThirdButtonRect().contains(p));
+            setFourthButtonOver(getFourthButtonRect().contains(p));
+            setExitButtonOver(getExitButtonRect().contains(p));
+        } else { // иначе мониторим наведение на край окна для прокрутки поля:
+            if (!isMovingKeyActive && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
+                isMouseLeftEdgeOver = p.getX() <= 20 && (Constants.getUserConfig().isFullscreen() || p.getX() > 1);
+                isMouseRightEdgeOver = p.getX() >= getWidth() - 20 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1);
+                isMouseUpEdgeOver = p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1);
+                isMouseDownEdgeOver = p.getY() >= getHeight() - 20 && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1);
+            }
+        }
+    }
+
+    @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         if (Constants.isPaused()) {
             // not work into pause
@@ -570,6 +576,22 @@ public class GameCanvas extends FoxCanvas {
     @Override
     public void componentResized(ComponentEvent e) {
         onResize();
+    }
+
+    @Override
+    public void componentMoved(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void componentShown(ComponentEvent e) {
+        log.info("Возврат фокуса на холст...");
+        requestFocus();
+    }
+
+    @Override
+    public void componentHidden(ComponentEvent e) {
+
     }
 
     private void onResize() {
@@ -605,18 +627,7 @@ public class GameCanvas extends FoxCanvas {
     }
 
     @Override
-    public void componentMoved(ComponentEvent e) {
-
-    }
-
-    @Override
-    public void componentShown(ComponentEvent e) {
-        log.info("Возврат фокуса на холст...");
-        requestFocus();
-    }
-
-    @Override
-    public void componentHidden(ComponentEvent e) {
+    public void keyTyped(KeyEvent e) {
 
     }
 
@@ -680,10 +691,5 @@ public class GameCanvas extends FoxCanvas {
             isMovingKeyActive = false;
             isMouseRightEdgeOver = false;
         }
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-
     }
 }

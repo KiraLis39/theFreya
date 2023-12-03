@@ -34,18 +34,30 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RequiredArgsConstructor
 public class LocalSocketConnection {
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
+
     private final AtomicBoolean isAccepted = new AtomicBoolean(false);
+
     private final AtomicBoolean isPongReceived = new AtomicBoolean(false);
+
     @Getter
     private final Set<HeroDTO> otherHeroes = HashSet.newHashSet(3);
+
     private ObjectOutputStream oos;
+
     private Thread connectionThread, connectionLiveThread;
+
     private Socket socket;
+
     private String host;
+
     private int port;
+
     private GameController gameController;
+
     private volatile String lastExplanation;
+
     private volatile long lastDataReceivedTimestamp;
+
     @Getter
     private volatile boolean isPing;
 
@@ -119,6 +131,7 @@ public class LocalSocketConnection {
             }
         });
         connectionThread.setName("Socket connection thread");
+        connectionThread.setDaemon(true);
         connectionThread.start();
 
         if (gameController.isServerIsOpen()) {
@@ -219,7 +232,7 @@ public class LocalSocketConnection {
      */
     public synchronized void toServer(ClientDataDTO dataDTO) {
         // PONG никому не интересен, лишь мешает логу.
-        if (!dataDTO.type().equals(NetDataType.PONG)) {
+        if (!dataDTO.type().equals(NetDataType.PONG) && !dataDTO.type().equals(NetDataType.SYNC)) {
             if (dataDTO.type().equals(NetDataType.PING)) {
                 log.info("Пингуем Мир {} Сервера {}:{}...", dataDTO.worldUid(), host, port);
             } else {
@@ -285,7 +298,7 @@ public class LocalSocketConnection {
             gameController.setGameActive(false);
             log.info("Переводим героя {} ({}) в статус offlile и сохраняем...",
                     gameController.getCurrentHeroName(), gameController.getCurrentHeroUid());
-            gameController.setHeroOfflineAndSave(null);
+            gameController.setCurrentHeroOfflineAndSave(null);
             gameController.loadScreen(ScreenType.MENU_SCREEN);
         }
     }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fox.components.FOptionPane;
 import game.freya.GameController;
+import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.config.Constants;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
@@ -37,12 +38,19 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
     private final UUID clientUid;
 
     private final ObjectMapper mapper;
+
     private final GameController gameController;
+
     private final PlayedHeroesService playedHeroesService;
+
     private final Socket client;
+
     private final Server server;
+
     private final AtomicBoolean isAccepted = new AtomicBoolean(false);
+
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
+
     private ObjectOutputStream oos;
 
     @Getter
@@ -50,6 +58,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     @Getter
     private String playerName;
+
     private NetDataType lastType;
 
     public ConnectedServerPlayer(Server server, Socket client, GameController gameController) throws SocketException {
@@ -69,7 +78,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.client.setTcpNoDelay(true);
         // this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
 
-        //setDaemon(true);
+        setDaemon(true);
         setUncaughtExceptionHandler((t, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));
         start();
     }
@@ -166,6 +175,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         }
     }
 
+    @HeroDataBuilder
     private void saveConnectedHero(ClientDataDTO readed) {
         HeroDTO hero;
         if (gameController.isHeroExist(readed.heroUuid())) {

@@ -24,118 +24,146 @@ public final class UserConfig {
     @Setter
     @Builder.Default
     private float miniMapOpacity = 0.65f;
+
     // player:
     @Getter
     @Setter
     @Builder.Default
     private UUID userId = UUID.randomUUID();
+
     @Getter
     @Setter
     @Builder.Default
     private String userName = SystemUtils.getUserName();
+
     @Getter
     @Setter
     @Builder.Default
     private String userMail = "demo@test.ru";
+
     // audio:
     @Getter
     @Setter
     @Builder.Default
     private boolean isSoundEnabled = true;
+
     @Getter
     @Setter
     @Builder.Default
     private int soundVolumePercent = 75;
+
     @Getter
     @Setter
     @Builder.Default
     private boolean isMusicEnabled = true;
+
     @Getter
     @Setter
     @Builder.Default
     private int musicVolumePercent = 75;
+
     // hotkeys:
     @Setter
     @Getter
     @Builder.Default
     private int keyLookUp = KeyEvent.VK_UP;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyLookLeft = KeyEvent.VK_LEFT;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyLookRight = KeyEvent.VK_RIGHT;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyLookDown = KeyEvent.VK_DOWN;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyMoveUp = KeyEvent.VK_W;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyMoveLeft = KeyEvent.VK_A;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyMoveRight = KeyEvent.VK_D;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyMoveDown = KeyEvent.VK_S;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyRotateClockwise = KeyEvent.VK_E;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyRotateCounter = KeyEvent.VK_Q;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyPause = KeyEvent.VK_ESCAPE;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyConsole = KeyEvent.VK_BACK_QUOTE;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyConsoleMod = InputEvent.SHIFT_DOWN_MASK;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyDebug = KeyEvent.VK_F10;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyFps = KeyEvent.VK_F9;
+
     @Setter
     @Getter
     @Builder.Default
     private int keyFullscreen = KeyEvent.VK_F11;
+
     // gameplay:
     @Getter
     @Setter
     @Builder.Default
     private boolean dragGameFieldOnFrameEdgeReached = true;
+
     @Getter
     @Setter
     @Builder.Default
     private FullscreenType fullscreenType = FullscreenType.MAXIMIZE_WINDOW; // .EXCLUSIVE
+
     @Getter
     @Setter
     @Builder.Default
     private boolean isFullscreen = false;
+
     @Getter
     @Setter
     @Builder.Default
     private boolean isPauseOnHidden = true;
+
     // graphics:
     @Getter
     @Setter

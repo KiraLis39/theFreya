@@ -38,19 +38,31 @@ import static game.freya.config.Constants.FFB;
 @Slf4j
 public class NetworkListPane extends WorldCreator {
     private static final String connectionString = "- CONNECTION -";
+
     private static final String pingString = "- PING -";
+
     private static final int maxElementsDim = 96;
+
     private final transient FoxCanvas canvas;
+
     private final transient GameController gameController;
+
     private final SubPane centerList;
+
     private final String[] dot = new String[]{".", "..", "..."};
+
     private transient BufferedImage snap;
+
     @Getter
     private String address;
+
     @Getter
     private String password = "";
+
     private int dots = 0;
+
     private long was = System.currentTimeMillis();
+
     private transient Thread pingActionThread;
 
     public NetworkListPane(FoxCanvas canvas, GameController controller) {

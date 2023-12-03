@@ -32,12 +32,19 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @RequiredArgsConstructor
 public final class UIHandler {
     private static final int minimapDim = 2048;
+
     private static final int halfDim = (int) (minimapDim / 2d);
+
     private GameController gameController;
+
     private VolatileImage minimapImage;
+
     private Rectangle minimapRect;
+
     private Rectangle minimapDebugRect, upLeftPaneRect, upCenterPaneRect, upRightPaneRect, downCenterPaneRect;
+
     private double heightMemory;
+
     private String startGameButtonText, coopPlayButtonText, optionsButtonText, randomButtonText, resetButtonText, createNewButtonText, repingButtonText;
 
     @Autowired
@@ -276,6 +283,8 @@ public final class UIHandler {
 //            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
             m2D.setColor(connectedHero.getBaseColor());
             m2D.fillRect(otherHeroPosX - 16, otherHeroPosY - 16, 32, 32);
+            m2D.setColor(connectedHero.getSecondColor());
+            m2D.drawRect(otherHeroPosX - 16, otherHeroPosY - 16, 32, 32);
         }
 
         // сканируем все сущности указанного квадранта:

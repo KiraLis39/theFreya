@@ -40,10 +40,15 @@ import java.util.UUID;
 @Slf4j
 public class HeroCreatingPane extends JPanel {
     private static final Random r = new Random();
+
     private static final float rgb = 0.18f;
+
     private final Color hnrc = new Color(rgb, rgb, rgb, 0.75f);
+
     private transient BufferedImage snap;
+
     private JTextField ntf;
+
     private boolean isEditMode = false;
 
     @Getter
@@ -62,13 +67,17 @@ public class HeroCreatingPane extends JPanel {
     private short periferiaSize;
 
     private JComboBox<HeroPeriferiaType> perChooser;
+
     private JComboBox<HeroCorpusType> corpChooser;
+
     private JZlider perSlider;
+
     private FButton bsb, sbc;
 
     @Getter
     private Color baseColor = Color.GREEN, secondColor = Color.DARK_GRAY;
-    private HeroDTO editableHero;
+
+    private transient HeroDTO editableHero;
 
     public HeroCreatingPane(FoxCanvas canvas, GameController gameController) {
         setName("Hero creating pane");

@@ -25,6 +25,7 @@ import java.nio.file.Path;
 @RequiredArgsConstructor
 public class UserConfigService {
     private final ObjectMapper mapper;
+
     private GameController gameController;
 
     @Autowired

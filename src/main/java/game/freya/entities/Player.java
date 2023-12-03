@@ -42,14 +42,8 @@ public class Player {
     private UUID lastPlayedWorldUid;
 
     @Override
-    public String toString() {
-        return "Player{"
-                + "uid=" + uid
-                + ", nickName='" + nickName + '\''
-                + ", email='" + email + '\''
-                + ", avatarUrl='" + avatarUrl + '\''
-                + ", lastPlayedWorldUid=" + lastPlayedWorldUid
-                + '}';
+    public int hashCode() {
+        return Objects.hash(getUid(), getNickName(), getEmail());
     }
 
     @Override
@@ -66,7 +60,13 @@ public class Player {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(getUid(), getNickName(), getEmail());
+    public String toString() {
+        return "Player{"
+                + "uid=" + uid
+                + ", nickName='" + nickName + '\''
+                + ", email='" + email + '\''
+                + ", avatarUrl='" + avatarUrl + '\''
+                + ", lastPlayedWorldUid=" + lastPlayedWorldUid
+                + '}';
     }
 }

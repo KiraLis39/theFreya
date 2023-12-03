@@ -2,6 +2,7 @@ package game.freya.mappers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.Hero;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.exceptions.ErrorMessages;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 @Component
+@HeroDataBuilder
 public final class HeroMapper {
     private final ObjectMapper mapper;
 

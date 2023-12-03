@@ -33,9 +33,13 @@ import java.util.List;
 @Slf4j
 public class WorldsListPane extends JPanel {
     private static final int leftIconDim = 80;
+
     private final transient FoxCanvas canvas;
+
     private final transient GameController gameController;
+
     private transient BufferedImage snap;
+
     private transient ZLabel zlabel;
 
     public WorldsListPane(FoxCanvas canvas, GameController controller) {

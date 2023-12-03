@@ -14,6 +14,7 @@ public enum HeroType {
 
     @Getter
     private final String description;
+
     @Getter
     private final Color color;
 

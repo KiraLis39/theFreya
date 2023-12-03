@@ -32,8 +32,11 @@ import java.awt.event.WindowStateListener;
 @RequiredArgsConstructor
 public class GameFrame implements WindowListener, WindowStateListener {
     private final UIHandler uIHandler;
+
     private Dimension windowSize;
+
     private GameController gameController;
+
     private JFrame frame;
 
     public void showMainMenu(GameController gameController) {
@@ -247,11 +250,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
     }
 
     @Override
-    public void windowDeactivated(WindowEvent e) {
-        onGameHide();
-    }
-
-    @Override
     public void windowDeiconified(WindowEvent e) {
         onGameRestore();
     }
@@ -259,6 +257,11 @@ public class GameFrame implements WindowListener, WindowStateListener {
     @Override
     public void windowActivated(WindowEvent e) {
         onGameRestore();
+    }
+
+    @Override
+    public void windowDeactivated(WindowEvent e) {
+        onGameHide();
     }
 
     @Override

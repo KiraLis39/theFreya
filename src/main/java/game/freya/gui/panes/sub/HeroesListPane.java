@@ -28,7 +28,9 @@ import java.awt.image.BufferedImage;
 @Slf4j
 public class HeroesListPane extends JPanel {
     private final transient FoxCanvas canvas;
+
     private final transient GameController gameController;
+
     private transient BufferedImage snap;
 
     public HeroesListPane(FoxCanvas canvas, GameController controller) {

@@ -25,10 +25,15 @@ import java.util.stream.Collectors;
 @Service
 public class Server implements iServer {
     private final Map<InetAddress, ConnectedServerPlayer> clients = new ConcurrentHashMap<>();
+
     private Thread diedClientsCleaner, serverThread;
+
     private GameController gameController;
+
     private ServerSocket serverSocket;
+
     private String address;
+
     private boolean isServerCloseAccepted = false;
 
     @Override
@@ -68,32 +73,9 @@ public class Server implements iServer {
         }
     }
 
-    private void startDiedClientsCleaner() {
-        if (diedClientsCleaner != null) {
-            try {
-                diedClientsCleaner.interrupt();
-                diedClientsCleaner.join(9_000);
-            } catch (InterruptedException e) {
-                diedClientsCleaner.interrupt();
-            }
-        }
-
-        diedClientsCleaner = new Thread(() -> {
-            log.info("Поток чистки Клиентов начал свою работу.");
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    clearDiedClients();
-                    Thread.sleep(9_000);
-                } catch (InterruptedException e) {
-                    log.error("Прерван поток {}", Thread.currentThread().getName());
-                    Thread.currentThread().interrupt();
-                }
-            }
-            log.info("Поток чистки Клиентов завершил свою работу.");
-        });
-        diedClientsCleaner.setName("Died clients cleaner thread");
-        diedClientsCleaner.setDaemon(true);
-        diedClientsCleaner.start();
+    @Override
+    public boolean isOpen() {
+        return serverThread != null && serverThread.isAlive() && serverSocket != null && !serverSocket.isClosed();
     }
 
     @Override
@@ -129,6 +111,11 @@ public class Server implements iServer {
     }
 
     @Override
+    public boolean isClosed() {
+        return (serverThread == null || !serverThread.isAlive()) && (serverSocket == null || serverSocket.isClosed());
+    }
+
+    @Override
     public ConnectedServerPlayer acceptNewClient(Socket socket) {
         try {
             if (clients.containsKey(socket.getInetAddress()) && !clients.get(socket.getInetAddress()).isClosed()) {
@@ -147,25 +134,9 @@ public class Server implements iServer {
         return null;
     }
 
-    /**
-     * Выступая в роли Сервера, шлём свои данные клиентам через этот метод.
-     *
-     * @param dataDto данные об изменениях серверной версии мира.
-     */
     @Override
-    public void broadcast(ClientDataDTO dataDto, ConnectedServerPlayer excludedPlayer) {
-        log.debug("Бродкастим инфо всем клиентам...");
-        for (ConnectedServerPlayer connectedServerPlayer : getPlayers()) {
-            if (connectedServerPlayer.getClientUid().equals(excludedPlayer.getClientUid())) {
-                // connectedPlayer.push(ClientDataDTO.builder().type(NetDataType.PING).build());
-                continue; // не слать себе свои же данные. Только пинг, если нужно.
-            }
-            if (!connectedServerPlayer.isAccepted()) {
-                continue; // не слать синхро тем, кто еще не загрузил своего Героя - будет исключение!
-            }
-
-            connectedServerPlayer.push(dataDto);
-        }
+    public long connected() {
+        return clients.values().stream().filter(ConnectedServerPlayer::isAuthorized).count();
     }
 
     @Override
@@ -208,6 +179,60 @@ public class Server implements iServer {
         }
     }
 
+    @Override
+    public Set<ConnectedServerPlayer> getPlayers() {
+        return clients.values().stream().filter(ConnectedServerPlayer::isAccepted).collect(Collectors.toSet());
+    }
+
+    /**
+     * Выступая в роли Сервера, шлём свои данные клиентам через этот метод.
+     *
+     * @param dataDto данные об изменениях серверной версии мира.
+     */
+    @Override
+    public void broadcast(ClientDataDTO dataDto, ConnectedServerPlayer excludedPlayer) {
+        log.debug("Бродкастим инфо всем клиентам...");
+        for (ConnectedServerPlayer connectedServerPlayer : getPlayers()) {
+            if (connectedServerPlayer.getClientUid().equals(excludedPlayer.getClientUid())) {
+                // connectedPlayer.push(ClientDataDTO.builder().type(NetDataType.PING).build());
+                continue; // не слать себе свои же данные. Только пинг, если нужно.
+            }
+            if (!connectedServerPlayer.isAccepted()) {
+                continue; // не слать синхро тем, кто еще не загрузил своего Героя - будет исключение!
+            }
+
+            connectedServerPlayer.push(dataDto);
+        }
+    }
+
+    private void startDiedClientsCleaner() {
+        if (diedClientsCleaner != null) {
+            try {
+                diedClientsCleaner.interrupt();
+                diedClientsCleaner.join(9_000);
+            } catch (InterruptedException e) {
+                diedClientsCleaner.interrupt();
+            }
+        }
+
+        diedClientsCleaner = new Thread(() -> {
+            log.info("Поток чистки Клиентов начал свою работу.");
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    clearDiedClients();
+                    Thread.sleep(9_000);
+                } catch (InterruptedException e) {
+                    log.error("Прерван поток {}", Thread.currentThread().getName());
+                    Thread.currentThread().interrupt();
+                }
+            }
+            log.info("Поток чистки Клиентов завершил свою работу.");
+        });
+        diedClientsCleaner.setName("Died clients cleaner thread");
+        diedClientsCleaner.setDaemon(true);
+        diedClientsCleaner.start();
+    }
+
     public void untilOpen(int waitTime) {
         if (serverThread != null) {
             try {
@@ -234,27 +259,7 @@ public class Server implements iServer {
         }
     }
 
-    @Override
-    public Set<ConnectedServerPlayer> getPlayers() {
-        return clients.values().stream().filter(ConnectedServerPlayer::isAccepted).collect(Collectors.toSet());
-    }
-
     public String getAddress() {
         return this.address;
-    }
-
-    @Override
-    public boolean isClosed() {
-        return (serverThread == null || !serverThread.isAlive()) && (serverSocket == null || serverSocket.isClosed());
-    }
-
-    @Override
-    public boolean isOpen() {
-        return serverThread != null && serverThread.isAlive() && serverSocket != null && !serverSocket.isClosed();
-    }
-
-    @Override
-    public long connected() {
-        return clients.values().stream().filter(ConnectedServerPlayer::isAuthorized).count();
     }
 }

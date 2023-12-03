@@ -30,9 +30,13 @@ import java.util.List;
 @Slf4j
 public class VideoSettingsPane extends JPanel {
     private final List<DisplayMode> modes = new ArrayList<>(List.of(Constants.MON.getDevice().getDisplayModes()));
+
     private transient BufferedImage snap;
+
     private JZlider zlider;
+
     private CheckBokz cBox;
+
     private JComboBox<DisplayMode> displayModeBox;
 
     public VideoSettingsPane(FoxCanvas canvas) {

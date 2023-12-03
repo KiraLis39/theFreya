@@ -4,10 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import fox.FoxLogo;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
+import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.Player;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
+import game.freya.enums.HeroCorpusType;
+import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
@@ -42,6 +45,7 @@ import javax.imageio.ImageIO;
 import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.AWTException;
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -68,12 +72,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GameController extends GameControllerBase {
     private final PlayerService playerService;
+
     private final HeroService heroService;
+
     private final WorldService worldService;
+
     private final WorldMapper worldMapper;
+
     private final GameFrame gameFrame;
 
     private final PlayedHeroesService playedHeroesService;
+
     private final Server server;
 
     @Getter
@@ -83,6 +92,7 @@ public class GameController extends GameControllerBase {
     private LocalSocketConnection localSocketConnection;
 
     private Thread pingThread;
+
     @Getter
     @Setter
     private volatile boolean isGameActive = false;
@@ -259,6 +269,7 @@ public class GameController extends GameControllerBase {
         getNetDataTranslator().start();
     }
 
+    @HeroDataBuilder
     private ClientDataDTO buildNewDataPackage() {
         // собираем пакет данных для сервера и других игроков:
         return ClientDataDTO.builder()
@@ -335,7 +346,7 @@ public class GameController extends GameControllerBase {
         worldService.delete(worldUid);
     }
 
-    public void setHeroOfflineAndSave(Duration gameDuration) {
+    public void setCurrentHeroOfflineAndSave(Duration gameDuration) {
         playedHeroesService.offlineSaveAndRemoveCurrentHero(gameDuration);
     }
 
@@ -817,14 +828,21 @@ public class GameController extends GameControllerBase {
         return playedHeroesService.getCurrentHero() != null && playedHeroesService.isCurrentHeroOnline();
     }
 
+    @HeroDataBuilder
     public boolean registerCurrentHeroOnServer() {
         log.info("Отправка данных текущего героя на Сервер...");
         localSocketConnection.toServer(ClientDataDTO.builder()
                 .type(NetDataType.HERO_REQUEST)
                 .playerUid(getCurrentPlayerUid())
+                .playerName(getCurrentPlayerNickName())
 
                 .heroUuid(getCurrentHeroUid())
                 .heroName(getCurrentHeroName())
+                .baseColor(getCurrentHeroBaseColor())
+                .secondColor(getCurrentHeroSecondColor())
+                .corpusType(getCurrentHeroCorpusType())
+                .periferiaType(getCurrentHeroPeriferiaType())
+                .periferiaSize(getCurrentHeroPeriferiaSize())
                 .heroType(getCurrentHeroType())
                 .hurtLevel(getCurrentHeroHurtLevel())
                 .hp(getCurrentHeroHp())
@@ -867,6 +885,26 @@ public class GameController extends GameControllerBase {
             heroCheckThread.interrupt();
             return false;
         }
+    }
+
+    private short getCurrentHeroPeriferiaSize() {
+        return playedHeroesService.getCurrentHeroPeriferiaSize();
+    }
+
+    private HeroPeriferiaType getCurrentHeroPeriferiaType() {
+        return playedHeroesService.getCurrentHeroPeriferiaType();
+    }
+
+    private HeroCorpusType getCurrentHeroCorpusType() {
+        return playedHeroesService.getCurrentHeroCorpusType();
+    }
+
+    private Color getCurrentHeroSecondColor() {
+        return playedHeroesService.getCurrentHeroSecondColor();
+    }
+
+    private Color getCurrentHeroBaseColor() {
+        return playedHeroesService.getCurrentHeroBaseColor();
     }
 
     public HeroDTO getCurrentHero() {
@@ -952,7 +990,7 @@ public class GameController extends GameControllerBase {
             saveCurrentWorld();
 
             if (gameDuration != null && playedHeroesService.isCurrentHeroNotNull()) {
-                setHeroOfflineAndSave(gameDuration);
+                setCurrentHeroOfflineAndSave(gameDuration);
             }
 
             // если игра сетевая и локальная - останавливаем сервер при выходе из игры:

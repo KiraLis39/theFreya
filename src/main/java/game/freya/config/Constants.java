@@ -36,28 +36,41 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class Constants {
     // net:
     public static final int DEFAULT_SERVER_PORT = 13958;
+
     public static final int SOCKET_BUFFER_SIZE = 16384; // 65536
-    public static final long SERVER_BROADCAST_DELAY = 500L; // миллисекунд ждать между отправками данных
+
+    public static final long SERVER_BROADCAST_DELAY = 200L; // миллисекунд ждать между отправками данных
+
     public static final int SOCKET_PING_AWAIT_TIMEOUT = 6_000; // сколько миллисекунд клиент ждёт данные от Сервера
+
     public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 9_000; // сколько миллисекунд клиент ждёт данные от Сервера
-    public static final int NEED_FOR_SUCCESS_PING = 6_000; // сколько мс требуется дл корректного пинга Серверов обычно.
+
+    public static final long NEED_FOR_SUCCESS_PING = 6_000; // сколько мс требуется дл корректного пинга Серверов обычно.
 
     // public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд Сервер ждёт данные от Клиента
 
 
     // other:
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
+
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.
+
     public static final int MAP_CELL_DIM = 64;
+
     public static final String DEFAULT_AVATAR_URL = "/images/defaultAvatar.png";
+
     public static final double ONE_TURN_PI = Math.PI / 4d;
 
 
     // libraries objects:
     public static final VideoMonitor MON = new VideoMonitor();
+
     public static final FoxFontBuilder FFB = new FoxFontBuilder();
+
     public static final FoxRender RENDER = new FoxRender();
+
     public static final MediaCache CACHE = MediaCache.getInstance();
+
     public static final InputAction INPUT_ACTION = new InputAction();
 
     // public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
@@ -66,76 +79,113 @@ public final class Constants {
 
     // public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.of("ru"));
     public static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("День dd (HH:mm)", Locale.of("ru"));
+
     public static final DateTimeFormatter DATE_FORMAT_3 = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm", Locale.of("ru"));
+
     // fonts:
     public static final Font DEBUG_FONT = FFB.setFoxFont(FONT.ARIAL, 16, true, MON.getEnvironment());
+
     public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 14, false, MON.getEnvironment());
+
     public static final Font GAME_FONT_01 = FFB.setFoxFont(FONT.ARIAL_NARROW, 12, true, MON.getEnvironment());
+
     public static final Font GAME_FONT_02 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 26, true, MON.getEnvironment());
+
     public static final Font GAME_FONT_03 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 32, true, MON.getEnvironment());
+
     public static final Font MENU_BUTTONS_BIG_FONT;
+
     public static final Font LITTLE_UNICODE_FONT;
+
     public static final Font MENU_BUTTONS_FONT;
+
     public static final Font PROPAGANDA_FONT;
+
     public static final Font PROPAGANDA_BIG_FONT;
 
     // project:
     @Getter
     private static final String gameAuthor = "KiraLis39";
+
     @Getter
     private static final Path databaseRootDir = FileSystems.getDefault().getPath("./db/freya.db").toAbsolutePath();
+
     @Getter
     private static final String imageExtension = ".png"; // .png
+
     @Getter
     private static final String audioExtension = ".ogg"; // .ogg | .mp3 | .wav
+
     // audio:
     @Getter
     private static final FoxPlayer soundPlayer = new FoxPlayer("soundPlayer");
+
     @Getter
     private static final FoxPlayer musicPlayer = new FoxPlayer("musicPlayer");
+
     @Getter
     private static final double dragSpeed = 12D;
+
     @Getter
     private static final double scrollSpeed = 20D;
+
     @Getter
     private static final String userSave = "./saves/".concat(SystemUtils.getUserName()).concat("/save.json");
+
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
+
     private static final int SHIFT_FPS_ALLOWED = 2; // допустимый разброс FPS.
+
     private static final int MAX_FPS_ALLOWED = 120; // больше этой частоты нет смысла гнать точно.
+
     private static final AtomicInteger realFreshRate = new AtomicInteger(0);
+
     private static final AtomicLong delay = new AtomicLong(15L);
+
     @Getter
     @Setter
     private static FoxLogo logo;
+
     @Getter
     private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.85f);
+
     @Getter
     private static Color mainMenuBackgroundColor2 = new Color(0.0f, 0.0f, 0.0f, 0.45f);
+
     @Getter
     @Setter
     private static long gameStartedIn;
+
     @Getter
     private static String notRealizedString = "Не реализовано ещё";
+
     @Getter
     private static Cursor defaultCursor;
+
     // user config:
     @Getter
     @Setter
     private static UserConfig userConfig;
+
     // dynamic game booleans:
     @Getter
     @Setter
     private static boolean isDebugInfoVisible = false;
+
     @Getter
     @Setter
     private static boolean isFpsInfoVisible = true;
+
     @Getter
     private static boolean isPaused = false;
+
     @Getter
     private static boolean isShowStartLogo = true;
+
     @Getter
     private static volatile int fpsLimit;
+
     @Getter
     private static String worldsImagesDir = "./worlds/img/";
 

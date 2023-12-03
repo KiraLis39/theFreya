@@ -25,7 +25,9 @@ import java.util.UUID;
 @Service
 public class PlayerService {
     private final PlayersRepository playersRepository;
+
     private final PlayerMapper playerMapper;
+
     private final UserConfigService userConfigService;
 
     @Getter
