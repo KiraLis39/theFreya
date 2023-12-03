@@ -1,12 +1,15 @@
 package game.freya.net.data;
 
 import game.freya.entities.World;
+import game.freya.enums.HeroCorpusType;
+import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
 import game.freya.enums.NetDataType;
 import lombok.Builder;
 
+import java.awt.Color;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -18,6 +21,11 @@ public record ClientDataDTO(
         NetDataType type,
         UUID playerUid,
         String playerName,
+        Color baseColor,
+        Color secondColor,
+        HeroCorpusType corpusType,
+        HeroPeriferiaType periferiaType,
+        short periferiaSize,
         UUID heroUuid,
         String heroName,
         HeroType heroType,

@@ -7,7 +7,6 @@ import game.freya.entities.dto.HeroDTO;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.FButton;
-import game.freya.gui.panes.sub.components.JTexztArea;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import game.freya.net.data.NetConnectTemplate;
@@ -55,7 +54,8 @@ public class HeroesListPane extends JPanel {
         HeroesListPane.this.removeAll();
 
         for (HeroDTO hero : gameController.getMyCurrentWorldHeroes()) {
-            add(new SubPane(hero.getHeroName(), hero.getType().getColor()) {{
+            add(new SubPane("Герой: " + hero.getHeroName(), hero.getType().getColor()) {{
+                setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {
                     @Override
                     protected void paintComponent(Graphics g) {
@@ -72,8 +72,15 @@ public class HeroesListPane extends JPanel {
                     }
                 }, BorderLayout.WEST);
 
-                add(new JTexztArea(hero.getType().getDescription(), 1, 30) {{
-                    setBorder(new EmptyBorder(0, 6, 0, 0));
+                add(new ZLabel(("<html><pre>"
+                        + "Класс:<font color=#43F8C9><b>     %s</b></font>"
+                        + "<br>Корпус:<font color=#239BEE><b>    %s</b></font>"
+                        + "<br>Периферия:<font color=#239BEE><b> %s (%d)</b></font>"
+                        + "</pre></html>")
+                        .formatted(hero.getType().getDescription(), hero.getCorpusType(), hero.getPeriferiaType(), hero.getPeriferiaSize()),
+                        null) {{
+                    setVerticalAlignment(TOP);
+                    setAlignmentY(TOP_ALIGNMENT);
                 }}, BorderLayout.CENTER);
 
                 add(new JPanel() {{
@@ -82,44 +89,85 @@ public class HeroesListPane extends JPanel {
                     setBackground(new Color(0, 0, 0, 0));
                     setFocusable(false);
                     setIgnoreRepaint(true);
+                    setAlignmentY(CENTER_ALIGNMENT);
 
-                    add(new FButton() {
-                        @Override
-                        public void paintComponent(Graphics g) {
-                            super.paintComponent(g);
-                            Graphics2D g2D = (Graphics2D) g;
-                            g2D.setColor(getForeground());
-                            g2D.setFont(Constants.GAME_FONT_01);
-                            g2D.drawString("X",
-                                    (int) (getWidth() / 2d - Constants.FFB.getStringBounds(g2D, "X").getWidth() / 2d),
-                                    getHeight() / 2 + 4);
-                            g2D.dispose();
-                        }
+                    // кнопки Удалить и Изменить героя:
+                    add(new SubPane(null) {{
+                        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-                        {
-                            setBackground(Color.RED.darker().darker());
-                            setForeground(Color.PINK.brighter());
-                            setFocusPainted(false);
+                        add(new FButton() {
+                            @Override
+                            public void paintComponent(Graphics g) {
+                                super.paintComponent(g);
+                                Graphics2D g2D = (Graphics2D) g;
+                                g2D.setColor(getForeground());
+                                g2D.setFont(Constants.GAME_FONT_01);
+                                g2D.drawString("X",
+                                        (int) (getWidth() / 2d - Constants.FFB.getStringBounds(g2D, "X").getWidth() / 2d),
+                                        getHeight() / 2 + 4);
+                                g2D.dispose();
+                            }
+
+                            {
+                                setBackground(Color.RED.darker().darker());
+                                setForeground(Color.PINK.brighter());
+                                setFocusPainted(false);
 //                            setIgnoreRepaint(true);
-                            setMinimumSize(new Dimension(24, 24));
-                            setPreferredSize(new Dimension(24, 24));
-                            setMaximumSize(new Dimension(24, 24));
-                            setAlignmentY(TOP_ALIGNMENT);
+                                setMinimumSize(new Dimension(24, 24));
+                                setPreferredSize(new Dimension(24, 24));
+                                setMaximumSize(new Dimension(24, 24));
+                                setAlignmentY(TOP_ALIGNMENT);
 
-                            addActionListener(new AbstractAction() {
-                                @Override
-                                public void actionPerformed(ActionEvent e) {
-                                    if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
-                                            "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
-                                            FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                    ) {
-                                        ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getUid());
-                                        reloadHeroes(canvas);
+                                addActionListener(new AbstractAction() {
+                                    @Override
+                                    public void actionPerformed(ActionEvent e) {
+                                        if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
+                                                "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
+                                                FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+                                        ) {
+                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getUid());
+                                            reloadHeroes(canvas);
+                                        }
                                     }
-                                }
-                            });
-                        }
-                    });
+                                });
+                            }
+                        });
+
+                        add(Box.createVerticalStrut(2));
+                        add(new FButton() {
+                            @Override
+                            public void paintComponent(Graphics g) {
+                                super.paintComponent(g);
+                                Graphics2D g2D = (Graphics2D) g;
+                                g2D.setColor(getForeground());
+                                g2D.setFont(Constants.GAME_FONT_01);
+                                g2D.drawString("O",
+                                        (int) (getWidth() / 2d - Constants.FFB.getStringBounds(g2D, "X").getWidth() / 2d),
+                                        getHeight() / 2 + 4);
+                                g2D.dispose();
+                            }
+
+                            {
+                                setBackground(Color.YELLOW.darker().darker());
+                                setForeground(Color.ORANGE.brighter());
+                                setFocusPainted(false);
+//                            setIgnoreRepaint(true);
+                                setMinimumSize(new Dimension(24, 24));
+                                setPreferredSize(new Dimension(24, 24));
+                                setMaximumSize(new Dimension(24, 24));
+                                setAlignmentY(TOP_ALIGNMENT);
+
+                                addActionListener(new AbstractAction() {
+                                    @Override
+                                    public void actionPerformed(ActionEvent e) {
+                                        ((MenuCanvas) canvas).openCreatingNewHeroPane(hero);
+                                    }
+                                });
+                            }
+                        });
+
+                        add(Box.createVerticalGlue());
+                    }});
 
                     add(new FButton(" PLAY ") {{
                         setBackground(Color.BLUE.darker().darker().darker());
@@ -127,7 +175,7 @@ public class HeroesListPane extends JPanel {
                         setMinimumSize(new Dimension(96, 96));
                         setPreferredSize(new Dimension(96, 96));
                         setMaximumSize(new Dimension(96, 96));
-                        setAlignmentY(TOP_ALIGNMENT);
+                        setVerticalAlignment(CENTER);
 
                         addActionListener(new AbstractAction() {
                             @Override
@@ -146,7 +194,11 @@ public class HeroesListPane extends JPanel {
                     }});
                 }}, BorderLayout.EAST);
 
-                add(new ZLabel(hero.getCreateDate().format(Constants.DATE_FORMAT_3), hero.getIcon()), BorderLayout.SOUTH);
+                // нижняя надпись Создано:
+                add(new ZLabel("Создан: " + hero.getCreateDate().format(Constants.DATE_FORMAT_3), hero.getIcon()) {{
+                    setFont(Constants.INFO_FONT);
+                    setForeground(Color.GRAY);
+                }}, BorderLayout.SOUTH);
             }});
 
             add(Box.createVerticalStrut(6));

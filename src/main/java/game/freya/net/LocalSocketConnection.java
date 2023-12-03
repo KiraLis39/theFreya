@@ -59,7 +59,7 @@ public class LocalSocketConnection {
         killSelf();
 
         connectionThread = new Thread(() -> {
-            try (Socket client = new Socket(host, port != null ? port : Constants.DEFAULT_SERVER_PORT)) {
+            try (Socket client = new Socket()) {
                 this.socket = client;
                 this.socket.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
                 this.socket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
@@ -67,10 +67,8 @@ public class LocalSocketConnection {
                 // this.socket.setKeepAlive(true);
                 this.socket.setTcpNoDelay(true);
 
-                if (!gameController.isServerIsOpen()) {
-                    // если сервер локальный - нет смысла ставить себе таймаут, т.к. broadcast Сервера всё равно не возвращается обратно:
-                    // this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT); // todo: включить после отладки
-                }
+                this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
+                this.socket.connect(new InetSocketAddress(this.host, this.port), Constants.SOCKET_PING_AWAIT_TIMEOUT);
 
                 try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()))) {
                     this.oos = outs;

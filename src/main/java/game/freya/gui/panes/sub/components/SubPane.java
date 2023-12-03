@@ -40,7 +40,7 @@ public class SubPane extends JPanel {
                         BorderFactory.createTitledBorder(
                                 BorderFactory.createLineBorder(borderColor, 3, true),
                                 title, 1, 2, Constants.DEBUG_FONT, Color.WHITE),
-                        BorderFactory.createEmptyBorder(-3, 3, 3, 3)
+                        BorderFactory.createEmptyBorder(0, 3, 3, 3)
                 ));
             }
         }

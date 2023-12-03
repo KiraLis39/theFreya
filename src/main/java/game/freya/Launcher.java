@@ -34,6 +34,19 @@ public class Launcher {
 
         log.info("Setting up the system properties...");
         System.setProperty("sun.java2d.opengl", "True");
+
+        // System.setProperty("sun.java2d.d3d", "false");
+        // System.setProperty("sun.java2d.d3dtexbpp", "16");
+
+        // System.setProperty("sun.java2d.ddoffscreen", "false");
+        // System.setProperty("sun.java2d.ddforcevram", "false");
+
+        // System.setProperty("sun.java2d.accthreshold", "0");
+        // System.setProperty("sun.java2d.translaccel", "true");
+        // System.setProperty("sun.java2d.xrender", "true");
+        // System.setProperty("sun.java2d.noddraw", "true");
+
+        // System.setProperty("sun.awt.noerasebackground", "true");
     }
 
     // устанавливаем всё, что должно быть готово к запуску:

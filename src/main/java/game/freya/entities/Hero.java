@@ -1,5 +1,7 @@
 package game.freya.entities;
 
+import game.freya.enums.HeroCorpusType;
+import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import lombok.AllArgsConstructor;
@@ -20,6 +22,7 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotNull;
+import java.awt.Color;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -40,6 +43,28 @@ public class Hero {
     @Comment("Имя героя")
     @Column(name = "hero_name", length = 16)
     private String heroName;
+
+    @Comment("Главный цвет раскраски корпуса героя")
+    @Column(name = "base_color")
+    private Color baseColor;
+
+    @Comment("Второстепенный цвет раскраски корпуса героя")
+    @Column(name = "second_color")
+    private Color secondColor;
+
+    @Builder.Default
+    @Comment("Тип корпуса героя")
+    @Enumerated(EnumType.STRING)
+    private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
+
+    @Builder.Default
+    @Comment("Тип периферии героя")
+    @Enumerated(EnumType.STRING)
+    private HeroPeriferiaType periferiaType = HeroPeriferiaType.COMPACT;
+
+    @Comment("Размеры периферии героя")
+    @Column(name = "periferia_size", columnDefinition = "SMALLINT DEFAULT 50")
+    private short periferiaSize;
 
     @NotNull
     @Comment("Инвентарь героя")

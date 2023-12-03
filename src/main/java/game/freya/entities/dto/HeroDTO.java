@@ -3,6 +3,8 @@ package game.freya.entities.dto;
 import fox.FoxRender;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iHero;
+import game.freya.enums.HeroCorpusType;
+import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
@@ -20,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.validation.constraints.NotNull;
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
@@ -43,40 +46,66 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @AllArgsConstructor
 public class HeroDTO implements iHero {
     @NotNull
-    @Builder.Default
-    private final List<Buff> buffs = new ArrayList<>(9);
-    @NotNull
     @Setter
     private UUID uid;
+
     @NotNull
     private String heroName;
+
+    @Setter
+    private Color baseColor;
+
+    @Setter
+    private Color secondColor;
+
     @Setter
     @Builder.Default
-    private Backpack inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"));
+    private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
+
+    @Setter
+    @Builder.Default
+    private HeroPeriferiaType periferiaType = HeroPeriferiaType.COMPACT;
+
+    @Setter
+    @Builder.Default
+    private short periferiaSize = 50;
+
     @Builder.Default
     private short level = 1;
+
     @Builder.Default
     private HeroType type = HeroType.VOID;
+
     @Builder.Default
     private float power = 1.0f;
+
     @Builder.Default
     private float experience = 0f;
+
     @Builder.Default
     private short curHealth = 100;
+
     @Builder.Default
     private short maxHealth = 100;
+
     @Builder.Default
     private short curOil = 100;
+
     @Builder.Default
     private short maxOil = 100;
+
     @Builder.Default
     private byte speed = 6;
+
     @Builder.Default
     private Point2D.Double position = new Point2D.Double(384d, 384d);
+
     @Builder.Default
     private MovingVector vector = MovingVector.UP;
+
     @Builder.Default
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
+
     @Setter
     private UUID worldUid;
 
@@ -91,6 +120,13 @@ public class HeroDTO implements iHero {
     @Setter
     @Builder.Default
     private LocalDateTime lastPlayDate = LocalDateTime.now();
+
+    @Builder.Default
+    private Backpack inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"));
+
+    @NotNull
+    @Builder.Default
+    private final List<Buff> buffs = new ArrayList<>(9);
 
     @Setter
     @Builder.Default
@@ -349,5 +385,9 @@ public class HeroDTO implements iHero {
     @Override
     public int hashCode() {
         return Objects.hash(getHeroName(), getWorldUid(), getOwnerUid());
+    }
+
+    public void setInventory(Backpack inventory) {
+        this.inventory = inventory;
     }
 }

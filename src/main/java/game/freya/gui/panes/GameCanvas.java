@@ -9,12 +9,14 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
+import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.MouseInfo;
@@ -153,18 +155,26 @@ public class GameCanvas extends FoxCanvas {
 
             try {
                 drawNextFrame();
+
+                // при успешной отрисовке:
+                if (getDrawErrors() > 0) {
+                    decreaseDrawErrorCount();
+                }
             } catch (Exception e) {
-                throwExceptionAndYield(e);
+                try {
+                    throwExceptionAndYield(e);
+                } catch (GlobalServiceException gse) {
+                    if (gse.getErrorCode().equals(ErrorMessages.DRAW_ERROR.getErrorCode())) {
+                        stop();
+                    } else {
+                        log.error("Непредвиденная ошибка при отрисовке игры: {}", ExceptionUtils.getFullExceptionMessage(gse));
+                    }
+                }
             }
 
             // если текущий FPS превышает лимит:
             if (Constants.isFpsLimited()) {
                 doDrawDelay();
-            }
-
-            // при успешной отрисовке:
-            if (getDrawErrors() > 0) {
-                decreaseDrawErrorCount();
             }
         }
         log.info("Thread of Game canvas is finalized.");
@@ -173,7 +183,7 @@ public class GameCanvas extends FoxCanvas {
     /**
      * Основной цикл отрисовки игрового окна.
      */
-    private void drawNextFrame() {
+    private void drawNextFrame() throws AWTException {
         do {
             do {
                 Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();

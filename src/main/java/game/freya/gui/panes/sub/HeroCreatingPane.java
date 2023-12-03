@@ -17,7 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
@@ -31,6 +33,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
 
@@ -40,11 +43,32 @@ public class HeroCreatingPane extends JPanel {
     private static final float rgb = 0.18f;
     private final Color hnrc = new Color(rgb, rgb, rgb, 0.75f);
     private transient BufferedImage snap;
+    private JTextField ntf;
+    private boolean isEditMode = false;
+
     @Getter
     private UUID worldUid;
+
     @Getter
     private String heroName;
-    private JTextField ntf;
+
+    @Getter
+    private HeroPeriferiaType chosenPeriferiaType;
+
+    @Getter
+    private HeroCorpusType chosenCorpusType;
+
+    @Getter
+    private short periferiaSize;
+
+    private JComboBox<HeroPeriferiaType> perChooser;
+    private JComboBox<HeroCorpusType> corpChooser;
+    private JZlider perSlider;
+    private FButton bsb, sbc;
+
+    @Getter
+    private Color baseColor = Color.GREEN, secondColor = Color.DARK_GRAY;
+    private HeroDTO editableHero;
 
     public HeroCreatingPane(FoxCanvas canvas, GameController gameController) {
         setName("Hero creating pane");
@@ -68,7 +92,9 @@ public class HeroCreatingPane extends JPanel {
 
                 add(Box.createVerticalStrut(6));
                 add(new SubPane("Имя героя") {{
-                    ntf = new JTextField(heroName, 20);
+                    ntf = new JTextField(heroName, 20) {{
+                        setEditable(!isEditMode);
+                    }};
                     ntf.addKeyListener(new KeyAdapter() {
                         @Override
                         public void keyReleased(KeyEvent e) {
@@ -79,35 +105,83 @@ public class HeroCreatingPane extends JPanel {
                 }});
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Тип корпуса") {{
-                    add(new JComboBox<>(HeroCorpusType.values()));
+                    corpChooser = new JComboBox<>(HeroCorpusType.values()) {{
+                        addActionListener(new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                chosenCorpusType = (HeroCorpusType) corpChooser.getSelectedItem();
+                            }
+                        });
+                    }};
+                    add(corpChooser);
                 }});
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Тип периферии") {{
-                    add(new JComboBox<>(HeroPeriferiaType.values()));
+                    perChooser = new JComboBox<>(HeroPeriferiaType.values()) {{
+                        addActionListener(new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                chosenPeriferiaType = (HeroPeriferiaType) perChooser.getSelectedItem();
+                            }
+                        });
+                    }};
+                    add(perChooser);
                 }});
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Размер периферии") {{
-                    add(new JZlider("periferiaSizer") {{
-                        setMinimum(0);
-                        setMaximum(100);
+                    perSlider = new JZlider("periferiaSizer") {{
                         setMinorTickSpacing(5);
                         setMajorTickSpacing(25);
                         setValue(50);
+                        setPaintTicks(false);
 
                         setBackground(Color.DARK_GRAY);
                         setForeground(Color.WHITE);
                         setFont(Constants.GAME_FONT_01);
 
-                        setPaintTicks(false);
-                    }});
+                        addChangeListener(e -> periferiaSize = (short) getValue());
+                    }};
+                    add(perSlider);
                 }});
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Основной цвет") {{
-                    add(new FButton("choose"));
+                    bsb = new FButton("choose") {{
+                        setBackground(baseColor);
+                        addActionListener(new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                JColorChooser bcc = new JColorChooser(baseColor);
+                                JOptionPane.showMessageDialog(canvas, Arrays.stream(bcc.getChooserPanels())
+                                                .filter(p -> p.getDisplayName().equalsIgnoreCase("rgb")).findFirst()
+                                                .orElse(bcc.getChooserPanels()[0]), "Выбор основного цвета героя:",
+                                        JOptionPane.QUESTION_MESSAGE);
+
+                                baseColor = bcc.getColor();
+                                setBackground(baseColor);
+                            }
+                        });
+                    }};
+                    add(bsb);
                 }});
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Дополнительный цвет") {{
-                    add(new FButton("choose"));
+                    sbc = new FButton("choose") {{
+                        setBackground(secondColor);
+                        addActionListener(new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                JColorChooser bcc = new JColorChooser(secondColor);
+                                JOptionPane.showMessageDialog(canvas, Arrays.stream(bcc.getChooserPanels())
+                                                .filter(p -> p.getDisplayName().equalsIgnoreCase("rgb")).findFirst()
+                                                .orElse(bcc.getChooserPanels()[0]), "Выбор дополнительного цвета героя:",
+                                        JOptionPane.QUESTION_MESSAGE);
+
+                                secondColor = bcc.getColor();
+                                setBackground(secondColor);
+                            }
+                        });
+                    }};
+                    add(sbc);
                 }});
             }});
 
@@ -127,12 +201,25 @@ public class HeroCreatingPane extends JPanel {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            worldUid = gameController.getCurrentWorldUid();
-                            HeroDTO existsHero = gameController.findHeroByNameAndWorld(getHeroName(), worldUid);
-                            if (existsHero != null) {
-                                new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
+                            if (!isEditMode) {
+                                worldUid = gameController.getCurrentWorldUid();
+                                HeroDTO existsHero = gameController.findHeroByNameAndWorld(getHeroName(), worldUid);
+                                if (existsHero != null) {
+                                    new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
+                                } else {
+                                    ((MenuCanvas) canvas).saveNewHeroAndPlay(HeroCreatingPane.this);
+                                }
                             } else {
-                                ((MenuCanvas) canvas).saveNewHeroAndPlay(HeroCreatingPane.this);
+                                editableHero.setBaseColor(baseColor);
+                                editableHero.setSecondColor(secondColor);
+                                editableHero.setCorpusType(chosenCorpusType);
+                                editableHero.setPeriferiaType(chosenPeriferiaType);
+                                editableHero.setPeriferiaSize(periferiaSize);
+
+                                gameController.justSaveAnyHero(editableHero);
+
+                                HeroCreatingPane.this.setVisible(false);
+                                canvas.getHeroesListPane().setVisible(true);
                             }
                         }
                     });
@@ -203,5 +290,27 @@ public class HeroCreatingPane extends JPanel {
             ntf.requestFocusInWindow();
             ntf.selectAll();
         }
+    }
+
+    public void load(HeroDTO template) {
+        this.isEditMode = true;
+        this.editableHero = template;
+        this.ntf.setEditable(false);
+        this.ntf.setEnabled(false);
+
+        this.baseColor = template.getBaseColor();
+        this.sbc.setBackground(baseColor);
+
+        this.secondColor = template.getSecondColor();
+        this.sbc.setBackground(secondColor);
+
+        this.chosenCorpusType = template.getCorpusType();
+        this.corpChooser.setSelectedItem(chosenCorpusType);
+
+        this.chosenPeriferiaType = template.getPeriferiaType();
+        this.perChooser.setSelectedItem(chosenPeriferiaType);
+
+        this.periferiaSize = template.getPeriferiaSize();
+        this.perSlider.setValue(periferiaSize);
     }
 }

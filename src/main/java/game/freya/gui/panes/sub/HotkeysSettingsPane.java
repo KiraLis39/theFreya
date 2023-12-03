@@ -32,38 +32,41 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener {
         setName("Hotkeys settings pane");
         setVisible(false);
         setDoubleBuffered(false);
-        setIgnoreRepaint(true);
+//        setIgnoreRepaint(true);
 
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 128, 128));
         setLayout(new BorderLayout(3, 3));
 
-        add(new SubPane("Горячие клавиши:") {{
-            setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 9, 9));
+        add(new SubPane(null) {{
+            setBorder(new EmptyBorder(0, 0, 0, 32));
+            add(new SubPane("Горячие клавиши:") {{
+                setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 9, 9));
 
-            for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
-                add(new SubPane(key.getDescription()) {{
-                    setOpaque(false);
-                    setIgnoreRepaint(true);
-                    add(new JTextField((key.getMask() != 0
-                            ? (InputEvent.getModifiersExText(key.getMask()) + " + ") : "")
-                            + KeyEvent.getKeyText(key.getEvent()), canvas.getWidth() / 3 / 24 - 6) {{
-                        setHorizontalAlignment(CENTER);
-                        setDoubleBuffered(false);
-                        setFocusable(false);
-                        setEditable(false);
-                        setBackground(Color.DARK_GRAY);
-                        setForeground(Color.WHITE);
-                        setFont(Constants.DEBUG_FONT);
-                        setBorder(BorderFactory.createRaisedSoftBevelBorder());
-                        addMouseListener(HotkeysSettingsPane.this);
+                for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
+                    add(new SubPane(key.getDescription()) {{
+                        setOpaque(false);
+                        setIgnoreRepaint(true);
+                        add(new JTextField((key.getMask() != 0
+                                ? (InputEvent.getModifiersExText(key.getMask()) + " + ") : "")
+                                + KeyEvent.getKeyText(key.getEvent()), canvas.getWidth() / 3 / 24 - 6) {{
+                            setHorizontalAlignment(CENTER);
+                            setDoubleBuffered(false);
+                            setFocusable(false);
+                            setEditable(false);
+                            setBackground(Color.DARK_GRAY);
+                            setForeground(Color.WHITE);
+                            setFont(Constants.DEBUG_FONT);
+                            setBorder(BorderFactory.createRaisedSoftBevelBorder());
+                            addMouseListener(HotkeysSettingsPane.this);
+                        }});
                     }});
-                }});
-            }
+                }
+            }});
         }}, BorderLayout.CENTER);
 
         add(new SubPane(null) {{
+            setBorder(new EmptyBorder(3, 0, 8, 32));
             add(new FButton("По умолчанию") {{
                 setPreferredSize(new Dimension(128, 32));
 

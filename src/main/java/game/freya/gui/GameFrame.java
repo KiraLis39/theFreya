@@ -68,10 +68,11 @@ public class GameFrame implements WindowListener, WindowStateListener {
             try {
                 log.info("Logo finished await...");
                 Constants.getLogo().getEngine().join(3_000);
-                Constants.getLogo().finalLogo();
             } catch (InterruptedException ie) {
                 log.warn("Logo thread joining was interrupted: {}", ExceptionUtils.getFullExceptionMessage(ie));
                 Constants.getLogo().getEngine().interrupt();
+            } finally {
+                Constants.getLogo().finalLogo();
             }
         }
 
@@ -83,11 +84,21 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     private void checkFullscreenMode() {
         if (Constants.getUserConfig().getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
-            Constants.MON.switchFullscreen(Constants.getUserConfig().isFullscreen() ? frame : null);
             if (Constants.getUserConfig().isFullscreen()) {
+                Constants.MON.switchFullscreen(frame);
                 // говорят, лучше создавать стратегию в полноэкране:
                 frame.createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+            } else {
+                Constants.MON.switchFullscreen(null);
+                frame.setExtendedState(Frame.NORMAL);
+
+                frame.setMinimumSize(windowSize);
+                frame.setMaximumSize(windowSize);
+
+                frame.setSize(windowSize);
+                frame.setLocationRelativeTo(null);
             }
+            frame.setVisible(true);
             return;
         }
 
@@ -99,14 +110,13 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 frame.setUndecorated(true);
                 frame.setExtendedState(frame.getExtendedState() | Frame.MAXIMIZED_BOTH);
             } else {
-                frame.setUndecorated(false);
                 frame.setExtendedState(Frame.NORMAL);
+                frame.setUndecorated(false);
 
-                frame.setSize(windowSize);
                 frame.setMinimumSize(windowSize);
-                frame.setPreferredSize(windowSize);
                 frame.setMaximumSize(windowSize);
 
+                frame.setSize(windowSize);
                 frame.setLocationRelativeTo(null);
             }
 

@@ -59,7 +59,7 @@ public class WorldsListPane extends JPanel {
         WorldsListPane.this.removeAll();
 
         for (WorldDTO world : gameController.findAllWorldsByNetworkAvailable(false)) {
-            add(new SubPane(world.getTitle()) {{
+            add(new SubPane("Мир: " + world.getTitle()) {{
                 setLayout(new BorderLayout(1, 1));
                 add(new SubPane(null) {{
                     setDoubleBuffered(false);
@@ -145,7 +145,10 @@ public class WorldsListPane extends JPanel {
                         }
                     }});
 
-                    add(new ZLabel("Создано: " + world.getCreateDate().format(Constants.DATE_FORMAT_3), null), BorderLayout.SOUTH);
+                    add(new ZLabel("Создан: " + world.getCreateDate().format(Constants.DATE_FORMAT_3), null) {{
+                        setFont(Constants.INFO_FONT);
+                        setForeground(Color.GRAY);
+                    }}, BorderLayout.SOUTH);
                 }}, BorderLayout.CENTER);
 
                 add(new JPanel() {{

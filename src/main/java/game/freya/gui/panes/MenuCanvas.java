@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
@@ -181,6 +182,11 @@ public class MenuCanvas extends FoxCanvas {
                         getNetworkListPane().repaint();
                     }
                 }
+
+                // при успешной отрисовке:
+                if (getDrawErrors() > 0) {
+                    decreaseDrawErrorCount();
+                }
             } catch (Exception e) {
                 throwExceptionAndYield(e);
             }
@@ -188,16 +194,11 @@ public class MenuCanvas extends FoxCanvas {
             if (Constants.isFpsLimited()) {
                 doDrawDelay();
             }
-
-            // при успешной отрисовке:
-            if (getDrawErrors() > 0) {
-                decreaseDrawErrorCount();
-            }
         }
         log.info("Thread of Menu canvas is finalized.");
     }
 
-    private void drawNextFrame() {
+    private void drawNextFrame() throws AWTException {
         do {
             do {
                 Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
@@ -307,8 +308,7 @@ public class MenuCanvas extends FoxCanvas {
                 getWorldsListPane().setVisible(false);
                 getWorldCreatingPane().setVisible(true);
             } else if (getHeroesListPane().isVisible()) {
-                getHeroesListPane().setVisible(false);
-                getHeroCreatingPane().setVisible(true);
+                openCreatingNewHeroPane(null);
             } else if (getNetworkListPane().isVisible()) {
                 getNetworkListPane().setVisible(false);
                 getNetworkCreatingPane().setVisible(true);
@@ -372,6 +372,14 @@ public class MenuCanvas extends FoxCanvas {
 
         if (isExitButtonOver()) {
             onExitBack(this);
+        }
+    }
+
+    public void openCreatingNewHeroPane(HeroDTO template) {
+        getHeroesListPane().setVisible(false);
+        getHeroCreatingPane().setVisible(true);
+        if (template != null) {
+            ((HeroCreatingPane) getHeroCreatingPane()).load(template);
         }
     }
 
@@ -566,6 +574,11 @@ public class MenuCanvas extends FoxCanvas {
         gameController.saveNewHero(HeroDTO.builder()
                 .uid(UUID.randomUUID())
                 .heroName(newHeroTemplate.getHeroName())
+                .baseColor(newHeroTemplate.getBaseColor())
+                .secondColor(newHeroTemplate.getSecondColor())
+                .corpusType(newHeroTemplate.getChosenCorpusType())
+                .periferiaType(newHeroTemplate.getChosenPeriferiaType())
+                .periferiaSize(newHeroTemplate.getPeriferiaSize())
                 .ownerUid(gameController.getCurrentPlayerUid())
                 .worldUid(newHeroTemplate.getWorldUid())
                 .createDate(LocalDateTime.now())

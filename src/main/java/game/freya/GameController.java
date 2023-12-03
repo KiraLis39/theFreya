@@ -41,6 +41,7 @@ import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
+import java.awt.AWTException;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -90,8 +91,18 @@ public class GameController extends GameControllerBase {
     public void init() throws IOException {
         try {
             UIManager.setLookAndFeel(new NimbusLookAndFeel());
+
+            // UIManager.put("Button.font", FONT);
+            // UIManager.put("Label.font", FONT);
+            // UIManager.put("OptionPane.cancelButtonText", "nope");
+            // UIManager.put("OptionPane.okButtonText", "yup");
+            // UIManager.put("OptionPane.inputDialogTitle", "Введите свой никнейм:");
         } catch (Exception e) {
-            log.warn("Couldn't get specified look and feel, for reason: {}", ExceptionUtils.getFullExceptionMessage(e));
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ex) {
+                log.warn("Couldn't get specified look and feel, for reason: {}", ExceptionUtils.getFullExceptionMessage(ex));
+            }
         }
 
         // показываем лого:
@@ -157,11 +168,15 @@ public class GameController extends GameControllerBase {
     }
 
     public void exitTheGame(WorldDTO world) {
+        this.exitTheGame(world, -1);
+    }
+
+    public void exitTheGame(WorldDTO world, int errCode) {
         saveTheGame(world);
         closeConnections();
 
         log.info("The game is finished!");
-        System.exit(0);
+        System.exit(errCode > -1 ? errCode : 0);
     }
 
     private void closeConnections() {
@@ -306,6 +321,10 @@ public class GameController extends GameControllerBase {
 
     public void saveNewHero(HeroDTO aNewHeroDto) {
         playedHeroesService.addCurrentHero(heroService.saveHero(aNewHeroDto));
+    }
+
+    public void justSaveAnyHero(HeroDTO aNewHeroDto) {
+        heroService.saveHero(aNewHeroDto);
     }
 
     public void deleteWorld(UUID worldUid) {
@@ -552,7 +571,7 @@ public class GameController extends GameControllerBase {
         return worldService.getCurrentWorld().getGameMap();
     }
 
-    public void getDrawCurrentWorld(Graphics2D v2D) {
+    public void getDrawCurrentWorld(Graphics2D v2D) throws AWTException {
         worldService.getCurrentWorld().draw(v2D);
     }
 

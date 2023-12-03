@@ -175,6 +175,11 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             hero = HeroDTO.builder()
                     .uid(readed.heroUuid())
                     .heroName(readed.heroName())
+                    .baseColor(readed.baseColor())
+                    .secondColor(readed.secondColor())
+                    .corpusType(readed.corpusType())
+                    .periferiaType(readed.periferiaType())
+                    .periferiaSize(readed.periferiaSize())
                     .type(readed.heroType())
                     .power(readed.power())
                     .speed(readed.speed())
@@ -199,8 +204,6 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                 log.error("Проблема при парсинге инвентаря Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
             }
             try {
-//                JsonNode buffTree = mapper.readTree(readed.buffsJson());
-//                buffTree.forEach(node -> hero.addBuff(mapper.convertValue(node, Buff.class)));
                 for (Buff buff : mapper.readValue(readed.buffsJson(), Buff[].class)) {
                     hero.addBuff(buff);
                 }

@@ -13,11 +13,13 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.awt.AWTException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.ImageCapabilities;
 import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.image.BufferedImage;
@@ -97,9 +99,6 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     @Override
     public void init(GameCanvas canvas, GameController controller) {
         this.canvas = canvas;
-
-//        this.gameMap = new BufferedImage(
-//                dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM, BufferedImage.TYPE_INT_RGB);
         this.gameController = controller;
 
         log.info("World {} initialized successfully", getTitle());
@@ -112,7 +111,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
      * @param v2D volatile image холста
      */
     @Override
-    public void draw(Graphics2D v2D) {
+    public void draw(Graphics2D v2D) throws AWTException {
         Rectangle camera = canvas.getViewPort().getBounds();
 
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
@@ -130,68 +129,75 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
                 canvas);
     }
 
-    private VolatileImage repaintMap(Rectangle camera) {
+    private VolatileImage repaintMap(Rectangle camera) throws AWTException {
         final Color textColor = new Color(58, 175, 217, 191);
         final Color linesColor = new Color(47, 84, 3, 64);
         final Color backColor = new Color(31, 31, 31);
         final String scobe = ")";
 
-        Graphics2D m2D;
-        if (this.gameMap == null || this.gameMap.validate(canvas.getGraphicsConfiguration()) == VolatileImage.IMAGE_INCOMPATIBLE) {
-            this.gameMap = canvas.createVolatileImage(
-                    dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM);
+        if (this.gameMap == null) {
+            this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
+                    dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
         }
-        if (this.gameMap.validate(canvas.getGraphicsConfiguration()) == VolatileImage.IMAGE_RESTORED) {
-            m2D = this.gameMap.createGraphics();
+
+        Graphics2D v2D;
+        int valid = this.gameMap.validate(canvas.getGraphicsConfiguration());
+        while (valid == VolatileImage.IMAGE_INCOMPATIBLE) {
+            this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
+                    dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
+            valid = this.gameMap.validate(canvas.getGraphicsConfiguration());
+        }
+        if (valid == VolatileImage.IMAGE_RESTORED) {
+            v2D = this.gameMap.createGraphics();
         } else {
-            m2D = (Graphics2D) this.gameMap.getGraphics();
+            v2D = (Graphics2D) this.gameMap.getGraphics();
         }
 
         // re-draw map:
-        Constants.RENDER.setRender(m2D, FoxRender.RENDER.HIGH,
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
-        m2D.setColor(backColor);
-        m2D.fillRect(0, 0, camera.width, camera.height);
+        v2D.setColor(backColor);
+        v2D.fillRect(0, 0, camera.width, camera.height);
 
         int n = 1;
-        m2D.setStroke(new BasicStroke(2f));
+        v2D.setStroke(new BasicStroke(2f));
         for (int i = Constants.MAP_CELL_DIM; i <= gameMap.getWidth(); i += Constants.MAP_CELL_DIM) {
 
             // draw numbers of rows and columns:
             if (Constants.isDebugInfoVisible()) {
                 String ns = n + scobe;
-                m2D.setColor(textColor);
-                m2D.drawString(ns, i - 26, 12);
-                m2D.drawString(ns, i - 34, gameMap.getHeight() - 12);
+                v2D.setColor(textColor);
+                v2D.drawString(ns, i - 26, 12);
+                v2D.drawString(ns, i - 34, gameMap.getHeight() - 12);
 
-                m2D.drawString(ns, 6, i - 16);
-                m2D.drawString(ns, gameMap.getWidth() - 24, i - 26);
+                v2D.drawString(ns, 6, i - 16);
+                v2D.drawString(ns, gameMap.getWidth() - 24, i - 26);
             }
 
             // draw map grid cells:
-            m2D.setColor(linesColor);
-            m2D.drawLine(i, 0, i, gameMap.getHeight());
-            m2D.drawLine(0, i, gameMap.getWidth(), i);
+            v2D.setColor(linesColor);
+            v2D.drawLine(i, 0, i, gameMap.getHeight());
+            v2D.drawLine(0, i, gameMap.getWidth(), i);
 
             n++;
         }
 
         // рисуем центральные оси:
         if (Constants.isDebugInfoVisible()) {
-            m2D.setColor(Color.RED);
-            m2D.setStroke(new BasicStroke(2f));
-            m2D.drawLine(0, gameMap.getHeight() / 2, gameMap.getWidth(), gameMap.getHeight() / 2);
-            m2D.drawLine(gameMap.getWidth() / 2, 0, gameMap.getWidth() / 2, gameMap.getHeight());
+            v2D.setColor(Color.RED);
+            v2D.setStroke(new BasicStroke(2f));
+            v2D.drawLine(0, gameMap.getHeight() / 2, gameMap.getWidth(), gameMap.getHeight() / 2);
+            v2D.drawLine(gameMap.getWidth() / 2, 0, gameMap.getWidth() / 2, gameMap.getHeight());
         }
 
         // рисуем окружение на карте:
-        drawEnvironments(m2D, camera);
+        drawEnvironments(v2D, camera);
 
         // рисуем игроков из контроллера на карте:
-        gameController.drawHeroes(m2D, canvas);
+        gameController.drawHeroes(v2D, canvas);
 
-        m2D.dispose();
+        v2D.dispose();
 
         // return drown result:
         return this.gameMap;

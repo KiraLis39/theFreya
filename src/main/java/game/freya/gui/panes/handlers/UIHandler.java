@@ -12,16 +12,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import java.awt.AWTException;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.ImageCapabilities;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
-import java.awt.image.BufferedImage;
+import java.awt.image.VolatileImage;
 
 import static game.freya.config.Constants.ONE_TURN_PI;
 
@@ -32,7 +34,7 @@ public final class UIHandler {
     private static final int minimapDim = 2048;
     private static final int halfDim = (int) (minimapDim / 2d);
     private GameController gameController;
-    private BufferedImage minimapImage;
+    private VolatileImage minimapImage;
     private Rectangle minimapRect;
     private Rectangle minimapDebugRect, upLeftPaneRect, upCenterPaneRect, upRightPaneRect, downCenterPaneRect;
     private double heightMemory;
@@ -41,7 +43,6 @@ public final class UIHandler {
     @Autowired
     public void setGameController(@Lazy GameController gameController) {
         this.gameController = gameController;
-        this.minimapImage = new BufferedImage(minimapDim, minimapDim, BufferedImage.TYPE_INT_ARGB);
 
         startGameButtonText = "Начать игру";
         coopPlayButtonText = "Игра по сети";
@@ -52,7 +53,7 @@ public final class UIHandler {
         repingButtonText = "Обновить";
     }
 
-    public void drawUI(Graphics2D g2D, FoxCanvas canvas) {
+    public void drawUI(Graphics2D g2D, FoxCanvas canvas) throws AWTException {
         if (minimapRect == null || heightMemory != canvas.getBounds().getHeight()) {
             recreateRectangles(canvas);
         }
@@ -98,34 +99,18 @@ public final class UIHandler {
 
             // down left minimap:
             if (!Constants.isPaused()) {
-                updateMiniMap();
+                updateMiniMap(canvas);
 
                 // draw minimap:
                 // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2), ...
                 Composite cw = g2D.getComposite();
                 g2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
-                g2D.drawImage(minimapImage, minimapRect.x + 1, minimapRect.y + 1,
-                        minimapRect.width - 2, minimapRect.height - 2, null);
+                g2D.drawImage(minimapImage, minimapRect.x, minimapRect.y, minimapRect.width, minimapRect.height, null);
                 g2D.setComposite(cw);
 
                 if (Constants.isDebugInfoVisible()) {
                     g2D.setColor(Color.CYAN);
                     g2D.draw(minimapRect);
-
-                    // надпись на миникарте "Не реализовано ещё":
-//                    g2D.setFont(Constants.LITTLE_UNICODE_FONT);
-//                    g2D.drawString(Constants.getNotRealizedString(),
-//                            (int) (minimapRect.x + (minimapRect.width / 2d - Constants.FFB
-//                                    .getStringBounds(g2D, Constants.getNotRealizedString()).getWidth() / 2)),
-//                            minimapRect.y + minimapRect.height / 2);
-                } else {
-                    g2D.setStroke(new BasicStroke(1.75f));
-                    g2D.setColor(Color.BLACK);
-                    g2D.draw(minimapRect);
-
-                    g2D.setStroke(new BasicStroke(0.25f));
-                    g2D.setColor(Color.GRAY);
-                    g2D.draw(minimapDebugRect);
                 }
             } else {
                 canvas.drawPauseMode(g2D);
@@ -250,16 +235,30 @@ public final class UIHandler {
         g2D.drawString(canvas.getBackButtonText(), canvas.getExitButtonRect().x, canvas.getExitButtonRect().y + 18);
     }
 
-    private void updateMiniMap() {
+    private void updateMiniMap(FoxCanvas canvas) throws AWTException {
         Point2D.Double myPos = gameController.getCurrentHeroPosition();
         MovingVector cVector = gameController.getCurrentHeroVector();
         int srcX = (int) (myPos.x - halfDim);
         int srcY = (int) (myPos.y - halfDim);
 
+        Graphics2D m2D;
+        if (minimapImage == null || minimapImage.validate(Constants.getGraphicsConfiguration()) == VolatileImage.IMAGE_INCOMPATIBLE) {
+            log.info("Recreating new minimap volatile image by incompatible...");
+            minimapImage = canvas.createVolatileImage(minimapDim, minimapDim, new ImageCapabilities(true));
+        }
+        if (minimapImage.validate(Constants.getGraphicsConfiguration()) == VolatileImage.IMAGE_RESTORED) {
+            log.info("Awaits while minimap volatile image is restored...");
+            m2D = this.minimapImage.createGraphics();
+        } else {
+            m2D = (Graphics2D) this.minimapImage.getGraphics();
+            m2D.clearRect(0, 0, minimapImage.getWidth(), minimapImage.getHeight());
+        }
+
         // draw minimap:
-        Graphics2D m2D = (Graphics2D) minimapImage.getGraphics();
-        m2D.clearRect(0, 0, minimapImage.getWidth(), minimapImage.getHeight());
-        Constants.RENDER.setRender(m2D, FoxRender.RENDER.LOW);
+        Constants.RENDER.setRender(m2D, FoxRender.RENDER.OFF);
+
+//        v2D.setColor(backColor);
+//        v2D.fillRect(0, 0, camera.width, camera.height);
 
         // отображаем себя на миникарте:
         AffineTransform grTrMem = m2D.getTransform();
@@ -268,15 +267,15 @@ public final class UIHandler {
         m2D.setTransform(grTrMem);
 
         // отображаем других игроков на миникарте:
-        m2D.setColor(Color.YELLOW);
         for (HeroDTO connectedHero : gameController.getConnectedHeroes()) {
             if (gameController.getCurrentHeroUid().equals(connectedHero.getUid())) {
                 continue;
             }
             int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getPosition().x));
             int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getPosition().y));
-            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
-            m2D.fillRect(otherHeroPosX - 6, otherHeroPosY - 6, 12, 12);
+//            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
+            m2D.setColor(connectedHero.getBaseColor());
+            m2D.fillRect(otherHeroPosX - 16, otherHeroPosY - 16, 32, 32);
         }
 
         // сканируем все сущности указанного квадранта:
@@ -290,6 +289,15 @@ public final class UIHandler {
                         (int) (entity.getPosition().x - 3),
                         (int) (entity.getPosition().y - 3),
                         6, 6));
+
+        m2D.setStroke(new BasicStroke(5f));
+        m2D.setPaint(Color.WHITE);
+        m2D.drawRect(3, 3, minimapDim - 7, minimapDim - 7);
+
+        m2D.setStroke(new BasicStroke(7f));
+        m2D.setPaint(Color.GRAY);
+        m2D.drawRect(48, 48, minimapDim - 96, minimapDim - 96);
+
         m2D.dispose();
     }
 

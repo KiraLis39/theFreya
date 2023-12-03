@@ -3,6 +3,7 @@ package game.freya.gui.panes.sub;
 import game.freya.config.Constants;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.CheckBokz;
+import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
@@ -11,22 +12,28 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.DisplayMode;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class VideoSettingsPane extends JPanel {
+    private final List<DisplayMode> modes = new ArrayList<>(List.of(Constants.MON.getDevice().getDisplayModes()));
     private transient BufferedImage snap;
-
     private JZlider zlider;
     private CheckBokz cBox;
+    private JComboBox<DisplayMode> displayModeBox;
 
     public VideoSettingsPane(FoxCanvas canvas) {
         setName("Video settings pane");
@@ -82,40 +89,64 @@ public class VideoSettingsPane extends JPanel {
             }});
 
             add(Box.createVerticalStrut(12));
-            add(new SubPane(null) {{
+            add(new SubPane("Мультибуффер") {{
                 setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
 
-                add(new ZLabel("Использовать мультибуфер", null) {{
-                    setVerticalAlignment(CENTER);
-                }});
+                add(new SubPane(null) {{
+                    add(new ZLabel("Использовать", null) {{
+                        setVerticalAlignment(CENTER);
+                    }});
 
-                add(new CheckBokz("useMultiBufferCheck") {{
-                    setSelected(Constants.getUserConfig().isMultiBufferEnabled());
-                    setAction(new AbstractAction() {
+                    add(new CheckBokz("useMultiBufferCheck") {{
+                        setSelected(Constants.getUserConfig().isMultiBufferEnabled());
+                        setAction(new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                Constants.getUserConfig().setMultiBufferEnabled(isSelected());
+                            }
+                        });
+                    }}, BorderLayout.EAST);
+                }}, BorderLayout.NORTH);
+
+                add(new SubPane(null) {{
+                    add(new ZLabel("Количество буферов", null) {{
+                        setVerticalAlignment(CENTER);
+                    }});
+                    add(new JSpinner(new SpinnerNumberModel(Constants.getUserConfig().getBufferedDeep(), 1,
+                            Constants.getUserConfig().getMaxBufferedDeep(), 1) {{
+                        setBackground(Color.DARK_GRAY);
+                        setForeground(Color.WHITE);
+                    }}
+                    ) {{
+                        setBorder(null);
+                        setFocusable(false);
+                        setBackground(Color.DARK_GRAY);
+                        setForeground(Color.WHITE);
+
+                        addChangeListener(e -> Constants.getUserConfig().setBufferedDeep(Integer.parseInt(getValue().toString())));
+                    }}, BorderLayout.EAST);
+                }}, BorderLayout.SOUTH);
+            }});
+
+            modes.removeIf(nextMode -> nextMode.getRefreshRate() < 60 || nextMode.getWidth() < 1024);
+            displayModeBox = new JComboBox<>(modes.toArray(new DisplayMode[0])) {{
+                setBorder(null);
+                setSelectedItem(Constants.MON.getDevice().getDisplayMode());
+            }};
+
+            add(new SubPane("Экран") {{
+                add(displayModeBox);
+                add(new FButton("Применить") {{
+                    addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            Constants.getUserConfig().setMultiBufferEnabled(isSelected());
+                            log.info("Display mode {} not realized yet.", displayModeBox.getSelectedItem());
                         }
                     });
-                }}, BorderLayout.EAST);
+                }}, BorderLayout.SOUTH);
             }});
 
             add(Box.createVerticalStrut(6));
-
-            add(new SubPane(null) {{
-                setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
-
-                add(new ZLabel("Размер мультибуфера", null) {{
-                    setVerticalAlignment(CENTER);
-                }});
-                add(new JSpinner(new SpinnerNumberModel(
-                        Constants.getUserConfig().getBufferedDeep(), 1, Constants.getUserConfig().getMaxBufferedDeep(), 1)
-                ) {{
-                    setBorder(null);
-                    setFocusable(false);
-                    addChangeListener(e -> Constants.getUserConfig().setBufferedDeep(Integer.parseInt(getValue().toString())));
-                }}, BorderLayout.EAST);
-            }});
 
             add(Box.createVerticalStrut(canvas.getHeight()));
         }});

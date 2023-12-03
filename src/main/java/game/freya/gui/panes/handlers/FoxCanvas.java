@@ -29,12 +29,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
+import java.awt.AWTException;
 import java.awt.BasicStroke;
 import java.awt.BufferCapabilities;
 import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
+import java.awt.ImageCapabilities;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Shape;
@@ -59,7 +61,7 @@ import static javax.swing.JLayeredPane.PALETTE_LAYER;
 @Slf4j
 // iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, KeyListener, Runnable
 public abstract class FoxCanvas extends Canvas implements iCanvas {
-    public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 333;
+    public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 250;
 
     private static final AtomicInteger frames = new AtomicInteger(0);
     private static final short rightShift = 21;
@@ -115,34 +117,47 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         this.downInfoString2 = controller.getGameConfig().getAppName().concat(" v.").concat(controller.getGameConfig().getAppVersion());
 
         this.pausedString = "- PAUSED -";
+
+        setForeground(Color.BLACK);
     }
 
     public void incrementFramesCounter() {
         frames.incrementAndGet();
     }
 
-    public void drawBackground(Graphics2D bufGraphics2D) {
-        if (getName().equals("GameCanvas")) {
-            // worldDto сам занимается отрисовкой своего volatileImage:
-            recreateGameBackImage(bufGraphics2D);
-        } else {
-            Graphics2D v2D = getValidVolatileGraphic();
-            Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
-                    Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-            repaintMenu(v2D);
-            v2D.dispose();
+    public void drawBackground(Graphics2D bufGraphics2D) throws AWTException {
+        Graphics2D v2D = getValidVolatileGraphic();
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
 
-            // draw accomplished volatile image:
-            bufGraphics2D.drawImage(this.backImage, 0, 0, this);
+        if (getName().equals("GameCanvas")) {
+            recreateGameBackImage(v2D);
+        } else {
+            repaintMenu(v2D);
         }
+
+        v2D.dispose();
+
+        // draw accomplished volatile image:
+        bufGraphics2D.drawImage(this.backImage, 0, 0, this);
     }
 
-    private Graphics2D getValidVolatileGraphic() {
-        if (this.backImage == null || isRevolatileNeeds() || validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE) {
+    private Graphics2D getValidVolatileGraphic() throws AWTException {
+        if (this.backImage == null) {
+            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+            this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
+        }
+
+        if (isRevolatileNeeds()) {
+            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+            this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
+            setRevolatileNeeds(false);
+        }
+
+        while (validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE) {
             log.debug("Recreating new volatile image by incompatible...");
             createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-            this.backImage = createVolatileImage(getWidth(), getHeight());
-            setRevolatileNeeds(false);
+            this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
         }
 
         if (validateBackImage() == VolatileImage.IMAGE_RESTORED) {
@@ -194,7 +209,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         g2D.drawString(getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
-    private void repaintMenu(Graphics2D v2D) {
+    private void repaintMenu(Graphics2D v2D) throws AWTException {
         v2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
                 0, 0, getWidth(), getHeight(), this);
 
@@ -212,7 +227,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         }
     }
 
-    private void recreateGameBackImage(Graphics2D v2D) {
+    private void recreateGameBackImage(Graphics2D v2D) throws AWTException {
         // рисуем мир:
         gameController.getDrawCurrentWorld(v2D);
 
@@ -404,13 +419,13 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
 
+        if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
+            g2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
+        }
         if (Constants.isLowFpsAlarm()) {
             g2D.setColor(Color.RED);
         } else {
             g2D.setColor(Color.GRAY);
-        }
-        if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            g2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
         }
         g2D.drawString("Delay fps: " + Constants.getDelay(), rightShift, downShift - 25);
         g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
@@ -702,7 +717,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         }
     }
 
-    protected void drawUI(Graphics2D g2D, String canvasName) {
+    protected void drawUI(Graphics2D g2D, String canvasName) throws AWTException {
         if (isShadowBackNeeds() && canvasName.equals("GameCanvas")) {
             g2D.setColor(grayBackColor);
             g2D.fillRect(0, 0, getWidth(), getHeight());
@@ -711,6 +726,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     }
 
     public void decreaseDrawErrorCount() {
+        log.info("Понижаем количество ошибок отрисовки...");
         drawErrors.decrementAndGet();
     }
 
@@ -772,16 +788,15 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     }
 
     public void throwExceptionAndYield(Exception e) {
-        // при неуспешной отрисовке
         if (drawErrors.getAndIncrement() >= 100) {
             new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
-                    "Что-то не так с графической системой. Передайте последний лог (error.*) разработчику для решения проблемы.",
-                    FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-            gameController.exitTheGame(null);
-            throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
-        } else {
-            log.warn("Canvas draw bs exception ({}): {}", drawErrors.get(), ExceptionUtils.getFullExceptionMessage(e));
-            Thread.yield();
+                    "Что-то не так с графической системой (%s). Передайте последний лог (error.*) разработчику для решения проблемы."
+                            .formatted(ExceptionUtils.getFullExceptionMessage(e)), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            if (gameController.isGameActive()) {
+                throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
+            } else {
+                gameController.exitTheGame(null, 11);
+            }
         }
     }
 
