@@ -58,13 +58,13 @@ public class HeroCreatingPane extends JPanel {
     private String heroName;
 
     @Getter
-    private HeroPeriferiaType chosenPeriferiaType;
+    private HeroPeriferiaType chosenPeriferiaType = HeroPeriferiaType.COMPACT;
 
     @Getter
-    private HeroCorpusType chosenCorpusType;
+    private HeroCorpusType chosenCorpusType = HeroCorpusType.COMPACT;
 
     @Getter
-    private short periferiaSize;
+    private short periferiaSize = 50;
 
     private JComboBox<HeroPeriferiaType> perChooser;
 
@@ -115,6 +115,7 @@ public class HeroCreatingPane extends JPanel {
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Тип корпуса") {{
                     corpChooser = new JComboBox<>(HeroCorpusType.values()) {{
+                        setSelectedItem(chosenCorpusType);
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
@@ -127,6 +128,7 @@ public class HeroCreatingPane extends JPanel {
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Тип периферии") {{
                     perChooser = new JComboBox<>(HeroPeriferiaType.values()) {{
+                        setSelectedItem(chosenPeriferiaType);
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
@@ -141,7 +143,7 @@ public class HeroCreatingPane extends JPanel {
                     perSlider = new JZlider("periferiaSizer") {{
                         setMinorTickSpacing(5);
                         setMajorTickSpacing(25);
-                        setValue(50);
+                        setValue(periferiaSize);
                         setPaintTicks(false);
 
                         setBackground(Color.DARK_GRAY);

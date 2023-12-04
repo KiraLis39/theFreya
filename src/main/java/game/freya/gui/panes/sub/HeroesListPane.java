@@ -56,7 +56,7 @@ public class HeroesListPane extends JPanel {
         HeroesListPane.this.removeAll();
 
         for (HeroDTO hero : gameController.getMyCurrentWorldHeroes()) {
-            add(new SubPane("Герой: " + hero.getHeroName(), hero.getType().getColor()) {{
+            add(new SubPane("Герой: " + hero.getHeroName(), hero.getHeroType().getColor()) {{
                 setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {
                     @Override
@@ -79,7 +79,7 @@ public class HeroesListPane extends JPanel {
                         + "<br>Корпус:<font color=#239BEE><b>    %s</b></font>"
                         + "<br>Периферия:<font color=#239BEE><b> %s (%d)</b></font>"
                         + "</pre></html>")
-                        .formatted(hero.getType().getDescription(), hero.getCorpusType(), hero.getPeriferiaType(), hero.getPeriferiaSize()),
+                        .formatted(hero.getHeroType().getDescription(), hero.getCorpusType(), hero.getPeriferiaType(), hero.getPeriferiaSize()),
                         null) {{
                     setVerticalAlignment(TOP);
                     setAlignmentY(TOP_ALIGNMENT);
@@ -127,7 +127,7 @@ public class HeroesListPane extends JPanel {
                                                 "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                         ) {
-                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getUid());
+                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getHeroUid());
                                             reloadHeroes(canvas);
                                         }
                                     }

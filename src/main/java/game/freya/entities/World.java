@@ -16,6 +16,7 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -30,7 +31,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "worlds")
+@Table(name = "worlds", uniqueConstraints = @UniqueConstraint(name = "uc_title_n_uid_world", columnNames = {"id", "title"}))
 public class World implements Serializable {
     @NotNull
     @Builder.Default
@@ -40,7 +41,7 @@ public class World implements Serializable {
     @Id
     @NotNull
     // @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false, insertable = false, updatable = false)
+    @Column(name = "id", nullable = false, insertable = false, updatable = false, unique = true)
     private UUID uid;
 
     @NotNull
@@ -48,7 +49,7 @@ public class World implements Serializable {
     private UUID author;
 
     @NotNull
-    @Column(name = "title", length = 64, unique = true, nullable = false)
+    @Column(name = "title", length = 64, nullable = false)
     private String title;
 
     @Builder.Default

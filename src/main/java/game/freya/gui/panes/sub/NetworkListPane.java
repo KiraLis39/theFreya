@@ -124,6 +124,7 @@ public class NetworkListPane extends WorldCreator {
                     if (address.isBlank()) {
                         return;
                     }
+                    address = address.replace(",", ".");
                     if (canvas instanceof MenuCanvas mCanvas) {
                         password = (String) new FOptionPane()
                                 .buildFOptionPane("Подключиться по IP:", "Пароль сервера:",
@@ -323,17 +324,17 @@ public class NetworkListPane extends WorldCreator {
 
             g.setColor(Color.BLACK);
             g.drawString(canvas.isPingAwait() ? pingString : connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 8,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 9,
                     getHeight() / 2);
             g.drawString(dot[dots],
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 8, getHeight() / 2 + 16);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 9, getHeight() / 2 + 16);
 
             g.setColor(Color.WHITE);
             g.drawString(canvas.isPingAwait() ? pingString : connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 8,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 9,
                     getHeight() / 2);
             g.drawString(dot[dots],
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 8, getHeight() / 2 + 16);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 9, getHeight() / 2 + 16);
 
             if (System.currentTimeMillis() - was > 1000) {
                 was = System.currentTimeMillis();
@@ -376,7 +377,7 @@ public class NetworkListPane extends WorldCreator {
                     String nad = sp.getWorld().getNetworkAddress();
                     String host = nad.contains(":") ? nad.split(":")[0] : nad;
                     Integer port = nad.contains(":") ? Integer.parseInt(nad.split(":")[1]) : null;
-                    boolean isPingOk = canvas.ping(host, port);
+                    boolean isPingOk = canvas.ping(host, port, sp.getWorld().getUid());
                     add = add.formatted(isPingOk ? "<font color=#07ad3c><b>   (доступен)" : "<font color=#a31c25><b>   (не доступен)");
                     connButton.setBackground(isPingOk ? Color.GREEN : Color.GRAY);
                     connButton.setEnabled(isPingOk);

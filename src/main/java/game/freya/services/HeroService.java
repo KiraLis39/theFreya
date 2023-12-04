@@ -1,8 +1,9 @@
 package game.freya.services;
 
-import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.Hero;
 import game.freya.entities.dto.HeroDTO;
+import game.freya.entities.dto.PlayerDTO;
+import game.freya.enums.NetDataType;
 import game.freya.mappers.HeroMapper;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.repositories.HeroRepository;
@@ -44,14 +45,14 @@ public class HeroService {
     @Transactional
     public HeroDTO saveHero(HeroDTO heroDto) {
         HeroDTO aim;
-        Optional<Hero> old = heroRepository.findByUid(heroDto.getUid());
+        Optional<Hero> old = heroRepository.findByUid(heroDto.getHeroUid());
         if (old.isPresent()) {
             aim = heroMapper.toDto(old.get());
             BeanUtils.copyProperties(heroDto, aim);
         } else {
             aim = heroDto;
         }
-        log.info("Сохранение в БД героя {} ({})", heroDto.getUid(), heroDto.getHeroName());
+        log.info("Сохранение в БД героя {} ({})", heroDto.getHeroUid(), heroDto.getHeroName());
         return heroMapper.toDto(heroRepository.save(heroMapper.toEntity(aim)));
     }
 
@@ -61,37 +62,6 @@ public class HeroService {
         return found.map(heroMapper::toDto).orElse(null);
     }
 
-    @HeroDataBuilder
-    public Hero save(ClientDataDTO data) {
-        return heroRepository.save(Hero.builder()
-                .uid(data.heroUuid())
-                .heroName(data.heroName())
-                .baseColor(data.baseColor())
-                .secondColor(data.secondColor())
-                .corpusType(data.corpusType())
-                .periferiaType(data.periferiaType())
-                .periferiaSize(data.periferiaSize())
-                .type(data.heroType())
-                .power(data.power())
-                .speed(data.speed())
-                .positionX(data.positionX())
-                .positionY(data.positionY())
-                .level(data.level())
-                .experience(data.experience())
-                .curHealth(data.hp())
-                .maxHealth(data.maxHp())
-                .hurtLevel(data.hurtLevel())
-                .buffsJson(data.buffsJson())
-                .inventoryJson(data.inventoryJson())
-                // .inGameTime(data.inGameTime())
-                .worldUid(data.worldUid())
-                .ownerUid(data.playerUid())
-                .lastPlayDate(data.lastPlayDate())
-                .createDate(data.createDate())
-                .isOnline(data.isOnline())
-                .build());
-    }
-
     public boolean isHeroExist(UUID uuid) {
         return heroRepository.existsById(uuid);
     }
@@ -99,5 +69,13 @@ public class HeroService {
     @Transactional(readOnly = true)
     public HeroDTO getByUid(UUID uuid) {
         return heroMapper.toDto(heroRepository.getReferenceById(uuid));
+    }
+
+    public ClientDataDTO heroToCli(HeroDTO hero, PlayerDTO currentPlayer, NetDataType dataType) {
+        return heroMapper.heroToCli(hero, currentPlayer, dataType);
+    }
+
+    public HeroDTO cliToHero(ClientDataDTO cli) {
+        return heroMapper.cliToHero(cli);
     }
 }

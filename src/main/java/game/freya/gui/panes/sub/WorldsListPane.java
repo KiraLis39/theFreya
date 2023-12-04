@@ -129,7 +129,7 @@ public class WorldsListPane extends JPanel {
                                 if (!isFirst) {
                                     heroes.append("<font color=#000000> | </font>");
                                 }
-                                switch (her.getType()) {
+                                switch (her.getHeroType()) {
                                     case SNIPER ->
                                             heroes.append("<font color=#f0ec22><b>").append(her.getHeroName()).append(lineEnd);
                                     case TOWER ->

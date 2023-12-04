@@ -2,6 +2,7 @@ package game.freya.net;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import game.freya.GameController;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
@@ -10,7 +11,6 @@ import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.mappers.HeroMapper;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.services.HeroService;
 import game.freya.utils.ExceptionUtils;
@@ -36,34 +36,35 @@ public class PlayedHeroesService {
 
     private final HeroService heroService;
 
-    private final HeroMapper heroMapper;
-
     private final ObjectMapper mapper;
 
     @Getter
     private volatile UUID currentHeroUid;
 
 
-    public HeroDTO getHero(ClientDataDTO data) {
+    public HeroDTO getHero(ClientDataDTO data, GameController gameController) {
         if (!heroes.containsKey(data.heroUuid())) {
-            HeroDTO dto = heroMapper.toDto(heroService.save(data));
-            dto.setOnline(data.isOnline()); // фикс transient-поля (либо добавить его уже в БД, но зачем)
+            HeroDTO dto;
+            if (heroService.isHeroExist(data.heroUuid())) {
+                dto = heroService.getByUid(data.heroUuid());
+            } else {
+                gameController.requestHeroFromServer(data.heroUuid());
+                return null;
+            }
             addHero(dto);
         }
         return heroes.get(data.heroUuid());
     }
 
     public void addHero(final HeroDTO heroDTO) {
-        if (!heroDTO.isOnline()) {
-            log.error("Почему это герой не он-лайн? Это норм?");
-        }
+        heroDTO.setOnline(true);
 
-        if (heroes.containsKey(heroDTO.getUid())) {
+        if (heroes.containsKey(heroDTO.getHeroUid())) {
             log.debug("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getOwnerUid());
-            heroes.replace(heroDTO.getUid(), heroDTO);
+            heroes.replace(heroDTO.getHeroUid(), heroDTO);
         } else {
             log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getHeroName());
-            heroes.put(heroDTO.getUid(), heroDTO);
+            heroes.put(heroDTO.getHeroUid(), heroDTO);
         }
     }
 
@@ -111,8 +112,8 @@ public class PlayedHeroesService {
         if (otherHero != null) {
             try {
                 heroService.saveHero(otherHero);
-                heroes.remove(otherHero.getUid());
-                log.info("Удалён из карты игровых героев Герой {} ({})", otherHero.getHeroName(), otherHero.getUid());
+                heroes.remove(otherHero.getHeroUid());
+                log.info("Удалён из карты игровых героев Герой {} ({})", otherHero.getHeroName(), otherHero.getHeroUid());
             } catch (Exception w) {
                 log.error("Что случилось? Выяснить: {}", ExceptionUtils.getFullExceptionMessage(w));
             }
@@ -127,7 +128,7 @@ public class PlayedHeroesService {
     }
 
     public boolean isCurrentHero(HeroDTO hero) {
-        return hero.getUid().equals(currentHeroUid);
+        return hero.getHeroUid().equals(currentHeroUid);
     }
 
     public HeroDTO getCurrentHero() {
@@ -173,7 +174,7 @@ public class PlayedHeroesService {
     }
 
     public HeroType getCurrentHeroType() {
-        return heroes.get(currentHeroUid).getType();
+        return heroes.get(currentHeroUid).getHeroType();
     }
 
     public short getCurrentHeroLevel() {
@@ -212,7 +213,7 @@ public class PlayedHeroesService {
         hero.setOnline(true);
         hero.setLastPlayDate(LocalDateTime.now());
         addHero(hero);
-        currentHeroUid = hero.getUid();
+        currentHeroUid = hero.getHeroUid();
     }
 
     public float getCurrentHeroPower() {

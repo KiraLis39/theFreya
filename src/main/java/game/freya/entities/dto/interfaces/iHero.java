@@ -6,7 +6,7 @@ import game.freya.items.logic.Buff;
 import java.util.UUID;
 
 public interface iHero extends iEntity {
-    UUID getUid();
+    UUID getHeroUid();
 
     void increaseExp(float increaseValue);
 

@@ -4,22 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fox.components.FOptionPane;
 import game.freya.GameController;
-import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.config.Constants;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.items.containers.Backpack;
-import game.freya.items.logic.Buff;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 
-import java.awt.geom.Point2D;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -76,7 +73,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.client.setReuseAddress(true);
         // this.client.setKeepAlive(true);
         this.client.setTcpNoDelay(true);
-        // this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
+        this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
 
         setDaemon(true);
         setUncaughtExceptionHandler((t, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));
@@ -96,12 +93,14 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             try (ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))) {
                 ClientDataDTO readed;
                 while ((readed = (ClientDataDTO) inps.readObject()) != null && this.client.isConnected() && !Thread.currentThread().isInterrupted()) {
-                    log.debug("Клиент {} (Герой '{}') прислал на Сервер данные: {}", clientUid, readed.heroName(), readed);
+                    log.info("Игрок {} (Герой '{}') прислал на Сервер данные {}", playerName, readed.heroName(), readed.type());
                     lastType = readed.type();
                     if (lastType.equals(NetDataType.AUTH_REQUEST)) {
                         doPlayerAuth(readed);
                     } else if (lastType.equals(NetDataType.HERO_REQUEST)) {
-                        saveConnectedHero(readed); // убедиться, что игрок online!
+                        saveConnectedHero(readed);
+                    } else if (lastType.equals(NetDataType.HERO_REMOTE_NEED)) {
+                        sendHeroDataByRequest(readed.heroUuid());
                     } else if (lastType.equals(NetDataType.PING)) {
                         doPongAnswerToClient(readed.worldUid());
                     } else if (lastType.equals(NetDataType.SYNC)) {
@@ -135,12 +134,21 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         kill();
     }
 
+    private void sendHeroDataByRequest(UUID uuid) {
+        HeroDTO found = gameController.getConnectedHeroes().stream().filter(h -> h.getHeroUid().equals(uuid)).findFirst().orElse(null);
+        if (found != null) {
+            push(gameController.heroToCli(found, gameController.getCurrentPlayer(), NetDataType.HERO_REQUEST));
+        } else {
+            log.error("Запрошен герой {}, но такого нет в карте героев Сервера! Ответ невозможен.", uuid);
+        }
+    }
+
     private void doPongAnswerToClient(UUID uuid) {
         if (uuid != null && uuid.equals(gameController.getCurrentWorldUid())) {
             // Сервер не знает в какой именно из его миров стучится клиент, который
             //  сейчас загружен или другой, на этом же порту - потому сверяем.
             log.debug("Клиент успешно пингует мир {}", uuid);
-            push(ClientDataDTO.builder().type(NetDataType.PONG).build());
+            push(ClientDataDTO.builder().type(NetDataType.PONG).worldUid(gameController.getCurrentWorldUid()).build());
         } else {
             log.debug("Пингуется не тот мир, потому WRONG_WORLD_PING");
             push(ClientDataDTO.builder().type(NetDataType.WRONG_WORLD_PING)
@@ -175,53 +183,16 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         }
     }
 
-    @HeroDataBuilder
     private void saveConnectedHero(ClientDataDTO readed) {
         HeroDTO hero;
         if (gameController.isHeroExist(readed.heroUuid())) {
             hero = gameController.getHeroByUid(readed.heroUuid());
-            hero.setOnline(true);
+            BeanUtils.copyProperties(readed, hero);
         } else {
-            hero = HeroDTO.builder()
-                    .uid(readed.heroUuid())
-                    .heroName(readed.heroName())
-                    .baseColor(readed.baseColor())
-                    .secondColor(readed.secondColor())
-                    .corpusType(readed.corpusType())
-                    .periferiaType(readed.periferiaType())
-                    .periferiaSize(readed.periferiaSize())
-                    .type(readed.heroType())
-                    .power(readed.power())
-                    .speed(readed.speed())
-                    .position(new Point2D.Double(readed.positionX(), readed.positionY()))
-                    .vector(readed.vector())
-                    .level(readed.level())
-                    .experience(readed.experience())
-                    .curHealth(readed.hp())
-                    .maxHealth(readed.maxHp())
-                    .hurtLevel(readed.hurtLevel())
-                    // .inGameTime(readed.inGameTime())
-                    .worldUid(readed.world() == null ? gameController.getCurrentWorldUid() : readed.world().getUid())
-                    .ownerUid(readed.playerUid())
-                    .lastPlayDate(readed.lastPlayDate())
-                    .createDate(readed.createDate())
-                    .isOnline(readed.isOnline())
-                    .build();
-            try {
-                Backpack bPack = mapper.readValue(readed.inventoryJson(), Backpack.class);
-                hero.setInventory(bPack);
-            } catch (Exception e) {
-                log.error("Проблема при парсинге инвентаря Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
-            }
-            try {
-                for (Buff buff : mapper.readValue(readed.buffsJson(), Buff[].class)) {
-                    hero.addBuff(buff);
-                }
-            } catch (Exception e) {
-                log.error("Проблема при парсинге бафов Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
-            }
+            hero = gameController.saveNewHero(gameController.cliToHero(readed));
         }
 
+        hero.setOnline(true);
         playedHeroesService.addHero(hero);
 
         this.isAccepted.set(true);
@@ -239,7 +210,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             log.warn("Output stream not serializable exception: {}", ExceptionUtils.getFullExceptionMessage(nse));
         } catch (SocketException se) {
             log.warn("Some connected socket error: {}", ExceptionUtils.getFullExceptionMessage(se));
-            // kill(); todo: zxc
+            kill();
         } catch (IOException io) {
             log.warn("Output stream closing error: {}", ExceptionUtils.getFullExceptionMessage(io));
         } catch (Exception e) {

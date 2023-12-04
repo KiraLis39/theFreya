@@ -150,8 +150,12 @@ public class GameCanvas extends FoxCanvas {
 
         // старт потока рисования игры:
         while (gameController.isGameActive() && !Thread.currentThread().isInterrupted()) {
-            if (!parentFrame.isActive()) {
-                Thread.yield();
+            if (!parentFrame.isActive() || getBufferStrategy() == null) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 continue;
             }
 
@@ -509,6 +513,15 @@ public class GameCanvas extends FoxCanvas {
                 stop();
             }
         }
+
+        if (gameController.isGameActive()) {
+            if (getMinimapShowRect().contains(e.getPoint())) {
+                Constants.setMinimapShowed(false);
+            }
+            if (getMinimapHideRect().contains(e.getPoint())) {
+                Constants.setMinimapShowed(true);
+            }
+        }
     }
 
     @Override
@@ -552,10 +565,12 @@ public class GameCanvas extends FoxCanvas {
             setExitButtonOver(getExitButtonRect().contains(p));
         } else { // иначе мониторим наведение на край окна для прокрутки поля:
             if (!isMovingKeyActive && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
-                isMouseLeftEdgeOver = p.getX() <= 20 && (Constants.getUserConfig().isFullscreen() || p.getX() > 1);
-                isMouseRightEdgeOver = p.getX() >= getWidth() - 20 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1);
+                isMouseLeftEdgeOver = p.getX() <= 15
+                        && (Constants.getUserConfig().isFullscreen() || p.getX() > 1) && !getMinimapHideRect().contains(p);
+                isMouseRightEdgeOver = p.getX() >= getWidth() - 15 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1);
                 isMouseUpEdgeOver = p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1);
-                isMouseDownEdgeOver = p.getY() >= getHeight() - 20 && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1);
+                isMouseDownEdgeOver = p.getY() >= getHeight() - 15
+                        && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1) && !getMinimapHideRect().contains(p);
             }
         }
     }

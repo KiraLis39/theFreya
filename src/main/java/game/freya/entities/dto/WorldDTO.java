@@ -1,7 +1,6 @@
 package game.freya.entities.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import fox.FoxRender;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iWorld;
@@ -116,9 +115,6 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     public void draw(Graphics2D v2D) throws AWTException {
         Rectangle camera = canvas.getViewPort().getBounds();
 
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
         // рисуем готовый кадр мира:
         v2D.drawImage(repaintMap(camera),
 
@@ -155,9 +151,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
             v2D = (Graphics2D) this.gameMap.getGraphics();
         }
 
-        // re-draw map:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+        v2D.setClip(0, 0, camera.width, camera.height);
 
         v2D.setColor(backColor);
         v2D.fillRect(0, 0, camera.width, camera.height);
@@ -193,11 +187,17 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
             v2D.drawLine(gameMap.getWidth() / 2, 0, gameMap.getWidth() / 2, gameMap.getHeight());
         }
 
+//        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
+//                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+
         // рисуем окружение на карте:
         drawEnvironments(v2D, camera);
 
         // рисуем игроков из контроллера на карте:
         gameController.drawHeroes(v2D, canvas);
+
+        // рисуем миникарту:
+
 
         v2D.dispose();
 

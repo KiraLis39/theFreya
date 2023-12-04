@@ -151,9 +151,13 @@ public class MenuCanvas extends FoxCanvas {
         }
 
         this.isMenuActive = true;
-        while (isMenuActive) {
+        while (isMenuActive && !Thread.currentThread().isInterrupted()) {
             if (!parentFrame.isActive() || getBufferStrategy() == null) {
-                Thread.yield();
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 continue;
             }
 
@@ -575,7 +579,7 @@ public class MenuCanvas extends FoxCanvas {
     public void saveNewHeroAndPlay(HeroCreatingPane newHeroTemplate) {
         // сохраняем нового героя и проставляем как текущего:
         gameController.saveNewHero(HeroDTO.builder()
-                .uid(UUID.randomUUID())
+                .heroUid(UUID.randomUUID())
                 .heroName(newHeroTemplate.getHeroName())
                 .baseColor(newHeroTemplate.getBaseColor())
                 .secondColor(newHeroTemplate.getSecondColor())
@@ -586,6 +590,15 @@ public class MenuCanvas extends FoxCanvas {
                 .worldUid(newHeroTemplate.getWorldUid())
                 .createDate(LocalDateTime.now())
                 .build());
+
+        // если подключение к Серверу уже закрылось пока мы собирались:
+        if (gameController.isCurrentWorldIsNetwork() && !gameController.isServerIsOpen()) {
+            log.warn("Сервер уже закрыт. Требуется повторное подключение.");
+            getHeroCreatingPane().setVisible(false);
+            getHeroesListPane().setVisible(false);
+            getNetworkListPane().setVisible(true);
+            return;
+        }
 
         playWithThisHero(gameController.getCurrentHero());
     }

@@ -5,7 +5,6 @@ import game.freya.entities.World;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
-import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
 import game.freya.enums.NetDataType;
 import lombok.Builder;
@@ -35,7 +34,6 @@ public record ClientDataDTO(
         float experience,
         short hp,
         short oil,
-        HurtLevel hurtLevel,
         short maxHp,
         short maxOil,
         double positionX,
@@ -43,7 +41,6 @@ public record ClientDataDTO(
         MovingVector vector,
         byte speed,
         float power,
-        boolean isOnline,
         String explanation,
         UUID worldUid,
         World world,
@@ -53,7 +50,6 @@ public record ClientDataDTO(
         String chatMessage,
         String buffsJson,
         String inventoryJson
-        // BufferedImage icon
 ) implements Serializable {
     @Override
     public boolean equals(Object o) {
@@ -76,12 +72,8 @@ public record ClientDataDTO(
     public String toString() {
         return "ClientDataDTO{"
                 + "type=" + type
-                + ", playerUid=" + playerUid
                 + ", playerName='" + playerName + '\''
-                + ", heroUuid=" + heroUuid
                 + ", heroName='" + heroName + '\''
-                + ", isOnline=" + isOnline
-                + ", worldUid=" + worldUid
                 + '}';
     }
 }

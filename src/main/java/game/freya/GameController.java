@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import fox.FoxLogo;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
-import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.Player;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
+import game.freya.entities.dto.PlayerDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
@@ -256,6 +256,7 @@ public class GameController extends GameControllerBase {
                 localSocketConnection.toServer(buildNewDataPackage());
 
                 try {
+                    // todo: правильно ли это? А если я стою АФК?
                     Thread.sleep(Constants.SERVER_BROADCAST_DELAY);
                 } catch (InterruptedException e) {
                     log.warn("Прерывание потока отправки данных на сервер!");
@@ -269,39 +270,9 @@ public class GameController extends GameControllerBase {
         getNetDataTranslator().start();
     }
 
-    @HeroDataBuilder
     private ClientDataDTO buildNewDataPackage() {
         // собираем пакет данных для сервера и других игроков:
-        return ClientDataDTO.builder()
-                .id(UUID.randomUUID())
-                .type(NetDataType.SYNC)
-
-                .playerUid(getCurrentPlayerUid())
-                .playerName(getCurrentPlayerNickName())
-                .worldUid(getCurrentWorldUid())
-
-                .heroUuid(getCurrentHeroUid())
-                .heroName(getCurrentHeroName())
-                .heroType(getCurrentHeroType())
-                .hp(getCurrentHeroHp())
-                .maxHp(getCurrentHeroMaxHp())
-                .oil(getCurrentHeroOil())
-                .maxOil(getCurrentHeroMaxOil())
-                .power(getCurrentHeroPower())
-                .speed(getCurrentHeroSpeed())
-                .vector(getCurrentHeroVector())
-                .positionX(getCurrentHeroPosition().x)
-                .positionY(getCurrentHeroPosition().y)
-                .experience(getCurrentHeroExperience())
-                .level(getCurrentHeroLevel())
-                .hurtLevel(getCurrentHeroHurtLevel())
-                .buffsJson(getCurrentHeroBuffsJson())
-                .inventoryJson(getCurrentHeroInventoryJson())
-
-                .chatMessage(null)
-
-                .isOnline(isCurrentHeroOnline())
-                .build();
+        return heroToCli(getCurrentHero(), getCurrentPlayer(), NetDataType.SYNC);
     }
 
     private String getCurrentHeroInventoryJson() {
@@ -330,8 +301,13 @@ public class GameController extends GameControllerBase {
         return playedHeroesService.getCurrentHeroCurOil();
     }
 
-    public void saveNewHero(HeroDTO aNewHeroDto) {
-        playedHeroesService.addCurrentHero(heroService.saveHero(aNewHeroDto));
+    public HeroDTO saveNewHero(HeroDTO aNewHeroDto) {
+        if (!heroService.isHeroExist(aNewHeroDto.getHeroUid())) {
+            HeroDTO saved = heroService.saveHero(aNewHeroDto);
+            playedHeroesService.addCurrentHero(saved);
+            return saved;
+        }
+        return heroService.getByUid(aNewHeroDto.getHeroUid());
     }
 
     public void justSaveAnyHero(HeroDTO aNewHeroDto) {
@@ -340,7 +316,7 @@ public class GameController extends GameControllerBase {
 
     public void deleteWorld(UUID worldUid) {
         log.warn("Удаление Героев мира {}...", worldUid);
-        heroService.findAllByWorldUuid(worldUid).forEach(hero -> heroService.deleteHeroByUuid(hero.getUid()));
+        heroService.findAllByWorldUuid(worldUid).forEach(hero -> heroService.deleteHeroByUuid(hero.getHeroUid()));
 
         log.warn("Удаление мира {}...", worldUid);
         worldService.delete(worldUid);
@@ -398,7 +374,7 @@ public class GameController extends GameControllerBase {
     }
 
     public boolean isHeroActive(HeroDTO hero, Rectangle visibleRect) {
-        return visibleRect.contains(hero.getPosition()) && (!isCurrentHeroOnline() || (isCurrentHeroOnline() && hero.isOnline()));
+        return visibleRect.contains(hero.getPosition()) && hero.isOnline();
     }
 
     private void moveHeroIfAvailable(GameCanvas canvas) {
@@ -682,7 +658,7 @@ public class GameController extends GameControllerBase {
                 .playerName(getCurrentPlayerNickName())
                 .passwordHash(passwordHash)
 
-                .isOnline(true)
+
                 .build());
 
         Thread authThread = new Thread(() -> {
@@ -715,7 +691,7 @@ public class GameController extends GameControllerBase {
         return localSocketConnection.getActiveHost();
     }
 
-    public boolean ping(String host, Integer port) {
+    public boolean ping(String host, Integer port, UUID worldUid) {
         LocalSocketConnection pingConn = new LocalSocketConnection();
         try {
             // подключаемся к серверу:
@@ -724,10 +700,11 @@ public class GameController extends GameControllerBase {
             // ждём пока получим ответ PONG от Сервера:
             pingThread = new Thread(() -> {
                 long was = System.currentTimeMillis();
-                while (!pingConn.isOpen() || (!pingConn.isPongReceived() && System.currentTimeMillis() - was < 6_000)) {
+                while (pingConn.isAlive() && !pingConn.isPongReceived() && System.currentTimeMillis() - was < 15_000) {
                     Thread.yield();
                 }
             });
+            pingThread.setDaemon(true);
             pingThread.start();
             pingThread.join();
 
@@ -736,10 +713,11 @@ public class GameController extends GameControllerBase {
                 pingThread.interrupt();
                 log.warn("Пинг к Серверу {}:{} не прошел (1): {}", host, port, pingConn.getLastExplanation());
                 return false;
-            } else {
+            } else if (pingConn.getLastExplanation() != null && pingConn.getLastExplanation().equals(worldUid.toString())) {
                 log.warn("Пинг к Серверу {}:{} прошел успешно!", host, port);
                 return true;
             }
+            return false;
         } catch (InterruptedException e) {
             pingThread.interrupt();
             log.warn("Пинг к Серверу {}:{} не прошел (2): {}", host, port, pingConn.getLastExplanation());
@@ -828,40 +806,9 @@ public class GameController extends GameControllerBase {
         return playedHeroesService.getCurrentHero() != null && playedHeroesService.isCurrentHeroOnline();
     }
 
-    @HeroDataBuilder
     public boolean registerCurrentHeroOnServer() {
         log.info("Отправка данных текущего героя на Сервер...");
-        localSocketConnection.toServer(ClientDataDTO.builder()
-                .type(NetDataType.HERO_REQUEST)
-                .playerUid(getCurrentPlayerUid())
-                .playerName(getCurrentPlayerNickName())
-
-                .heroUuid(getCurrentHeroUid())
-                .heroName(getCurrentHeroName())
-                .baseColor(getCurrentHeroBaseColor())
-                .secondColor(getCurrentHeroSecondColor())
-                .corpusType(getCurrentHeroCorpusType())
-                .periferiaType(getCurrentHeroPeriferiaType())
-                .periferiaSize(getCurrentHeroPeriferiaSize())
-                .heroType(getCurrentHeroType())
-                .hurtLevel(getCurrentHeroHurtLevel())
-                .hp(getCurrentHeroHp())
-                .maxHp(getCurrentHeroMaxHp())
-                .oil(getCurrentHeroOil())
-                .maxOil(getCurrentHeroMaxOil())
-                .power(getCurrentHeroPower())
-                .speed(getCurrentHeroSpeed())
-                .vector(getCurrentHeroVector())
-                .positionX(getCurrentHeroPosition().x)
-                .positionY(getCurrentHeroPosition().y)
-                .experience(getCurrentHeroExperience())
-                .level(getCurrentHeroLevel())
-                .createDate(getCurrentHeroCreateDate())
-                .buffsJson(getCurrentHeroBuffsJson())
-                .inventoryJson(getCurrentHeroInventoryJson())
-//                .inGameTime(readed.inGameTime())
-                .isOnline(true)
-                .build());
+        localSocketConnection.toServer(heroToCli(getCurrentHero(), playerService.getCurrentPlayer(), NetDataType.HERO_REQUEST));
 
         Thread heroCheckThread = new Thread(() -> {
             while (!localSocketConnection.isAccepted() && !Thread.currentThread().isInterrupted()) {
@@ -917,9 +864,11 @@ public class GameController extends GameControllerBase {
                 playedHeroesService.setCurrentHeroOnline(true);
             } else if (playedHeroesService.isCurrentHeroOnline()) {
                 // если online другой герой - снимаем:
+                log.info("Снимаем он-лайн с Героя {} и передаём этот статус Герою {}...", getCurrentHero().getHeroName(), hero.getHeroName());
                 playedHeroesService.offlineSaveAndRemoveCurrentHero(null);
             }
         }
+        log.info("Теперь активный Герой - {}", hero.getHeroName());
         playedHeroesService.addCurrentHero(hero);
     }
 
@@ -957,9 +906,10 @@ public class GameController extends GameControllerBase {
     public void syncServerDataWithCurrentWorld(@NotNull ClientDataDTO data) {
         log.debug("Получены данные для синхронизации мира {} игрока {}'s (герой {})", data.worldUid(), data.playerName(), data.heroName());
 
-        HeroDTO aim = playedHeroesService.getHero(data);
+        HeroDTO aim = playedHeroesService.getHero(data, this);
         if (aim == null) {
-            throw new GlobalServiceException(ErrorMessages.HERO_NOT_FOUND, data.heroUuid());
+            log.warn("Герой {} не существует в БД. Должен быть запрос на его создание к Серверу, ожидается...", data.heroUuid());
+            return;
         }
 
         // Обновляем позицию другого игрока:
@@ -1034,5 +984,28 @@ public class GameController extends GameControllerBase {
 
     public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID clientUid) {
         playedHeroesService.offlineSaveAndRemoveOtherHeroByPlayerUid(clientUid);
+    }
+
+    public void requestHeroFromServer(UUID uuid) {
+        localSocketConnection.toServer(ClientDataDTO.builder()
+                .type(NetDataType.HERO_REMOTE_NEED)
+                .heroUuid(uuid)
+                .build());
+    }
+
+    public ClientDataDTO heroToCli(HeroDTO found, PlayerDTO currentPlayer, NetDataType netDataType) {
+        return heroService.heroToCli(found, currentPlayer, netDataType);
+    }
+
+    public HeroDTO cliToHero(ClientDataDTO readed) {
+        return heroService.cliToHero(readed);
+    }
+
+    public void saveNewRemoteHero(ClientDataDTO readed) {
+        saveNewHero(cliToHero(readed));
+    }
+
+    public PlayerDTO getCurrentPlayer() {
+        return playerService.getCurrentPlayer();
     }
 }

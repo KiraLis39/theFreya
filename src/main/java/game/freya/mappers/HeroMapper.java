@@ -5,10 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.Hero;
 import game.freya.entities.dto.HeroDTO;
+import game.freya.entities.dto.PlayerDTO;
+import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.items.containers.Backpack;
 import game.freya.items.logic.Buff;
+import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +21,7 @@ import java.awt.geom.Point2D;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,7 +36,7 @@ public final class HeroMapper {
             return null;
         }
         Hero result = Hero.builder()
-                .uid(dto.getUid())
+                .uid(dto.getHeroUid())
                 .heroName(dto.getHeroName())
                 .baseColor(dto.getBaseColor())
                 .secondColor(dto.getSecondColor())
@@ -40,7 +44,7 @@ public final class HeroMapper {
                 .periferiaType(dto.getPeriferiaType())
                 .periferiaSize(dto.getPeriferiaSize())
                 .level(dto.getLevel())
-                .type(dto.getType())
+                .type(dto.getHeroType())
                 .power(dto.getPower())
                 .experience(dto.getExperience())
                 .curHealth(dto.getCurHealth())
@@ -75,7 +79,7 @@ public final class HeroMapper {
         }
 
         HeroDTO result = HeroDTO.builder()
-                .uid(entity.getUid())
+                .heroUid(entity.getUid())
                 .heroName(entity.getHeroName())
                 .baseColor(entity.getBaseColor())
                 .secondColor(entity.getSecondColor())
@@ -83,7 +87,7 @@ public final class HeroMapper {
                 .periferiaType(entity.getPeriferiaType())
                 .periferiaSize(entity.getPeriferiaSize())
                 .level(entity.getLevel())
-                .type(entity.getType())
+                .heroType(entity.getType())
                 .power(entity.getPower())
                 .experience(entity.getExperience())
                 .curHealth(entity.getCurHealth())
@@ -126,5 +130,136 @@ public final class HeroMapper {
             return Collections.emptyList();
         }
         return heroes.stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    public ClientDataDTO heroToCli(HeroDTO hero, PlayerDTO currentPlayer, NetDataType dataType) {
+        if (hero == null) {
+            return null;
+        }
+        ClientDataDTO result = null;
+        if (dataType.equals(NetDataType.HERO_REQUEST)) {
+            result = ClientDataDTO.builder()
+                    .id(UUID.randomUUID())
+                    .type(dataType)
+
+                    .playerUid(currentPlayer.getUid())
+                    .playerName(currentPlayer.getNickName())
+
+                    .heroUuid(hero.getHeroUid())
+                    .heroName(hero.getHeroName())
+                    .heroType(hero.getHeroType())
+
+                    .baseColor(hero.getBaseColor())
+                    .secondColor(hero.getSecondColor())
+                    .corpusType(hero.getCorpusType())
+                    .periferiaType(hero.getPeriferiaType())
+                    .periferiaSize(hero.getPeriferiaSize())
+
+                    .level(hero.getLevel())
+                    .hp(hero.getCurHealth())
+                    .maxHp(hero.getMaxHealth())
+                    .oil(hero.getCurOil())
+                    .maxOil(hero.getMaxOil())
+                    .speed(hero.getSpeed())
+                    .vector(hero.getVector())
+                    .positionX(hero.getPosition().x)
+                    .positionY(hero.getPosition().y)
+
+                    // временно отключил:
+//                    .createDate(hero.getCreateDate())
+//                    .power(getCurrentHeroPower())
+//                    .experience(getCurrentHeroExperience())
+//                    .buffsJson(getCurrentHeroBuffsJson())
+//                    .inventoryJson(getCurrentHeroInventoryJson())
+//                    .inGameTime(readed.inGameTime())
+
+                    .worldUid(hero.getWorldUid())
+                    .build();
+        } else if (dataType.equals(NetDataType.SYNC)) {
+            result = ClientDataDTO.builder()
+                    .id(UUID.randomUUID())
+                    .type(dataType)
+
+                    .playerUid(currentPlayer.getUid())
+                    .playerName(currentPlayer.getNickName())
+
+                    .heroUuid(hero.getHeroUid())
+                    .heroName(hero.getHeroName())
+                    .playerName(currentPlayer.getNickName())
+                    .heroType(hero.getHeroType())
+
+                    .hp(hero.getCurHealth())
+                    .maxHp(hero.getMaxHealth())
+                    .oil(hero.getCurOil())
+                    .maxOil(hero.getMaxOil())
+
+                    .level(hero.getLevel())
+                    .speed(hero.getSpeed())
+                    .vector(hero.getVector())
+                    .positionX(hero.getPosition().x)
+                    .positionY(hero.getPosition().y)
+
+                    // временно отключил:
+//                    .createDate(hero.getCreateDate())
+//                    .power(getCurrentHeroPower())
+//                    .experience(getCurrentHeroExperience())
+//                    .buffsJson(getCurrentHeroBuffsJson())
+//                    .inventoryJson(getCurrentHeroInventoryJson())
+//                    .inGameTime(readed.inGameTime())
+
+                    .build();
+        }
+        return result;
+    }
+
+    public HeroDTO cliToHero(ClientDataDTO cli) {
+        return cli == null ? null : HeroDTO.builder()
+                .ownerUid(cli.playerUid())
+
+                .heroUid(cli.heroUuid())
+                .heroName(cli.heroName())
+                .heroType(cli.heroType())
+
+                .baseColor(cli.baseColor())
+                .secondColor(cli.secondColor())
+                .corpusType(cli.corpusType())
+                .periferiaType(cli.periferiaType())
+                .periferiaSize(cli.periferiaSize())
+
+                .speed(cli.speed())
+                .position(new Point2D.Double(cli.positionX(), cli.positionY()))
+                .curHealth(cli.hp())
+                .maxHealth(cli.maxHp())
+                .curOil(cli.oil())
+                .maxOil(cli.maxOil())
+                .worldUid(cli.worldUid())
+                .ownerUid(cli.playerUid())
+                .level(cli.level())
+
+                // временно отключил:
+//                .power(readed.power())
+//                .experience(readed.experience())
+//                .inGameTime(readed.inGameTime())
+//                .lastPlayDate(readed.lastPlayDate())
+//                .createDate(readed.createDate())
+
+                .worldUid(cli.worldUid())
+
+                .build();
+
+        // временно отключил:
+//            try {
+//                Backpack bPack = mapper.readValue(readed.inventoryJson(), Backpack.class);
+//                hero.setInventory(bPack);
+//            } catch (Exception e) {
+//                log.error("Проблема при парсинге инвентаря Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
+//            }
+//            try {
+//                for (Buff buff : mapper.readValue(readed.buffsJson(), Buff[].class)) {
+//                    hero.addBuff(buff);
+//                }
+//            } catch (Exception e) {
+//                log.error("Проблема при парсинге бафов Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
+//            }
     }
 }

@@ -37,18 +37,13 @@ public final class Constants {
     // net:
     public static final int DEFAULT_SERVER_PORT = 13958;
 
-    public static final int SOCKET_BUFFER_SIZE = 16384; // 65536
+    public static final int SOCKET_BUFFER_SIZE = 8192; // 65536 | 16384 | 8192
 
-    public static final long SERVER_BROADCAST_DELAY = 200L; // миллисекунд ждать между отправками данных
+    public static final long SERVER_BROADCAST_DELAY = 1_000L; // миллисекунд ждать между отправками данных
 
     public static final int SOCKET_PING_AWAIT_TIMEOUT = 6_000; // сколько миллисекунд клиент ждёт данные от Сервера
 
     public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 9_000; // сколько миллисекунд клиент ждёт данные от Сервера
-
-    public static final long NEED_FOR_SUCCESS_PING = 6_000; // сколько мс требуется дл корректного пинга Серверов обычно.
-
-    // public static final int SERVER_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд Сервер ждёт данные от Клиента
-
 
     // other:
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
@@ -181,6 +176,10 @@ public final class Constants {
     private static boolean isPaused = false;
 
     @Getter
+    @Setter
+    private static boolean isMinimapShowed = true;
+
+    @Getter
     private static boolean isShowStartLogo = true;
 
     @Getter
@@ -302,8 +301,8 @@ public final class Constants {
         return isFpsLimited() && delay.get() <= 3;
     }
 
-    public static long getMaxConnectionWasteTime() {
-        return SOCKET_CONNECTION_AWAIT_TIMEOUT - NEED_FOR_SUCCESS_PING;
+    public static int getMaxConnectionWasteTime() {
+        return SOCKET_CONNECTION_AWAIT_TIMEOUT - SOCKET_PING_AWAIT_TIMEOUT;
     }
 
     boolean isCurrentFpsIsLessThanMonitorRate() {

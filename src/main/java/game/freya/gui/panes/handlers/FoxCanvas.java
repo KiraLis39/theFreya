@@ -47,9 +47,9 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -99,7 +99,8 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
 
-    private transient Rectangle avatarRect;
+    @Getter
+    private transient Rectangle avatarRect, minimapRect, minimapShowRect, minimapHideRect;
 
     private transient BufferedImage pAvatar;
 
@@ -163,6 +164,10 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
             recreateGameBackImage(v2D);
         } else {
             repaintMenu(v2D);
+        }
+
+        if (Constants.isFpsInfoVisible() && isDisplayable()) {
+            drawFps(v2D);
         }
 
         v2D.dispose();
@@ -250,27 +255,26 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
         drawUI(v2D, getName());
         drawDebugInfo(v2D, null);
-
-        if (Constants.isFpsInfoVisible() && isDisplayable()) {
-            drawFps(v2D);
-        }
     }
 
     private void recreateGameBackImage(Graphics2D v2D) throws AWTException {
         // рисуем мир:
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
         gameController.getDrawCurrentWorld(v2D);
 
         // рисуем данные героев поверх игры:
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+        drawHeroesData(v2D);
+
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
-        drawHeroesData(v2D);
         drawUI(v2D, getName());
-        drawDebugInfo(v2D, gameController.getCurrentWorldTitle());
 
-        if (Constants.isFpsInfoVisible()) {
-            drawFps(v2D);
-        }
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+        drawDebugInfo(v2D, gameController.getCurrentWorldTitle());
     }
 
     private void drawHeroesData(Graphics2D g2D) {
@@ -324,59 +328,62 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         });
     }
 
-    public void drawDebugInfo(Graphics2D g2D, String worldTitle) {
+    public void drawDebugInfo(Graphics2D v2D, String worldTitle) {
         if (Constants.isDebugInfoVisible() && worldTitle != null) {
-            drawDebug(g2D, worldTitle);
+            drawDebug(v2D, worldTitle);
         }
     }
 
-    private void drawDebug(Graphics2D g2D, String worldTitle) {
-        g2D.setFont(Constants.DEBUG_FONT);
+    private void drawDebug(Graphics2D v2D, String worldTitle) {
+        v2D.setFont(Constants.DEBUG_FONT);
 
         if (worldTitle != null) {
-            String pass = duration != null ? LocalDateTime.of(0, 1, (int) (duration.toDaysPart() + 1),
-                            duration.toHoursPart(), duration.toMinutesPart(), 0, 0)
-                    .format(Constants.DATE_FORMAT_2) : "=na=";
+            String pass = duration != null
+                    ? "День %d, %02d:%02d".formatted(duration.toDays(), duration.toHours(), duration.toMinutes())
+//                    ? LocalDateTime.of(0, 1, (int) (duration.toDaysPart() + 1), duration.toHoursPart(), duration.toMinutesPart(), 0, 0)
+//                    .format(Constants.DATE_FORMAT_2)
+                    : "=na=";
+//            System.out.format(, duration.toDays(), duration.toHours(), duration.toMinutes(), duration.getSeconds(), duration.toMillis());
 
-            g2D.setColor(Color.BLACK);
-            g2D.drawString("Мир: %s".formatted(worldTitle), rightShift - 1f, downShift + 22);
-            g2D.drawString("В игре: %s".formatted(pass), rightShift - 1f, downShift + 43);
+            v2D.setColor(Color.BLACK);
+            v2D.drawString("Мир: %s".formatted(worldTitle), rightShift - 1f, downShift + 22);
+            v2D.drawString("В игре: %s".formatted(pass), rightShift - 1f, downShift + 43);
 
-            g2D.setColor(Color.GRAY);
-            g2D.drawString("Мир: %s".formatted(worldTitle), rightShift, downShift + 21);
-            g2D.drawString("В игре: %s".formatted(pass), rightShift, downShift + 42);
+            v2D.setColor(Color.GRAY);
+            v2D.drawString("Мир: %s".formatted(worldTitle), rightShift, downShift + 21);
+            v2D.drawString("В игре: %s".formatted(pass), rightShift, downShift + 42);
         }
 
         final int leftShift = 340;
-        g2D.setColor(Color.GRAY);
+        v2D.setColor(Color.GRAY);
 
         // graphics info:
         BufferCapabilities gCap = getBufferStrategy().getCapabilities();
-        g2D.drawString("Front accelerated: %s".formatted(gCap.getFrontBufferCapabilities().isAccelerated()),
+        v2D.drawString("Front accelerated: %s".formatted(gCap.getFrontBufferCapabilities().isAccelerated()),
                 getWidth() - leftShift, getHeight() - 370);
-        g2D.drawString("Front is true volatile: %s".formatted(gCap.getFrontBufferCapabilities().isTrueVolatile()),
+        v2D.drawString("Front is true volatile: %s".formatted(gCap.getFrontBufferCapabilities().isTrueVolatile()),
                 getWidth() - leftShift, getHeight() - 350);
-        g2D.drawString("Back accelerated: %s".formatted(gCap.getBackBufferCapabilities().isAccelerated()),
+        v2D.drawString("Back accelerated: %s".formatted(gCap.getBackBufferCapabilities().isAccelerated()),
                 getWidth() - leftShift, getHeight() - 325);
-        g2D.drawString("Back is true volatile: %s".formatted(gCap.getBackBufferCapabilities().isTrueVolatile()),
+        v2D.drawString("Back is true volatile: %s".formatted(gCap.getBackBufferCapabilities().isTrueVolatile()),
                 getWidth() - leftShift, getHeight() - 305);
-        g2D.drawString("Fullscreen required: %s".formatted(gCap.isFullScreenRequired()), getWidth() - leftShift, getHeight() - 280);
-        g2D.drawString("Multi-buffer available: %s".formatted(gCap.isMultiBufferAvailable()), getWidth() - leftShift, getHeight() - 260);
-        g2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 240);
+        v2D.drawString("Fullscreen required: %s".formatted(gCap.isFullScreenRequired()), getWidth() - leftShift, getHeight() - 280);
+        v2D.drawString("Multi-buffer available: %s".formatted(gCap.isMultiBufferAvailable()), getWidth() - leftShift, getHeight() - 260);
+        v2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 240);
 
         // server info:
         boolean isServerIsOpen = gameController.isServerIsOpen();
         boolean isSocketIsConnected = gameController.isSocketIsOpen();
-        g2D.setColor(isServerIsOpen || isSocketIsConnected ? Color.GREEN : Color.DARK_GRAY);
-        g2D.drawString("Server open: %s".formatted(isServerIsOpen || isSocketIsConnected), getWidth() - leftShift, getHeight() - 210);
+        v2D.setColor(isServerIsOpen || isSocketIsConnected ? Color.GREEN : Color.DARK_GRAY);
+        v2D.drawString("Server open: %s".formatted(isServerIsOpen || isSocketIsConnected), getWidth() - leftShift, getHeight() - 210);
         if (isServerIsOpen) {
-            g2D.drawString("Connected clients: %s".formatted(gameController.getConnectedClientsCount()),
+            v2D.drawString("Connected clients: %s".formatted(gameController.getConnectedClientsCount()),
                     getWidth() - leftShift, getHeight() - 190);
         }
-        g2D.drawString("Connected players: %s".formatted(isServerIsOpen
+        v2D.drawString("Connected players: %s".formatted(isServerIsOpen
                         ? gameController.getConnectedPlayers().size() : gameController.getPlayedHeroesService().getHeroes().size()),
                 getWidth() - leftShift, getHeight() - 170);
-        g2D.setColor(Color.GRAY);
+        v2D.setColor(Color.GRAY);
 
         // hero info:
         if (gameController.getCurrentHeroPosition() != null) {
@@ -386,24 +393,24 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                     Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
 //            g2D.drawString("Hero pos: %,.0fx%,.0f".formatted(playerShape.getBounds2D().getCenterX(), playerShape.getBounds2D().getCenterY()),
 //                    getWidth() - leftShift, getHeight() - 140);
-            g2D.drawString("Hero pos: %.0fx%.0f".formatted(playerShape.getBounds2D().getCenterX(), playerShape.getBounds2D().getCenterY()),
+            v2D.drawString("Hero pos: %.0fx%.0f".formatted(playerShape.getBounds2D().getCenterX(), playerShape.getBounds2D().getCenterY()),
                     getWidth() - leftShift, getHeight() - 140);
         }
 
-        g2D.drawString("Hero speed: %s".formatted(gameController.getCurrentHeroSpeed()), getWidth() - leftShift, getHeight() - 120);
+        v2D.drawString("Hero speed: %s".formatted(gameController.getCurrentHeroSpeed()), getWidth() - leftShift, getHeight() - 120);
 
         // gameplay info:
         if (gameController.getCurrentWorldMap() != null) {
-            g2D.drawString("GameMap WxH: %dx%d"
+            v2D.drawString("GameMap WxH: %dx%d"
                             .formatted(gameController.getCurrentWorldMap().getWidth(), gameController.getCurrentWorldMap().getHeight()),
                     getWidth() - leftShift, getHeight() - 70);
         }
 
-        g2D.drawString("Canvas XxY-WxH: %dx%d-%dx%d".formatted(getBounds().x, getBounds().y, getBounds().width, getBounds().height),
+        v2D.drawString("Canvas XxY-WxH: %dx%d-%dx%d".formatted(getBounds().x, getBounds().y, getBounds().width, getBounds().height),
                 getWidth() - leftShift, getHeight() - 50);
 
         if (viewPort != null) {
-            g2D.drawString("ViewPort XxY-WxH: %dx%d-%dx%d"
+            v2D.drawString("ViewPort XxY-WxH: %dx%d-%dx%d"
                             .formatted(viewPort.getBounds().x, viewPort.getBounds().y, viewPort.getBounds().width, viewPort.getBounds().height),
                     getWidth() - leftShift, getHeight() - 30);
         }
@@ -414,15 +421,15 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 area = new Area(getBounds());
                 area.subtract(new Area(this.leftGrayMenuPoly));
             }
-            g2D.setColor(Color.RED);
-            g2D.draw(area);
+            v2D.setColor(Color.RED);
+            v2D.draw(area);
         }
 
-        g2D.setColor(Color.CYAN);
-        g2D.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
+        v2D.setColor(Color.CYAN);
+        v2D.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
     }
 
-    private void drawFps(Graphics2D g2D) {
+    private void drawFps(Graphics2D v2D) {
         if (!isVisible() || !isDisplayable() || !isShowing()) {
             return;
         }
@@ -438,27 +445,27 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
             downShift = getHeight() * 0.14f;
         }
 
-        g2D.setFont(Constants.DEBUG_FONT);
-        g2D.setColor(Color.BLACK);
+        v2D.setFont(Constants.DEBUG_FONT);
+        v2D.setColor(Color.BLACK);
         if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            g2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 48);
+            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 48);
         }
-        g2D.drawString("Delay fps: " + Constants.getDelay(), rightShift - 1f, downShift - 24);
-        g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
+        v2D.drawString("Delay fps: " + Constants.getDelay(), rightShift - 1f, downShift - 24);
+        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
 
-        g2D.setColor(Color.GRAY);
+        v2D.setColor(Color.GRAY);
         if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            g2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
+            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
         }
         if (Constants.isLowFpsAlarm()) {
-            g2D.setColor(Color.RED);
+            v2D.setColor(Color.RED);
         } else {
-            g2D.setColor(Color.GRAY);
+            v2D.setColor(Color.GRAY);
         }
-        g2D.drawString("Delay fps: " + Constants.getDelay(), rightShift, downShift - 25);
-        g2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
+        v2D.drawString("Delay fps: " + Constants.getDelay(), rightShift, downShift - 25);
+        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift, downShift);
     }
@@ -503,6 +510,10 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 buttonsRectsWidth, 30);
 
         avatarRect = new Rectangle(getWidth() - 135, 8, 128, 128);
+
+        minimapRect = new Rectangle(2, getHeight() - 258, 256, 256);
+        minimapShowRect = new Rectangle(minimapRect.width - 14, minimapRect.y, 16, 16);
+        minimapHideRect = new Rectangle(0, getHeight() - 16, 16, 16);
     }
 
     public void checkGameplayDuration(long inGamePlayed) {
@@ -747,12 +758,12 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         }
     }
 
-    protected void drawUI(Graphics2D g2D, String canvasName) throws AWTException {
+    protected void drawUI(Graphics2D v2D, String canvasName) throws AWTException {
         if (isShadowBackNeeds() && canvasName.equals("GameCanvas")) {
-            g2D.setColor(grayBackColor);
-            g2D.fillRect(0, 0, getWidth(), getHeight());
+            v2D.setColor(grayBackColor);
+            v2D.fillRect(0, 0, getWidth(), getHeight());
         }
-        uiHandler.drawUI(g2D, this);
+        uiHandler.drawUI(v2D, this);
     }
 
     public void decreaseDrawErrorCount() {
@@ -773,12 +784,13 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     /**
      * Проверка доступности удалённого сервера:
      *
-     * @param host адрес, куда стучимся для получения pong.
-     * @param port адрес, куда стучимся для получения pong.
+     * @param host     адрес, куда стучимся для получения pong.
+     * @param port     адрес, куда стучимся для получения pong.
+     * @param worldUid uid мира, который пропинговывается.
      * @return успешность получения pong от удалённого Сервера.
      */
-    public boolean ping(String host, Integer port) {
-        return gameController.ping(host, port);
+    public boolean ping(String host, Integer port, UUID worldUid) {
+        return gameController.ping(host, port, worldUid);
     }
 
     public boolean isConnectionAwait() {
@@ -827,6 +839,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
             } else {
                 gameController.exitTheGame(null, 11);
             }
+            Thread.yield();
         }
     }
 
@@ -841,20 +854,4 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     public int getDrawErrors() {
         return drawErrors.get();
     }
-
-    //    private boolean canDragDown() {
-//        return this.viewPort.getY() > 0;
-//    }
-//
-//    private boolean canDragUp() {
-//        return this.viewPort.getHeight() < gameController.getCurrentWorldMap().getHeight();
-//    }
-//
-//    private boolean canDragLeft() {
-//        return this.viewPort.getWidth() < gameController.getCurrentWorldMap().getWidth();
-//    }
-//
-//    private boolean canDragRight() {
-//        return this.viewPort.getX() > 0;
-//    }
 }

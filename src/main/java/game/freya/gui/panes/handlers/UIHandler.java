@@ -39,9 +39,7 @@ public final class UIHandler {
 
     private VolatileImage minimapImage;
 
-    private Rectangle minimapRect;
-
-    private Rectangle minimapDebugRect, upLeftPaneRect, upCenterPaneRect, upRightPaneRect, downCenterPaneRect;
+    private Rectangle upLeftPaneRect, upCenterPaneRect, upRightPaneRect, downCenterPaneRect;
 
     private double heightMemory;
 
@@ -60,71 +58,89 @@ public final class UIHandler {
         repingButtonText = "Обновить";
     }
 
-    public void drawUI(Graphics2D g2D, FoxCanvas canvas) throws AWTException {
-        if (minimapRect == null || heightMemory != canvas.getBounds().getHeight()) {
+    public void drawUI(Graphics2D v2D, FoxCanvas canvas) throws AWTException {
+        if (heightMemory != canvas.getBounds().getHeight()) {
             recreateRectangles(canvas);
         }
 
         if (canvas instanceof MenuCanvas menuCanvas) {
-            drawMainMenu(g2D, menuCanvas);
-            drawCreatorInfo(g2D, menuCanvas);
+            drawMainMenu(v2D, menuCanvas);
+            drawCreatorInfo(v2D, menuCanvas);
         } else if (canvas.isOptionsMenuSetVisible()) {
-            canvas.showOptions(g2D);
+            canvas.showOptions(v2D);
         } else {
             // up left pane:
-            g2D.setStroke(new BasicStroke(2f));
-            g2D.setColor(new Color(0, 95, 0, 63));
-            g2D.fillRect(upLeftPaneRect.x, upLeftPaneRect.y, upLeftPaneRect.width, upLeftPaneRect.height);
+            v2D.setStroke(new BasicStroke(2f));
+            v2D.setColor(new Color(0, 95, 0, 63));
+            v2D.fillRect(upLeftPaneRect.x, upLeftPaneRect.y, upLeftPaneRect.width, upLeftPaneRect.height);
             if (Constants.isDebugInfoVisible()) {
-                g2D.setColor(Color.GREEN);
-                g2D.drawRect(upLeftPaneRect.x, upLeftPaneRect.y, upLeftPaneRect.width, upLeftPaneRect.height);
+                v2D.setColor(Color.GREEN);
+                v2D.drawRect(upLeftPaneRect.x, upLeftPaneRect.y, upLeftPaneRect.width, upLeftPaneRect.height);
             }
 
             // up center pane:
-            g2D.setColor(new Color(0, 0, 95, 63));
-            g2D.fillRect(upCenterPaneRect.x, upCenterPaneRect.y, upCenterPaneRect.width, upCenterPaneRect.height);
+            v2D.setColor(new Color(0, 0, 95, 63));
+            v2D.fillRect(upCenterPaneRect.x, upCenterPaneRect.y, upCenterPaneRect.width, upCenterPaneRect.height);
             if (Constants.isDebugInfoVisible()) {
-                g2D.setColor(Color.YELLOW);
-                g2D.drawRect(upCenterPaneRect.x, upCenterPaneRect.y, upCenterPaneRect.width, upCenterPaneRect.height);
+                v2D.setColor(Color.YELLOW);
+                v2D.drawRect(upCenterPaneRect.x, upCenterPaneRect.y, upCenterPaneRect.width, upCenterPaneRect.height);
             }
 
             // up right pane:
-            g2D.setColor(new Color(95, 0, 0, 63));
-            g2D.fillRect(upRightPaneRect.x, upRightPaneRect.y, upRightPaneRect.width, upRightPaneRect.height);
+            v2D.setColor(new Color(95, 0, 0, 63));
+            v2D.fillRect(upRightPaneRect.x, upRightPaneRect.y, upRightPaneRect.width, upRightPaneRect.height);
             if (Constants.isDebugInfoVisible()) {
-                g2D.setColor(Color.MAGENTA);
-                g2D.drawRect(upRightPaneRect.x, upRightPaneRect.y, upRightPaneRect.width, upRightPaneRect.height);
+                v2D.setColor(Color.MAGENTA);
+                v2D.drawRect(upRightPaneRect.x, upRightPaneRect.y, upRightPaneRect.width, upRightPaneRect.height);
             }
 
             // down center pane:
-            g2D.setColor(new Color(95, 95, 0, 63));
-            g2D.fillRect(downCenterPaneRect.x, downCenterPaneRect.y, downCenterPaneRect.width, downCenterPaneRect.height);
+            v2D.setColor(new Color(95, 95, 0, 63));
+            v2D.fillRect(downCenterPaneRect.x, downCenterPaneRect.y, downCenterPaneRect.width, downCenterPaneRect.height);
             if (Constants.isDebugInfoVisible()) {
-                g2D.setColor(Color.YELLOW);
-                g2D.drawRect(downCenterPaneRect.x, downCenterPaneRect.y, downCenterPaneRect.width, downCenterPaneRect.height);
+                v2D.setColor(Color.YELLOW);
+                v2D.drawRect(downCenterPaneRect.x, downCenterPaneRect.y, downCenterPaneRect.width, downCenterPaneRect.height);
             }
 
             // down left minimap:
             if (!Constants.isPaused()) {
-                updateMiniMap(canvas);
+                Rectangle mapButRect;
+                if (Constants.isMinimapShowed()) {
+                    mapButRect = canvas.getMinimapShowRect();
 
-                // draw minimap:
-                // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2), ...
-                Composite cw = g2D.getComposite();
-                g2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
-                g2D.drawImage(minimapImage, minimapRect.x, minimapRect.y, minimapRect.width, minimapRect.height, null);
-                g2D.setComposite(cw);
+                    updateMiniMap(canvas);
 
-                if (Constants.isDebugInfoVisible()) {
-                    g2D.setColor(Color.CYAN);
-                    g2D.draw(minimapRect);
+                    // draw minimap:
+                    // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2), ...
+                    Composite cw = v2D.getComposite();
+                    v2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
+                    v2D.drawImage(minimapImage, canvas.getMinimapRect().x, canvas.getMinimapRect().y,
+                            canvas.getMinimapRect().width, canvas.getMinimapRect().height, null);
+                    v2D.setComposite(cw);
+
+                    if (Constants.isDebugInfoVisible()) {
+                        v2D.setColor(Color.CYAN);
+                        v2D.draw(canvas.getMinimapRect());
+                    }
+                } else {
+                    mapButRect = canvas.getMinimapHideRect();
                 }
+                // draw minimap button:
+                v2D.setColor(Color.YELLOW);
+                v2D.fillRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
+                v2D.setColor(Color.GRAY);
+                v2D.drawRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
+
+                v2D.setColor(Color.BLACK);
+                v2D.setStroke(new BasicStroke(2f));
+                v2D.drawPolyline(new int[]{mapButRect.x + 3, mapButRect.x + mapButRect.width / 2, mapButRect.x + mapButRect.width - 3},
+                        new int[]{mapButRect.y + 3, mapButRect.y + mapButRect.height - 3, mapButRect.y + 3}, 3);
             } else {
-                canvas.drawPauseMode(g2D);
+                canvas.drawPauseMode(v2D);
             }
 
             // draw chat:
-            canvas.getChat().draw(g2D);
+            canvas.getChat().draw(v2D);
         }
     }
 
@@ -275,16 +291,16 @@ public final class UIHandler {
 
         // отображаем других игроков на миникарте:
         for (HeroDTO connectedHero : gameController.getConnectedHeroes()) {
-            if (gameController.getCurrentHeroUid().equals(connectedHero.getUid())) {
+            if (gameController.getCurrentHeroUid().equals(connectedHero.getHeroUid())) {
                 continue;
             }
             int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getPosition().x));
             int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getPosition().y));
 //            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
             m2D.setColor(connectedHero.getBaseColor());
-            m2D.fillRect(otherHeroPosX - 16, otherHeroPosY - 16, 32, 32);
+            m2D.fillRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
             m2D.setColor(connectedHero.getSecondColor());
-            m2D.drawRect(otherHeroPosX - 16, otherHeroPosY - 16, 32, 32);
+            m2D.drawRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
         }
 
         // сканируем все сущности указанного квадранта:
@@ -306,7 +322,6 @@ public final class UIHandler {
         m2D.setStroke(new BasicStroke(7f));
         m2D.setPaint(Color.GRAY);
         m2D.drawRect(48, 48, minimapDim - 96, minimapDim - 96);
-
         m2D.dispose();
     }
 
@@ -314,9 +329,6 @@ public final class UIHandler {
         Rectangle canvasRect = canvas.getBounds();
 
         heightMemory = canvasRect.getHeight();
-        minimapRect = new Rectangle(2, canvasRect.height - 258, 256, 256);
-        minimapDebugRect = new Rectangle(minimapRect.x + 6, minimapRect.y + 6,
-                minimapRect.width - 12, minimapRect.height - 12);
         upLeftPaneRect = new Rectangle(1, 1, (int) (canvasRect.getWidth() * 0.333f), (int) (canvasRect.getHeight() * 0.075f));
         upCenterPaneRect = new Rectangle((int) (canvasRect.getWidth() * 0.36f), 1,
                 (int) (canvasRect.getWidth() * 0.28f), (int) (canvasRect.getHeight() * 0.075f));

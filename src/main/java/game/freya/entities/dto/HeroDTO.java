@@ -51,7 +51,7 @@ public class HeroDTO implements iHero {
 
     @NotNull
     @Setter
-    private UUID uid;
+    private UUID heroUid;
 
     @NotNull
     private String heroName;
@@ -80,7 +80,7 @@ public class HeroDTO implements iHero {
     private short level = 1;
 
     @Builder.Default
-    private HeroType type = HeroType.VOID;
+    private HeroType heroType = HeroType.VOID;
 
     @Builder.Default
     private float power = 1.0f;
@@ -109,9 +109,6 @@ public class HeroDTO implements iHero {
     @Builder.Default
     private MovingVector vector = MovingVector.UP;
 
-    @Builder.Default
-    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
-
     @Setter
     private UUID worldUid;
 
@@ -133,6 +130,9 @@ public class HeroDTO implements iHero {
     @Setter
     @Builder.Default
     private long inGameTime = 0;
+
+    @Builder.Default
+    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
     @Getter
     @Builder.Default
@@ -378,7 +378,7 @@ public class HeroDTO implements iHero {
     @Override
     public String toString() {
         return "HeroDTO{"
-                + "uid=" + uid
+                + "heroUid=" + heroUid
                 + ", heroName='" + heroName + '\''
                 + ", level=" + level
                 + ", experience=" + experience

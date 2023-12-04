@@ -21,7 +21,6 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotNull;
 import java.awt.Color;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -37,123 +36,117 @@ public class Hero {
     @Id
     @Comment("UUID героя")
     //@GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false, updatable = false, unique = true)
+    @Column(name = "id", nullable = false, updatable = false, unique = true, insertable = false)
     private UUID uid;
 
     @Comment("Имя героя")
-    @Column(name = "hero_name", length = 16)
+    @Column(name = "hero_name", length = 16, nullable = false)
     private String heroName;
 
     @Comment("Главный цвет раскраски корпуса героя")
-    @Column(name = "base_color")
+    @Column(name = "base_color", nullable = false)
     private Color baseColor;
 
     @Comment("Второстепенный цвет раскраски корпуса героя")
-    @Column(name = "second_color")
+    @Column(name = "second_color", nullable = false)
     private Color secondColor;
 
-    @NotNull
     @Builder.Default
     @Comment("Тип корпуса героя")
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
 
-    @NotNull
     @Builder.Default
     @Comment("Тип периферии героя")
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private HeroPeriferiaType periferiaType = HeroPeriferiaType.COMPACT;
 
     @Comment("Размеры периферии героя")
-    @Column(name = "periferia_size", columnDefinition = "SMALLINT DEFAULT 50")
+    @Column(name = "periferia_size", columnDefinition = "SMALLINT DEFAULT 50", nullable = false)
     private short periferiaSize;
 
-    @NotNull
     @Comment("Инвентарь героя")
-    @Column(name = "inventory_json", length = 1024)
+    @Column(name = "inventory_json", length = 1024, nullable = false)
     private String inventoryJson;
 
     @Builder.Default
     @Comment("Уровень героя")
-    @Column(name = "level")
+    @Column(name = "level", nullable = false)
     private short level = 1;
 
     @Builder.Default
     @Comment("Тип корпуса героя")
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private HeroType type = HeroType.VOID;
 
     @Builder.Default
     @Comment("Мощность героя")
-    @Column(name = "power")
+    @Column(name = "power", nullable = false)
     private float power = 1.0f;
 
     @Builder.Default
     @Comment("Накопленный опыт героя")
-    @Column(name = "experience")
+    @Column(name = "experience", nullable = false)
     private float experience = 0f;
 
     @Builder.Default
     @Comment("Текущее здоровье героя")
-    @Column(name = "cur_health")
+    @Column(name = "cur_health", nullable = false)
     private short curHealth = 100;
 
     @Builder.Default
     @Comment("Максимальное здоровье героя")
-    @Column(name = "max_health")
+    @Column(name = "max_health", nullable = false)
     private short maxHealth = 100;
 
     @Builder.Default
     @Comment("Текущий запас масла героя")
-    @Column(name = "cur_oil")
+    @Column(name = "cur_oil", nullable = false)
     private short curOil = 100;
 
     @Builder.Default
     @Comment("Максимальный запас масла героя")
-    @Column(name = "max_oil")
+    @Column(name = "max_oil", nullable = false)
     private short maxOil = 100;
 
     @Builder.Default
     @Comment("Скорость героя")
-    @Column(name = "speed")
+    @Column(name = "speed", nullable = false)
     private byte speed = 6;
 
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
-
-    @NotNull
     @Comment("Имеющиеся бафы героя")
-    @Column(name = "buffs_json", length = 1024)
+    @Column(name = "buffs_json", length = 1024, nullable = false)
     private String buffsJson;
 
     @Comment("Позиция героя на карте по горизонтали")
-    @Column(name = "position_x", columnDefinition = "double precision DEFAULT 256")
+    @Column(name = "position_x", columnDefinition = "double precision DEFAULT 256", nullable = false)
     private double positionX;
 
     @Comment("Позиция героя на карте по вертикали")
-    @Column(name = "position_y", columnDefinition = "double precision DEFAULT 256")
+    @Column(name = "position_y", columnDefinition = "double precision DEFAULT 256", nullable = false)
     private double positionY;
 
     @Builder.Default
     @Comment("Время, проведенное в игре")
-    @Column(name = "in_game_time", columnDefinition = "bigint default 0")
+    @Column(name = "in_game_time", columnDefinition = "bigint default 0", nullable = false)
     private long inGameTime = 0;
 
-    @NotNull
     @Comment("Мир героя")
     @Column(name = "world_uid", nullable = false, updatable = false)
     private UUID worldUid;
 
     @Comment("Создатель героя")
-    @Column(name = "owner_uid")
+    @Column(name = "owner_uid", nullable = false)
     private UUID ownerUid;
 
     @Builder.Default
     @CreatedDate
     @CreationTimestamp
     @Comment("Дата создания героя")
-    @Column(name = "create_date", columnDefinition = "TIMESTAMP")
+    @Column(name = "create_date", columnDefinition = "TIMESTAMP", nullable = false)
     private LocalDateTime createDate = LocalDateTime.now();
 
     @Builder.Default
@@ -161,11 +154,12 @@ public class Hero {
     @Column(name = "last_play_date", columnDefinition = "TIMESTAMP")
     private LocalDateTime lastPlayDate = LocalDateTime.now();
 
-
     // custom fields:
     @Transient
     private boolean isOnline;
 
+    @Transient
+    private HurtLevel hurtLevel;
 
     // methods:
     @Override
@@ -173,7 +167,6 @@ public class Hero {
         return "Hero{"
                 + "uid=" + uid
                 + ", heroName='" + heroName + '\''
-                + ", inventoryJson='" + inventoryJson + '\''
                 + ", level=" + level
                 + ", type=" + type
                 + ", power=" + power
@@ -181,11 +174,8 @@ public class Hero {
                 + ", curHealth=" + curHealth
                 + ", maxHealth=" + maxHealth
                 + ", speed=" + speed
-                + ", hurtLevel=" + hurtLevel
-                + ", buffsJson='" + buffsJson + '\''
                 + ", positionX=" + positionX
                 + ", positionY=" + positionY
-                + ", inGameTime=" + inGameTime
                 + ", worldUid=" + worldUid
                 + ", ownerUuid=" + ownerUid
                 + '}';

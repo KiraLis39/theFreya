@@ -133,7 +133,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
         Constants.INPUT_ACTION.add(frameName, frame.getRootPane());
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFullscreen",
-                UserConfig.HotKeys.FULLSCREEN.getEvent(), 0, new AbstractAction() {
+                Constants.getUserConfig().getKeyFullscreen(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         log.debug("Try to switch the fullscreen mode...");
@@ -143,7 +143,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 });
 
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchPause",
-                UserConfig.HotKeys.PAUSE.getEvent(), 0, new AbstractAction() {
+                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         log.debug("Try to switch the pause mode...");
@@ -152,7 +152,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 });
 
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchDebug",
-                UserConfig.HotKeys.DEBUG.getEvent(), 0, new AbstractAction() {
+                Constants.getUserConfig().getKeyDebug(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         log.debug("Try to switch the debug mode...");
@@ -161,7 +161,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 });
 
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFps",
-                UserConfig.HotKeys.FPS.getEvent(), 0, new AbstractAction() {
+                Constants.getUserConfig().getKeyFps(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         log.debug("Try to switch the fps mode...");

@@ -87,6 +87,7 @@ public class WorldCreatingPane extends WorldCreator {
 
             add(new SubPane("Уровень сложности:") {{
                 add(new JComboBox<>(Arrays.stream(HardnessLevel.values()).map(HardnessLevel::getDescription).toArray()) {{
+                    setSelectedIndex(1);
                     addActionListener(e -> hardnessLevel = Arrays.stream(HardnessLevel.values())
                             .filter(hl -> hl.getDescription()
                                     .equals(Objects.requireNonNull(getSelectedItem()).toString())).findFirst()
