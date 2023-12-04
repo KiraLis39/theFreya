@@ -2,7 +2,6 @@ package game.freya.net;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import game.freya.GameController;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
@@ -42,13 +41,12 @@ public class PlayedHeroesService {
     private volatile UUID currentHeroUid;
 
 
-    public HeroDTO getHero(ClientDataDTO data, GameController gameController) {
+    public HeroDTO getHero(ClientDataDTO data) {
         if (!heroes.containsKey(data.heroUuid())) {
             HeroDTO dto;
             if (heroService.isHeroExist(data.heroUuid())) {
                 dto = heroService.getByUid(data.heroUuid());
             } else {
-                gameController.requestHeroFromServer(data.heroUuid());
                 return null;
             }
             addHero(dto);
@@ -132,8 +130,7 @@ public class PlayedHeroesService {
     }
 
     public HeroDTO getCurrentHero() {
-        checkCHE();
-        return heroes.get(currentHeroUid);
+        return heroes.getOrDefault(currentHeroUid, null);
     }
 
     public MovingVector getCurrentHeroVector() {

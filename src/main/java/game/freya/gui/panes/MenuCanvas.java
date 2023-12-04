@@ -67,7 +67,7 @@ public class MenuCanvas extends FoxCanvas {
             log.error("Мы в меню, но соединение с Сервером ещё запущено! Закрытие подключения...");
         }
 
-        new Thread(this).start();
+        Thread.startVirtualThread(this);
 
         // запуск вспомогательного потока процессов игры:
         runSecondThread();

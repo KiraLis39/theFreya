@@ -215,7 +215,7 @@ public class Server implements iServer {
             }
         }
 
-        diedClientsCleaner = new Thread(() -> {
+        diedClientsCleaner = Thread.startVirtualThread(() -> {
             log.info("Поток чистки Клиентов начал свою работу.");
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -229,8 +229,6 @@ public class Server implements iServer {
             log.info("Поток чистки Клиентов завершил свою работу.");
         });
         diedClientsCleaner.setName("Died clients cleaner thread");
-        diedClientsCleaner.setDaemon(true);
-        diedClientsCleaner.start();
     }
 
     public void untilOpen(int waitTime) {

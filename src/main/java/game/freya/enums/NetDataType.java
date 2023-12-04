@@ -9,9 +9,9 @@ public enum NetDataType {
     AUTH_SUCCESS,
     AUTH_DENIED,
     CHAT,
-    SYNC,
     PING,
     PONG,
     WRONG_WORLD_PING,
-    DIE
+    DIE,
+    EVENT
 }

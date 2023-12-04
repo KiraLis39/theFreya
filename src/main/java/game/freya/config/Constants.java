@@ -39,7 +39,7 @@ public final class Constants {
 
     public static final int SOCKET_BUFFER_SIZE = 8192; // 65536 | 16384 | 8192
 
-    public static final long SERVER_BROADCAST_DELAY = 1_000L; // миллисекунд ждать между отправками данных
+    public static final long SERVER_BROADCAST_DELAY = 50L; // миллисекунд ждать между отправками данных
 
     public static final int SOCKET_PING_AWAIT_TIMEOUT = 6_000; // сколько миллисекунд клиент ждёт данные от Сервера
 

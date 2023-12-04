@@ -10,7 +10,7 @@ public class Chat {
 
     }
 
-    public void draw(Graphics2D g2D) {
+    public void draw(Graphics2D v2D) {
 //        g.setColor(new Color(9, 28, 42, 220));
 //        g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 32, 32);
 

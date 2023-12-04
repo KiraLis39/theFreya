@@ -75,7 +75,7 @@ public class GameCanvas extends FoxCanvas {
             }
         }
 
-        new Thread(this).start();
+        Thread.startVirtualThread(this);
 
         // запуск вспомогательного потока процессов игры:
         setSecondThread("Game second thread", new Thread(() -> {
@@ -193,12 +193,16 @@ public class GameCanvas extends FoxCanvas {
     /**
      * Основной цикл отрисовки игрового окна.
      */
-    private void drawNextFrame() throws AWTException {
+    private void drawNextFrame() throws AWTException, InterruptedException {
         do {
             do {
-                Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                super.drawBackground(g2D);
-                g2D.dispose();
+                if (isDisplayable()) {
+                    Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
+                    super.drawBackground(g2D);
+                    g2D.dispose();
+                } else {
+                    Thread.sleep(200);
+                }
             } while (getBufferStrategy().contentsRestored());
             getBufferStrategy().show();
         } while (getBufferStrategy().contentsLost());

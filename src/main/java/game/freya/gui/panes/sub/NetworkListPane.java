@@ -1,5 +1,6 @@
 package game.freya.gui.panes.sub;
 
+import fox.FoxRender;
 import fox.components.FOptionPane;
 import fox.components.tools.VerticalFlowLayout;
 import game.freya.GameController;
@@ -25,7 +26,6 @@ import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
@@ -151,7 +151,7 @@ public class NetworkListPane extends WorldCreator {
 
         List<WorldDTO> worlds = gameController.findAllWorldsByNetworkAvailable(true);
         for (WorldDTO world : worlds) {
-            centerList.add(new SubPane(world.getTitle() + " (" + world.getUid() + ")") {{
+            centerList.add(new SubPane(world.getTitle()) {{
                 setWorld(world);
                 setPreferredSize(new Dimension(
                         Constants.getUserConfig().isFullscreen()
@@ -159,17 +159,6 @@ public class NetworkListPane extends WorldCreator {
                                 : (worlds.size() > 5 ? centerList.getWidth() - 24 : centerList.getWidth() - 8),
                         128));
 
-                setHeaderLabel(new ZLabel(("<html><pre>"
-                        + "Уровень:<font color=#43F8C9><b>    %s</b></font>"
-                        + "<br>Создано:<font color=#8805A8><b>    %s</b></font>"
-                        + "<br>Адрес:<font color=#fcba03><b>      %s</b></font>"
-                        + "</pre></html>")
-                        .formatted(getWorld().getLevel().getDescription(), getWorld().getCreateDate().format(Constants.DATE_FORMAT_3),
-                                getWorld().getNetworkAddress()),
-                        null) {{
-//                            setOpaque(true);
-                    setBackground(Color.CYAN);
-                }});
                 add(new JPanel() {{
                     setOpaque(false);
                     setBackground(Color.YELLOW);
@@ -198,10 +187,22 @@ public class NetworkListPane extends WorldCreator {
                         }
                     }, BorderLayout.WEST);
 
-                    add(new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 1)) {{
+                    add(new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 1, 1)) {{
                         setOpaque(false);
                         setIgnoreRepaint(true);
                         setDoubleBuffered(false);
+
+                        setAlignmentX(LEFT_ALIGNMENT);
+                        setHeaderLabel(new ZLabel(("<html><pre>"
+                                + "Уровень:<font color=#43F8C9><b>    %s</b></font>"
+                                + "<br>Адрес:<font color=#fcba03><b>      %s</b></font>"
+                                + "<br>Создано:<font color=#8805A8><b>    %s</b></font>"
+                                + "<br> </pre></html>")
+                                .formatted(getWorld().getLevel().getDescription(), getWorld().getNetworkAddress(),
+                                        getWorld().getCreateDate().format(Constants.DATE_FORMAT_3)),
+                                null) {{
+                            setBackground(Color.CYAN);
+                        }});
 
                         add(getHeaderLabel());
                     }}, BorderLayout.CENTER);
@@ -320,23 +321,24 @@ public class NetworkListPane extends WorldCreator {
         g.drawImage(snap, 0, 0, getWidth(), getHeight(), this);
 
         if (canvas.isConnectionAwait() || canvas.isPingAwait()) {
-            g.setFont(Constants.PROPAGANDA_BIG_FONT);
+            g.setFont(Constants.GAME_FONT_02);
+            Constants.RENDER.setRender((Graphics2D) g, FoxRender.RENDER.LOW);
 
             g.setColor(Color.BLACK);
             g.drawString(canvas.isPingAwait() ? pingString : connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 9,
-                    getHeight() / 2);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 34,
+                    getHeight() / 2 + 2);
             g.drawString(dot[dots],
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 9, getHeight() / 2 + 16);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 34, getHeight() / 2 + 18);
 
             g.setColor(Color.WHITE);
             g.drawString(canvas.isPingAwait() ? pingString : connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 9,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 32,
                     getHeight() / 2);
             g.drawString(dot[dots],
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 9, getHeight() / 2 + 16);
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 32, getHeight() / 2 + 16);
 
-            if (System.currentTimeMillis() - was > 1000) {
+            if (System.currentTimeMillis() - was > 500) {
                 was = System.currentTimeMillis();
                 dots = dots >= dot.length - 1 ? 0 : dots + 1;
             }
@@ -357,7 +359,7 @@ public class NetworkListPane extends WorldCreator {
     private synchronized void pingServers() {
         canvas.setPingAwait(true);
 
-        pingActionThread = new Thread(() -> {
+        pingActionThread = Thread.startVirtualThread(() -> {
             // пинг нелокальных миров...
             Arrays.stream(centerList.getComponents()).filter(SubPane.class::isInstance).iterator().forEachRemaining(spn -> {
                 if (pingActionThread.isInterrupted()) {
@@ -384,13 +386,10 @@ public class NetworkListPane extends WorldCreator {
                 }
 
                 ZLabel spHeader = sp.getHeaderLabel();
-                spHeader.setText(spHeader.getText().replace("</pre>", add));
+                spHeader.setText(spHeader.getText().replace("<br> </pre>", add));
             });
             canvas.setPingAwait(false);
         });
-        pingActionThread.setName("Ping action networkListPane thread");
-        pingActionThread.setDaemon(true);
-        pingActionThread.start();
     }
 
     @Override

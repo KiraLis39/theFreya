@@ -109,7 +109,7 @@ public class WorldCreatingPane extends WorldCreator {
             }};
             netPassPane = new SubPane("Сетевой пароль:") {{
                 setVisible(nac.isSelected());
-                add(new JPasswordField(String.valueOf(netPasswordHash), 20) {{
+                add(new JPasswordField(20) {{
                     addKeyListener(new KeyAdapter() {
                         @Override
                         public void keyReleased(KeyEvent e) {

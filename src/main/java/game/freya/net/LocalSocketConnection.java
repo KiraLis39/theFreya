@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @RequiredArgsConstructor
-public class LocalSocketConnection implements Runnable {
+public class LocalSocketConnection implements Runnable, AutoCloseable {
     private static GameController gameController;
 
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
@@ -78,7 +78,7 @@ public class LocalSocketConnection implements Runnable {
         }};
 
         if (gameController.isServerIsOpen()) {
-            connectionLiveThread = new Thread(() -> {
+            connectionLiveThread = Thread.startVirtualThread(() -> {
                 log.info("Поток поддержки жизни соединения начал свою работу.");
                 while (connectionThread.isAlive() && !Thread.currentThread().isInterrupted()) {
                     long timePass = System.currentTimeMillis() - this.lastDataReceivedTimestamp;
@@ -96,8 +96,6 @@ public class LocalSocketConnection implements Runnable {
                 log.info("Поток поддержки жизни соединения завершил свою работу.");
             });
             connectionLiveThread.setName("Connection live thread");
-            connectionLiveThread.setDaemon(true);
-            connectionLiveThread.start();
         }
 
         // ждём пока сокет откроется и будет готов к работе:
@@ -112,7 +110,9 @@ public class LocalSocketConnection implements Runnable {
     }
 
     private void parseNextData(ClientDataDTO readed) {
-        log.info("Приняты данные от Сервера: {} (герой {}, игрок {})", readed.type(), readed.heroName(), readed.playerName());
+        if (!readed.type().equals(NetDataType.PONG)) {
+            log.info("Приняты данные от Сервера: {} (герой {}, игрок {})", readed.type(), readed.heroName(), readed.playerName());
+        }
         this.lastDataReceivedTimestamp = System.currentTimeMillis();
 
         switch (readed.type()) {
@@ -142,9 +142,12 @@ public class LocalSocketConnection implements Runnable {
                 new FOptionPane().buildFOptionPane("Отказ:", "Сервер отказал в выборе Героя: %s"
                         .formatted(readed.explanation()), 15, true);
             }
-            case HERO_REQUEST -> gameController.saveNewRemoteHero(readed);
-            case SYNC -> {
-                log.debug("Приняты данные синхронизации от игрока: {} (герой: {})", readed.playerName(), readed.heroName());
+            case HERO_REQUEST -> {
+                gameController.saveNewRemoteHero(readed);
+                gameController.setRemoteHeroRequestSent(false);
+            }
+            case EVENT -> {
+                log.debug("Приняты данные синхронизации {} от игрока: {} (герой: {})", readed.event(), readed.playerName(), readed.heroName());
                 gameController.syncServerDataWithCurrentWorld(readed);
             }
             case CHAT -> {
@@ -179,8 +182,8 @@ public class LocalSocketConnection implements Runnable {
      * @param dataDTO данные об изменениях локальной версии мира.
      */
     public synchronized void toServer(ClientDataDTO dataDTO) {
-        // PONG никому не интересен, лишь мешает логу. SYNC тоже.
-        if (!dataDTO.type().equals(NetDataType.PONG) && !dataDTO.type().equals(NetDataType.SYNC)) {
+        // PONG никому не интересен, лишь мешает логу. EVENT тоже.
+        if (!dataDTO.type().equals(NetDataType.PONG) && !dataDTO.type().equals(NetDataType.EVENT)) {
             if (dataDTO.type().equals(NetDataType.PING)) {
                 log.info("Пингуем Мир {} Сервера {}:{}...", dataDTO.worldUid(), host, port);
             } else {
@@ -353,5 +356,10 @@ public class LocalSocketConnection implements Runnable {
 
     public boolean isAlive() {
         return connectionThread != null && connectionThread.isAlive();
+    }
+
+    @Override
+    public void close() throws Exception {
+        killSelf();
     }
 }

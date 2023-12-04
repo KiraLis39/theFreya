@@ -6,6 +6,7 @@ import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
 import game.freya.enums.MovingVector;
+import game.freya.enums.NetDataEvent;
 import game.freya.enums.NetDataType;
 import lombok.Builder;
 
@@ -20,6 +21,7 @@ import java.util.UUID;
 public record ClientDataDTO(
         UUID id,
         NetDataType type,
+        NetDataEvent event,
         UUID playerUid,
         String playerName,
         Color baseColor,

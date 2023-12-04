@@ -133,39 +133,34 @@ public final class HeroMapper {
     }
 
     public ClientDataDTO heroToCli(HeroDTO hero, PlayerDTO currentPlayer, NetDataType dataType) {
-        if (hero == null) {
-            return null;
-        }
-        ClientDataDTO result = null;
-        if (dataType.equals(NetDataType.HERO_REQUEST)) {
-            result = ClientDataDTO.builder()
-                    .id(UUID.randomUUID())
-                    .type(dataType)
+        return hero == null ? null : ClientDataDTO.builder()
+                .id(UUID.randomUUID())
+                .type(dataType)
 
-                    .playerUid(currentPlayer.getUid())
-                    .playerName(currentPlayer.getNickName())
+                .playerUid(currentPlayer.getUid())
+                .playerName(currentPlayer.getNickName())
 
-                    .heroUuid(hero.getHeroUid())
-                    .heroName(hero.getHeroName())
-                    .heroType(hero.getHeroType())
+                .heroUuid(hero.getHeroUid())
+                .heroName(hero.getHeroName())
+                .heroType(hero.getHeroType())
 
-                    .baseColor(hero.getBaseColor())
-                    .secondColor(hero.getSecondColor())
-                    .corpusType(hero.getCorpusType())
-                    .periferiaType(hero.getPeriferiaType())
-                    .periferiaSize(hero.getPeriferiaSize())
+                .baseColor(hero.getBaseColor())
+                .secondColor(hero.getSecondColor())
+                .corpusType(hero.getCorpusType())
+                .periferiaType(hero.getPeriferiaType())
+                .periferiaSize(hero.getPeriferiaSize())
 
-                    .level(hero.getLevel())
-                    .hp(hero.getCurHealth())
-                    .maxHp(hero.getMaxHealth())
-                    .oil(hero.getCurOil())
-                    .maxOil(hero.getMaxOil())
-                    .speed(hero.getSpeed())
-                    .vector(hero.getVector())
-                    .positionX(hero.getPosition().x)
-                    .positionY(hero.getPosition().y)
+                .level(hero.getLevel())
+                .hp(hero.getCurHealth())
+                .maxHp(hero.getMaxHealth())
+                .oil(hero.getCurOil())
+                .maxOil(hero.getMaxOil())
+                .speed(hero.getSpeed())
+                .vector(hero.getVector())
+                .positionX(hero.getPosition().x)
+                .positionY(hero.getPosition().y)
 
-                    // временно отключил:
+                // временно отключил:
 //                    .createDate(hero.getCreateDate())
 //                    .power(getCurrentHeroPower())
 //                    .experience(getCurrentHeroExperience())
@@ -173,43 +168,8 @@ public final class HeroMapper {
 //                    .inventoryJson(getCurrentHeroInventoryJson())
 //                    .inGameTime(readed.inGameTime())
 
-                    .worldUid(hero.getWorldUid())
-                    .build();
-        } else if (dataType.equals(NetDataType.SYNC)) {
-            result = ClientDataDTO.builder()
-                    .id(UUID.randomUUID())
-                    .type(dataType)
-
-                    .playerUid(currentPlayer.getUid())
-                    .playerName(currentPlayer.getNickName())
-
-                    .heroUuid(hero.getHeroUid())
-                    .heroName(hero.getHeroName())
-                    .playerName(currentPlayer.getNickName())
-                    .heroType(hero.getHeroType())
-
-                    .hp(hero.getCurHealth())
-                    .maxHp(hero.getMaxHealth())
-                    .oil(hero.getCurOil())
-                    .maxOil(hero.getMaxOil())
-
-                    .level(hero.getLevel())
-                    .speed(hero.getSpeed())
-                    .vector(hero.getVector())
-                    .positionX(hero.getPosition().x)
-                    .positionY(hero.getPosition().y)
-
-                    // временно отключил:
-//                    .createDate(hero.getCreateDate())
-//                    .power(getCurrentHeroPower())
-//                    .experience(getCurrentHeroExperience())
-//                    .buffsJson(getCurrentHeroBuffsJson())
-//                    .inventoryJson(getCurrentHeroInventoryJson())
-//                    .inGameTime(readed.inGameTime())
-
-                    .build();
-        }
-        return result;
+                .worldUid(hero.getWorldUid())
+                .build();
     }
 
     public HeroDTO cliToHero(ClientDataDTO cli) {

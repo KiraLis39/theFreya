@@ -103,7 +103,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                         sendHeroDataByRequest(readed.heroUuid());
                     } else if (lastType.equals(NetDataType.PING)) {
                         doPongAnswerToClient(readed.worldUid());
-                    } else if (lastType.equals(NetDataType.SYNC)) {
+                    } else if (lastType.equals(NetDataType.EVENT)) {
                         server.broadcast(readed, this);
                     } else if (lastType.equals(NetDataType.DIE)) {
                         log.warn("Клиент {} сообщил о скорой смерти соединения.", clientUid);

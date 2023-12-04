@@ -14,6 +14,7 @@ import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
+import game.freya.enums.NetDataEvent;
 import game.freya.enums.NetDataType;
 import game.freya.enums.ScreenType;
 import game.freya.exceptions.ErrorMessages;
@@ -27,6 +28,7 @@ import game.freya.net.LocalSocketConnection;
 import game.freya.net.PlayedHeroesService;
 import game.freya.net.Server;
 import game.freya.net.data.ClientDataDTO;
+import game.freya.services.EventService;
 import game.freya.services.HeroService;
 import game.freya.services.PlayerService;
 import game.freya.services.WorldService;
@@ -60,6 +62,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -71,11 +74,15 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class GameController extends GameControllerBase {
+    private final ArrayDeque<ClientDataDTO> deque = new ArrayDeque<>();
+
     private final PlayerService playerService;
 
     private final HeroService heroService;
 
     private final WorldService worldService;
+
+    private final EventService eventService;
 
     private final WorldMapper worldMapper;
 
@@ -96,6 +103,9 @@ public class GameController extends GameControllerBase {
     @Getter
     @Setter
     private volatile boolean isGameActive = false;
+
+    @Getter
+    private volatile boolean isRemoteHeroRequestSent = false;
 
     @PostConstruct
     public void init() throws IOException {
@@ -253,10 +263,13 @@ public class GameController extends GameControllerBase {
         // создаётся поток текущего состояния на Сервер:
         setNetDataTranslator(new Thread(() -> {
             while (!getNetDataTranslator().isInterrupted() && isSocketIsOpen() && isGameActive) {
-                localSocketConnection.toServer(buildNewDataPackage());
+                if (!deque.isEmpty()) {
+                    while (!deque.isEmpty()) {
+                        localSocketConnection.toServer(deque.pollFirst());
+                    }
+                }
 
                 try {
-                    // todo: правильно ли это? А если я стою АФК?
                     Thread.sleep(Constants.SERVER_BROADCAST_DELAY);
                 } catch (InterruptedException e) {
                     log.warn("Прерывание потока отправки данных на сервер!");
@@ -270,9 +283,8 @@ public class GameController extends GameControllerBase {
         getNetDataTranslator().start();
     }
 
-    private ClientDataDTO buildNewDataPackage() {
-        // собираем пакет данных для сервера и других игроков:
-        return heroToCli(getCurrentHero(), getCurrentPlayer(), NetDataType.SYNC);
+    public void sendPacket(ClientDataDTO data) {
+        this.deque.offer(data);
     }
 
     private String getCurrentHeroInventoryJson() {
@@ -405,6 +417,8 @@ public class GameController extends GameControllerBase {
             playedHeroesService.setCurrentHeroVector(vector);
             if (isPlayerCanGo(visibleRect, vector, canvas)) {
                 playedHeroesService.getCurrentHero().move();
+                sendPacket(eventService
+                        .buildMove(playedHeroesService.getCurrentHero()));
             }
 
             // move map:
@@ -551,7 +565,7 @@ public class GameController extends GameControllerBase {
     }
 
     public String getCurrentWorldTitle() {
-        return worldService.getCurrentWorld().getTitle();
+        return worldService.getCurrentWorld() == null ? null : worldService.getCurrentWorld().getTitle();
     }
 
     public VolatileImage getCurrentWorldMap() {
@@ -661,15 +675,11 @@ public class GameController extends GameControllerBase {
 
                 .build());
 
-        Thread authThread = new Thread(() -> {
+        Thread authThread = Thread.startVirtualThread(() -> {
             while (!localSocketConnection.isAuthorized() && !Thread.currentThread().isInterrupted()) {
                 Thread.yield();
             }
         });
-        authThread.setName("Auth awaits thread");
-        authThread.setDaemon(true);
-        authThread.start();
-
         try {
             authThread.join(9_000);
             if (authThread.isAlive()) {
@@ -692,42 +702,40 @@ public class GameController extends GameControllerBase {
     }
 
     public boolean ping(String host, Integer port, UUID worldUid) {
-        LocalSocketConnection pingConn = new LocalSocketConnection();
-        try {
+        LocalSocketConnection pingConn = null;
+        try (LocalSocketConnection conn = new LocalSocketConnection()) {
+            pingConn = conn;
             // подключаемся к серверу:
-            pingConn.openSocket(host, port, this, true);
+            conn.openSocket(host, port, this, true);
 
             // ждём пока получим ответ PONG от Сервера:
-            pingThread = new Thread(() -> {
+            pingThread = Thread.startVirtualThread(() -> {
                 long was = System.currentTimeMillis();
-                while (pingConn.isAlive() && !pingConn.isPongReceived() && System.currentTimeMillis() - was < 15_000) {
+                while (conn.isAlive() && !conn.isPongReceived() && System.currentTimeMillis() - was < 15_000) {
                     Thread.yield();
                 }
             });
-            pingThread.setDaemon(true);
-            pingThread.start();
             pingThread.join();
 
             // проверяем получен ли ответ:
-            if (!pingConn.isPongReceived()) {
+            if (!conn.isPongReceived()) {
                 pingThread.interrupt();
-                log.warn("Пинг к Серверу {}:{} не прошел (1): {}", host, port, pingConn.getLastExplanation());
+                log.warn("Пинг к Серверу {}:{} не прошел (1): {}", host, port, conn.getLastExplanation());
                 return false;
-            } else if (pingConn.getLastExplanation() != null && pingConn.getLastExplanation().equals(worldUid.toString())) {
+            } else if (conn.getLastExplanation() != null && conn.getLastExplanation().equals(worldUid.toString())) {
                 log.warn("Пинг к Серверу {}:{} прошел успешно!", host, port);
                 return true;
             }
-            return false;
         } catch (InterruptedException e) {
             pingThread.interrupt();
             log.warn("Пинг к Серверу {}:{} не прошел (2): {}", host, port, pingConn.getLastExplanation());
-            return false;
         } catch (GlobalServiceException gse) {
-            log.warn("Пинг к Серверу {}:{} не прошел (3): {} ({})", host, port, gse.getMessage(), pingConn.getLastExplanation());
-            return false;
-        } finally {
-            pingConn.killSelf();
+            log.warn("Пинг к Серверу {}:{} не прошел (3): {} ({})",
+                    host, port, gse.getMessage(), pingConn != null ? pingConn.getLastExplanation() : null);
+        } catch (Exception e) {
+            log.warn("Пинг к Серверу {}:{} не прошел (4): {}", host, port, ExceptionUtils.getFullExceptionMessage(e));
         }
+        return false;
     }
 
     public void breakPing() {
@@ -810,14 +818,11 @@ public class GameController extends GameControllerBase {
         log.info("Отправка данных текущего героя на Сервер...");
         localSocketConnection.toServer(heroToCli(getCurrentHero(), playerService.getCurrentPlayer(), NetDataType.HERO_REQUEST));
 
-        Thread heroCheckThread = new Thread(() -> {
+        Thread heroCheckThread = Thread.startVirtualThread(() -> {
             while (!localSocketConnection.isAccepted() && !Thread.currentThread().isInterrupted()) {
                 Thread.yield();
             }
         });
-        heroCheckThread.setName("Hero accept await thread");
-        heroCheckThread.setDaemon(true);
-        heroCheckThread.start();
 
         try {
             heroCheckThread.join(9_000);
@@ -904,17 +909,20 @@ public class GameController extends GameControllerBase {
      * @param data модель обновлений для сетевого мира от другого участника игры.
      */
     public void syncServerDataWithCurrentWorld(@NotNull ClientDataDTO data) {
-        log.debug("Получены данные для синхронизации мира {} игрока {}'s (герой {})", data.worldUid(), data.playerName(), data.heroName());
+        log.debug("Получены данные для синхронизации {} мира {} игрока {}'s (герой {})",
+                data.event(), data.worldUid(), data.playerName(), data.heroName());
 
-        HeroDTO aim = playedHeroesService.getHero(data, this);
+        HeroDTO aim = playedHeroesService.getHero(data);
         if (aim == null) {
-            log.warn("Герой {} не существует в БД. Должен быть запрос на его создание к Серверу, ожидается...", data.heroUuid());
+            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", data.heroUuid());
+            requestHeroFromServer(data.heroUuid());
             return;
         }
 
-        // Обновляем позицию другого игрока:
-        aim.setPosition(new Point2D.Double(data.positionX(), data.positionY()));
-        aim.setVector(data.vector());
+        if (Objects.requireNonNull(data.event()) == NetDataEvent.HERO_MOVING) {// Обновляем позицию другого игрока:
+            aim.setPosition(new Point2D.Double(data.positionX(), data.positionY()));
+            aim.setVector(data.vector());
+        }
 
         // Обновляем здоровье, максимальное здоровье, силу, бафы-дебафы, текущий инструмент в руках и т.п. другого игрока:
         // ...
@@ -991,6 +999,7 @@ public class GameController extends GameControllerBase {
                 .type(NetDataType.HERO_REMOTE_NEED)
                 .heroUuid(uuid)
                 .build());
+        setRemoteHeroRequestSent(true);
     }
 
     public ClientDataDTO heroToCli(HeroDTO found, PlayerDTO currentPlayer, NetDataType netDataType) {
@@ -1007,5 +1016,9 @@ public class GameController extends GameControllerBase {
 
     public PlayerDTO getCurrentPlayer() {
         return playerService.getCurrentPlayer();
+    }
+
+    public void setRemoteHeroRequestSent(boolean b) {
+        this.isRemoteHeroRequestSent = b;
     }
 }
