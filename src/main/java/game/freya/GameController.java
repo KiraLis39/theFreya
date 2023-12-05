@@ -159,25 +159,9 @@ public class GameController extends GameControllerBase {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("net", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_0.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/player.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_0", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_1.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_1", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_2.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_2", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_3.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_3", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_sh.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_sh", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("player", ImageIO.read(netResource));
             }
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
@@ -919,7 +903,7 @@ public class GameController extends GameControllerBase {
             return;
         }
 
-        if (Objects.requireNonNull(data.event()) == NetDataEvent.HERO_MOVING) {// Обновляем позицию другого игрока:
+        if (Objects.requireNonNull(data.event()) == NetDataEvent.HERO_MOVING) {
             aim.setPosition(new Point2D.Double(data.positionX(), data.positionY()));
             aim.setVector(data.vector());
         }
