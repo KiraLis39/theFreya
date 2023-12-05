@@ -3,6 +3,7 @@ package game.freya.gui.panes.sub;
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JZlider;
@@ -30,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class VideoSettingsPane extends JPanel {
+public class VideoSettingsPane extends JPanel implements iSubPane {
     private final List<DisplayMode> modes = new ArrayList<>(List.of(Constants.MON.getDevice().getDisplayModes()));
 
     private transient BufferedImage snap;
@@ -47,9 +48,7 @@ public class VideoSettingsPane extends JPanel {
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
+        recalculate(canvas);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
         // left panel:
@@ -219,5 +218,12 @@ public class VideoSettingsPane extends JPanel {
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }
         g.drawImage(snap, 0, 0, getWidth(), getHeight(), this);
+    }
+
+    @Override
+    public void recalculate(FoxCanvas canvas) {
+        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
     }
 }

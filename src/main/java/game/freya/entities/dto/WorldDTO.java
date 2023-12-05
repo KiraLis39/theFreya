@@ -34,6 +34,14 @@ import java.util.UUID;
 public class WorldDTO extends ComponentAdapter implements iWorld {
     private static final Random r = new Random(100);
 
+    final Color textColor = new Color(58, 175, 217, 191);
+
+    final Color linesColor = new Color(47, 84, 3, 64);
+
+    final Color backColor = new Color(31, 31, 31);
+
+    final String scobe = ")";
+
     @Getter
     @Builder.Default
     private final Set<iEnvironment> environments = HashSet.newHashSet(30);
@@ -128,11 +136,6 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     }
 
     private VolatileImage repaintMap(Rectangle camera) throws AWTException {
-        final Color textColor = new Color(58, 175, 217, 191);
-        final Color linesColor = new Color(47, 84, 3, 64);
-        final Color backColor = new Color(31, 31, 31);
-        final String scobe = ")";
-
         if (this.gameMap == null) {
             this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
                     dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
@@ -187,17 +190,11 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
             v2D.drawLine(gameMap.getWidth() / 2, 0, gameMap.getWidth() / 2, gameMap.getHeight());
         }
 
-//        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
-//                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
         // рисуем окружение на карте:
         drawEnvironments(v2D, camera);
 
         // рисуем игроков из контроллера на карте:
         gameController.drawHeroes(v2D, canvas);
-
-        // рисуем миникарту:
-
 
         v2D.dispose();
 

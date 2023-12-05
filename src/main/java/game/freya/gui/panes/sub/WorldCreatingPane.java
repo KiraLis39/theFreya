@@ -6,6 +6,7 @@ import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -36,7 +37,7 @@ import java.util.Random;
 import java.util.UUID;
 
 @Slf4j
-public class WorldCreatingPane extends WorldCreator {
+public class WorldCreatingPane extends WorldCreator implements iSubPane {
     private static final Random r = new Random();
 
     private transient BufferedImage snap;
@@ -63,10 +64,8 @@ public class WorldCreatingPane extends WorldCreator {
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+        recalculate(canvas);
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
 
         add(new SubPane("Создание игрового мира") {{
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -187,5 +186,12 @@ public class WorldCreatingPane extends WorldCreator {
             ntf.requestFocusInWindow();
             ntf.selectAll();
         }
+    }
+
+    @Override
+    public void recalculate(FoxCanvas canvas) {
+        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
     }
 }

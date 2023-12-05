@@ -339,10 +339,10 @@ public class GameController extends GameControllerBase {
     /**
      * Метод отрисовки всех героев подключенных к миру и авторизованных игроков.
      *
-     * @param g2D    хост для отрисовки.
+     * @param v2D    хост для отрисовки.
      * @param canvas класс холста.
      */
-    public void drawHeroes(Graphics2D g2D, GameCanvas canvas) {
+    public void drawHeroes(Graphics2D v2D, GameCanvas canvas) {
         if (isCurrentHeroOnline()) { // если игра по сети:
             for (HeroDTO hero : getConnectedHeroes()) {
                 if (playedHeroesService.isCurrentHero(hero)) {
@@ -350,10 +350,10 @@ public class GameController extends GameControllerBase {
                     if (!Constants.isPaused()) {
                         moveHeroIfAvailable(canvas); // узкое место!
                     }
-                    hero.draw(g2D);
+                    hero.draw(v2D);
                 } else if (canvas.getViewPort().getBounds().contains(hero.getPosition())) {
                     // если чужой герой в пределах видимости:
-                    hero.draw(g2D);
+                    hero.draw(v2D);
                 }
             }
         } else { // если не-сетевая игра:
@@ -365,7 +365,7 @@ public class GameController extends GameControllerBase {
                 log.info("Потеряли текущего игрока. Что-то случилось? Выходим...");
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Окно игры не смогло получить текущего игрока для отрисовки");
             }
-            playedHeroesService.getCurrentHero().draw(g2D);
+            playedHeroesService.getCurrentHero().draw(v2D);
         }
     }
 

@@ -3,6 +3,7 @@ package game.freya.gui.panes.sub;
 import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -22,7 +23,7 @@ import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 
 @Slf4j
-public class AudioSettingsPane extends JPanel implements ChangeListener {
+public class AudioSettingsPane extends JPanel implements ChangeListener, iSubPane {
     private transient BufferedImage snap;
 
     public AudioSettingsPane(FoxCanvas canvas) {
@@ -31,10 +32,8 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
+        recalculate(canvas);
 
         add(new SubPane("Звук") {{
             add(new SubPane("◑") {{
@@ -102,5 +101,12 @@ public class AudioSettingsPane extends JPanel implements ChangeListener {
             }
             default -> log.warn("Неопознанное событие слушателя на объекте {}", cName);
         }
+    }
+
+    @Override
+    public void recalculate(FoxCanvas canvas) {
+        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
     }
 }

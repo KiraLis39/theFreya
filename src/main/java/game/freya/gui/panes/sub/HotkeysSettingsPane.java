@@ -4,6 +4,7 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 
 @Slf4j
-public class HotkeysSettingsPane extends JPanel implements MouseListener {
+public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPane {
     private transient BufferedImage snap;
 
     public HotkeysSettingsPane(FoxCanvas canvas) {
@@ -34,8 +35,7 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener {
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+        recalculate(canvas);
         setLayout(new BorderLayout(3, 3));
 
         add(new SubPane(null) {{
@@ -116,5 +116,11 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener {
     @Override
     public void mouseExited(MouseEvent e) {
 
+    }
+
+    @Override
+    public void recalculate(FoxCanvas canvas) {
+        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
     }
 }

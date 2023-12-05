@@ -245,6 +245,7 @@ public class GameCanvas extends FoxCanvas {
         gameController.setGameActive(true);
         setVisible(true);
         requestFocusInWindow();
+        createSubPanes();
 
         Constants.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
@@ -626,7 +627,7 @@ public class GameCanvas extends FoxCanvas {
 
         resizeThread = new Thread(() -> {
             try {
-                Thread.sleep(100);
+                Thread.sleep(30);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -641,7 +642,7 @@ public class GameCanvas extends FoxCanvas {
 
             reloadShapes(this);
             recalculateMenuRectangles();
-            recreateSubPanes();
+
             recreateViewPort();
             moveViewToPlayer(0, 0);
             requestFocusInWindow();
