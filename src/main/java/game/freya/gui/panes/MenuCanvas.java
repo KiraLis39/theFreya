@@ -21,6 +21,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import java.awt.AWTException;
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
@@ -44,13 +45,14 @@ public class MenuCanvas extends FoxCanvas {
     private double parentHeightMemory = 0;
 
     public MenuCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
-        super(Constants.getGraphicsConfiguration(), "MenuCanvas", gameController, parentFrame.getLayeredPane(), uiHandler);
+        super("MenuCanvas", gameController, parentFrame, uiHandler);
         this.gameController = gameController;
         this.parentFrame = parentFrame;
 
-        setSize(parentFrame.getLayeredPane().getSize());
+        setSize(parentFrame.getSize());
         setBackground(Color.DARK_GRAY.darker());
         setIgnoreRepaint(true);
+        setOpaque(false);
         setFocusable(false);
 
         addMouseListener(this);
@@ -152,7 +154,7 @@ public class MenuCanvas extends FoxCanvas {
 
         this.isMenuActive = true;
         while (isMenuActive && !Thread.currentThread().isInterrupted()) {
-            if (!parentFrame.isActive() || getBufferStrategy() == null) {
+            if (!parentFrame.isActive()) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -187,22 +189,28 @@ public class MenuCanvas extends FoxCanvas {
                 throwExceptionAndYield(e);
             }
 
-            if (Constants.isFpsLimited()) {
-                doDrawDelay();
-            }
+//            if (Constants.isFpsLimited()) {
+//                doDrawDelay();
+//            }
         }
         log.info("Thread of Menu canvas is finalized.");
     }
 
-    private void drawNextFrame() throws AWTException {
-        do {
-            do {
-                Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                super.drawBackground(g2D);
-                g2D.dispose();
-            } while (getBufferStrategy().contentsRestored());
-            getBufferStrategy().show();
-        } while (getBufferStrategy().contentsLost());
+    private void drawNextFrame() {
+        repaint();
+    }
+
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+
+        Graphics2D g2D = (Graphics2D) g;
+        try {
+            super.drawBackground(g2D);
+        } catch (AWTException e) {
+            throw new RuntimeException(e);
+        }
+        g2D.dispose();
     }
 
     @Override
@@ -278,8 +286,6 @@ public class MenuCanvas extends FoxCanvas {
         resizeThread.start();
         try {
             resizeThread.join(500);
-            // parentFrame.createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
         } catch (InterruptedException e) {
             resizeThread.interrupt();
         }
@@ -323,7 +329,6 @@ public class MenuCanvas extends FoxCanvas {
         inAc();
 
         setVisible(true);
-        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
         this.initialized = true;
     }
 

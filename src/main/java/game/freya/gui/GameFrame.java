@@ -3,7 +3,6 @@ package game.freya.gui;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.config.UserConfig;
 import game.freya.enums.ScreenType;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
@@ -21,8 +20,8 @@ import javax.swing.JLayeredPane;
 import javax.swing.JRootPane;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
+import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -56,15 +55,21 @@ public class GameFrame implements WindowListener, WindowStateListener {
             frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
             frame.setCursor(Constants.getDefaultCursor());
 
+            frame.setBackground(Color.CYAN);
+            frame.getRootPane().setBackground(Color.MAGENTA);
+            frame.getLayeredPane().setBackground(Color.YELLOW);
+
             // настройка фокуса для работы горячих клавиш:
             frame.setFocusable(false);
-            frame.getRootPane().setFocusable(true);
+
+            frame.setLayout(null); // for frame null is BorderLayout
+            frame.setIgnoreRepaint(true);
 
             frame.addWindowListener(this);
             frame.addWindowStateListener(this);
 
-            frame.setIgnoreRepaint(true);
-            frame.setLayout(null);
+            // в полноэкранном режиме рисуется именно он:
+            frame.getRootPane().setFocusable(true);
 
             setInAc();
         });
@@ -83,52 +88,9 @@ public class GameFrame implements WindowListener, WindowStateListener {
         }
 
         log.info("Show the MainFrame...");
-        checkFullscreenMode();
+        Constants.checkFullscreenMode(frame, windowSize);
 
         gameController.loadScreen(ScreenType.MENU_SCREEN);
-    }
-
-    private void checkFullscreenMode() {
-        if (Constants.getUserConfig().getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
-            if (Constants.getUserConfig().isFullscreen()) {
-                Constants.MON.switchFullscreen(frame);
-                // говорят, лучше создавать стратегию в полноэкране:
-                frame.createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-            } else {
-                Constants.MON.switchFullscreen(null);
-                frame.setExtendedState(Frame.NORMAL);
-
-                frame.setMinimumSize(windowSize);
-                frame.setMaximumSize(windowSize);
-
-                frame.setSize(windowSize);
-                frame.setLocationRelativeTo(null);
-            }
-            frame.setVisible(true);
-            return;
-        }
-
-        if (Constants.getUserConfig().getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
-            frame.dispose();
-            frame.setResizable(true);
-
-            if (Constants.getUserConfig().isFullscreen()) {
-                frame.setUndecorated(true);
-                frame.setExtendedState(frame.getExtendedState() | Frame.MAXIMIZED_BOTH);
-            } else {
-                frame.setExtendedState(Frame.NORMAL);
-                frame.setUndecorated(false);
-
-                frame.setMinimumSize(windowSize);
-                frame.setMaximumSize(windowSize);
-
-                frame.setSize(windowSize);
-                frame.setLocationRelativeTo(null);
-            }
-
-            frame.setResizable(false);
-            frame.setVisible(true);
-        }
     }
 
     private void setInAc() {
@@ -141,7 +103,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
                     public void actionPerformed(ActionEvent e) {
                         log.debug("Try to switch the fullscreen mode...");
                         Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-                        checkFullscreenMode();
+                        Constants.checkFullscreenMode(frame, windowSize);
                     }
                 });
 
@@ -238,9 +200,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
         ) {
             gameController.saveCurrentWorld();
-
-            Constants.restoreDisplayMode();
-
             gameController.exitTheGame(null);
         }
     }

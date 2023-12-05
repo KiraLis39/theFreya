@@ -59,7 +59,7 @@ public class VideoSettingsPane extends JPanel {
 
             add(new SubPane("Ограничить частоту кадров") {{
                 cBox = new CheckBokz("fpsLimitedCheck") {{
-                    setSelected(Constants.isFpsLimited());
+//                    setSelected(Constants.isFpsLimited());
                     setAction(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
