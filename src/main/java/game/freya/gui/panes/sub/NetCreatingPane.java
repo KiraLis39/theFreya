@@ -6,7 +6,6 @@ import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
-import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.templates.WorldCreator;
@@ -41,7 +40,7 @@ import java.util.Iterator;
 import java.util.Random;
 
 @Slf4j
-public class NetCreatingPane extends WorldCreator implements iSubPane {
+public class NetCreatingPane extends WorldCreator {
     private static final Random r = new Random();
 
     private transient BufferedImage snap;
@@ -66,8 +65,10 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        recalculate(canvas);
+        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
 
         add(new SubPane("Создание сетевого мира") {{
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -192,12 +193,5 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
             ntf.requestFocusInWindow();
             ntf.selectAll();
         }
-    }
-
-    @Override
-    public void recalculate(FoxCanvas canvas) {
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
     }
 }

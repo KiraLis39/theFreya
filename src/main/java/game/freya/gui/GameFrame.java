@@ -55,7 +55,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
             frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
             frame.setCursor(Constants.getDefaultCursor());
 
-            frame.setBackground(Color.DARK_GRAY);
+            frame.setBackground(Color.CYAN);
             frame.getRootPane().setBackground(Color.MAGENTA);
             frame.getLayeredPane().setBackground(Color.YELLOW);
 

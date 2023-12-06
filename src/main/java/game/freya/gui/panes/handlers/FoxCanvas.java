@@ -12,7 +12,6 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.interfaces.iCanvas;
-import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.AudioSettingsPane;
 import game.freya.gui.panes.sub.GameplaySettingsPane;
 import game.freya.gui.panes.sub.HeroCreatingPane;
@@ -220,7 +219,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                 (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2 + 3);
 
         g2D.setFont(Constants.GAME_FONT_02);
-        g2D.setColor(Color.GRAY);
+        g2D.setColor(Color.DARK_GRAY);
         g2D.drawString(getPausedString(),
                 (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2);
 
@@ -267,23 +266,26 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private void repaintGame(Graphics2D v2D) throws AWTException {
         // рисуем мир:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH,
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
         gameController.getDrawCurrentWorld(v2D);
 
         // рисуем данные героев поверх игры:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
         drawHeroesData(v2D);
 
         // draw chat:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
         this.chat.draw(v2D);
 
         // рисуем миникарту:
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
         drawMinimap(v2D);
 
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH, true, true);
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
+                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
         if (Constants.isPaused()) {
             drawPauseMode(v2D);
         }
@@ -590,21 +592,6 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                 new int[]{0, (int) (canvas.getWidth() * 0.3D), (int) (canvas.getWidth() * 0.29D), (int) (canvas.getWidth() * 0.3D), 0},
                 new int[]{3, 3, (int) (canvas.getHeight() * 0.031D), (int) (canvas.getHeight() * 0.061D), (int) (canvas.getHeight() * 0.061D)},
                 5));
-
-        try {
-            ((iSubPane) getAudiosPane()).recalculate(canvas);
-            ((iSubPane) getVideosPane()).recalculate(canvas);
-            ((iSubPane) getHotkeysPane()).recalculate(canvas);
-            ((iSubPane) getGameplayPane()).recalculate(canvas);
-            ((iSubPane) getHeroCreatingPane()).recalculate(canvas);
-            ((iSubPane) getWorldCreatingPane()).recalculate(canvas);
-            ((iSubPane) getWorldsListPane()).recalculate(canvas);
-            ((iSubPane) getHeroesListPane()).recalculate(canvas);
-            ((iSubPane) getNetworkListPane()).recalculate(canvas);
-            ((iSubPane) getNetworkCreatingPane()).recalculate(canvas);
-        } catch (Exception e) {
-            log.error("Ошибка при коррекции размеров панелей: {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
     }
 
     public void recalculateMenuRectangles() {
@@ -788,7 +775,11 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                 getAvatarRect().height + 24);
     }
 
-    public void createSubPanes() {
+    public void recreateSubPanes() {
+        // удаляем старые панели с фрейма:
+        dropOldPanesFromLayer();
+
+        // создаём новые панели:
         setAudiosPane(new AudioSettingsPane(this));
         setVideosPane(new VideoSettingsPane(this));
         setHotkeysPane(new HotkeysSettingsPane(this));
@@ -814,7 +805,60 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             parentFrame.getLayeredPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
-            createSubPanes();
+            recreateSubPanes();
+        }
+    }
+
+    public void dropOldPanesFromLayer() {
+        try {
+            parentFrame.getLayeredPane().remove(getAudiosPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма audiosPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getVideosPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма videosPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getHotkeysPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма hotkeysPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getGameplayPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма gameplayPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getHeroCreatingPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма heroCreatingPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getWorldCreatingPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма worldCreatingPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getWorldsListPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма worldsListPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getHeroesListPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма heroesListPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getNetworkListPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма networkListPane, которой там нет.");
+        }
+        try {
+            parentFrame.getLayeredPane().remove(getNetworkCreatingPane());
+        } catch (NullPointerException npe) {
+            log.debug("Не удастся удалить из фрейма networkCreatingPane, которой там нет.");
         }
     }
 

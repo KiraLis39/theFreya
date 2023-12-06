@@ -9,7 +9,6 @@ import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
-import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
@@ -37,7 +36,7 @@ import java.util.List;
 import static game.freya.config.Constants.FFB;
 
 @Slf4j
-public class NetworkListPane extends WorldCreator implements iSubPane {
+public class NetworkListPane extends WorldCreator {
     private static final String connectionString = "- CONNECTION -";
 
     private static final String pingString = "- PING -";
@@ -75,8 +74,10 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        recalculate(canvas);
+        setLocation((int) (canvas.getWidth() * 0.32d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
         setLayout(new BorderLayout(1, 1));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));
 
         centerList = new SubPane(null) {{
 //            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -409,12 +410,5 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
     @Override
     public int getNetPasswordHash() {
         return 0;
-    }
-
-    @Override
-    public void recalculate(FoxCanvas canvas) {
-        setLocation((int) (canvas.getWidth() * 0.32d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));
     }
 }

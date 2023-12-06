@@ -6,7 +6,6 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
-import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
@@ -27,7 +26,7 @@ import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 
 @Slf4j
-public class HeroesListPane extends JPanel implements iSubPane {
+public class HeroesListPane extends JPanel {
     private final transient FoxCanvas canvas;
 
     private final transient GameController gameController;
@@ -43,7 +42,9 @@ public class HeroesListPane extends JPanel implements iSubPane {
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        recalculate(canvas);
+        setLocation((int) (canvas.getWidth() * 0.32d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         if (isVisible()) {
@@ -230,12 +231,5 @@ public class HeroesListPane extends JPanel implements iSubPane {
             reloadHeroes(canvas);
         }
         super.setVisible(isVisible);
-    }
-
-    @Override
-    public void recalculate(FoxCanvas canvas) {
-        setLocation((int) (canvas.getWidth() * 0.32d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
     }
 }

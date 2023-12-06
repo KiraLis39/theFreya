@@ -244,6 +244,7 @@ public class MenuCanvas extends FoxCanvas {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+
             log.debug("Resizing of menu canvas...");
 
             if (Constants.getUserConfig().isFullscreen()) {
@@ -254,6 +255,31 @@ public class MenuCanvas extends FoxCanvas {
 
             reloadShapes(this);
             recalculateMenuRectangles();
+
+            boolean rect0IsVisible = getAudiosPane() != null && getAudiosPane().isVisible();
+            boolean rect1IsVisible = getVideosPane() != null && getVideosPane().isVisible();
+            boolean rect2IsVisible = getHotkeysPane() != null && getHotkeysPane().isVisible();
+            boolean rect3IsVisible = getGameplayPane() != null && getGameplayPane().isVisible();
+            boolean rect4IsVisible = getHeroCreatingPane() != null && getHeroCreatingPane().isVisible();
+            boolean rect5IsVisible = getWorldCreatingPane() != null && getWorldCreatingPane().isVisible();
+            boolean rect6IsVisible = getWorldsListPane() != null && getWorldsListPane().isVisible();
+            boolean rect7IsVisible = getHeroesListPane() != null && getHeroesListPane().isVisible();
+            boolean rect8IsVisible = getNetworkListPane() != null && getNetworkListPane().isVisible();
+            boolean rect9IsVisible = getNetworkCreatingPane() != null && getNetworkCreatingPane().isVisible();
+
+            // пересоздание доп-панелей:
+            recreateSubPanes();
+
+            getAudiosPane().setVisible(rect0IsVisible);
+            getVideosPane().setVisible(rect1IsVisible);
+            getHotkeysPane().setVisible(rect2IsVisible);
+            getGameplayPane().setVisible(rect3IsVisible);
+            getHeroCreatingPane().setVisible(rect4IsVisible);
+            getWorldCreatingPane().setVisible(rect5IsVisible);
+            getWorldsListPane().setVisible(rect6IsVisible);
+            getHeroesListPane().setVisible(rect7IsVisible);
+            getNetworkListPane().setVisible(rect8IsVisible);
+            getNetworkCreatingPane().setVisible(rect9IsVisible);
 
             setRevolatileNeeds(true);
         });
@@ -290,6 +316,7 @@ public class MenuCanvas extends FoxCanvas {
     @Override
     public void stop() {
         this.isMenuActive = false;
+        dropOldPanesFromLayer();
         closeBackImage();
         setVisible(false);
     }
@@ -298,10 +325,10 @@ public class MenuCanvas extends FoxCanvas {
     public void init() {
         reloadShapes(this);
         recalculateMenuRectangles();
+        recreateSubPanes();
         inAc();
 
         setVisible(true);
-        createSubPanes();
         this.initialized = true;
     }
 

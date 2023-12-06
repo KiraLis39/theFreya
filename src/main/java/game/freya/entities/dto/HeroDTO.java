@@ -1,5 +1,6 @@
 package game.freya.entities.dto;
 
+import fox.FoxRender;
 import game.freya.config.Constants;
 import game.freya.entities.dto.interfaces.iHero;
 import game.freya.enums.HeroCorpusType;
@@ -23,15 +24,11 @@ import javax.swing.Icon;
 import javax.validation.constraints.NotNull;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Shape;
-import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.FilteredImageSource;
-import java.awt.image.RGBImageFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -141,7 +138,7 @@ public class HeroDTO implements iHero {
     @Builder.Default
     private boolean isOnline = false;
 
-    private Image heroViewImage;
+    private BufferedImage image;
 
     private void recheckHurtLevel() {
         if (this.curHealth <= 0) {
@@ -214,8 +211,14 @@ public class HeroDTO implements iHero {
                 (int) this.position.y - Constants.MAP_CELL_DIM / 3d,
                 Constants.MAP_CELL_DIM / 1.5d, Constants.MAP_CELL_DIM / 1.5d);
 
-        if (heroViewImage == null) {
-            recolorHeroView();
+        if (image == null) {
+            BufferedImage pre = (BufferedImage) Constants.CACHE.get("player");
+            image = new BufferedImage(pre.getWidth(), pre.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D i2D = image.createGraphics();
+            Constants.RENDER.setRender(i2D, FoxRender.RENDER.HIGH,
+                    Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+            i2D.drawImage(pre, 0, 0, null);
+            i2D.dispose();
         }
 
         AffineTransform tr = g2D.getTransform();
@@ -223,22 +226,10 @@ public class HeroDTO implements iHero {
                 playerShape.getBounds().x + playerShape.getBounds().width / 2d,
                 playerShape.getBounds().y + playerShape.getBounds().height / 2d);
 
-        g2D.drawImage(heroViewImage,
+        g2D.drawImage(image,
                 playerShape.getBounds().x, playerShape.getBounds().y,
                 playerShape.getBounds().width, playerShape.getBounds().height, null);
         g2D.setTransform(tr);
-    }
-
-    private void recolorHeroView() {
-        int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
-                baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
-        heroViewImage = Toolkit.getDefaultToolkit().createImage(
-                new FilteredImageSource(((Image) Constants.CACHE.get("player")).getSource(), new RGBImageFilter() {
-                    @Override
-                    public int filterRGB(final int x, final int y, final int rgb) {
-                        return rgb & hexColor;
-                    }
-                }));
     }
 
     @Override

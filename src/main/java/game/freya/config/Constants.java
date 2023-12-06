@@ -237,7 +237,6 @@ public final class Constants {
     public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {
         if (userConfig.getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
             try {
-                frame.setResizable(true);
                 frame.dispose();
 
                 if (userConfig.isFullscreen()) {
@@ -259,7 +258,6 @@ public final class Constants {
             }
 
             frame.setVisible(true);
-            frame.setResizable(false);
             frame.createBufferStrategy(getUserConfig().getBufferedDeep());
             return;
         }
