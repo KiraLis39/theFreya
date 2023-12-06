@@ -28,14 +28,17 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.JFrame;
+import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import java.awt.AWTException;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
+import java.awt.BufferCapabilities;
+import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
 import java.awt.Image;
 import java.awt.ImageCapabilities;
 import java.awt.Polygon;
@@ -62,7 +65,7 @@ import static javax.swing.JLayeredPane.PALETTE_LAYER;
 @Setter
 @Slf4j
 // iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, KeyListener, Runnable
-public abstract class FoxCanvas extends JPanel implements iCanvas {
+public abstract class FoxCanvas extends Canvas implements iCanvas {
     public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 250;
 
     private static final AtomicInteger frames = new AtomicInteger(0);
@@ -86,6 +89,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
     private final String pausedString, downInfoString1, downInfoString2;
 
     private final transient GameController gameController;
+
+    private final transient JLayeredPane parentLayers;
 
     private final transient UIHandler uiHandler;
 
@@ -127,14 +132,11 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private transient Chat chat;
 
-    private transient JFrame parentFrame;
-
-    protected FoxCanvas(String name, GameController controller, JFrame parentFrame, UIHandler uiHandler) {
-        super(null, true);
-
+    protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller, JLayeredPane layeredPane, UIHandler uiHandler) {
+        super(gConf);
         this.name = name;
         this.uiHandler = uiHandler;
-        this.parentFrame = parentFrame;
+        this.parentLayers = layeredPane;
         this.gameController = controller;
 
         this.audioSettingsButtonText = "Настройки звука";
@@ -191,16 +193,19 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private Graphics2D getValidVolatileGraphic() throws AWTException {
         if (this.backImage == null) {
+            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
         }
 
         if (isRevolatileNeeds()) {
+            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
             setRevolatileNeeds(false);
         }
 
         while (validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE) {
             log.debug("Recreating new volatile image by incompatible...");
+            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
         }
 
@@ -477,18 +482,18 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         v2D.setColor(Color.GRAY);
 
         // graphics info:
-//        BufferCapabilities gCap = getBufferStrategy().getCapabilities();
-//        v2D.drawString("Front accelerated: %s".formatted(gCap.getFrontBufferCapabilities().isAccelerated()),
-//                getWidth() - leftShift, getHeight() - 370);
-//        v2D.drawString("Front is true volatile: %s".formatted(gCap.getFrontBufferCapabilities().isTrueVolatile()),
-//                getWidth() - leftShift, getHeight() - 350);
-//        v2D.drawString("Back accelerated: %s".formatted(gCap.getBackBufferCapabilities().isAccelerated()),
-//                getWidth() - leftShift, getHeight() - 325);
-//        v2D.drawString("Back is true volatile: %s".formatted(gCap.getBackBufferCapabilities().isTrueVolatile()),
-//                getWidth() - leftShift, getHeight() - 305);
-//        v2D.drawString("Fullscreen required: %s".formatted(gCap.isFullScreenRequired()), getWidth() - leftShift, getHeight() - 280);
-//        v2D.drawString("Multi-buffer available: %s".formatted(gCap.isMultiBufferAvailable()), getWidth() - leftShift, getHeight() - 260);
-//        v2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 240);
+        BufferCapabilities gCap = getBufferStrategy().getCapabilities();
+        v2D.drawString("Front accelerated: %s".formatted(gCap.getFrontBufferCapabilities().isAccelerated()),
+                getWidth() - leftShift, getHeight() - 370);
+        v2D.drawString("Front is true volatile: %s".formatted(gCap.getFrontBufferCapabilities().isTrueVolatile()),
+                getWidth() - leftShift, getHeight() - 350);
+        v2D.drawString("Back accelerated: %s".formatted(gCap.getBackBufferCapabilities().isAccelerated()),
+                getWidth() - leftShift, getHeight() - 325);
+        v2D.drawString("Back is true volatile: %s".formatted(gCap.getBackBufferCapabilities().isTrueVolatile()),
+                getWidth() - leftShift, getHeight() - 305);
+        v2D.drawString("Fullscreen required: %s".formatted(gCap.isFullScreenRequired()), getWidth() - leftShift, getHeight() - 280);
+        v2D.drawString("Multi-buffer available: %s".formatted(gCap.isMultiBufferAvailable()), getWidth() - leftShift, getHeight() - 260);
+        v2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 240);
 
         // server info:
         boolean isServerIsOpen = gameController.isServerIsOpen();
@@ -538,11 +543,12 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         }
 
         // FPS check:
-//        incrementFramesCounter();
-//        if (System.currentTimeMillis() >= timeStamp + 1000L) {
-//            resetFpsCounter();
-//        }
+        incrementFramesCounter();
+        if (System.currentTimeMillis() >= timeStamp + 1000L) {
+            resetFpsCounter();
+        }
 
+        // FPS draw:
         if (downShift == 0) {
             downShift = getHeight() * 0.14f;
         }
@@ -552,33 +558,31 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
             v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 48);
         }
+        v2D.drawString("Delay fps: " + Constants.getDelay(), rightShift - 1f, downShift - 24);
+        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
+                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
+                        Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
 
-        // FPS draw:
-//        v2D.drawString("Delay fps: " + Constants.getDelay(), rightShift - 1f, downShift - 24);
-//        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-//                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
-//                        Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
-//
-//        if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-//            v2D.setColor(Color.GRAY);
-//            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
-//        }
-//        if (Constants.isLowFpsAlarm()) {
-//            v2D.setColor(Color.RED);
-//        } else {
-//            v2D.setColor(Color.GRAY);
-//        }
-//        v2D.drawString("Delay fps: " + Constants.getDelay(), rightShift, downShift - 25);
-//        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-//                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
-//                        Constants.getRealFreshRate()), rightShift, downShift);
+        if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
+            v2D.setColor(Color.GRAY);
+            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
+        }
+        if (Constants.isLowFpsAlarm()) {
+            v2D.setColor(Color.RED);
+        } else {
+            v2D.setColor(Color.GRAY);
+        }
+        v2D.drawString("Delay fps: " + Constants.getDelay(), rightShift, downShift - 25);
+        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
+                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
+                        Constants.getRealFreshRate()), rightShift, downShift);
     }
 
-//    private void resetFpsCounter() {
-//        Constants.setCurrentFreshRate(frames.get());
-//        timeStamp = System.currentTimeMillis();
-//        frames.set(0);
-//    }
+    private void resetFpsCounter() {
+        Constants.setCurrentFreshRate(frames.get());
+        timeStamp = System.currentTimeMillis();
+        frames.set(0);
+    }
 
     public void reloadShapes(FoxCanvas canvas) {
         downShift = getHeight() * 0.14f;
@@ -793,16 +797,16 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
         // добавляем панели на слой:
         try {
-            parentFrame.getLayeredPane().add(getAudiosPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getVideosPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getGameplayPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getNetworkListPane(), PALETTE_LAYER, 1);
-            parentFrame.getLayeredPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getAudiosPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getVideosPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getHotkeysPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getGameplayPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getHeroCreatingPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getWorldCreatingPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getWorldsListPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getHeroesListPane(), PALETTE_LAYER, 0);
+            parentLayers.add(getNetworkListPane(), PALETTE_LAYER, 1);
+            parentLayers.add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
             recreateSubPanes();
@@ -811,52 +815,52 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     public void dropOldPanesFromLayer() {
         try {
-            parentFrame.getLayeredPane().remove(getAudiosPane());
+            parentLayers.remove(getAudiosPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма audiosPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getVideosPane());
+            parentLayers.remove(getVideosPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма videosPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getHotkeysPane());
+            parentLayers.remove(getHotkeysPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма hotkeysPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getGameplayPane());
+            parentLayers.remove(getGameplayPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма gameplayPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getHeroCreatingPane());
+            parentLayers.remove(getHeroCreatingPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма heroCreatingPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getWorldCreatingPane());
+            parentLayers.remove(getWorldCreatingPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма worldCreatingPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getWorldsListPane());
+            parentLayers.remove(getWorldsListPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма worldsListPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getHeroesListPane());
+            parentLayers.remove(getHeroesListPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма heroesListPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getNetworkListPane());
+            parentLayers.remove(getNetworkListPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма networkListPane, которой там нет.");
         }
         try {
-            parentFrame.getLayeredPane().remove(getNetworkCreatingPane());
+            parentLayers.remove(getNetworkCreatingPane());
         } catch (NullPointerException npe) {
             log.debug("Не удастся удалить из фрейма networkCreatingPane, которой там нет.");
         }
@@ -918,6 +922,18 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         if (!b) {
             // очищаем от анимации панели:
             getNetworkListPane().repaint();
+        }
+    }
+
+    public void doDrawDelay() {
+        try {
+            if (Constants.getDelay() > 1) {
+                Thread.sleep(Constants.getDelay());
+            } else {
+                Thread.yield();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

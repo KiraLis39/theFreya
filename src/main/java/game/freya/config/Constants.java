@@ -17,13 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.DisplayMode;
 import java.awt.Font;
-import java.awt.Frame;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.image.BufferedImage;
@@ -33,6 +30,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public final class Constants {
@@ -132,6 +131,14 @@ public final class Constants {
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
 
+    private static final int SHIFT_FPS_ALLOWED = 2; // допустимый разброс FPS.
+
+    private static final int MAX_FPS_ALLOWED = 120; // больше этой частоты нет смысла гнать точно.
+
+    private static final AtomicInteger realFreshRate = new AtomicInteger(0);
+
+    private static final AtomicLong delay = new AtomicLong(15L);
+
     @Getter
     @Setter
     public static DisplayMode defaultDisplayMode;
@@ -219,6 +226,71 @@ public final class Constants {
         return MON.getConfiguration();
     }
 
+    public static boolean isFpsLimited() {
+        return Constants.getUserConfig().getFpsLimit() > 0;
+    }
+
+    public static long getDelay() {
+        if (fpsLimit != Constants.getUserConfig().getFpsLimit()) {
+            // если значение в настройках изменилось:
+            fpsLimit = Constants.getUserConfig().getFpsLimit();
+            delay.set(Math.floorDiv(1000L, fpsLimit));
+        }
+        return delay.get() - 1;
+    }
+
+    public static void setCurrentFreshRate(int framesPerSecond) {
+        realFreshRate.set(framesPerSecond);
+
+        if (isFpsLimited()) {
+            if (!isPaused() && isCurrentFpsIsLessThanLimit()) {
+                riseFps();
+            }
+
+            if (isLimitFpsIsLessThanCurrentFps() || isCurrentFpsIsGreaterThanAllowed() || isMaxMonitorRateOver()) {
+                coolFps();
+            }
+        }
+    }
+
+    private static boolean isMaxMonitorRateOver() {
+        return getFpsLimit() == MON.getRefreshRate() && realFreshRate.get() > MON.getRefreshRate();
+    }
+
+    private static void coolFps() {
+        if (delay.get() < 500) {
+            log.debug("Increase delay (decrease fps)");
+            delay.incrementAndGet();
+        } else {
+            log.warn("Не удастся повысить задержку отрисовки для снижения fps - delay уже равен 500! (fps limited: {})", isFpsLimited());
+        }
+    }
+
+    private static void riseFps() {
+        if (delay.get() > 1) {
+            log.debug("Decrease delay (increase fps)");
+            delay.decrementAndGet();
+        } else {
+            log.warn("Не удастся сократить задержку отрисовки для увеличения fps - delay уже равен 1! (fps limited: {})", isFpsLimited());
+        }
+    }
+
+    private static boolean isCurrentFpsIsGreaterThanAllowed() {
+        return realFreshRate.get() > MAX_FPS_ALLOWED;
+    }
+
+    private static boolean isLimitFpsIsLessThanCurrentFps() {
+        return fpsLimit + SHIFT_FPS_ALLOWED < realFreshRate.get();
+    }
+
+    private static boolean isCurrentFpsIsLessThanLimit() {
+        return realFreshRate.get() < fpsLimit - SHIFT_FPS_ALLOWED;
+    }
+
+    public static int getRealFreshRate() {
+        return realFreshRate.get();
+    }
+
     public static void showNFP() {
         new FOptionPane().buildFOptionPane("Не реализовано:",
                 "Приносим свои извинения! Данный функционал ещё находится в разработке.",
@@ -230,66 +302,25 @@ public final class Constants {
         log.info("Paused: {}", isPaused);
     }
 
-    public static int getMaxConnectionWasteTime() {
-        return SOCKET_CONNECTION_AWAIT_TIMEOUT - SOCKET_PING_AWAIT_TIMEOUT;
+    public static boolean isLowFpsAlarm() {
+        return isFpsLimited() && delay.get() <= 3;
     }
 
-    public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {
-        if (userConfig.getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
-            try {
-                frame.dispose();
-
-                if (userConfig.isFullscreen()) {
-                    MON.switchFullscreen(frame);
-                } else {
-                    MON.switchFullscreen(null);
-
-                    frame.setExtendedState(Frame.NORMAL);
-
-                    frame.setMinimumSize(normalSize);
-                    frame.setMaximumSize(normalSize);
-
-                    frame.setSize(normalSize);
-                    frame.setLocationRelativeTo(null);
-                }
-            } catch (Exception e) {
-                log.warn("Проблема при смене режима экрана: {}", ExceptionUtils.getFullExceptionMessage(e));
-                restoreDisplayMode();
-            }
-
-            frame.setVisible(true);
-            frame.createBufferStrategy(getUserConfig().getBufferedDeep());
-            return;
-        }
-
-        if (userConfig.getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
-            frame.dispose();
-            frame.setResizable(true);
-
-            if (userConfig.isFullscreen()) {
-                frame.setUndecorated(true);
-                frame.setExtendedState(frame.getExtendedState() | Frame.MAXIMIZED_BOTH);
-            } else {
-                frame.setExtendedState(Frame.NORMAL);
-                frame.setUndecorated(false);
-
-                frame.setMinimumSize(normalSize);
-                frame.setMaximumSize(normalSize);
-
-                frame.setSize(normalSize);
-                frame.setLocationRelativeTo(null);
-            }
-
-            frame.setResizable(false);
-            frame.setVisible(true);
-
-            frame.createBufferStrategy(getUserConfig().getBufferedDeep());
-        }
+    public static int getMaxConnectionWasteTime() {
+        return SOCKET_CONNECTION_AWAIT_TIMEOUT - SOCKET_PING_AWAIT_TIMEOUT;
     }
 
     public static void restoreDisplayMode() {
         if (defaultDisplayMode != null) {
             MON.getDevice().setDisplayMode(defaultDisplayMode);
         }
+    }
+
+    boolean isCurrentFpsIsLessThanMonitorRate() {
+        return realFreshRate.get() < MON.getRefreshRate();
+    }
+
+    boolean isCurrentFpsIsGreaterThanMonitorRate() {
+        return realFreshRate.get() > MON.getRefreshRate();
     }
 }

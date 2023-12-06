@@ -18,7 +18,6 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import java.awt.AWTException;
 import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.MouseInfo;
 import java.awt.Point;
@@ -49,15 +48,13 @@ public class GameCanvas extends FoxCanvas {
 
 
     public GameCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
-        super("GameCanvas", gameController, parentFrame, uiHandler);
-
+        super(Constants.getGraphicsConfiguration(), "GameCanvas", gameController, parentFrame.getLayeredPane(), uiHandler);
         this.gameController = gameController;
         this.parentFrame = parentFrame;
 
-        setSize(parentFrame.getSize());
+        setSize(parentFrame.getLayeredPane().getSize());
         setBackground(Color.BLACK);
         setIgnoreRepaint(true);
-        setOpaque(false);
 //        setFocusable(false);
 
         addMouseMotionListener(this);
@@ -153,7 +150,7 @@ public class GameCanvas extends FoxCanvas {
 
         // старт потока рисования игры:
         while (gameController.isGameActive() && !Thread.currentThread().isInterrupted()) {
-            if (!parentFrame.isActive()) {
+            if (!parentFrame.isActive() || getBufferStrategy() == null) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -186,9 +183,9 @@ public class GameCanvas extends FoxCanvas {
             }
 
             // если текущий FPS превышает лимит:
-//            if (Constants.isFpsLimited()) {
-//                doDrawDelay();
-//            }
+            if (Constants.isFpsLimited()) {
+                doDrawDelay();
+            }
         }
         log.info("Thread of Game canvas is finalized.");
     }
@@ -196,28 +193,19 @@ public class GameCanvas extends FoxCanvas {
     /**
      * Основной цикл отрисовки игрового окна.
      */
-    private void drawNextFrame() {
-        repaint();
-    }
-
-    @Override
-    public void paint(Graphics g) {
-        // super.paint(g);
-        if (isDisplayable()) {
-            Graphics2D g2D = (Graphics2D) g;
-            try {
-                super.drawBackground(g2D);
-            } catch (AWTException e) {
-                throw new RuntimeException(e);
-            }
-            g2D.dispose();
-        } else {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+    private void drawNextFrame() throws AWTException, InterruptedException {
+        do {
+            do {
+                if (isDisplayable()) {
+                    Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
+                    super.drawBackground(g2D);
+                    g2D.dispose();
+                } else {
+                    Thread.sleep(200);
+                }
+            } while (getBufferStrategy().contentsRestored());
+            getBufferStrategy().show();
+        } while (getBufferStrategy().contentsLost());
     }
 
     private void recreateViewPort() {
@@ -245,6 +233,12 @@ public class GameCanvas extends FoxCanvas {
         gameController.setGameActive(true);
         setVisible(true);
         requestFocusInWindow();
+
+        // если более двух буфферов не позволительно:
+        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+        if (!getBufferStrategy().getCapabilities().isMultiBufferAvailable()) {
+            Constants.getUserConfig().setMaxBufferedDeep(2);
+        }
 
         Constants.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
