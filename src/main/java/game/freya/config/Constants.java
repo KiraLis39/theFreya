@@ -19,7 +19,6 @@ import org.apache.commons.lang3.SystemUtils;
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.DisplayMode;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
@@ -138,10 +137,6 @@ public final class Constants {
     private static final AtomicInteger realFreshRate = new AtomicInteger(0);
 
     private static final AtomicLong delay = new AtomicLong(15L);
-
-    @Getter
-    @Setter
-    public static DisplayMode defaultDisplayMode;
 
     @Getter
     @Setter
@@ -308,12 +303,6 @@ public final class Constants {
 
     public static int getMaxConnectionWasteTime() {
         return SOCKET_CONNECTION_AWAIT_TIMEOUT - SOCKET_PING_AWAIT_TIMEOUT;
-    }
-
-    public static void restoreDisplayMode() {
-        if (defaultDisplayMode != null) {
-            MON.getDevice().setDisplayMode(defaultDisplayMode);
-        }
     }
 
     boolean isCurrentFpsIsLessThanMonitorRate() {

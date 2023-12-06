@@ -19,7 +19,6 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLayeredPane;
 import javax.swing.JRootPane;
-import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import java.awt.Dimension;
 import java.awt.Frame;
@@ -49,25 +48,23 @@ public class GameFrame implements WindowListener, WindowStateListener {
         double newHeight = newWidth / delta;
         windowSize = new Dimension((int) newWidth, (int) newHeight);
 
-        SwingUtilities.invokeLater(() -> {
-            frame = new JFrame(gameController.getGameConfig().getAppName().concat(" v.")
-                    .concat(gameController.getGameConfig().getAppVersion()), Constants.getGraphicsConfiguration());
+        frame = new JFrame(gameController.getGameConfig().getAppName().concat(" v.")
+                .concat(gameController.getGameConfig().getAppVersion()), Constants.getGraphicsConfiguration());
 
-            frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-            frame.setCursor(Constants.getDefaultCursor());
+        frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        frame.setCursor(Constants.getDefaultCursor());
 
-            // настройка фокуса для работы горячих клавиш:
-            frame.setFocusable(false);
-            frame.getRootPane().setFocusable(true);
+        // настройка фокуса для работы горячих клавиш:
+        frame.setFocusable(false);
+        frame.getRootPane().setFocusable(true);
 
-            frame.addWindowListener(this);
-            frame.addWindowStateListener(this);
+        frame.addWindowListener(this);
+        frame.addWindowStateListener(this);
 
-            frame.setIgnoreRepaint(true);
-            frame.setLayout(null);
+        frame.setIgnoreRepaint(true);
+        frame.setLayout(null);
 
-            setInAc();
-        });
+        setInAc();
 
         // ждём пока кончится показ лого:
         if (Constants.getLogo() != null && Constants.getLogo().getEngine().isAlive()) {
@@ -238,9 +235,6 @@ public class GameFrame implements WindowListener, WindowStateListener {
                 "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
         ) {
             gameController.saveCurrentWorld();
-
-            Constants.restoreDisplayMode();
-
             gameController.exitTheGame(null);
         }
     }

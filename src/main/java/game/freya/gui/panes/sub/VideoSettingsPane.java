@@ -1,6 +1,5 @@
 package game.freya.gui.panes.sub;
 
-import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.sub.components.CheckBokz;
@@ -8,7 +7,6 @@ import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
-import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
@@ -146,20 +144,7 @@ public class VideoSettingsPane extends JPanel {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            if (!Constants.getUserConfig().isFullscreen()) {
-                                new FOptionPane().buildFOptionPane("Ошибка", "Требуется полноэкранный режим", 10, false);
-                            } else {
-                                if (Constants.getDefaultDisplayMode() == null) {
-                                    Constants.setDefaultDisplayMode(Constants.MON.getDevice().getDisplayMode());
-                                }
-                                try {
-                                    DisplayMode chosenMode = (DisplayMode) displayModeBox.getSelectedItem();
-                                    Constants.getUserConfig().setFpsLimit(chosenMode.getRefreshRate());
-                                    Constants.MON.getDevice().setDisplayMode(chosenMode);
-                                } catch (Exception e1) {
-                                    log.error("Не удалось изменить разрешение монитора: {}", ExceptionUtils.getFullExceptionMessage(e1));
-                                }
-                            }
+                            log.info("Display mode {} not realized yet.", displayModeBox.getSelectedItem());
                         }
                     });
                 }}, BorderLayout.SOUTH);

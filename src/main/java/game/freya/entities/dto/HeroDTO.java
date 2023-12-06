@@ -212,7 +212,7 @@ public class HeroDTO implements iHero {
                 Constants.MAP_CELL_DIM / 1.5d, Constants.MAP_CELL_DIM / 1.5d);
 
         if (image == null) {
-            BufferedImage pre = (BufferedImage) Constants.CACHE.get("player");
+            BufferedImage pre = (BufferedImage) Constants.CACHE.get("player_0");
             image = new BufferedImage(pre.getWidth(), pre.getHeight(), BufferedImage.TYPE_INT_ARGB);
             Graphics2D i2D = image.createGraphics();
             Constants.RENDER.setRender(i2D, FoxRender.RENDER.HIGH,
