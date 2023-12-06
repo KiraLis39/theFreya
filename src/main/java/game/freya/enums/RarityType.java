@@ -1,5 +1,7 @@
 package game.freya.enums;
 
+import lombok.Getter;
+
 import java.awt.Color;
 
 public enum RarityType {
@@ -12,8 +14,11 @@ public enum RarityType {
     RARE(Color.ORANGE, "Редк"),
     LEGENDARY(Color.RED, "Легендарн");
 
-    final Color rarityColor;
-    final String description;
+    @Getter
+    private final Color rarityColor;
+
+    @Getter
+    private final String description;
 
     RarityType(Color rarityColor, String description) {
         this.rarityColor = rarityColor;
@@ -26,7 +31,6 @@ public enum RarityType {
             case HE -> description + "ый";
             case SHE -> description + "ая";
             case THIS -> description + "ие";
-            default -> description + "ости";
         };
     }
 }

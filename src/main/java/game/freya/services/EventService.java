@@ -14,10 +14,15 @@ import org.springframework.stereotype.Service;
 @HeroDataBuilder
 @RequiredArgsConstructor
 public class EventService {
+    private final PlayerService playerService;
+
     public ClientDataDTO buildMove(HeroDTO dto) {
         return ClientDataDTO.builder()
                 .type(NetDataType.EVENT)
                 .event(NetDataEvent.HERO_MOVING)
+
+                .playerUid(dto.getOwnerUid())
+                .playerName(playerService.getCurrentPlayer().getNickName())
 
                 .heroUuid(dto.getHeroUid())
                 .heroName(dto.getHeroName())

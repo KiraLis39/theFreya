@@ -90,27 +90,27 @@ public class Hero {
     @Builder.Default
     @Comment("Накопленный опыт героя")
     @Column(name = "experience", nullable = false)
-    private float experience = 0f;
+    private long experience = 0;
 
     @Builder.Default
     @Comment("Текущее здоровье героя")
     @Column(name = "cur_health", nullable = false)
-    private short curHealth = 100;
+    private int curHealth = 100;
 
     @Builder.Default
     @Comment("Максимальное здоровье героя")
     @Column(name = "max_health", nullable = false)
-    private short maxHealth = 100;
+    private int maxHealth = 100;
 
     @Builder.Default
     @Comment("Текущий запас масла героя")
     @Column(name = "cur_oil", nullable = false)
-    private short curOil = 100;
+    private int curOil = 100;
 
     @Builder.Default
     @Comment("Максимальный запас масла героя")
     @Column(name = "max_oil", nullable = false)
-    private short maxOil = 100;
+    private int maxOil = 100;
 
     @Builder.Default
     @Comment("Скорость героя")

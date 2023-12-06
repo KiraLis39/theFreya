@@ -3,6 +3,7 @@ package game.freya.net;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
@@ -118,12 +119,12 @@ public class Server implements iServer {
     @Override
     public ConnectedServerPlayer acceptNewClient(Socket socket) {
         try {
-            if (clients.containsKey(socket.getInetAddress()) && !clients.get(socket.getInetAddress()).isClosed()) {
-                log.warn("Клиент уже есть в карте клиентов! Возвращаем...");
-            } else {
-                log.info("Подключился новый клиент: {} ({})", socket.getInetAddress().getHostName(), socket);
-                clients.put(socket.getInetAddress(), new ConnectedServerPlayer(this, socket, gameController));
-            }
+//            if (clients.containsKey(socket.getInetAddress()) && !clients.get(socket.getInetAddress()).isClosed()) {
+//                log.warn("Клиент уже есть в карте клиентов! Возвращаем...");
+//            } else {
+            log.info("Подключился новый клиент: {} ({})", socket.getInetAddress().getHostName(), socket);
+            clients.put(socket.getInetAddress(), new ConnectedServerPlayer(this, socket, gameController));
+//            }
 
             return clients.get(socket.getInetAddress());
         } catch (IOException e) {
@@ -160,6 +161,7 @@ public class Server implements iServer {
                 log.info("Удаляем игрока {} ({}) из списка подключенных, т.к. его поток прерван.",
                         client.getPlayerName(), client.getPlayerUid());
                 destroyClient(client);
+                broadcast(ClientDataDTO.builder().type(NetDataType.HERO_OFFLINE).playerUid(client.getPlayerUid()).build(), null);
             }
         });
     }
@@ -193,7 +195,7 @@ public class Server implements iServer {
     public void broadcast(ClientDataDTO dataDto, ConnectedServerPlayer excludedPlayer) {
         log.debug("Бродкастим инфо всем клиентам...");
         for (ConnectedServerPlayer connectedServerPlayer : getPlayers()) {
-            if (connectedServerPlayer.getClientUid().equals(excludedPlayer.getClientUid())) {
+            if (excludedPlayer == null || connectedServerPlayer.getClientUid().equals(excludedPlayer.getClientUid())) {
                 // connectedPlayer.push(ClientDataDTO.builder().type(NetDataType.PING).build());
                 continue; // не слать себе свои же данные. Только пинг, если нужно.
             }

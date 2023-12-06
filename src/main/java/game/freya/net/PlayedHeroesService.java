@@ -22,9 +22,10 @@ import java.awt.Color;
 import java.awt.geom.Point2D;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -66,8 +67,8 @@ public class PlayedHeroesService {
         }
     }
 
-    public Collection<HeroDTO> getHeroes() {
-        return heroes.values();
+    public Set<HeroDTO> getHeroes() {
+        return new HashSet<>(heroes.values());
     }
 
     public void clear() {
@@ -85,12 +86,12 @@ public class PlayedHeroesService {
         return mapper.writeValueAsString(heroes.get(currentHeroUid).getBuffs());
     }
 
-    public short getCurrentHeroMaxOil() {
+    public int getCurrentHeroMaxOil() {
         checkCHE();
         return heroes.get(currentHeroUid).getMaxOil();
     }
 
-    public short getCurrentHeroCurOil() {
+    public int getCurrentHeroCurOil() {
         checkCHE();
         return heroes.get(currentHeroUid).getCurOil();
     }
@@ -112,11 +113,11 @@ public class PlayedHeroesService {
                 heroService.saveHero(otherHero);
                 heroes.remove(otherHero.getHeroUid());
                 log.info("Удалён из карты игровых героев Герой {} ({})", otherHero.getHeroName(), otherHero.getHeroUid());
-            } catch (Exception w) {
-                log.error("Что случилось? Выяснить: {}", ExceptionUtils.getFullExceptionMessage(w));
+            } catch (Exception e) {
+                log.error("Что случилось? Выяснить: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
         } else {
-            log.warn("Нужно было отключить Героя {}, но его тут нет!", playerUid);
+            log.warn("Героя {} в карте героев уже нет.", playerUid);
         }
     }
 
@@ -130,7 +131,8 @@ public class PlayedHeroesService {
     }
 
     public HeroDTO getCurrentHero() {
-        return heroes.getOrDefault(currentHeroUid, null);
+        checkCHE();
+        return heroes.get(currentHeroUid);
     }
 
     public MovingVector getCurrentHeroVector() {
@@ -178,11 +180,11 @@ public class PlayedHeroesService {
         return heroes.get(currentHeroUid).getLevel();
     }
 
-    public float getCurrentHeroExperience() {
+    public long getCurrentHeroExperience() {
         return heroes.get(currentHeroUid).getExperience();
     }
 
-    public short getCurrentHeroCurHealth() {
+    public int getCurrentHeroCurHealth() {
         return heroes.get(currentHeroUid).getCurHealth();
     }
 
@@ -218,14 +220,13 @@ public class PlayedHeroesService {
         return heroes.get(currentHeroUid).getPower();
     }
 
-    public short getCurrentHeroMaxHealth() {
+    public int getCurrentHeroMaxHealth() {
         checkCHE();
         return heroes.get(currentHeroUid).getMaxHealth();
     }
 
     public boolean isCurrentHeroNotNull() {
-        log.info("Проверка факта, что currentHero != NULL: currentHero = {}", currentHeroUid);
-        return currentHeroUid != null;
+        return currentHeroUid != null && !getHeroes().isEmpty();
     }
 
     public Color getCurrentHeroBaseColor() {

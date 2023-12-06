@@ -1,12 +1,15 @@
 package game.freya.gui.panes.sub;
 
+import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
+import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
@@ -28,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class VideoSettingsPane extends JPanel {
+public class VideoSettingsPane extends JPanel implements iSubPane {
     private final List<DisplayMode> modes = new ArrayList<>(List.of(Constants.MON.getDevice().getDisplayModes()));
 
     private transient BufferedImage snap;
@@ -45,9 +48,7 @@ public class VideoSettingsPane extends JPanel {
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
+        recalculate(canvas);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
         // left panel:
@@ -57,7 +58,7 @@ public class VideoSettingsPane extends JPanel {
 
             add(new SubPane("Ограничить частоту кадров") {{
                 cBox = new CheckBokz("fpsLimitedCheck") {{
-                    setSelected(Constants.isFpsLimited());
+//                    setSelected(Constants.isFpsLimited());
                     setAction(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
@@ -144,7 +145,20 @@ public class VideoSettingsPane extends JPanel {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            log.info("Display mode {} not realized yet.", displayModeBox.getSelectedItem());
+                            if (!Constants.getUserConfig().isFullscreen()) {
+                                new FOptionPane().buildFOptionPane("Ошибка", "Требуется полноэкранный режим", 10, false);
+                            } else {
+                                if (Constants.getDefaultDisplayMode() == null) {
+                                    Constants.setDefaultDisplayMode(Constants.MON.getDevice().getDisplayMode());
+                                }
+                                try {
+                                    DisplayMode chosenMode = (DisplayMode) displayModeBox.getSelectedItem();
+//                                    Constants.getUserConfig().setFpsLimit(chosenMode.getRefreshRate());
+                                    Constants.MON.getDevice().setDisplayMode(chosenMode);
+                                } catch (Exception e1) {
+                                    log.error("Не удалось изменить разрешение монитора: {}", ExceptionUtils.getFullExceptionMessage(e1));
+                                }
+                            }
                         }
                     });
                 }}, BorderLayout.SOUTH);
@@ -204,5 +218,12 @@ public class VideoSettingsPane extends JPanel {
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }
         g.drawImage(snap, 0, 0, getWidth(), getHeight(), this);
+    }
+
+    @Override
+    public void recalculate(FoxCanvas canvas) {
+        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
     }
 }

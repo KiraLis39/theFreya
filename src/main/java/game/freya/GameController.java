@@ -21,7 +21,7 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
 import game.freya.gui.panes.GameCanvas;
-import game.freya.items.interfaces.iEnvironment;
+import game.freya.interfaces.iEnvironment;
 import game.freya.mappers.WorldMapper;
 import game.freya.net.ConnectedServerPlayer;
 import game.freya.net.LocalSocketConnection;
@@ -159,25 +159,13 @@ public class GameController extends GameControllerBase {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("net", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_0.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/player.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_0", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("player", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_1.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/mock.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_1", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_2.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_2", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_3.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_3", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player_sh.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player_sh", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("mock", ImageIO.read(netResource));
             }
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
@@ -202,6 +190,7 @@ public class GameController extends GameControllerBase {
     private void closeConnections() {
         // закрываем Сервер:
         if (isServerIsOpen()) {
+            localSocketConnection.setControlledExit(true);
             server.close();
         }
 
@@ -305,25 +294,33 @@ public class GameController extends GameControllerBase {
         }
     }
 
-    private short getCurrentHeroMaxOil() {
+    private int getCurrentHeroMaxOil() {
         return playedHeroesService.getCurrentHeroMaxOil();
     }
 
-    private short getCurrentHeroOil() {
+    private int getCurrentHeroOil() {
         return playedHeroesService.getCurrentHeroCurOil();
     }
 
-    public HeroDTO saveNewHero(HeroDTO aNewHeroDto) {
+    public HeroDTO saveNewHero(HeroDTO aNewHeroDto, boolean setAsCurrent) {
         if (!heroService.isHeroExist(aNewHeroDto.getHeroUid())) {
             HeroDTO saved = heroService.saveHero(aNewHeroDto);
-            playedHeroesService.addCurrentHero(saved);
+            if (setAsCurrent) {
+                playedHeroesService.addCurrentHero(saved);
+            } else {
+                playedHeroesService.addHero(saved);
+            }
             return saved;
         }
         return heroService.getByUid(aNewHeroDto.getHeroUid());
     }
 
-    public void justSaveAnyHero(HeroDTO aNewHeroDto) {
-        heroService.saveHero(aNewHeroDto);
+    public void saveNewRemoteHero(ClientDataDTO readed) {
+        saveNewHero(cliToHero(readed), false);
+    }
+
+    public HeroDTO justSaveAnyHero(HeroDTO aNewHeroDto) {
+        return heroService.saveHero(aNewHeroDto);
     }
 
     public void deleteWorld(UUID worldUid) {
@@ -355,21 +352,21 @@ public class GameController extends GameControllerBase {
     /**
      * Метод отрисовки всех героев подключенных к миру и авторизованных игроков.
      *
-     * @param g2D    хост для отрисовки.
+     * @param v2D    хост для отрисовки.
      * @param canvas класс холста.
      */
-    public void drawHeroes(Graphics2D g2D, GameCanvas canvas) {
-        if (isCurrentHeroOnline()) { // если игра по сети:
+    public void drawHeroes(Graphics2D v2D, GameCanvas canvas) {
+        if (isCurrentWorldIsNetwork()) { // если игра по сети:
             for (HeroDTO hero : getConnectedHeroes()) {
                 if (playedHeroesService.isCurrentHero(hero)) {
                     // если это текущий герой:
                     if (!Constants.isPaused()) {
                         moveHeroIfAvailable(canvas); // узкое место!
                     }
-                    hero.draw(g2D);
+                    hero.draw(v2D);
                 } else if (canvas.getViewPort().getBounds().contains(hero.getPosition())) {
                     // если чужой герой в пределах видимости:
-                    hero.draw(g2D);
+                    hero.draw(v2D);
                 }
             }
         } else { // если не-сетевая игра:
@@ -381,7 +378,7 @@ public class GameController extends GameControllerBase {
                 log.info("Потеряли текущего игрока. Что-то случилось? Выходим...");
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Окно игры не смогло получить текущего игрока для отрисовки");
             }
-            playedHeroesService.getCurrentHero().draw(g2D);
+            playedHeroesService.getCurrentHero().draw(v2D);
         }
     }
 
@@ -425,54 +422,54 @@ public class GameController extends GameControllerBase {
             switch (vector) {
                 case UP -> {
                     if (isViewMovableY) {
-                        canvas.dragDown((double) getCurrentHeroSpeed());
+                        canvas.dragDown(getCurrentHeroSpeed());
                     }
                 }
                 case UP_RIGHT -> {
                     if (isViewMovableY) {
-                        canvas.dragDown((double) getCurrentHeroSpeed());
+                        canvas.dragDown(getCurrentHeroSpeed());
                     }
                     if (isViewMovableX) {
-                        canvas.dragLeft((double) getCurrentHeroSpeed());
+                        canvas.dragLeft(getCurrentHeroSpeed());
                     }
                 }
                 case RIGHT -> {
                     if (isViewMovableX) {
-                        canvas.dragLeft((double) getCurrentHeroSpeed());
+                        canvas.dragLeft(getCurrentHeroSpeed());
                     }
                 }
                 case RIGHT_DOWN -> {
                     if (isViewMovableX) {
-                        canvas.dragLeft((double) getCurrentHeroSpeed());
+                        canvas.dragLeft(getCurrentHeroSpeed());
                     }
                     if (isViewMovableY) {
-                        canvas.dragUp((double) getCurrentHeroSpeed());
+                        canvas.dragUp(getCurrentHeroSpeed());
                     }
                 }
                 case DOWN -> {
                     if (isViewMovableY) {
-                        canvas.dragUp((double) getCurrentHeroSpeed());
+                        canvas.dragUp(getCurrentHeroSpeed());
                     }
                 }
                 case DOWN_LEFT -> {
                     if (isViewMovableY) {
-                        canvas.dragUp((double) getCurrentHeroSpeed());
+                        canvas.dragUp(getCurrentHeroSpeed());
                     }
                     if (isViewMovableX) {
-                        canvas.dragRight((double) getCurrentHeroSpeed());
+                        canvas.dragRight(getCurrentHeroSpeed());
                     }
                 }
                 case LEFT -> {
                     if (isViewMovableX) {
-                        canvas.dragRight((double) getCurrentHeroSpeed());
+                        canvas.dragRight(getCurrentHeroSpeed());
                     }
                 }
                 case LEFT_UP -> {
                     if (isViewMovableX) {
-                        canvas.dragRight((double) getCurrentHeroSpeed());
+                        canvas.dragRight(getCurrentHeroSpeed());
                     }
                     if (isViewMovableY) {
-                        canvas.dragDown((double) getCurrentHeroSpeed());
+                        canvas.dragDown(getCurrentHeroSpeed());
                     }
                 }
                 default -> log.info("Обнаружено несанкционированное направление {}", vector);
@@ -514,6 +511,8 @@ public class GameController extends GameControllerBase {
     }
 
     public WorldDTO saveNewWorld(WorldDTO newWorld) {
+//        newWorld.addEnvironment(new MockEnvironmentWithStorage("mock"));
+
         newWorld.setAuthor(getCurrentPlayerUid());
         return worldService.save(newWorld);
     }
@@ -525,6 +524,7 @@ public class GameController extends GameControllerBase {
     }
 
     public boolean closeServer() {
+        localSocketConnection.setControlledExit(true);
         server.close();
         server.untilClose(6_000);
         return server.isClosed();
@@ -752,7 +752,7 @@ public class GameController extends GameControllerBase {
         return playedHeroesService.getCurrentHeroPower();
     }
 
-    public short getCurrentHeroMaxHp() {
+    public int getCurrentHeroMaxHp() {
         return playedHeroesService.getCurrentHeroMaxHealth();
     }
 
@@ -760,7 +760,7 @@ public class GameController extends GameControllerBase {
         return playedHeroesService.getCurrentHeroHurtLevel();
     }
 
-    public short getCurrentHeroHp() {
+    public int getCurrentHeroHp() {
         return playedHeroesService.getCurrentHeroCurHealth();
     }
 
@@ -919,7 +919,7 @@ public class GameController extends GameControllerBase {
             return;
         }
 
-        if (Objects.requireNonNull(data.event()) == NetDataEvent.HERO_MOVING) {// Обновляем позицию другого игрока:
+        if (Objects.requireNonNull(data.event()) == NetDataEvent.HERO_MOVING) {
             aim.setPosition(new Point2D.Double(data.positionX(), data.positionY()));
             aim.setVector(data.vector());
         }
@@ -1008,10 +1008,6 @@ public class GameController extends GameControllerBase {
 
     public HeroDTO cliToHero(ClientDataDTO readed) {
         return heroService.cliToHero(readed);
-    }
-
-    public void saveNewRemoteHero(ClientDataDTO readed) {
-        saveNewHero(cliToHero(readed));
     }
 
     public PlayerDTO getCurrentPlayer() {

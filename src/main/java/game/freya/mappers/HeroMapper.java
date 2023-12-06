@@ -9,8 +9,6 @@ import game.freya.entities.dto.PlayerDTO;
 import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.items.containers.Backpack;
-import game.freya.items.logic.Buff;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
@@ -104,16 +102,16 @@ public final class HeroMapper {
                 .lastPlayDate(entity.getLastPlayDate())
                 .build();
 
-        try {
-            result.getBuffs().clear();
-            for (Buff buff : mapper.readValue(entity.getBuffsJson(), Buff[].class)) {
-                result.addBuff(buff);
-            }
-            result.setInventory(mapper.readValue(entity.getInventoryJson(), Backpack.class));
-        } catch (Exception e) {
-            log.error("Err in hero mapper: {}", ExceptionUtils.getFullExceptionMessage(e));
-            throw new GlobalServiceException(ErrorMessages.JSON_PARSE_ERR);
-        }
+//        try {
+//            result.getBuffs().clear();
+//            for (Buff buff : mapper.readValue(entity.getBuffsJson(), Buff[].class)) {
+//                result.addBuff(buff);
+//            }
+//            result.setInventory(mapper.readValue(entity.getInventoryJson(), Backpack.class));
+//        } catch (Exception e) {
+//            log.error("Err in hero mapper: {}", ExceptionUtils.getFullExceptionMessage(e));
+//            throw new GlobalServiceException(ErrorMessages.JSON_PARSE_ERR);
+//        }
 
         return result;
     }

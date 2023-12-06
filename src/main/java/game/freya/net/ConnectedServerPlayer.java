@@ -7,6 +7,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
+import game.freya.enums.NetDataEvent;
 import game.freya.enums.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -70,7 +71,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.client = client;
         this.client.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
         this.client.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
-        this.client.setReuseAddress(true);
+        // this.client.setReuseAddress(true);
         // this.client.setKeepAlive(true);
         this.client.setTcpNoDelay(true);
         this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
@@ -93,7 +94,10 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             try (ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))) {
                 ClientDataDTO readed;
                 while ((readed = (ClientDataDTO) inps.readObject()) != null && this.client.isConnected() && !Thread.currentThread().isInterrupted()) {
-                    log.info("Игрок {} (Герой '{}') прислал на Сервер данные {}", playerName, readed.heroName(), readed.type());
+                    if (!readed.type().equals(NetDataType.PING) && (readed.event() != null && !readed.event().equals(NetDataEvent.HERO_MOVING))) {
+                        log.info("Игрок {} (Герой '{}') прислал на Сервер данные {} ({})",
+                                playerName, readed.heroName(), readed.type(), readed.event());
+                    }
                     lastType = readed.type();
                     if (lastType.equals(NetDataType.AUTH_REQUEST)) {
                         doPlayerAuth(readed);
@@ -120,7 +124,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             log.warn("Something wrong with client`s data stream: {}", ExceptionUtils.getFullExceptionMessage(e));
             if (playerName != null && !playerName.equals(gameController.getCurrentPlayerNickName())) {
                 new FOptionPane().buildFOptionPane("Подключение разорвано",
-                        "Подключение с %s было разорвано".formatted(playerName), 60, false);
+                        "Подключение с %s было разорвано".formatted(playerName), 30, false);
             }
         } catch (ClassNotFoundException cnf) {
             log.warn("Client`s input stream thread cant read class: {}", ExceptionUtils.getFullExceptionMessage(cnf));
@@ -147,7 +151,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         if (uuid != null && uuid.equals(gameController.getCurrentWorldUid())) {
             // Сервер не знает в какой именно из его миров стучится клиент, который
             //  сейчас загружен или другой, на этом же порту - потому сверяем.
-            log.debug("Клиент успешно пингует мир {}", uuid);
+            log.info("Клиент успешно пингует мир {}", uuid);
             push(ClientDataDTO.builder().type(NetDataType.PONG).worldUid(gameController.getCurrentWorldUid()).build());
         } else {
             log.debug("Пингуется не тот мир, потому WRONG_WORLD_PING");
@@ -189,14 +193,17 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             hero = gameController.getHeroByUid(readed.heroUuid());
             BeanUtils.copyProperties(readed, hero);
         } else {
-            hero = gameController.saveNewHero(gameController.cliToHero(readed));
+            hero = gameController.saveNewHero(gameController.cliToHero(readed), false);
         }
+
+        this.isAccepted.set(true);
+        push(ClientDataDTO.builder()
+                .type(NetDataType.HERO_ACCEPTED)
+                .heroes(playedHeroesService.getHeroes())
+                .build());
 
         hero.setOnline(true);
         playedHeroesService.addHero(hero);
-
-        this.isAccepted.set(true);
-        push(ClientDataDTO.builder().type(NetDataType.HERO_ACCEPTED).build());
 
 //        this.isAccepted.set(false);
 //        push(ClientDataDTO.builder().type(NetDataType.HERO_RESTRICTED).build());

@@ -1,4 +1,4 @@
-package game.freya.items.logic;
+package game.freya.entities.logic;
 
 import game.freya.entities.dto.HeroDTO;
 

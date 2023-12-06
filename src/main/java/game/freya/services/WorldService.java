@@ -2,7 +2,7 @@ package game.freya.services;
 
 import game.freya.entities.World;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.items.interfaces.iEnvironment;
+import game.freya.interfaces.iEnvironment;
 import game.freya.mappers.WorldMapper;
 import game.freya.repositories.WorldRepository;
 import lombok.Getter;
@@ -69,7 +69,7 @@ public class WorldService {
     }
 
     public Set<iEnvironment> getEnvironmentsFromRectangle(Rectangle rectangle) {
-        return currentWorld.getEnvironments().stream().filter(e -> rectangle.contains(e.getPosition())).collect(Collectors.toSet());
+        return currentWorld.getEnvironments().stream().filter(e -> rectangle.contains(e.getLocation())).collect(Collectors.toSet());
     }
 
     public WorldDTO setCurrentWorld(WorldDTO currentWorld) {

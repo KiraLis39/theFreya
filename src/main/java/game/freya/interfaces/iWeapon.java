@@ -6,8 +6,11 @@ import java.util.Set;
 
 public interface iWeapon extends iTools {
     String setName(); // сборка имени оружия производится с учетом его редкости или владельца
+
     Set<HeroType> getAllowedHeroTypes();
+
     boolean isAllowed(iHero hero); // разрешено ли носить указанному персонажу?
+
     int getAttackPower();
 
     /*

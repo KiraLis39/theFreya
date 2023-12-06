@@ -8,6 +8,7 @@ import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -29,16 +30,21 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.RGBImageFilter;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
 
 @Slf4j
-public class HeroCreatingPane extends JPanel {
+public class HeroCreatingPane extends JPanel implements iSubPane {
     private static final Random r = new Random();
 
     private static final float rgb = 0.18f;
@@ -47,9 +53,14 @@ public class HeroCreatingPane extends JPanel {
 
     private transient BufferedImage snap;
 
+    private transient Rectangle heroRamka;
+
     private JTextField ntf;
 
     private boolean isEditMode = false;
+
+    @Getter
+    private transient Image heroViewImage;
 
     @Getter
     private UUID worldUid;
@@ -85,8 +96,7 @@ public class HeroCreatingPane extends JPanel {
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+        recalculate(canvas);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
         add(Box.createHorizontalStrut(canvas.getWidth() / 3));
@@ -169,6 +179,7 @@ public class HeroCreatingPane extends JPanel {
 
                                 baseColor = bcc.getColor();
                                 setBackground(baseColor);
+                                recolorHeroView();
                             }
                         });
                     }};
@@ -189,6 +200,7 @@ public class HeroCreatingPane extends JPanel {
 
                                 secondColor = bcc.getColor();
                                 setBackground(secondColor);
+                                recolorHeroView();
                             }
                         });
                     }};
@@ -241,6 +253,18 @@ public class HeroCreatingPane extends JPanel {
         }});
     }
 
+    private void recolorHeroView() {
+        int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
+                baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
+        heroViewImage = Toolkit.getDefaultToolkit().createImage(
+                new FilteredImageSource(((Image) Constants.CACHE.get("player")).getSource(), new RGBImageFilter() {
+                    @Override
+                    public int filterRGB(final int x, final int y, final int rgb) {
+                        return rgb & hexColor;
+                    }
+                }));
+    }
+
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -258,18 +282,28 @@ public class HeroCreatingPane extends JPanel {
         g.setFont(Constants.PROPAGANDA_FONT);
 
         // рамка вокруг героя:
+        if (heroRamka == null) {
+            heroRamka = new Rectangle(0, (int) (getHeight() * 0.1d), getWidth() / 2 - 32, (int) (getHeight() * 0.8d));
+        }
         g.setColor(Color.DARK_GRAY);
-        g.drawRoundRect(
-                0, (int) (getHeight() * 0.1d),
-                getWidth() / 2 - 32, (int) (getHeight() * 0.8d),
-                32, 32);
+        g.drawRoundRect(heroRamka.x, heroRamka.y, heroRamka.width, heroRamka.height, 32, 32);
 
-        g.setColor(Color.DARK_GRAY);
+        // герой:
+        if (heroViewImage == null) {
+            heroViewImage = (BufferedImage) Constants.CACHE.get("player");
+        }
+        g.drawImage(heroViewImage,
+                (heroRamka.x + heroRamka.width) / 2 - heroViewImage.getWidth(this) / 2, heroRamka.y + 32,
+                heroViewImage.getWidth(this), heroViewImage.getHeight(this),
+                this);
+
+        // текст Скоро тут будет герой:
+        g.setColor(Color.BLACK);
         g.drawString("ЗДЕСЬ БУДЕТ",
-                (int) ((getWidth() / 2d - 32d) / 2d - Constants.FFB.getStringBounds(g, "ЗДЕСЬ БУДЕТ").getWidth() / 2d),
+                (int) ((heroRamka.x + heroRamka.width) / 2d - Constants.FFB.getStringBounds(g, "ЗДЕСЬ БУДЕТ").getWidth() / 2d),
                 (int) (getHeight() * 0.4d));
         g.drawString("ВНЕШНИЙ ВИД ГЕРОЯ",
-                (int) ((getWidth() / 2d - 32d) / 2d - Constants.FFB.getStringBounds(g, "ВНЕШНИЙ ВИД ГЕРОЯ").getWidth() / 2d),
+                (int) ((heroRamka.x + heroRamka.width) / 2d - Constants.FFB.getStringBounds(g, "ВНЕШНИЙ ВИД ГЕРОЯ").getWidth() / 2d),
                 (int) (getHeight() * 0.445d));
 
         // прямоугольник под именем героя:
@@ -301,6 +335,8 @@ public class HeroCreatingPane extends JPanel {
             ntf.requestFocusInWindow();
             ntf.selectAll();
         }
+
+        recolorHeroView();
     }
 
     public void load(HeroDTO template) {
@@ -323,5 +359,11 @@ public class HeroCreatingPane extends JPanel {
 
         this.periferiaSize = template.getPeriferiaSize();
         this.perSlider.setValue(periferiaSize);
+    }
+
+    @Override
+    public void recalculate(FoxCanvas canvas) {
+        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
     }
 }

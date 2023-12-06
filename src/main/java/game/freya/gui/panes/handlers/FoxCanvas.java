@@ -12,6 +12,7 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.interfaces.iCanvas;
+import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.AudioSettingsPane;
 import game.freya.gui.panes.sub.GameplaySettingsPane;
 import game.freya.gui.panes.sub.HeroCreatingPane;
@@ -28,17 +29,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.JLayeredPane;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.AWTException;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
-import java.awt.BufferCapabilities;
-import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
 import java.awt.Image;
 import java.awt.ImageCapabilities;
 import java.awt.Polygon;
@@ -65,7 +63,7 @@ import static javax.swing.JLayeredPane.PALETTE_LAYER;
 @Setter
 @Slf4j
 // iCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, KeyListener, Runnable
-public abstract class FoxCanvas extends Canvas implements iCanvas {
+public abstract class FoxCanvas extends JPanel implements iCanvas {
     public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 250;
 
     private static final AtomicInteger frames = new AtomicInteger(0);
@@ -89,8 +87,6 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
     private final String pausedString, downInfoString1, downInfoString2;
 
     private final transient GameController gameController;
-
-    private final transient JLayeredPane parentLayers;
 
     private final transient UIHandler uiHandler;
 
@@ -132,11 +128,14 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     private transient Chat chat;
 
-    protected FoxCanvas(GraphicsConfiguration gConf, String name, GameController controller, JLayeredPane layeredPane, UIHandler uiHandler) {
-        super(gConf);
+    private transient JFrame parentFrame;
+
+    protected FoxCanvas(String name, GameController controller, JFrame parentFrame, UIHandler uiHandler) {
+        super(null, true);
+
         this.name = name;
         this.uiHandler = uiHandler;
-        this.parentLayers = layeredPane;
+        this.parentFrame = parentFrame;
         this.gameController = controller;
 
         this.audioSettingsButtonText = "Настройки звука";
@@ -162,7 +161,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         frames.incrementAndGet();
     }
 
-    public void drawBackground(Graphics2D bufGraphics2D) throws AWTException {
+    protected void drawBackground(Graphics2D bufGraphics2D) throws AWTException {
         Graphics2D v2D = getValidVolatileGraphic();
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
@@ -193,19 +192,16 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     private Graphics2D getValidVolatileGraphic() throws AWTException {
         if (this.backImage == null) {
-            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
         }
 
         if (isRevolatileNeeds()) {
-            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
             setRevolatileNeeds(false);
         }
 
         while (validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE) {
             log.debug("Recreating new volatile image by incompatible...");
-            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
             this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
         }
 
@@ -217,14 +213,14 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         }
     }
 
-    public void drawPauseMode(Graphics2D g2D) {
+    protected void drawPauseMode(Graphics2D g2D) {
         g2D.setFont(Constants.GAME_FONT_03);
         g2D.setColor(new Color(0, 0, 0, 63));
         g2D.drawString(getPausedString(),
                 (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2 + 3);
 
         g2D.setFont(Constants.GAME_FONT_02);
-        g2D.setColor(Color.DARK_GRAY);
+        g2D.setColor(Color.GRAY);
         g2D.drawString(getPausedString(),
                 (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2);
 
@@ -271,26 +267,25 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
     private void repaintGame(Graphics2D v2D) throws AWTException {
         // рисуем мир:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
         gameController.getDrawCurrentWorld(v2D);
 
         // рисуем данные героев поверх игры:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
         drawHeroesData(v2D);
 
         // draw chat:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-        this.chat.draw(v2D);
+        if (gameController.isCurrentWorldIsNetwork() && this.chat != null) {
+            Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
+            this.chat.draw(v2D);
+        }
 
         // рисуем миникарту:
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
         drawMinimap(v2D);
 
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
+        Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH, true, true);
         if (Constants.isPaused()) {
             drawPauseMode(v2D);
         }
@@ -387,8 +382,8 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         m2D.setColor(Color.CYAN);
         gameController.getWorldEnvironments(scanRect)
                 .forEach(entity -> m2D.fillRect(
-                        (int) (entity.getPosition().x - 3),
-                        (int) (entity.getPosition().y - 3),
+                        (int) (entity.getLocation().x - 3),
+                        (int) (entity.getLocation().y - 3),
                         6, 6));
 
         m2D.setStroke(new BasicStroke(5f));
@@ -411,6 +406,9 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         if (gameController.isCurrentHeroOnline()) {
             heroes = gameController.getConnectedHeroes();
         } else {
+            if (gameController.getCurrentHero() == null) {
+                throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "Этого не должно было случиться.");
+            }
             heroes = List.of(gameController.getCurrentHero());
         }
 
@@ -452,7 +450,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         });
     }
 
-    public void drawDebugInfo(Graphics2D v2D, String worldTitle) {
+    protected void drawDebugInfo(Graphics2D v2D, String worldTitle) {
         if (Constants.isDebugInfoVisible() && worldTitle != null) {
             drawDebug(v2D, worldTitle);
         }
@@ -482,18 +480,18 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         v2D.setColor(Color.GRAY);
 
         // graphics info:
-        BufferCapabilities gCap = getBufferStrategy().getCapabilities();
-        v2D.drawString("Front accelerated: %s".formatted(gCap.getFrontBufferCapabilities().isAccelerated()),
-                getWidth() - leftShift, getHeight() - 370);
-        v2D.drawString("Front is true volatile: %s".formatted(gCap.getFrontBufferCapabilities().isTrueVolatile()),
-                getWidth() - leftShift, getHeight() - 350);
-        v2D.drawString("Back accelerated: %s".formatted(gCap.getBackBufferCapabilities().isAccelerated()),
-                getWidth() - leftShift, getHeight() - 325);
-        v2D.drawString("Back is true volatile: %s".formatted(gCap.getBackBufferCapabilities().isTrueVolatile()),
-                getWidth() - leftShift, getHeight() - 305);
-        v2D.drawString("Fullscreen required: %s".formatted(gCap.isFullScreenRequired()), getWidth() - leftShift, getHeight() - 280);
-        v2D.drawString("Multi-buffer available: %s".formatted(gCap.isMultiBufferAvailable()), getWidth() - leftShift, getHeight() - 260);
-        v2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 240);
+//        BufferCapabilities gCap = getBufferStrategy().getCapabilities();
+//        v2D.drawString("Front accelerated: %s".formatted(gCap.getFrontBufferCapabilities().isAccelerated()),
+//                getWidth() - leftShift, getHeight() - 370);
+//        v2D.drawString("Front is true volatile: %s".formatted(gCap.getFrontBufferCapabilities().isTrueVolatile()),
+//                getWidth() - leftShift, getHeight() - 350);
+//        v2D.drawString("Back accelerated: %s".formatted(gCap.getBackBufferCapabilities().isAccelerated()),
+//                getWidth() - leftShift, getHeight() - 325);
+//        v2D.drawString("Back is true volatile: %s".formatted(gCap.getBackBufferCapabilities().isTrueVolatile()),
+//                getWidth() - leftShift, getHeight() - 305);
+//        v2D.drawString("Fullscreen required: %s".formatted(gCap.isFullScreenRequired()), getWidth() - leftShift, getHeight() - 280);
+//        v2D.drawString("Multi-buffer available: %s".formatted(gCap.isMultiBufferAvailable()), getWidth() - leftShift, getHeight() - 260);
+//        v2D.drawString("Is page flipping: %s".formatted(gCap.isPageFlipping()), getWidth() - leftShift, getHeight() - 240);
 
         // server info:
         boolean isServerIsOpen = gameController.isServerIsOpen();
@@ -509,30 +507,33 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 getWidth() - leftShift, getHeight() - 170);
         v2D.setColor(Color.GRAY);
 
-        // hero info:
-        if (gameController.getCurrentHeroPosition() != null) {
-            Shape playerShape = new Ellipse2D.Double(
-                    (int) gameController.getCurrentHeroPosition().x - Constants.MAP_CELL_DIM / 2d,
-                    (int) gameController.getCurrentHeroPosition().y - Constants.MAP_CELL_DIM / 2d,
-                    Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
-            v2D.drawString("Hero pos: %.0fx%.0f".formatted(playerShape.getBounds2D().getCenterX(), playerShape.getBounds2D().getCenterY()),
-                    getWidth() - leftShift, getHeight() - 140);
-            v2D.drawString("Hero speed: %s".formatted(gameController.getCurrentHeroSpeed()), getWidth() - leftShift, getHeight() - 120);
-        }
+        // если мы в игре:
+        if (gameController.isGameActive()) {
+            // hero info:
+            if (gameController.getCurrentHeroPosition() != null) {
+                Shape playerShape = new Ellipse2D.Double(
+                        (int) gameController.getCurrentHeroPosition().x - Constants.MAP_CELL_DIM / 2d,
+                        (int) gameController.getCurrentHeroPosition().y - Constants.MAP_CELL_DIM / 2d,
+                        Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
+                v2D.drawString("Hero pos: %.0fx%.0f".formatted(playerShape.getBounds2D().getCenterX(), playerShape.getBounds2D().getCenterY()),
+                        getWidth() - leftShift, getHeight() - 140);
+                v2D.drawString("Hero speed: %s".formatted(gameController.getCurrentHeroSpeed()), getWidth() - leftShift, getHeight() - 120);
+            }
 
-        // gameplay info:
-        if (gameController.getCurrentWorldMap() != null && gameController.isGameActive()) {
-            v2D.drawString("GameMap WxH: %dx%d"
-                            .formatted(gameController.getCurrentWorldMap().getWidth(), gameController.getCurrentWorldMap().getHeight()),
-                    getWidth() - leftShift, getHeight() - 70);
+            // gameplay info:
+            if (gameController.getCurrentWorldMap() != null) {
+                v2D.drawString("GameMap WxH: %dx%d"
+                                .formatted(gameController.getCurrentWorldMap().getWidth(), gameController.getCurrentWorldMap().getHeight()),
+                        getWidth() - leftShift, getHeight() - 70);
 
-            v2D.drawString("Canvas XxY-WxH: %dx%d-%dx%d".formatted(getBounds().x, getBounds().y, getBounds().width, getBounds().height),
-                    getWidth() - leftShift, getHeight() - 50);
+                v2D.drawString("Canvas XxY-WxH: %dx%d-%dx%d".formatted(getBounds().x, getBounds().y, getBounds().width, getBounds().height),
+                        getWidth() - leftShift, getHeight() - 50);
 
-            if (viewPort != null) {
-                v2D.drawString("ViewPort XxY-WxH: %dx%d-%dx%d"
-                                .formatted(viewPort.getBounds().x, viewPort.getBounds().y, viewPort.getBounds().width, viewPort.getBounds().height),
-                        getWidth() - leftShift, getHeight() - 30);
+                if (viewPort != null) {
+                    v2D.drawString("ViewPort XxY-WxH: %dx%d-%dx%d"
+                                    .formatted(viewPort.getBounds().x, viewPort.getBounds().y, viewPort.getBounds().width, viewPort.getBounds().height),
+                            getWidth() - leftShift, getHeight() - 30);
+                }
             }
         }
     }
@@ -545,10 +546,11 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         // FPS check:
         incrementFramesCounter();
         if (System.currentTimeMillis() >= timeStamp + 1000L) {
-            resetFpsCounter();
+            Constants.setRealFreshRate(frames.get());
+            frames.set(0);
+            timeStamp = System.currentTimeMillis();
         }
 
-        // FPS draw:
         if (downShift == 0) {
             downShift = getHeight() * 0.14f;
         }
@@ -556,35 +558,22 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         v2D.setFont(Constants.DEBUG_FONT);
         v2D.setColor(Color.BLACK);
         if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 48);
+            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 24);
         }
-        v2D.drawString("Delay fps: " + Constants.getDelay(), rightShift - 1f, downShift - 24);
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
 
+        v2D.setColor(Color.GRAY);
         if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            v2D.setColor(Color.GRAY);
-            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 49);
+            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 25);
         }
-        if (Constants.isLowFpsAlarm()) {
-            v2D.setColor(Color.RED);
-        } else {
-            v2D.setColor(Color.GRAY);
-        }
-        v2D.drawString("Delay fps: " + Constants.getDelay(), rightShift, downShift - 25);
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift, downShift);
     }
 
-    private void resetFpsCounter() {
-        Constants.setCurrentFreshRate(frames.get());
-        timeStamp = System.currentTimeMillis();
-        frames.set(0);
-    }
-
-    public void reloadShapes(FoxCanvas canvas) {
+    protected void reloadShapes(FoxCanvas canvas) {
         downShift = getHeight() * 0.14f;
 
         setLeftGrayMenuPoly(new Polygon(
@@ -596,9 +585,24 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 new int[]{0, (int) (canvas.getWidth() * 0.3D), (int) (canvas.getWidth() * 0.29D), (int) (canvas.getWidth() * 0.3D), 0},
                 new int[]{3, 3, (int) (canvas.getHeight() * 0.031D), (int) (canvas.getHeight() * 0.061D), (int) (canvas.getHeight() * 0.061D)},
                 5));
+
+        try {
+            ((iSubPane) getAudiosPane()).recalculate(canvas);
+            ((iSubPane) getVideosPane()).recalculate(canvas);
+            ((iSubPane) getHotkeysPane()).recalculate(canvas);
+            ((iSubPane) getGameplayPane()).recalculate(canvas);
+            ((iSubPane) getHeroCreatingPane()).recalculate(canvas);
+            ((iSubPane) getWorldCreatingPane()).recalculate(canvas);
+            ((iSubPane) getWorldsListPane()).recalculate(canvas);
+            ((iSubPane) getHeroesListPane()).recalculate(canvas);
+            ((iSubPane) getNetworkListPane()).recalculate(canvas);
+            ((iSubPane) getNetworkCreatingPane()).recalculate(canvas);
+        } catch (Exception e) {
+            log.error("Ошибка при коррекции размеров панелей: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
     }
 
-    public void recalculateMenuRectangles() {
+    protected void recalculateMenuRectangles() {
         int buttonsRectsWidth = (int) (getWidth() * 0.14D);
         // стандартное меню:
         firstButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
@@ -624,11 +628,11 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         minimapHideRect = new Rectangle(0, getHeight() - 16, 16, 16);
     }
 
-    public void checkGameplayDuration(long inGamePlayed) {
+    protected void checkGameplayDuration(long inGamePlayed) {
         this.duration = Duration.ofMillis(inGamePlayed + (System.currentTimeMillis() - Constants.getGameStartedIn()));
     }
 
-    public void drawHeader(Graphics2D g2D, String headerTitle) {
+    protected void drawHeader(Graphics2D g2D, String headerTitle) {
         g2D.setColor(Color.DARK_GRAY.darker());
         g2D.fill(getHeaderPoly());
         g2D.setColor(Color.BLACK);
@@ -641,7 +645,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         g2D.drawString(headerTitle, getWidth() / 11, (int) (getHeight() * 0.041D));
     }
 
-    public void showOptions(Graphics2D g2D) {
+    protected void showOptions(Graphics2D g2D) {
         drawLeftGrayPoly(g2D);
 
         // draw header:
@@ -680,22 +684,22 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
-    public void drawLeftGrayPoly(Graphics2D g2D) {
+    protected void drawLeftGrayPoly(Graphics2D g2D) {
         // fill left gray polygon:
         g2D.setColor(isOptionsMenuSetVisible() ? Constants.getMainMenuBackgroundColor2() : Constants.getMainMenuBackgroundColor());
         g2D.fillPolygon(getLeftGrayMenuPoly());
     }
 
-    public int validateBackImage() {
+    protected int validateBackImage() {
         return this.backImage.validate(Constants.getGraphicsConfiguration());
     }
 
-    public void closeBackImage() {
+    protected void closeBackImage() {
         this.backImage.flush();
         this.backImage.getGraphics().dispose();
     }
 
-    public void onExitBack(FoxCanvas canvas) {
+    protected void onExitBack(FoxCanvas canvas) {
         if (isOptionsMenuSetVisible()) {
             setOptionsMenuSetVisible(false);
             audiosPane.setVisible(false);
@@ -749,13 +753,13 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         hidePanelIfNotNull(networkCreatingPane);
     }
 
-    private void hidePanelIfNotNull(JPanel panel) {
+    protected void hidePanelIfNotNull(JPanel panel) {
         if (panel != null) {
             panel.setVisible(false);
         }
     }
 
-    public boolean isShadowBackNeeds() {
+    protected boolean isShadowBackNeeds() {
         return isOptionsMenuSetVisible
                 || (heroCreatingPane != null && heroCreatingPane.isVisible())
                 || (worldCreatingPane != null && worldCreatingPane.isVisible())
@@ -765,7 +769,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 || (networkCreatingPane != null && networkCreatingPane.isVisible());
     }
 
-    public void drawAvatar(Graphics2D g2D) {
+    protected void drawAvatar(Graphics2D g2D) {
         if (pAvatar == null) {
             pAvatar = gameController.getCurrentPlayerAvatar();
         }
@@ -779,11 +783,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
                 getAvatarRect().height + 24);
     }
 
-    public void recreateSubPanes() {
-        // удаляем старые панели с фрейма:
-        dropOldPanesFromLayer();
-
-        // создаём новые панели:
+    protected void createSubPanes() {
         setAudiosPane(new AudioSettingsPane(this));
         setVideosPane(new VideoSettingsPane(this));
         setHotkeysPane(new HotkeysSettingsPane(this));
@@ -797,72 +797,19 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
 
         // добавляем панели на слой:
         try {
-            parentLayers.add(getAudiosPane(), PALETTE_LAYER, 0);
-            parentLayers.add(getVideosPane(), PALETTE_LAYER, 0);
-            parentLayers.add(getHotkeysPane(), PALETTE_LAYER, 0);
-            parentLayers.add(getGameplayPane(), PALETTE_LAYER, 0);
-            parentLayers.add(getHeroCreatingPane(), PALETTE_LAYER, 0);
-            parentLayers.add(getWorldCreatingPane(), PALETTE_LAYER, 0);
-            parentLayers.add(getWorldsListPane(), PALETTE_LAYER, 0);
-            parentLayers.add(getHeroesListPane(), PALETTE_LAYER, 0);
-            parentLayers.add(getNetworkListPane(), PALETTE_LAYER, 1);
-            parentLayers.add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getAudiosPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getVideosPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getGameplayPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
+            parentFrame.getLayeredPane().add(getNetworkListPane(), PALETTE_LAYER, 1);
+            parentFrame.getLayeredPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
-            recreateSubPanes();
-        }
-    }
-
-    public void dropOldPanesFromLayer() {
-        try {
-            parentLayers.remove(getAudiosPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма audiosPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getVideosPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма videosPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getHotkeysPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма hotkeysPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getGameplayPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма gameplayPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getHeroCreatingPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма heroCreatingPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getWorldCreatingPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма worldCreatingPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getWorldsListPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма worldsListPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getHeroesListPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма heroesListPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getNetworkListPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма networkListPane, которой там нет.");
-        }
-        try {
-            parentLayers.remove(getNetworkCreatingPane());
-        } catch (NullPointerException npe) {
-            log.debug("Не удастся удалить из фрейма networkCreatingPane, которой там нет.");
+            createSubPanes();
         }
     }
 
@@ -874,12 +821,12 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         uiHandler.drawUI(v2D, this);
     }
 
-    public void decreaseDrawErrorCount() {
+    protected void decreaseDrawErrorCount() {
         log.info("Понижаем количество ошибок отрисовки...");
         drawErrors.decrementAndGet();
     }
 
-    public void setSecondThread(String threadName, Thread secondThread) {
+    protected void setSecondThread(String threadName, Thread secondThread) {
         if (this.secondThread != null && this.secondThread.isAlive()) {
             this.secondThread.interrupt();
         }
@@ -925,19 +872,7 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         }
     }
 
-    public void doDrawDelay() {
-        try {
-            if (Constants.getDelay() > 1) {
-                Thread.sleep(Constants.getDelay());
-            } else {
-                Thread.yield();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    public void throwExceptionAndYield(Exception e) {
+    protected void throwExceptionAndYield(Exception e) {
         if (drawErrors.getAndIncrement() >= 100) {
             new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
                     "Что-то не так с графической системой (%s). Передайте последний лог (error.*) разработчику для решения проблемы."
@@ -951,11 +886,93 @@ public abstract class FoxCanvas extends Canvas implements iCanvas {
         }
     }
 
-    public void createChat(GameCanvas gameCanvas) {
+    protected void createChat(GameCanvas gameCanvas) {
         this.chat = new Chat(gameCanvas);
     }
 
-    public int getDrawErrors() {
+    protected int getDrawErrors() {
         return drawErrors.get();
+    }
+
+    protected void doDrawDelay() {
+        try {
+            Thread.sleep(13);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    protected boolean canDragDown() {
+        return viewPort.getY() > 0;
+    }
+
+    protected boolean canDragUp() {
+        return viewPort.getHeight() < gameController.getCurrentWorldMap().getHeight();
+    }
+
+    protected boolean canDragLeft() {
+        return viewPort.getWidth() < gameController.getCurrentWorldMap().getWidth();
+    }
+
+    protected boolean canDragRight() {
+        return viewPort.getX() > 0;
+    }
+
+    protected void checkOutOfFieldCorrection() {
+        while (getViewPort().getX() < 0) {
+            dragLeft(1d);
+        }
+
+        while (getViewPort().getWidth() > gameController.getCurrentWorldMap().getWidth()) {
+            dragRight(1d);
+        }
+
+        while (getViewPort().getY() < 0) {
+            dragUp(1d);
+        }
+
+        while (getViewPort().getHeight() > gameController.getCurrentWorldMap().getHeight()) {
+            dragDown(1d);
+        }
+    }
+
+    public void dragLeft(double pixels) {
+        if (canDragLeft()) {
+            log.debug("Drag left...");
+            double mapWidth = gameController.getCurrentWorldMap().getWidth();
+            double newWidth = Math.min(getViewPort().getWidth() + pixels, mapWidth);
+            getViewPort().setRect(getViewPort().getX() + pixels - (newWidth == mapWidth
+                            ? Math.abs(getViewPort().getWidth() + pixels - mapWidth) : 0),
+                    getViewPort().getY(), newWidth, getViewPort().getHeight());
+        }
+    }
+
+    public void dragRight(double pixels) {
+        if (canDragRight()) {
+            log.debug("Drag right...");
+            double newX = getViewPort().getX() - pixels > 0 ? getViewPort().getX() - pixels : 0;
+            getViewPort().setRect(newX, getViewPort().getY(),
+                    getViewPort().getWidth() - pixels + (newX == 0 ? Math.abs(getViewPort().getX() - pixels) : 0), getViewPort().getHeight());
+        }
+    }
+
+    public void dragUp(double pixels) {
+        if (canDragUp()) {
+            log.debug("Drag up...");
+            double mapHeight = gameController.getCurrentWorldMap().getHeight();
+            double newHeight = Math.min(getViewPort().getHeight() + pixels, mapHeight);
+            getViewPort().setRect(getViewPort().getX(), getViewPort().getY() + pixels - (newHeight == mapHeight
+                            ? Math.abs(getViewPort().getHeight() + pixels - mapHeight) : 0),
+                    getViewPort().getWidth(), newHeight);
+        }
+    }
+
+    public void dragDown(double pixels) {
+        if (canDragDown()) {
+            log.debug("Drag down...");
+            double newY = getViewPort().getY() - pixels > 0 ? getViewPort().getY() - pixels : 0;
+            getViewPort().setRect(getViewPort().getX(), newY, getViewPort().getWidth(),
+                    getViewPort().getHeight() - pixels + (newY == 0 ? Math.abs(getViewPort().getY() - pixels) : 0));
+        }
     }
 }

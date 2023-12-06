@@ -13,5 +13,6 @@ public enum NetDataType {
     PONG,
     WRONG_WORLD_PING,
     DIE,
+    HERO_OFFLINE,
     EVENT
 }

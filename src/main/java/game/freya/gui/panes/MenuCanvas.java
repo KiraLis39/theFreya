@@ -21,6 +21,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import java.awt.AWTException;
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
@@ -44,13 +45,14 @@ public class MenuCanvas extends FoxCanvas {
     private double parentHeightMemory = 0;
 
     public MenuCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
-        super(Constants.getGraphicsConfiguration(), "MenuCanvas", gameController, parentFrame.getLayeredPane(), uiHandler);
+        super("MenuCanvas", gameController, parentFrame, uiHandler);
         this.gameController = gameController;
         this.parentFrame = parentFrame;
 
-        setSize(parentFrame.getLayeredPane().getSize());
+        setSize(parentFrame.getSize());
         setBackground(Color.DARK_GRAY.darker());
         setIgnoreRepaint(true);
+        setOpaque(false);
         setFocusable(false);
 
         addMouseListener(this);
@@ -152,7 +154,7 @@ public class MenuCanvas extends FoxCanvas {
 
         this.isMenuActive = true;
         while (isMenuActive && !Thread.currentThread().isInterrupted()) {
-            if (!parentFrame.isActive() || getBufferStrategy() == null) {
+            if (!parentFrame.isActive()) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -194,15 +196,21 @@ public class MenuCanvas extends FoxCanvas {
         log.info("Thread of Menu canvas is finalized.");
     }
 
-    private void drawNextFrame() throws AWTException {
-        do {
-            do {
-                Graphics2D g2D = (Graphics2D) getBufferStrategy().getDrawGraphics();
-                super.drawBackground(g2D);
-                g2D.dispose();
-            } while (getBufferStrategy().contentsRestored());
-            getBufferStrategy().show();
-        } while (getBufferStrategy().contentsLost());
+    private void drawNextFrame() {
+        repaint();
+    }
+
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+
+        Graphics2D g2D = (Graphics2D) g;
+        try {
+            super.drawBackground(g2D);
+        } catch (AWTException e) {
+            log.error("Ошибка отрисовки кадра игры: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+        g2D.dispose();
     }
 
     @Override
@@ -236,7 +244,6 @@ public class MenuCanvas extends FoxCanvas {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-
             log.debug("Resizing of menu canvas...");
 
             if (Constants.getUserConfig().isFullscreen()) {
@@ -248,38 +255,11 @@ public class MenuCanvas extends FoxCanvas {
             reloadShapes(this);
             recalculateMenuRectangles();
 
-            boolean rect0IsVisible = getAudiosPane() != null && getAudiosPane().isVisible();
-            boolean rect1IsVisible = getVideosPane() != null && getVideosPane().isVisible();
-            boolean rect2IsVisible = getHotkeysPane() != null && getHotkeysPane().isVisible();
-            boolean rect3IsVisible = getGameplayPane() != null && getGameplayPane().isVisible();
-            boolean rect4IsVisible = getHeroCreatingPane() != null && getHeroCreatingPane().isVisible();
-            boolean rect5IsVisible = getWorldCreatingPane() != null && getWorldCreatingPane().isVisible();
-            boolean rect6IsVisible = getWorldsListPane() != null && getWorldsListPane().isVisible();
-            boolean rect7IsVisible = getHeroesListPane() != null && getHeroesListPane().isVisible();
-            boolean rect8IsVisible = getNetworkListPane() != null && getNetworkListPane().isVisible();
-            boolean rect9IsVisible = getNetworkCreatingPane() != null && getNetworkCreatingPane().isVisible();
-
-            // пересоздание доп-панелей:
-            recreateSubPanes();
-
-            getAudiosPane().setVisible(rect0IsVisible);
-            getVideosPane().setVisible(rect1IsVisible);
-            getHotkeysPane().setVisible(rect2IsVisible);
-            getGameplayPane().setVisible(rect3IsVisible);
-            getHeroCreatingPane().setVisible(rect4IsVisible);
-            getWorldCreatingPane().setVisible(rect5IsVisible);
-            getWorldsListPane().setVisible(rect6IsVisible);
-            getHeroesListPane().setVisible(rect7IsVisible);
-            getNetworkListPane().setVisible(rect8IsVisible);
-            getNetworkCreatingPane().setVisible(rect9IsVisible);
-
             setRevolatileNeeds(true);
         });
         resizeThread.start();
         try {
             resizeThread.join(500);
-            // parentFrame.createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-            createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
         } catch (InterruptedException e) {
             resizeThread.interrupt();
         }
@@ -310,7 +290,6 @@ public class MenuCanvas extends FoxCanvas {
     @Override
     public void stop() {
         this.isMenuActive = false;
-        dropOldPanesFromLayer();
         closeBackImage();
         setVisible(false);
     }
@@ -319,11 +298,10 @@ public class MenuCanvas extends FoxCanvas {
     public void init() {
         reloadShapes(this);
         recalculateMenuRectangles();
-        recreateSubPanes();
         inAc();
 
         setVisible(true);
-        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+        createSubPanes();
         this.initialized = true;
     }
 
@@ -589,7 +567,7 @@ public class MenuCanvas extends FoxCanvas {
                 .ownerUid(gameController.getCurrentPlayerUid())
                 .worldUid(newHeroTemplate.getWorldUid())
                 .createDate(LocalDateTime.now())
-                .build());
+                .build(), true);
 
         // если подключение к Серверу уже закрылось пока мы собирались:
         if (gameController.isCurrentWorldIsNetwork() && !gameController.isServerIsOpen()) {

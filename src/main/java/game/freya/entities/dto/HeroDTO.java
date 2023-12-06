@@ -1,16 +1,17 @@
 package game.freya.entities.dto;
 
-import fox.FoxRender;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.config.Constants;
-import game.freya.entities.dto.interfaces.iHero;
+import game.freya.entities.logic.Buff;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
 import game.freya.enums.HurtLevel;
 import game.freya.enums.MovingVector;
+import game.freya.interfaces.iEntity;
+import game.freya.items.PlayedCharacter;
 import game.freya.items.containers.Backpack;
-import game.freya.items.interfaces.iEntity;
-import game.freya.items.logic.Buff;
+import game.freya.items.prototypes.Storage;
 import game.freya.utils.ExceptionUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,15 +21,21 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
+import javax.persistence.Transient;
 import javax.swing.Icon;
 import javax.validation.constraints.NotNull;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Shape;
+import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.RGBImageFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -44,7 +51,7 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class HeroDTO implements iHero {
+public class HeroDTO extends PlayedCharacter {
     @NotNull
     @Builder.Default
     private final List<Buff> buffs = new ArrayList<>(9);
@@ -86,25 +93,28 @@ public class HeroDTO implements iHero {
     private float power = 1.0f;
 
     @Builder.Default
-    private float experience = 0f;
+    private long experience = 0;
 
     @Builder.Default
-    private short curHealth = 100;
+    private int curHealth = 100;
 
     @Builder.Default
-    private short maxHealth = 100;
+    private int maxHealth = 100;
 
     @Builder.Default
-    private short curOil = 100;
+    private int curOil = 100;
 
     @Builder.Default
-    private short maxOil = 100;
+    private int maxOil = 100;
 
     @Builder.Default
     private byte speed = 6;
 
     @Builder.Default
     private Point2D.Double position = new Point2D.Double(384d, 384d);
+
+    @Builder.Default
+    private Dimension size = new Dimension(128, 128);
 
     @Builder.Default
     private MovingVector vector = MovingVector.UP;
@@ -125,7 +135,7 @@ public class HeroDTO implements iHero {
     private LocalDateTime lastPlayDate = LocalDateTime.now();
 
     @Builder.Default
-    private Backpack inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"));
+    private transient Storage inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"));
 
     @Setter
     @Builder.Default
@@ -138,7 +148,12 @@ public class HeroDTO implements iHero {
     @Builder.Default
     private boolean isOnline = false;
 
-    private BufferedImage image;
+    @Builder.Default
+    private boolean isVisible = true;
+
+    @Transient
+    @JsonIgnore
+    private transient Image heroViewImage;
 
     private void recheckHurtLevel() {
         if (this.curHealth <= 0) {
@@ -156,33 +171,6 @@ public class HeroDTO implements iHero {
     }
 
     @Override
-    public BufferedImage getAvatar() {
-        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
-            if (avatarResource != null) {
-                return ImageIO.read(avatarResource);
-            }
-            throw new IOException(Constants.DEFAULT_AVATAR_URL);
-        } catch (IOException e) {
-            log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
-        }
-    }
-
-    @Override
-    public boolean isDead() {
-        return this.hurtLevel.equals(HurtLevel.DEAD);
-    }
-
-    @Override
-    public void hurt(float hurtPoints) {
-        this.curHealth -= hurtPoints;
-        if (this.curHealth < 0) {
-            this.curHealth = 0;
-        }
-        recheckHurtLevel();
-    }
-
-    @Override
     public void heal(float healPoints) {
         if (isDead()) {
             log.warn("Can`t heal the dead corps of player {}!", getHeroName());
@@ -196,11 +184,54 @@ public class HeroDTO implements iHero {
     }
 
     @Override
-    public void attack(iEntity entity) {
-        if (!entity.equals(this)) {
-            entity.hurt(power);
-        } else {
-            log.warn("Player {} can`t attack itself!", getHeroName());
+    public void hurt(float hurtPoints) {
+        this.curHealth -= hurtPoints;
+        if (this.curHealth < 0) {
+            this.curHealth = 0;
+        }
+        recheckHurtLevel();
+    }
+
+    @Override
+    public boolean isDead() {
+        return this.hurtLevel.equals(HurtLevel.DEAD);
+    }
+
+    @Override
+    public UUID getUid() {
+        return this.heroUid;
+    }
+
+    @Override
+    public String getName() {
+        return this.heroName;
+    }
+
+    @Override
+    public Dimension getSize() {
+        return this.size;
+    }
+
+    @Override
+    public boolean isVisible() {
+        return this.isVisible;
+    }
+
+    @Override
+    public boolean hasCollision() {
+        return true;
+    }
+
+    @Override
+    public BufferedImage getImage() {
+        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
+            if (avatarResource != null) {
+                return ImageIO.read(avatarResource);
+            }
+            throw new IOException(Constants.DEFAULT_AVATAR_URL);
+        } catch (IOException e) {
+            log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
         }
     }
 
@@ -211,14 +242,8 @@ public class HeroDTO implements iHero {
                 (int) this.position.y - Constants.MAP_CELL_DIM / 3d,
                 Constants.MAP_CELL_DIM / 1.5d, Constants.MAP_CELL_DIM / 1.5d);
 
-        if (image == null) {
-            BufferedImage pre = (BufferedImage) Constants.CACHE.get("player_0");
-            image = new BufferedImage(pre.getWidth(), pre.getHeight(), BufferedImage.TYPE_INT_ARGB);
-            Graphics2D i2D = image.createGraphics();
-            Constants.RENDER.setRender(i2D, FoxRender.RENDER.HIGH,
-                    Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-            i2D.drawImage(pre, 0, 0, null);
-            i2D.dispose();
+        if (heroViewImage == null) {
+            recolorHeroView();
         }
 
         AffineTransform tr = g2D.getTransform();
@@ -226,7 +251,7 @@ public class HeroDTO implements iHero {
                 playerShape.getBounds().x + playerShape.getBounds().width / 2d,
                 playerShape.getBounds().y + playerShape.getBounds().height / 2d);
 
-        g2D.drawImage(image,
+        g2D.drawImage(heroViewImage,
                 playerShape.getBounds().x, playerShape.getBounds().y,
                 playerShape.getBounds().width, playerShape.getBounds().height, null);
         g2D.setTransform(tr);
@@ -262,12 +287,32 @@ public class HeroDTO implements iHero {
     }
 
     @Override
+    public void attack(iEntity entity) {
+        if (!entity.equals(this)) {
+            entity.hurt(power);
+        } else {
+            log.warn("Player {} can`t attack itself!", getHeroName());
+        }
+    }
+
+    private void recolorHeroView() {
+        int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
+                baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
+        heroViewImage = Toolkit.getDefaultToolkit().createImage(
+                new FilteredImageSource(((Image) Constants.CACHE.get("player")).getSource(), new RGBImageFilter() {
+                    @Override
+                    public int filterRGB(final int x, final int y, final int rgb) {
+                        return rgb & hexColor;
+                    }
+                }));
+    }
+
     public void setLevel(short level) {
         this.level = level;
     }
 
     private void recheckPlayerLevel() {
-        // level
+        this.level = (short) (this.experience / 1000);
     }
 
     public void setPower(float power) {
@@ -391,5 +436,10 @@ public class HeroDTO implements iHero {
 
     public void setInventory(Backpack inventory) {
         this.inventory = inventory;
+    }
+
+    @Override
+    public Point2D.Double getLocation() {
+        return this.position;
     }
 }

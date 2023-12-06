@@ -2,6 +2,7 @@ package game.freya.net.data;
 
 import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.World;
+import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.HeroCorpusType;
 import game.freya.enums.HeroPeriferiaType;
 import game.freya.enums.HeroType;
@@ -14,6 +15,7 @@ import java.awt.Color;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Builder
@@ -33,11 +35,11 @@ public record ClientDataDTO(
         String heroName,
         HeroType heroType,
         short level,
-        float experience,
-        short hp,
-        short oil,
-        short maxHp,
-        short maxOil,
+        long experience,
+        int hp,
+        int oil,
+        int maxHp,
+        int maxOil,
         double positionX,
         double positionY,
         MovingVector vector,
@@ -51,7 +53,8 @@ public record ClientDataDTO(
         LocalDateTime lastPlayDate,
         String chatMessage,
         String buffsJson,
-        String inventoryJson
+        String inventoryJson,
+        Set<HeroDTO> heroes
 ) implements Serializable {
     @Override
     public boolean equals(Object o) {

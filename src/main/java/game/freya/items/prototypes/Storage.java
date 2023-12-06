@@ -1,91 +1,41 @@
 package game.freya.items.prototypes;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import game.freya.items.interfaces.iStorage;
+import game.freya.interfaces.iGameObject;
+import game.freya.interfaces.iStorable;
 import lombok.Getter;
-import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Контейнер для хранения предметов
  */
-public abstract class Storage implements iStorage {
+public abstract class Storage implements iGameObject, iStorable {
     @Getter
-    private final UUID suid;
-
-    private final short size = 16;
-
-    private final Set<Storable> content = HashSet.newHashSet(size);
+    private final String name;
 
     @Getter
-    @Setter
-    private String name;
+    private final UUID uid;
 
-    protected Storage(UUID suid, String name) {
-        this.suid = suid;
+    protected Storage(String name, UUID uid) {
         this.name = name;
+        this.uid = uid;
     }
 
     @Override
-    public short size() {
-        return this.size;
+    public int hashCode() {
+        return Objects.hash(getName(), getUid());
     }
 
     @Override
-    public void put(Storable storable) {
-        content.add(storable);
-    }
-
-    @Override
-    public Storable get(Storable storable) {
-        if (has(storable)) {
-            for (Storable srbl : content) {
-                if (srbl.getUid().equals(storable.getUid())) {
-                    try {
-                        content.remove(storable);
-                        return srbl;
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
         }
-        return null;
-    }
-
-    @Override
-    public void translate(Storage aim, Storable storable) {
-        aim.put(this.get(storable));
-    }
-
-    @Override
-    public boolean has(Storable storable) {
-        return content.contains(storable);
-    }
-
-    @Override
-    @JsonIgnore
-    public boolean isEmpty() {
-        return content.isEmpty();
-    }
-
-    @Override
-    public Set<Storable> clear() {
-        Set<Storable> result = new HashSet<>(content);
-        content.clear();
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "Storage{"
-                + "suid=" + suid
-                + ", size=" + size
-                + ", name='" + name + '\''
-                + ", content=" + content
-                + '}';
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Storage storage = (Storage) o;
+        return Objects.equals(getName(), storage.getName()) && Objects.equals(getUid(), storage.getUid());
     }
 }
