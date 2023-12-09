@@ -81,6 +81,12 @@ public class MenuCanvas extends FoxCanvas {
                 init();
             }
 
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
             while (isMenuActive && !getSecondThread().isInterrupted()) {
                 // если изменился размер фрейма:
                 if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
@@ -139,12 +145,14 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void run() {
+        long lastTime = System.currentTimeMillis();
+        long delta;
+
         // ждём пока компонент не станет виден:
-        long timeout = System.currentTimeMillis();
         while (getParent() == null || !isDisplayable() || !initialized) {
             Thread.yield();
-            if (System.currentTimeMillis() - timeout > 3_000) {
-                timeout = System.currentTimeMillis();
+            if (System.currentTimeMillis() - lastTime > 3_000) {
+                lastTime = System.currentTimeMillis();
                 log.error("Не удалось запустить поток {} за отведённое время!", getName());
                 if (!getSecondThread().isAlive()) {
                     runSecondThread();
@@ -154,32 +162,16 @@ public class MenuCanvas extends FoxCanvas {
 
         this.isMenuActive = true;
         while (isMenuActive && !Thread.currentThread().isInterrupted()) {
-            if (!parentFrame.isActive()) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                continue;
-            }
-
-            if (!getSecondThread().isAlive()) {
-                runSecondThread();
-            }
+            delta = System.currentTimeMillis() - lastTime;
+            lastTime = System.currentTimeMillis();
 
             try {
                 if (isVisible() && isDisplayable()) {
-                    drawNextFrame();
+                    drawNextFrame(delta);
                 }
 
-                if (getNetworkListPane().isVisible()) {
-                    if (isConnectionAwait()) {
-                        getNetworkListPane().repaint();
-                    }
-                    if (isPingAwait()) {
-                        getNetworkListPane().repaint();
-                    }
-                }
+                // продвигаем кадры вспомогательной анимации:
+                doAnimate();
 
                 // при успешной отрисовке:
                 if (getDrawErrors() > 0) {
@@ -189,15 +181,24 @@ public class MenuCanvas extends FoxCanvas {
                 throwExceptionAndYield(e);
             }
 
-            if (Constants.isFpsLimited()) {
-                doDrawDelay();
-            }
+            delayDrawing(delta);
         }
         log.info("Thread of Menu canvas is finalized.");
     }
 
-    private void drawNextFrame() {
-        repaint();
+    private void doAnimate() {
+        if (getNetworkListPane().isVisible()) {
+            if (isConnectionAwait()) {
+                getNetworkListPane().repaint();
+            }
+            if (isPingAwait()) {
+                getNetworkListPane().repaint();
+            }
+        }
+    }
+
+    private void drawNextFrame(long delta) {
+        repaint(delta);
     }
 
     @Override
@@ -296,12 +297,13 @@ public class MenuCanvas extends FoxCanvas {
 
     @Override
     public void init() {
-        reloadShapes(this);
-        recalculateMenuRectangles();
         inAc();
-
         setVisible(true);
+
+        recalculateMenuRectangles();
         createSubPanes();
+        reloadShapes(this);
+
         this.initialized = true;
     }
 

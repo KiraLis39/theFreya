@@ -32,7 +32,7 @@ import java.util.List;
 
 @Slf4j
 public class VideoSettingsPane extends JPanel implements iSubPane {
-    private final List<DisplayMode> modes = new ArrayList<>(List.of(Constants.MON.getDevice().getDisplayModes()));
+    private static final List<DisplayMode> modes = new ArrayList<>(List.of(Constants.MON.getDevice().getDisplayModes()));
 
     private transient BufferedImage snap;
 
@@ -54,11 +54,16 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
         // left panel:
         add(new JPanel() {{
             setOpaque(false);
+            setDoubleBuffered(false);
+            setIgnoreRepaint(true);
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
             add(new SubPane("Ограничить частоту кадров") {{
                 cBox = new CheckBokz("fpsLimitedCheck") {{
-//                    setSelected(Constants.isFpsLimited());
+                    setSelected(Constants.isFpsLimited());
+                    setDoubleBuffered(false);
+                    setIgnoreRepaint(true);
+
                     setAction(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
@@ -119,10 +124,16 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                     }});
                     add(new JSpinner(new SpinnerNumberModel(Constants.getUserConfig().getBufferedDeep(), 1,
                             Constants.getUserConfig().getMaxBufferedDeep(), 1) {{
+                        setDoubleBuffered(false);
+                        setIgnoreRepaint(true);
+
                         setBackground(Color.DARK_GRAY);
                         setForeground(Color.WHITE);
                     }}
                     ) {{
+                        setDoubleBuffered(false);
+                        setIgnoreRepaint(true);
+
                         setBorder(null);
                         setFocusable(false);
                         setBackground(Color.DARK_GRAY);
@@ -135,6 +146,9 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
 
             modes.removeIf(nextMode -> nextMode.getRefreshRate() < 60 || nextMode.getWidth() < 1024);
             displayModeBox = new JComboBox<>(modes.toArray(new DisplayMode[0])) {{
+                setDoubleBuffered(false);
+                setIgnoreRepaint(true);
+
                 setBorder(null);
                 setSelectedItem(Constants.MON.getDevice().getDisplayMode());
             }};
@@ -175,6 +189,9 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
         add(new JPanel() {{
             setOpaque(false);
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+            setDoubleBuffered(false);
+            setIgnoreRepaint(true);
 
             add(Box.createVerticalStrut(9));
             add(new SubPane(null) {{

@@ -13,6 +13,8 @@ public class JZlider extends JSlider {
         setBorder(new EmptyBorder(0, 0, 0, 3));
 
         setDoubleBuffered(false);
+        setIgnoreRepaint(true);
+
         setFocusable(false);
         setBackground(Color.DARK_GRAY);
         setForeground(Color.WHITE);

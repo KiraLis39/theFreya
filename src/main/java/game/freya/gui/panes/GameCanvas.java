@@ -136,6 +136,9 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public void run() {
+        long lastTime = System.currentTimeMillis();
+        long delta;
+
         // ждём пока компонент не станет виден:
         long timeout = System.currentTimeMillis();
         while (getParent() == null || !isDisplayable()) {
@@ -153,6 +156,9 @@ public class GameCanvas extends FoxCanvas {
 
         // старт потока рисования игры:
         while (gameController.isGameActive() && !Thread.currentThread().isInterrupted()) {
+            delta = System.currentTimeMillis() - lastTime;
+            lastTime = System.currentTimeMillis();
+
             if (!parentFrame.isActive()) {
                 try {
                     Thread.sleep(100);
@@ -185,10 +191,7 @@ public class GameCanvas extends FoxCanvas {
                 }
             }
 
-            // если текущий FPS превышает лимит:
-            if (Constants.isFpsLimited()) {
-                doDrawDelay();
-            }
+            delayDrawing(delta);
         }
         log.info("Thread of Game canvas is finalized.");
     }
@@ -225,16 +228,28 @@ public class GameCanvas extends FoxCanvas {
 
     private void dragViewIfNeeds() {
         if (isMouseRightEdgeOver) {
-            dragLeft(1d);
+            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
+                dragLeft(2d);
+                Thread.yield();
+            }
         }
         if (isMouseLeftEdgeOver) {
-            dragRight(1d);
+            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
+                dragRight(2d);
+                Thread.yield();
+            }
         }
         if (isMouseUpEdgeOver) {
-            dragDown(1d);
+            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
+                dragDown(2d);
+                Thread.yield();
+            }
         }
         if (isMouseDownEdgeOver) {
-            dragUp(1d);
+            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
+                dragUp(2d);
+                Thread.yield();
+            }
         }
     }
 

@@ -234,6 +234,10 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
         this.isAuthorized.set(false);
         this.isAccepted.set(false);
 
+        if (connectionLiveThread != null && !connectionLiveThread.isInterrupted()) {
+            connectionLiveThread.interrupt();
+        }
+
         if (this.socket != null && !this.socket.isClosed()) {
             log.warn("Destroy the connection...");
             if (!isPing.get() && isOpen()) {
@@ -252,9 +256,6 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
 
         if (connectionThread != null && !connectionThread.isInterrupted()) {
             connectionThread.interrupt();
-        }
-        if (connectionLiveThread != null && !connectionLiveThread.isInterrupted()) {
-            connectionLiveThread.interrupt(); // поднять выше?
         }
 
         if (!isPing.get() && gameController.isGameActive()) {

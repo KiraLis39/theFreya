@@ -274,6 +274,7 @@ public class HeroDTO extends PlayedCharacter {
 
     @Override
     public void addBuff(Buff buff) {
+        log.info("Герою {} добавлен бафф {}", getHeroName(), buff.getName());
         buffs.add(buff);
         for (Buff b : buffs) {
             b.activate(this);

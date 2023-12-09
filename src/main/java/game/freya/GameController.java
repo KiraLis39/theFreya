@@ -112,6 +112,10 @@ public class GameController extends GameControllerBase {
         try {
             UIManager.setLookAndFeel(new NimbusLookAndFeel());
 
+//            UIManager.put("nimbusBase", new Color(...));
+//            UIManager.put("nimbusBlueGrey", new Color(...));
+//            UIManager.put("control", new Color(...));
+
             // UIManager.put("Button.font", FONT);
             // UIManager.put("Label.font", FONT);
             // UIManager.put("OptionPane.cancelButtonText", "nope");

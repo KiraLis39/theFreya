@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JLayeredPane;
 import javax.swing.JRootPane;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
@@ -26,6 +25,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.event.WindowStateListener;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
@@ -54,6 +55,7 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
             frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
             frame.setCursor(Constants.getDefaultCursor());
+            frame.setResizable(false);
 
             frame.setBackground(Color.DARK_GRAY);
             frame.getRootPane().setBackground(Color.MAGENTA);
@@ -150,41 +152,18 @@ public class GameFrame implements WindowListener, WindowStateListener {
     }
 
     private void clearFrame() {
-        boolean success = false;
-        for (java.awt.Component comp : frame.getComponents()) {
-            if (comp instanceof FoxCanvas fc) {
-                fc.stop();
-                frame.remove(fc);
-                success = true;
-            }
-            if (comp instanceof JRootPane rp) {
-                for (java.awt.Component cmp : rp.getContentPane().getComponents()) {
-                    if (cmp instanceof FoxCanvas fc) {
-                        fc.stop();
-                        frame.remove(fc);
-                        success = true;
-                    }
-                }
-                for (java.awt.Component cmp : rp.getLayeredPane().getComponents()) {
-                    if (cmp instanceof FoxCanvas fc) {
-                        fc.stop();
-                        frame.remove(fc);
-                        success = true;
-                    }
-                }
-            }
-            if (comp instanceof JLayeredPane lp) {
-                for (java.awt.Component cmp : lp.getComponents()) {
-                    if (cmp instanceof FoxCanvas fc) {
-                        fc.stop();
-                        frame.remove(fc);
-                        success = true;
-                    }
-                }
-            }
-        }
+        AtomicBoolean success = new AtomicBoolean(false);
+        Arrays.stream(frame.getComponents())
+                .filter(JRootPane.class::isInstance)
+                .forEach(rp -> Arrays.stream(((JRootPane) rp).getContentPane().getComponents())
+                        .filter(FoxCanvas.class::isInstance)
+                        .forEach(fc -> {
+                            ((FoxCanvas) fc).stop();
+                            frame.remove(fc);
+                            success.set(true);
+                        }));
 
-        if (!success) {
+        if (!success.get()) {
             log.error("Nor cleared frame!");
         }
     }

@@ -39,7 +39,7 @@ public final class Connect {
                 this.conn.close();
                 log.info("Connection to SQLite was closed.");
             } catch (SQLException e) {
-                log.error(e.getMessage());
+                log.error("Исключение при закрытии подключения к базе данных: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
         }
     }

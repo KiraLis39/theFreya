@@ -11,7 +11,10 @@ public class CheckBokz extends JCheckBox {
 
     public CheckBokz(String name) {
         setName(name);
+
         setDoubleBuffered(false);
+        setIgnoreRepaint(true);
+
         setFocusable(false);
         setPreferredSize(new Dimension(32, 20));
         setBackground(Color.DARK_GRAY);

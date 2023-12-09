@@ -7,9 +7,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Getter
 @ConfigurationProperties(prefix = "app", ignoreUnknownFields = false)
 public class GameConfig {
-    @Value("${game.dataBaseRootDir}")
-    private String databaseRootDir;
-
     @Value("${spring.datasource.url}")
     private String connectionUrl;
 
@@ -18,9 +15,6 @@ public class GameConfig {
 
     @Value("${spring.application.name}")
     private String appName;
-
-    @Value("${spring.application.author}")
-    private String appAuthor;
 
     @Value("${spring.application.company}")
     private String appCompany;

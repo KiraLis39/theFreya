@@ -130,6 +130,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private transient JFrame parentFrame;
 
+    private byte creatingSubsRetry = 0;
+
     protected FoxCanvas(String name, GameController controller, JFrame parentFrame, UIHandler uiHandler) {
         super(null, true);
 
@@ -797,20 +799,30 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
         // добавляем панели на слой:
         try {
-            parentFrame.getLayeredPane().add(getAudiosPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getVideosPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getGameplayPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
-            parentFrame.getLayeredPane().add(getNetworkListPane(), PALETTE_LAYER, 1);
-            parentFrame.getLayeredPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
+            if (getAudiosPane() == null) {
+                Thread.sleep(100);
+            }
+            parentFrame.getContentPane().add(getAudiosPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getVideosPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getGameplayPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getNetworkListPane(), PALETTE_LAYER, 0);
+            parentFrame.getContentPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
-            createSubPanes();
+            creatingSubsRetry++;
+            if (creatingSubsRetry < 3) {
+                createSubPanes();
+            } else {
+                log.error("Слишком часто не удается создать панели. Обратить внимание!");
+                return;
+            }
         }
+        creatingSubsRetry = 0;
     }
 
     protected void drawUI(Graphics2D v2D, String canvasName) {
@@ -894,14 +906,6 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         return drawErrors.get();
     }
 
-    protected void doDrawDelay() {
-        try {
-            Thread.sleep(13);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
     protected boolean canDragDown() {
         return viewPort.getY() > 0;
     }
@@ -973,6 +977,21 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             double newY = getViewPort().getY() - pixels > 0 ? getViewPort().getY() - pixels : 0;
             getViewPort().setRect(getViewPort().getX(), newY, getViewPort().getWidth(),
                     getViewPort().getHeight() - pixels + (newY == 0 ? Math.abs(getViewPort().getY() - pixels) : 0));
+        }
+    }
+
+    protected void delayDrawing(long delta) {
+        if (Constants.isFpsLimited() && Constants.getAimTimePerFrame() > delta) {
+            try {
+                long delay = Constants.getAimTimePerFrame() - delta - 12;
+                if (delay > 0) {
+                    Thread.sleep(delay);
+                } else {
+                    Thread.yield();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

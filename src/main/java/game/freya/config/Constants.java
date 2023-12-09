@@ -181,12 +181,13 @@ public final class Constants {
     private static boolean isShowStartLogo = true;
 
     @Getter
-    private static volatile int fpsLimit;
-
-    @Getter
     private static String worldsImagesDir = "./worlds/img/";
 
     private static int realFreshRate = 0;
+
+    private static long timePerFrame = -1;
+
+    private static long fpsLimitMem = -1;
 
     static {
         try (InputStream is = Constants.class.getResourceAsStream("/cursors/default.png")) {
@@ -239,18 +240,15 @@ public final class Constants {
     public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {
         if (userConfig.getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
             try {
-                frame.setResizable(true);
-                frame.dispose();
-
                 if (userConfig.isFullscreen()) {
                     MON.switchFullscreen(frame);
                 } else {
                     MON.switchFullscreen(null);
 
-                    frame.setExtendedState(Frame.NORMAL);
+//                    frame.setExtendedState(Frame.NORMAL);
 
-                    frame.setMinimumSize(normalSize);
-                    frame.setMaximumSize(normalSize);
+//                    frame.setMinimumSize(normalSize);
+//                    frame.setMaximumSize(normalSize);
 
                     frame.setSize(normalSize);
                     frame.setLocationRelativeTo(null);
@@ -259,14 +257,7 @@ public final class Constants {
                 log.warn("Проблема при смене режима экрана: {}", ExceptionUtils.getFullExceptionMessage(e));
                 restoreDisplayMode();
             }
-
-            frame.setVisible(true);
-            frame.setResizable(false);
-            frame.createBufferStrategy(getUserConfig().getBufferedDeep());
-            return;
-        }
-
-        if (userConfig.getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
+        } else if (userConfig.getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
             frame.dispose();
             frame.setResizable(true);
 
@@ -283,12 +274,11 @@ public final class Constants {
                 frame.setSize(normalSize);
                 frame.setLocationRelativeTo(null);
             }
-
-            frame.setResizable(false);
-            frame.setVisible(true);
-
-            frame.createBufferStrategy(getUserConfig().getBufferedDeep());
         }
+
+        frame.setResizable(false);
+        frame.setVisible(true);
+        frame.createBufferStrategy(getUserConfig().getBufferedDeep());
     }
 
     public static void restoreDisplayMode() {
@@ -307,5 +297,14 @@ public final class Constants {
 
     public static void setRealFreshRate(int fps) {
         realFreshRate = fps;
+    }
+
+    public static long getAimTimePerFrame() {
+        if (fpsLimitMem != userConfig.getFpsLimit()) {
+            timePerFrame = 1000 / userConfig.getFpsLimit();
+            fpsLimitMem = userConfig.getFpsLimit();
+            log.info("TPF now: {} to FPS limit {}", timePerFrame, fpsLimitMem);
+        }
+        return timePerFrame;
     }
 }
