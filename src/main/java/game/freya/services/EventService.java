@@ -20,6 +20,8 @@ public class EventService {
     public ClientDataDTO buildMove(HeroDTO dto) {
         return ClientDataDTO.builder()
                 .dataType(NetDataType.EVENT)
+//                .heroUid(dto.getHeroUid())
+//                .heroName(dto.getHeroName())
                 .dataEvent(NetDataEvent.HERO_MOVING)
                 .content(EventHeroMoving.builder()
                         .playerUid(dto.getOwnerUid())

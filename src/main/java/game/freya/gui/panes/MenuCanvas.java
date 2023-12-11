@@ -101,7 +101,7 @@ public class MenuCanvas extends FoxCanvas {
                     Thread.currentThread().interrupt();
                 }
             }
-            log.info("Завершена работа вспомогательного потока меню.");
+            log.info("Завершена работа вспомогательного потока Меню.");
         }));
         getSecondThread().setUncaughtExceptionHandler((t, e) ->
                 log.error("Ошибка вспомогательного потока главного меню: {}", ExceptionUtils.getFullExceptionMessage(e)));

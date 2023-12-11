@@ -8,17 +8,12 @@ import game.freya.items.prototypes.Storage;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
-import java.awt.image.BufferedImage;
 import java.util.UUID;
 
 public class Backpack extends Storage {
 
-    public Backpack(String name) {
-        this(name, UUID.randomUUID());
-    }
-
-    public Backpack(String name, UUID uid) {
-        super(name, uid);
+    public Backpack(String name, UUID author, Point2D.Double location, Dimension size, String imageNameInCache) {
+        super(name, author, location, size, imageNameInCache);
     }
 
     @Override
@@ -47,6 +42,11 @@ public class Backpack extends Storage {
     }
 
     @Override
+    public String getImageNameInCache() {
+        return null;
+    }
+
+    @Override
     public boolean isVisible() {
         return false;
     }
@@ -54,11 +54,6 @@ public class Backpack extends Storage {
     @Override
     public boolean hasCollision() {
         return false;
-    }
-
-    @Override
-    public BufferedImage getImage() {
-        return null;
     }
 
     @Override

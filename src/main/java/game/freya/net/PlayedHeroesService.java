@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.awt.Color;
+import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -259,5 +260,10 @@ public class PlayedHeroesService {
 
     public HeroDTO getHeroByOwnerUid(UUID ouid) {
         return heroes.values().stream().filter(h -> h.getOwnerUid().equals(ouid)).findAny().orElse(null);
+    }
+
+    public Rectangle getCurrentHeroCollider() {
+        checkCHE();
+        return heroes.get(currentHeroUid).getCollider();
     }
 }

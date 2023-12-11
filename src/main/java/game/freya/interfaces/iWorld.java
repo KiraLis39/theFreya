@@ -3,6 +3,7 @@ package game.freya.interfaces;
 import game.freya.GameController;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
+import game.freya.items.prototypes.Environment;
 
 import java.awt.AWTException;
 import java.awt.Dimension;
@@ -22,9 +23,9 @@ public interface iWorld {
 
     void draw(Graphics2D g2D) throws AWTException;
 
-    void addEnvironment(iEnvironment o);
+    void addEnvironment(Environment o);
 
-    Set<iEnvironment> getEnvironments();
+    Set<Environment> getEnvironments();
 
     boolean isLocalWorld();
 

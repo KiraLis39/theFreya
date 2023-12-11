@@ -8,7 +8,6 @@ import game.freya.interfaces.iStorage;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
-import java.awt.image.BufferedImage;
 import java.util.UUID;
 
 public abstract class Edible implements iGameObject, iEdible {
@@ -76,7 +75,7 @@ public abstract class Edible implements iGameObject, iEdible {
     }
 
     @Override
-    public BufferedImage getImage() {
+    public String getImageNameInCache() {
         return null;
     }
 

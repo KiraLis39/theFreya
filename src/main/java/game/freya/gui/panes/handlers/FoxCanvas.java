@@ -302,30 +302,35 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
                 updateMiniMap();
 
-                // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2));
-                Composite cw = v2D.getComposite();
-                v2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
-                v2D.drawImage(this.minimapImage, getMinimapRect().x, getMinimapRect().y,
-                        getMinimapRect().width, getMinimapRect().height, this);
-                v2D.setComposite(cw);
+                if (getMinimapRect() != null) {
+                    // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2));
+                    Composite cw = v2D.getComposite();
+                    v2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
+                    v2D.drawImage(this.minimapImage, getMinimapRect().x, getMinimapRect().y,
+                            getMinimapRect().width, getMinimapRect().height, this);
+                    v2D.setComposite(cw);
 
-                if (Constants.isDebugInfoVisible()) {
-                    v2D.setColor(Color.CYAN);
-                    v2D.draw(getMinimapRect());
+                    if (Constants.isDebugInfoVisible()) {
+                        v2D.setColor(Color.CYAN);
+                        v2D.draw(getMinimapRect());
+                    }
                 }
             } else {
                 mapButRect = getMinimapHideRect();
             }
-            // draw minimap button:
-            v2D.setColor(Color.YELLOW);
-            v2D.fillRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
-            v2D.setColor(Color.GRAY);
-            v2D.drawRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
 
-            v2D.setColor(Color.BLACK);
-            v2D.setStroke(new BasicStroke(2f));
-            v2D.drawPolyline(new int[]{mapButRect.x + 3, mapButRect.x + mapButRect.width / 2, mapButRect.x + mapButRect.width - 3},
-                    new int[]{mapButRect.y + 3, mapButRect.y + mapButRect.height - 3, mapButRect.y + 3}, 3);
+            if (mapButRect != null) {
+                // draw minimap button:
+                v2D.setColor(Color.YELLOW);
+                v2D.fillRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
+                v2D.setColor(Color.GRAY);
+                v2D.drawRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
+
+                v2D.setColor(Color.BLACK);
+                v2D.setStroke(new BasicStroke(2f));
+                v2D.drawPolyline(new int[]{mapButRect.x + 3, mapButRect.x + mapButRect.width / 2, mapButRect.x + mapButRect.width - 3},
+                        new int[]{mapButRect.y + 3, mapButRect.y + mapButRect.height - 3, mapButRect.y + 3}, 3);
+            }
         } else {
             drawPauseMode(v2D);
         }
@@ -376,17 +381,21 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             m2D.drawRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
         }
 
-        // сканируем все сущности указанного квадранта:
-        Rectangle scanRect = new Rectangle(
-                Math.min(Math.max(srcX, 0), gameController.getCurrentWorldMap().getWidth() - minimapDim),
-                Math.min(Math.max(srcY, 0), gameController.getCurrentWorldMap().getHeight() - minimapDim),
-                minimapDim, minimapDim);
-        m2D.setColor(Color.CYAN);
-        gameController.getWorldEnvironments(scanRect)
-                .forEach(entity -> m2D.fillRect(
-                        (int) (entity.getLocation().x - 3),
-                        (int) (entity.getLocation().y - 3),
-                        6, 6));
+        if (gameController.getCurrentWorldMap() != null) {
+            // сканируем все сущности указанного квадранта:
+            Rectangle scanRect = new Rectangle(
+                    Math.min(Math.max(srcX, 0), gameController.getCurrentWorldMap().getWidth() - minimapDim),
+                    Math.min(Math.max(srcY, 0), gameController.getCurrentWorldMap().getHeight() - minimapDim),
+                    minimapDim, minimapDim);
+
+            m2D.setColor(Color.CYAN);
+            gameController.getWorldEnvironments(scanRect)
+                    .forEach(entity -> {
+                        int otherHeroPosX = (int) (halfDim - (myPos.x - entity.getCenterPoint().x));
+                        int otherHeroPosY = (int) (halfDim - (myPos.y - entity.getCenterPoint().y));
+                        m2D.fillRect(otherHeroPosX - 16, otherHeroPosY - 16, 32, 32);
+                    });
+        }
 
         m2D.setStroke(new BasicStroke(5f));
         m2D.setPaint(Color.WHITE);
@@ -399,8 +408,6 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
     }
 
     private void drawHeroesData(Graphics2D g2D) {
-        int sMod = (int) (infoStrut - ((getViewPort().getHeight() - getViewPort().getY()) / infoStrutHardness));
-
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.setColor(Color.WHITE);
 
@@ -414,42 +421,45 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             heroes = List.of(gameController.getCurrentHero());
         }
 
-        // draw heroes data:
-        heroes.forEach(hero -> {
-            int strutMod = sMod;
-            if (gameController.isHeroActive(hero, getViewPort().getBounds())) {
+        if (getViewPort() != null) {
+            // draw heroes data:
+            int sMod = (int) (infoStrut - ((getViewPort().getHeight() - getViewPort().getY()) / infoStrutHardness));
+            heroes.forEach(hero -> {
+                int strutMod = sMod;
+                if (gameController.isHeroActive(hero, getViewPort().getBounds())) {
 
-                // Преобразуем координаты героя из карты мира в координаты текущего холста:
-                Point2D relocatedPoint = FoxPointConverter.relocateOn(getViewPort(), getBounds(), hero.getPosition());
+                    // Преобразуем координаты героя из карты мира в координаты текущего холста:
+                    Point2D relocatedPoint = FoxPointConverter.relocateOn(getViewPort(), getBounds(), hero.getPosition());
 
-                // draw hero name:
-                g2D.drawString(hero.getHeroName(),
-                        (int) (relocatedPoint.getX() - FFB.getHalfWidthOfString(g2D, hero.getHeroName())),
-                        (int) (relocatedPoint.getY() - strutMod));
+                    // draw hero name:
+                    g2D.drawString(hero.getHeroName(),
+                            (int) (relocatedPoint.getX() - FFB.getHalfWidthOfString(g2D, hero.getHeroName())),
+                            (int) (relocatedPoint.getY() - strutMod));
 
-                strutMod += 24;
+                    strutMod += 24;
 
-                // draw hero OIL:
-                g2D.setColor(Color.YELLOW);
-                g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
-                        (int) (relocatedPoint.getY() - strutMod),
-                        hero.getCurHealth(), 9, 3, 3);
-                g2D.setColor(Color.WHITE);
-                g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
-                        (int) (relocatedPoint.getY() - strutMod),
-                        hero.getMaxHealth(), 9, 3, 3);
+                    // draw hero OIL:
+                    g2D.setColor(Color.YELLOW);
+                    g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
+                            (int) (relocatedPoint.getY() - strutMod),
+                            hero.getCurHealth(), 9, 3, 3);
+                    g2D.setColor(Color.WHITE);
+                    g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
+                            (int) (relocatedPoint.getY() - strutMod),
+                            hero.getMaxHealth(), 9, 3, 3);
 
-                // draw hero HP:
-                g2D.setColor(Color.RED);
-                g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
-                        (int) (relocatedPoint.getY() - strutMod),
-                        hero.getCurHealth(), 9, 3, 3);
-                g2D.setColor(Color.WHITE);
-                g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
-                        (int) (relocatedPoint.getY() - strutMod),
-                        hero.getMaxHealth(), 9, 3, 3);
-            }
-        });
+                    // draw hero HP:
+                    g2D.setColor(Color.RED);
+                    g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
+                            (int) (relocatedPoint.getY() - strutMod),
+                            hero.getCurHealth(), 9, 3, 3);
+                    g2D.setColor(Color.WHITE);
+                    g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
+                            (int) (relocatedPoint.getY() - strutMod),
+                            hero.getMaxHealth(), 9, 3, 3);
+                }
+            });
+        }
     }
 
     protected void drawDebugInfo(Graphics2D v2D, String worldTitle) {

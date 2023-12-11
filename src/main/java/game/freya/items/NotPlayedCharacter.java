@@ -6,7 +6,6 @@ import game.freya.items.prototypes.GameCharacter;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
-import java.awt.image.BufferedImage;
 import java.util.UUID;
 
 public class NotPlayedCharacter extends GameCharacter {
@@ -71,7 +70,7 @@ public class NotPlayedCharacter extends GameCharacter {
     }
 
     @Override
-    public BufferedImage getImage() {
+    public String getImageNameInCache() {
         return null;
     }
 

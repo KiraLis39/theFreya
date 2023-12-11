@@ -151,8 +151,10 @@ public class GameCanvas extends FoxCanvas {
         // инициализируем все для игры, отображаем окно игры:
         setGameActive();
 
-        log.info("Начинается трансляция данных на Сервер...");
-        gameController.startClientBroadcast();
+        if (gameController.isCurrentWorldIsNetwork()) {
+            log.info("Начинается трансляция данных на Сервер...");
+            gameController.startClientBroadcast();
+        }
 
         // старт потока рисования игры:
         while (gameController.isGameActive() && !Thread.currentThread().isInterrupted()) {

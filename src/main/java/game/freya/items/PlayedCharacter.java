@@ -5,7 +5,6 @@ import game.freya.items.prototypes.GameCharacter;
 
 import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
 import java.util.UUID;
 
 public abstract class PlayedCharacter extends GameCharacter {
@@ -65,7 +64,7 @@ public abstract class PlayedCharacter extends GameCharacter {
     }
 
     @Override
-    public BufferedImage getImage() {
+    public String getImageNameInCache() {
         return null;
     }
 

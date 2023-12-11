@@ -5,8 +5,8 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
-import game.freya.interfaces.iEnvironment;
 import game.freya.interfaces.iWorld;
+import game.freya.items.prototypes.Environment;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,7 +44,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @Getter
     @Builder.Default
-    private final Set<iEnvironment> environments = HashSet.newHashSet(30);
+    private final Set<Environment> environments = HashSet.newHashSet(100);
 
     @Getter
     @Builder.Default
@@ -121,6 +121,10 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
      */
     @Override
     public void draw(Graphics2D v2D) throws AWTException {
+        if (canvas == null) {
+            log.error("Нельзя рисовать мир, пока canvas = null!");
+            return;
+        }
         Rectangle camera = canvas.getViewPort().getBounds();
 
         // рисуем готовый кадр мира:
@@ -136,7 +140,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     }
 
     @Override
-    public void addEnvironment(iEnvironment env) {
+    public void addEnvironment(Environment env) {
         this.environments.add(env);
     }
 
@@ -213,9 +217,13 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     }
 
     private void drawEnvironments(Graphics2D g2D, Rectangle visibleRect) {
-        for (iEnvironment environment : environments) {
-            if (visibleRect.contains(environment.getLocation())) {
-                environment.draw(g2D);
+        for (Environment env : environments) {
+            if (env.isInSector(visibleRect)) {
+                env.draw(g2D);
+                if (Constants.isDebugInfoVisible()) {
+                    g2D.setColor(Color.ORANGE);
+                    g2D.draw(env.getCollider());
+                }
             }
         }
     }

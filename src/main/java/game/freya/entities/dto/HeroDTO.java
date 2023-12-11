@@ -28,10 +28,9 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Shape;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
@@ -44,6 +43,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static game.freya.config.Constants.MAP_CELL_DIM;
 import static game.freya.config.Constants.ONE_TURN_PI;
 
 @Slf4j
@@ -114,7 +114,7 @@ public class HeroDTO extends PlayedCharacter {
     private Point2D.Double position = new Point2D.Double(384d, 384d);
 
     @Builder.Default
-    private Dimension size = new Dimension(128, 128);
+    private Dimension size = new Dimension(MAP_CELL_DIM, MAP_CELL_DIM);
 
     @Builder.Default
     private MovingVector vector = MovingVector.UP;
@@ -134,8 +134,7 @@ public class HeroDTO extends PlayedCharacter {
     @Builder.Default
     private LocalDateTime lastPlayDate = LocalDateTime.now();
 
-    @Builder.Default
-    private transient Storage inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"));
+    private transient Storage inventory;
 
     @Setter
     @Builder.Default
@@ -144,7 +143,6 @@ public class HeroDTO extends PlayedCharacter {
     @Builder.Default
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
-    @Getter
     @Builder.Default
     private boolean isOnline = false;
 
@@ -154,6 +152,10 @@ public class HeroDTO extends PlayedCharacter {
     @Transient
     @JsonIgnore
     private transient Image heroViewImage;
+
+    @Transient
+    @JsonIgnore
+    private Rectangle collider;
 
     private void recheckHurtLevel() {
         if (this.curHealth <= 0) {
@@ -223,24 +225,10 @@ public class HeroDTO extends PlayedCharacter {
     }
 
     @Override
-    public BufferedImage getImage() {
-        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
-            if (avatarResource != null) {
-                return ImageIO.read(avatarResource);
-            }
-            throw new IOException(Constants.DEFAULT_AVATAR_URL);
-        } catch (IOException e) {
-            log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
-        }
-    }
-
-    @Override
     public void draw(Graphics2D g2D) {
-        Shape playerShape = new Ellipse2D.Double(
-                (int) this.position.x - Constants.MAP_CELL_DIM / 3d,
-                (int) this.position.y - Constants.MAP_CELL_DIM / 3d,
-                Constants.MAP_CELL_DIM / 1.5d, Constants.MAP_CELL_DIM / 1.5d);
+        if (collider == null) {
+            resetCollider();
+        }
 
         if (heroViewImage == null) {
             recolorHeroView();
@@ -248,13 +236,18 @@ public class HeroDTO extends PlayedCharacter {
 
         AffineTransform tr = g2D.getTransform();
         g2D.rotate(ONE_TURN_PI * vector.ordinal(),
-                playerShape.getBounds().x + playerShape.getBounds().width / 2d,
-                playerShape.getBounds().y + playerShape.getBounds().height / 2d);
+                collider.x + collider.width / 2d,
+                collider.y + collider.height / 2d);
 
         g2D.drawImage(heroViewImage,
-                playerShape.getBounds().x, playerShape.getBounds().y,
-                playerShape.getBounds().width, playerShape.getBounds().height, null);
+                collider.x, collider.y,
+                collider.width, collider.height, null);
         g2D.setTransform(tr);
+
+        if (Constants.isDebugInfoVisible()) {
+            g2D.setColor(Color.RED);
+            g2D.draw(collider);
+        }
     }
 
     @Override
@@ -287,6 +280,26 @@ public class HeroDTO extends PlayedCharacter {
         buff.deactivate(this);
     }
 
+    public BufferedImage getImage() {
+        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
+            if (avatarResource != null) {
+                return ImageIO.read(avatarResource);
+            }
+            throw new IOException(Constants.DEFAULT_AVATAR_URL);
+        } catch (IOException e) {
+            log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+        }
+    }
+
+    @Override
+    public Rectangle getCollider() {
+        if (collider == null) {
+            resetCollider();
+        }
+        return collider;
+    }
+
     @Override
     public void attack(iEntity entity) {
         if (!entity.equals(this)) {
@@ -294,6 +307,10 @@ public class HeroDTO extends PlayedCharacter {
         } else {
             log.warn("Player {} can`t attack itself!", getHeroName());
         }
+    }
+
+    private void resetCollider() {
+        this.collider = new Rectangle((int) position.x - size.width / 2, (int) position.y - size.height / 2, size.width, size.height);
     }
 
     private void recolorHeroView() {
@@ -322,18 +339,22 @@ public class HeroDTO extends PlayedCharacter {
 
     private void moveUp() {
         this.position.setLocation(position.x, position.y - 1);
+        resetCollider();
     }
 
     private void moveDown() {
         this.position.setLocation(position.x, position.y + 1);
+        resetCollider();
     }
 
     private void moveLeft() {
         this.position.setLocation(position.x - 1, position.y);
+        resetCollider();
     }
 
     private void moveRight() {
         this.position.setLocation(position.x + 1, position.y);
+        resetCollider();
     }
 
     public Icon getIcon() {
@@ -341,50 +362,86 @@ public class HeroDTO extends PlayedCharacter {
         return null;
     }
 
-    public void move() {
+    public void move(boolean isNotInCollision) {
         switch (vector) {
             case UP -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveUp();
+                if (isNotInCollision) {
+                    for (int i = 0; i < getSpeed(); i++) {
+                        moveUp();
+                    }
+                } else {
+                    moveDown();
                 }
             }
             case UP_RIGHT -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveUp();
-                    moveRight();
+                if (isNotInCollision) {
+                    for (int i = 0; i < getSpeed(); i++) {
+                        moveUp();
+                        moveRight();
+                    }
+                } else {
+                    moveDown();
+                    moveLeft();
                 }
             }
             case RIGHT -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveRight();
+                if (isNotInCollision) {
+                    for (int i = 0; i < getSpeed(); i++) {
+                        moveRight();
+                    }
+                } else {
+                    moveLeft();
                 }
             }
             case RIGHT_DOWN -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveRight();
-                    moveDown();
+                if (isNotInCollision) {
+                    for (int i = 0; i < getSpeed(); i++) {
+                        moveRight();
+                        moveDown();
+                    }
+                } else {
+                    moveLeft();
+                    moveUp();
                 }
             }
             case DOWN -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveDown();
+                if (isNotInCollision) {
+                    for (int i = 0; i < getSpeed(); i++) {
+                        moveDown();
+                    }
+                } else {
+                    moveUp();
                 }
             }
             case DOWN_LEFT -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveDown();
-                    moveLeft();
+                if (isNotInCollision) {
+                    for (int i = 0; i < getSpeed(); i++) {
+                        moveDown();
+                        moveLeft();
+                    }
+                } else {
+                    moveUp();
+                    moveRight();
                 }
             }
             case LEFT -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveLeft();
+                if (isNotInCollision) {
+                    for (int i = 0; i < getSpeed(); i++) {
+                        moveLeft();
+                    }
+                } else {
+                    moveRight();
                 }
             }
             case LEFT_UP -> {
-                for (int i = 0; i < getSpeed(); i++) {
-                    moveLeft();
-                    moveUp();
+                if (isNotInCollision) {
+                    for (int i = 0; i < getSpeed(); i++) {
+                        moveLeft();
+                        moveUp();
+                    }
+                } else {
+                    moveRight();
+                    moveDown();
                 }
             }
             default -> log.warn("Неизвестное направление вектора героя {}", vector);
@@ -433,6 +490,14 @@ public class HeroDTO extends PlayedCharacter {
                 + ", position=" + position
                 + ", hurtLevel=" + hurtLevel
                 + '}';
+    }
+
+    public Storage getInventory() {
+        if (this.inventory == null) {
+            this.inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"),
+                    this.heroUid, this.position, this.size, "hero_backpack");
+        }
+        return this.inventory;
     }
 
     public void setInventory(Backpack inventory) {

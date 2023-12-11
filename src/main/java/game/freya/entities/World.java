@@ -1,12 +1,15 @@
 package game.freya.entities;
 
 import game.freya.enums.other.HardnessLevel;
+import game.freya.items.prototypes.Environment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.Column;
@@ -20,7 +23,7 @@ import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -33,10 +36,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "worlds", uniqueConstraints = @UniqueConstraint(name = "uc_title_n_uid_world", columnNames = {"id", "title"}))
 public class World implements Serializable {
-    @NotNull
-    @Builder.Default
-    @ElementCollection
-    private final Set<String> environments = HashSet.newHashSet(100);
 
     @Id
     @NotNull
@@ -85,6 +84,15 @@ public class World implements Serializable {
 
     @Column(name = "network_address")
     private String networkAddress;
+
+    @Builder.Default
+    @ElementCollection
+    @LazyCollection(LazyCollectionOption.FALSE)
+    private Set<Environment> environments = new LinkedHashSet<>();
+
+//    @OneToMany(cascade = CascadeType.ALL)
+//    @LazyCollection(LazyCollectionOption.FALSE)
+//    private Set<Environment> environments = new ArrayList<>();
 
     @Override
     public int hashCode() {

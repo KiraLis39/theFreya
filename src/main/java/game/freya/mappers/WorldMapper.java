@@ -30,6 +30,7 @@ public class WorldMapper {
                 .createDate(entity.getCreateDate())
                 .isLocalWorld(entity.isLocalWorld())
                 .networkAddress(entity.getNetworkAddress())
+                .environments(entity.getEnvironments())
                 .build();
     }
 
@@ -56,7 +57,7 @@ public class WorldMapper {
                 .createDate(dto.getCreateDate())
                 .isLocalWorld(dto.isLocalWorld())
                 .networkAddress(dto.getNetworkAddress())
-//                .environments(dto.getEnvironments())
+                .environments(dto.getEnvironments())
                 .build();
     }
 }

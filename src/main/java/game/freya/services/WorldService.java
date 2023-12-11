@@ -40,6 +40,7 @@ public class WorldService {
         } else {
             w2 = w;
         }
+
         w2 = worldRepository.save(w2);
         return worldMapper.toDto(w2);
     }
@@ -69,7 +70,9 @@ public class WorldService {
     }
 
     public Set<iEnvironment> getEnvironmentsFromRectangle(Rectangle rectangle) {
-        return currentWorld.getEnvironments().stream().filter(e -> rectangle.contains(e.getLocation())).collect(Collectors.toSet());
+        return currentWorld.getEnvironments().stream()
+                .filter(e -> e.isInSector(rectangle))
+                .collect(Collectors.toSet());
     }
 
     public WorldDTO setCurrentWorld(WorldDTO currentWorld) {

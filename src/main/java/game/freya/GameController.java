@@ -22,6 +22,8 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.interfaces.iEnvironment;
+import game.freya.items.MockEnvironmentWithStorage;
+import game.freya.items.prototypes.Environment;
 import game.freya.mappers.WorldMapper;
 import game.freya.net.ConnectedServerPlayer;
 import game.freya.net.LocalSocketConnection;
@@ -420,10 +422,8 @@ public class GameController extends GameControllerBase {
 
             // set hero vector:
             playedHeroesService.setCurrentHeroVector(vector);
-            if (isPlayerCanGo(visibleRect, vector, canvas)) {
-                playedHeroesService.getCurrentHero().move();
-                sendPacket(eventService.buildMove(playedHeroesService.getCurrentHero()));
-            }
+            playedHeroesService.getCurrentHero().move(isPlayerCanGo(visibleRect, vector, canvas));
+            sendPacket(eventService.buildMove(playedHeroesService.getCurrentHero()));
 
             // move map:
             switch (vector) {
@@ -492,6 +492,13 @@ public class GameController extends GameControllerBase {
             canvas.moveViewToPlayer(0, 0);
         }
 
+        // проверка коллизий с объектами:
+        for (Environment env : worldService.getCurrentWorld().getEnvironments()) {
+            if (env.hasCollision() && env.getCollider().intersects(playedHeroesService.getCurrentHeroCollider())) {
+                return false;
+            }
+        }
+
         VolatileImage gMap = worldService.getCurrentWorld().getGameMap();
         return switch (vector) {
             case UP -> pos.y > 0;
@@ -518,7 +525,9 @@ public class GameController extends GameControllerBase {
     }
 
     public WorldDTO saveNewWorld(WorldDTO newWorld) {
-//        newWorld.addEnvironment(new MockEnvironmentWithStorage("mock"));
+        for (int i = 0; i < 10; i++) {
+            newWorld.addEnvironment(new MockEnvironmentWithStorage("mock_" + (i + 1)));
+        }
 
         newWorld.setAuthor(getCurrentPlayerUid());
         return worldService.save(newWorld);
