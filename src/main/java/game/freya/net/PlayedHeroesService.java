@@ -3,14 +3,13 @@ package game.freya.net;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import game.freya.entities.dto.HeroDTO;
-import game.freya.enums.HeroCorpusType;
-import game.freya.enums.HeroPeriferiaType;
-import game.freya.enums.HeroType;
-import game.freya.enums.HurtLevel;
-import game.freya.enums.MovingVector;
+import game.freya.enums.other.HeroCorpusType;
+import game.freya.enums.other.HeroPeriferiaType;
+import game.freya.enums.other.HeroType;
+import game.freya.enums.other.HurtLevel;
+import game.freya.enums.other.MovingVector;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.net.data.ClientDataDTO;
 import game.freya.services.HeroService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
@@ -42,17 +41,17 @@ public class PlayedHeroesService {
     private volatile UUID currentHeroUid;
 
 
-    public HeroDTO getHero(ClientDataDTO data) {
-        if (!heroes.containsKey(data.heroUuid())) {
+    public HeroDTO getHero(UUID uid) {
+        if (!heroes.containsKey(uid)) {
             HeroDTO dto;
-            if (heroService.isHeroExist(data.heroUuid())) {
-                dto = heroService.getByUid(data.heroUuid());
+            if (heroService.isHeroExist(uid)) {
+                dto = heroService.getByUid(uid);
             } else {
                 return null;
             }
             addHero(dto);
         }
-        return heroes.get(data.heroUuid());
+        return heroes.get(uid);
     }
 
     public void addHero(final HeroDTO heroDTO) {
@@ -252,5 +251,9 @@ public class PlayedHeroesService {
     public short getCurrentHeroPeriferiaSize() {
         checkCHE();
         return heroes.get(currentHeroUid).getPeriferiaSize();
+    }
+
+    public HeroDTO getHeroByOwnerUid(UUID ouid) {
+        return heroes.values().stream().filter(h -> h.getOwnerUid().equals(ouid)).findAny().orElse(null);
     }
 }

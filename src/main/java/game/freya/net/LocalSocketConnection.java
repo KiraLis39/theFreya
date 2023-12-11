@@ -5,11 +5,17 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
-import game.freya.enums.NetDataType;
-import game.freya.enums.ScreenType;
+import game.freya.enums.net.NetDataEvent;
+import game.freya.enums.net.NetDataType;
+import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.events.EventClientDied;
+import game.freya.net.data.events.EventDenied;
+import game.freya.net.data.events.EventPingPong;
+import game.freya.net.data.events.EventWorldData;
+import game.freya.net.data.types.TypeChat;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -28,7 +34,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -85,7 +90,11 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                 if (isOpen() && timePass >= Constants.getMaxConnectionWasteTime()) {
                     log.info("Тишина с Сервера уже {} мс. Допустимо: {}. Пинг для поддержки соединения...",
                             timePass, Constants.getMaxConnectionWasteTime());
-                    toServer(ClientDataDTO.builder().type(NetDataType.PING).worldUid(gameController.getCurrentWorldUid()).build());
+                    toServer(ClientDataDTO.builder()
+                            .dataType(NetDataType.EVENT)
+                            .dataEvent(NetDataEvent.PING)
+                            .content(EventPingPong.builder().worldUid(gameController.getCurrentWorldUid()).build())
+                            .build());
                 }
                 try {
                     Thread.sleep(500);
@@ -109,22 +118,24 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
     }
 
     private void parseNextData(ClientDataDTO readed) {
-        if (!readed.type().equals(NetDataType.PONG)) {
-            log.debug("Приняты данные от Сервера: {} (герой {}, игрок {})", readed.type(), readed.heroName(), readed.playerName());
+        if (!readed.dataEvent().equals(NetDataEvent.PONG)) {
+            log.debug("Приняты данные от Сервера: {} (игрок {})", readed.dataType(), readed.playerName());
         }
         this.lastDataReceivedTimestamp = System.currentTimeMillis();
 
-        switch (readed.type()) {
+        switch (readed.dataType()) {
             case AUTH_DENIED -> {
+                EventDenied deny = (EventDenied) readed.content();
                 this.isAuthorized.set(false);
-                this.lastExplanation = readed.explanation();
+                this.lastExplanation = deny.explanation();
                 log.error("Сервер отказал в авторизации по причине: {}", lastExplanation);
                 new FOptionPane().buildFOptionPane("Отказ:", "Сервер отклонил запрос на авторизацию: %s"
-                        .formatted(readed.explanation()), 15, true);
+                        .formatted(deny.explanation()), 15, true);
             }
             case AUTH_SUCCESS -> {
-                World serverWorld = readed.world();
-                serverWorld.setUid(readed.worldUid());
+                EventWorldData auth = (EventWorldData) readed.content();
+                World serverWorld = auth.world();
+                serverWorld.setUid(auth.worldUid());
                 serverWorld.setNetworkAddress(host + ":" + port);
                 gameController.saveServerWorldAndSetAsCurrent(serverWorld);
                 this.isAuthorized.set(true);
@@ -141,48 +152,60 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                 }
             }
             case HERO_RESTRICTED -> {
+                EventDenied deny = (EventDenied) readed.content();
                 this.isAccepted.set(false);
-                this.lastExplanation = readed.explanation();
-                log.error("Сервер отказал в выборе Героя по причине: {}", readed.explanation());
+                this.lastExplanation = deny.explanation();
+                log.error("Сервер отказал в выборе Героя по причине: {}", deny.explanation());
                 new FOptionPane().buildFOptionPane("Отказ:", "Сервер отказал в выборе Героя: %s"
-                        .formatted(readed.explanation()), 15, true);
+                        .formatted(deny.explanation()), 15, true);
             }
             case HERO_REQUEST -> {
                 gameController.saveNewRemoteHero(readed);
                 gameController.setRemoteHeroRequestSent(false);
             }
-            case EVENT -> {
-                log.debug("Приняты данные синхронизации {} от игрока: {} (герой: {})", readed.event(), readed.playerName(), readed.heroName());
-                gameController.syncServerDataWithCurrentWorld(readed);
-            }
             case CHAT -> {
-                if (readed.chatMessage() != null) {
-                    String message = readed.chatMessage();
+                TypeChat chat = (TypeChat) readed.content();
+                if (chat.chatMessage() != null) {
+                    String message = chat.chatMessage();
                     log.info("Новые сообщения чата: {}", message);
                 }
             }
-            case HERO_OFFLINE -> {
-                UUID offlinePlayerUid = readed.playerUid();
-                log.info("Игрок {} отключился от Сервера. Удаляем его из карты активных Героев...", offlinePlayerUid);
-                gameController.offlineSaveAndRemoveOtherHeroByPlayerUid(offlinePlayerUid);
+            case EVENT -> {
+                switch (readed.dataEvent()) {
+                    case CLIENT_DIE -> {
+                        EventClientDied died = (EventClientDied) readed.content();
+                        if (died != null) {
+                            this.lastExplanation = died.explanation();
+                        }
+                        log.info("Сервер изъявил своё желание покончить с нами"
+                                + (this.lastExplanation != null ? ": {}" : "") + ". Сворачиваемся...", this.lastExplanation);
+                        killSelf();
+                    }
+                    case PING -> toServer(ClientDataDTO.builder()
+                            .dataType(NetDataType.EVENT)
+                            .dataEvent(NetDataEvent.PONG)
+                            .build());
+                    case PONG -> {
+                        EventPingPong pong = (EventPingPong) readed.content();
+                        this.lastExplanation = pong.worldUid().toString();
+                        this.isPongReceived.set(true);
+                    }
+                    case WRONG_WORLD_PING -> {
+                        EventDenied deny = (EventDenied) readed.content();
+                        log.info("Сервер сообщил о некорректном пинге активного мира: {}", deny.explanation());
+                        this.lastExplanation = deny.explanation();
+                        this.isPongReceived.set(false);
+                        killSelf();
+                    }
+                    case HERO_OFFLINE, HERO_MOVING -> {
+                        log.debug("Приняты данные синхронизации {} от игрока: {} (герой: {})",
+                                readed.dataEvent(), readed.playerName(), readed.heroName());
+                        gameController.syncServerDataWithCurrentWorld(readed);
+                    }
+                    default -> log.error(Constants.getNotRealizedString());
+                }
             }
-            case DIE -> {
-                this.lastExplanation = readed.explanation();
-                log.info("Сервер изъявил своё желание покончить с нами. Сворачиваемся...");
-                killSelf();
-            }
-            case PING -> toServer(ClientDataDTO.builder().type(NetDataType.PONG).build());
-            case PONG -> {
-                this.lastExplanation = readed.worldUid().toString();
-                this.isPongReceived.set(true);
-            }
-            case WRONG_WORLD_PING -> {
-                log.info("Сервер сообщил о некорректном пинге активного мира: {}", readed.explanation());
-                this.lastExplanation = readed.explanation();
-                this.isPongReceived.set(false);
-                killSelf();
-            }
-            default -> log.error("От Сервера пришел необработанный тип данных: {}", readed.type());
+            default -> log.error("От Сервера пришел необработанный тип данных: {}", readed.dataType());
         }
     }
 
@@ -193,11 +216,11 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
      */
     public synchronized void toServer(ClientDataDTO dataDTO) {
         // PONG никому не интересен, лишь мешает логу. EVENT тоже.
-        if (!dataDTO.type().equals(NetDataType.PONG) && !dataDTO.type().equals(NetDataType.EVENT)) {
-            if (dataDTO.type().equals(NetDataType.PING)) {
-                log.info("Пингуем Мир {} Сервера {}:{}...", dataDTO.worldUid(), host, port);
+        if (!dataDTO.dataEvent().equals(NetDataEvent.PONG)) {
+            if (dataDTO.dataEvent().equals(NetDataEvent.PING)) {
+                log.info("Пингуем Мир {} Сервера {}:{}...", ((EventPingPong) dataDTO.content()).worldUid(), host, port);
             } else {
-                log.info("Шлём на Сервер {}...", dataDTO.type());
+                log.info("Шлём на Сервер {} {}...", dataDTO.dataType(), dataDTO.dataEvent());
             }
         }
 
@@ -242,7 +265,10 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
             log.warn("Destroy the connection...");
             if (!isPing.get() && isOpen()) {
                 try {
-                    toServer(ClientDataDTO.builder().type(NetDataType.DIE).build());
+                    toServer(ClientDataDTO.builder()
+                            .dataType(NetDataType.EVENT)
+                            .dataEvent(NetDataEvent.CLIENT_DIE)
+                            .build());
                 } catch (Exception e) {
                     log.error("Провал отправки посмертного предупреждения Серверу: {}", ExceptionUtils.getFullExceptionMessage(e));
                 }

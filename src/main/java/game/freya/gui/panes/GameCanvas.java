@@ -4,7 +4,7 @@ import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig.HotKeys;
-import game.freya.enums.ScreenType;
+import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -254,12 +254,12 @@ public class GameCanvas extends FoxCanvas {
     }
 
     private void setGameActive() {
-        init();
-
-        gameController.setGameActive(true);
         setVisible(true);
-        requestFocusInWindow();
         createSubPanes();
+        init();
+        gameController.setGameActive(true);
+
+        requestFocusInWindow();
 
         super.createChat(this);
 
@@ -577,8 +577,10 @@ public class GameCanvas extends FoxCanvas {
                 setSize(parentFrame.getRootPane().getSize());
             }
 
-            reloadShapes(this);
-            recalculateMenuRectangles();
+            if (isVisible()) {
+                reloadShapes(this);
+                recalculateMenuRectangles();
+            }
 
             recreateViewPort();
             moveViewToPlayer(0, 0);

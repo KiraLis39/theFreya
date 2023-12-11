@@ -1,6 +1,6 @@
 package game.freya.interfaces;
 
-import game.freya.enums.CurrencyVault;
+import game.freya.enums.other.CurrencyVault;
 import game.freya.items.prototypes.GameCharacter;
 
 public interface iTradeable {

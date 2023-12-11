@@ -7,11 +7,16 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
-import game.freya.enums.NetDataEvent;
-import game.freya.enums.NetDataType;
+import game.freya.enums.net.NetDataEvent;
+import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.events.EventDenied;
+import game.freya.net.data.events.EventHeroRegister;
+import game.freya.net.data.events.EventPingPong;
+import game.freya.net.data.events.EventPlayerAuth;
+import game.freya.net.data.events.EventWorldData;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +64,8 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private NetDataType lastType;
 
+    private NetDataEvent lastEvent;
+
     public ConnectedServerPlayer(Server server, Socket client, GameController gameController) throws SocketException {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule());
@@ -89,32 +96,42 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             this.oos = outs;
 
             // сразу шлём подключенному Клиенту сигнал, для "прокачки" соединения:
-            push(ClientDataDTO.builder().type(NetDataType.PONG).worldUid(gameController.getCurrentWorldUid()).build());
+            push(ClientDataDTO.builder()
+                    .dataType(NetDataType.EVENT)
+                    .dataEvent(NetDataEvent.PONG)
+                    .content(EventPingPong.builder().worldUid(gameController.getCurrentWorldUid()).build())
+                    .build());
 
             try (ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))) {
                 ClientDataDTO readed;
                 while ((readed = (ClientDataDTO) inps.readObject()) != null && this.client.isConnected() && !Thread.currentThread().isInterrupted()) {
-                    if (!readed.type().equals(NetDataType.PING) && (readed.event() != null && !readed.event().equals(NetDataEvent.HERO_MOVING))) {
-                        log.info("Игрок {} (Герой '{}') прислал на Сервер данные {} ({})",
-                                playerName, readed.heroName(), readed.type(), readed.event());
+                    if (!readed.dataEvent().equals(NetDataEvent.PING) && !readed.dataEvent().equals(NetDataEvent.HERO_MOVING)) {
+                        log.info("Игрок {} прислал на Сервер данные {} ({})", playerName, readed.dataType(), readed.dataEvent());
                     }
-                    lastType = readed.type();
+
+                    lastType = readed.dataType();
+                    lastEvent = readed.dataEvent();
+
                     if (lastType.equals(NetDataType.AUTH_REQUEST)) {
                         doPlayerAuth(readed);
                     } else if (lastType.equals(NetDataType.HERO_REQUEST)) {
                         saveConnectedHero(readed);
                     } else if (lastType.equals(NetDataType.HERO_REMOTE_NEED)) {
-                        sendHeroDataByRequest(readed.heroUuid());
-                    } else if (lastType.equals(NetDataType.PING)) {
-                        doPongAnswerToClient(readed.worldUid());
+                        sendHeroDataByRequest(readed);
                     } else if (lastType.equals(NetDataType.EVENT)) {
-                        server.broadcast(readed, this);
-                    } else if (lastType.equals(NetDataType.DIE)) {
-                        log.warn("Клиент {} сообщил о скорой смерти соединения.", clientUid);
-                    } else if (lastType.equals(NetDataType.PONG)) {
-                        log.debug("Клиент {} прислал PONG в знак того, что он еще жив.", clientUid);
+                        if (lastEvent.equals(NetDataEvent.PONG)) {
+                            log.debug("Клиент {} прислал PONG в знак того, что он еще жив.", clientUid);
+                        } else if (lastEvent.equals(NetDataEvent.PING)) {
+                            doPongAnswerToClient(((EventPingPong) readed.content()).worldUid());
+                        } else if (lastEvent.equals(NetDataEvent.CLIENT_DIE)) {
+                            log.warn("Клиент {} сообщил о скорой смерти соединения.", clientUid);
+                        } else if (lastEvent.equals(NetDataEvent.HERO_REGISTER)) {
+                            saveConnectedHero(readed);
+                        } else {
+                            server.broadcast(readed, this);
+                        }
                     } else {
-                        log.error("Неопознанный тип входящего пакета: {}", readed.type());
+                        log.error("Неопознанный тип входящего пакета: {}", readed.dataType());
                     }
                 }
                 log.warn("Соединение данного клиентского подключения завершено.");
@@ -129,7 +146,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         } catch (ClassNotFoundException cnf) {
             log.warn("Client`s input stream thread cant read class: {}", ExceptionUtils.getFullExceptionMessage(cnf));
         } catch (Exception e) {
-            if (!lastType.equals(NetDataType.PONG) && !lastType.equals(NetDataType.DIE)) {
+            if (!lastType.equals(NetDataType.EVENT) && !lastEvent.equals(NetDataEvent.PING)) {
                 log.warn("Поймали ошибку потока клиента: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
         }
@@ -138,12 +155,14 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         kill();
     }
 
-    private void sendHeroDataByRequest(UUID uuid) {
-        HeroDTO found = gameController.getConnectedHeroes().stream().filter(h -> h.getHeroUid().equals(uuid)).findFirst().orElse(null);
+    private void sendHeroDataByRequest(ClientDataDTO data) {
+        EventHeroRegister heroNeed = (EventHeroRegister) data.content();
+        HeroDTO found = gameController.getConnectedHeroes().stream()
+                .filter(h -> h.getHeroUid().equals(heroNeed.heroUid())).findFirst().orElse(null);
         if (found != null) {
-            push(gameController.heroToCli(found, gameController.getCurrentPlayer(), NetDataType.HERO_REQUEST));
+            push(gameController.heroToCli(found, gameController.getCurrentPlayer()));
         } else {
-            log.error("Запрошен герой {}, но такого нет в карте героев Сервера! Ответ невозможен.", uuid);
+            log.error("Запрошен герой {}, но такого нет в карте героев Сервера! Ответ невозможен.", heroNeed.heroUid());
         }
     }
 
@@ -152,45 +171,60 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             // Сервер не знает в какой именно из его миров стучится клиент, который
             //  сейчас загружен или другой, на этом же порту - потому сверяем.
             log.info("Клиент успешно пингует мир {}", uuid);
-            push(ClientDataDTO.builder().type(NetDataType.PONG).worldUid(gameController.getCurrentWorldUid()).build());
+            push(ClientDataDTO.builder()
+                    .dataType(NetDataType.EVENT)
+                    .dataEvent(NetDataEvent.PONG)
+                    .content(EventPingPong.builder().worldUid(gameController.getCurrentWorldUid()).build())
+                    .build());
         } else {
             log.debug("Пингуется не тот мир, потому WRONG_WORLD_PING");
-            push(ClientDataDTO.builder().type(NetDataType.WRONG_WORLD_PING)
-                    .explanation("Возможно, вы ищете другой мир, запущенный на этом Сервере данный момент. "
-                            + "Пожалуйста, уточните данные для подключения у администраторов Сервера.").build());
+            push(ClientDataDTO.builder()
+                    .dataType(NetDataType.EVENT)
+                    .dataEvent(NetDataEvent.WRONG_WORLD_PING)
+                    .content(EventDenied.builder()
+                            .explanation("Возможно, вы ищете другой мир, запущенный на этом Сервере данный момент. "
+                                    + "Пожалуйста, уточните данные для подключения у администраторов Сервера.").build())
+                    .build());
         }
     }
 
     private void doPlayerAuth(ClientDataDTO readed) throws IOException {
-        playerUid = readed.playerUid();
-        playerName = readed.playerName();
+        EventPlayerAuth auth = (EventPlayerAuth) readed.content();
+        playerUid = auth.playerUid();
+        playerName = auth.playerName();
         if (gameController.getCurrentWorld() == null) {
             throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current world");
         }
 
         // подготовка игрового мира, проверка пароля:
         World cw = gameController.getCurrentWorld();
-        if (cw.getPasswordHash() != 0 && cw.getPasswordHash() != readed.passwordHash()) {
+        if (cw.getPasswordHash() != 0 && cw.getPasswordHash() != auth.passwordHash()) {
             log.error("Игрок {} ({}) ввёл не верный пароль. В доступе отказано! (пароль мира {} - пароль клиента {})",
-                    playerName, playerUid, cw.getPasswordHash(), readed.passwordHash());
+                    playerName, playerUid, cw.getPasswordHash(), auth.passwordHash());
             isAuthorized.set(false);
-            push(ClientDataDTO.builder().type(NetDataType.AUTH_DENIED).explanation("Не верный пароль").build());
+            push(ClientDataDTO.builder()
+                    .dataType(NetDataType.AUTH_DENIED)
+                    .content(EventDenied.builder().explanation("Не верный пароль").build()).build());
         } else {
-            log.info("Игрок {} ({}) успешно авторизован", readed.playerName(), readed.playerUid());
+            log.info("Игрок {} ({}) успешно авторизован", auth.playerName(), auth.playerUid());
             // для создателя этот мир - Локальный,для удалённого игрока этот мир не может быть Локальным:
             cw.setLocalWorld(playerUid.equals(cw.getAuthor()));
             isAuthorized.set(true);
-            push(ClientDataDTO.builder().type(NetDataType.AUTH_SUCCESS)
-                    .worldUid(cw.getUid())
-                    .world(cw)
+            push(ClientDataDTO.builder()
+                    .dataType(NetDataType.AUTH_SUCCESS)
+                    .content(EventWorldData.builder()
+                            .worldUid(cw.getUid())
+                            .world(cw)
+                            .build())
                     .build());
         }
     }
 
     private void saveConnectedHero(ClientDataDTO readed) {
+        EventHeroRegister connected = (EventHeroRegister) readed.content();
         HeroDTO hero;
-        if (gameController.isHeroExist(readed.heroUuid())) {
-            hero = gameController.getHeroByUid(readed.heroUuid());
+        if (gameController.isHeroExist(connected.heroUid())) {
+            hero = gameController.getHeroByUid(connected.heroUid());
             BeanUtils.copyProperties(readed, hero);
         } else {
             hero = gameController.saveNewHero(gameController.cliToHero(readed), false);
@@ -198,7 +232,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
         this.isAccepted.set(true);
         push(ClientDataDTO.builder()
-                .type(NetDataType.HERO_ACCEPTED)
+                .dataType(NetDataType.HERO_ACCEPTED)
                 .heroes(playedHeroesService.getHeroes())
                 .build());
 
@@ -233,7 +267,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         if (!this.client.isClosed()) {
             try {
                 // шлём подключенному Клиенту пожелание его смерти:
-                push(ClientDataDTO.builder().type(NetDataType.DIE).build());
+                push(ClientDataDTO.builder().dataType(NetDataType.EVENT).dataEvent(NetDataEvent.CLIENT_DIE).build());
             } catch (Exception e) {
                 log.warn("Push DIE-message error: {}", ExceptionUtils.getFullExceptionMessage(e));
             }

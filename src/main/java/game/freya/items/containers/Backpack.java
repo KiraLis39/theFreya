@@ -1,6 +1,6 @@
 package game.freya.items.containers;
 
-import game.freya.enums.CurrencyVault;
+import game.freya.enums.other.CurrencyVault;
 import game.freya.interfaces.iStorage;
 import game.freya.items.prototypes.GameCharacter;
 import game.freya.items.prototypes.Storage;

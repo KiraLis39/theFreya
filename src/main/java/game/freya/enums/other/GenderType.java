@@ -1,4 +1,4 @@
-package game.freya.enums;
+package game.freya.enums.other;
 
 public enum GenderType {
     IT, // сухОЕ волокно

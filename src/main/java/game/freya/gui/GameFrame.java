@@ -3,7 +3,7 @@ package game.freya.gui;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.enums.ScreenType;
+import game.freya.enums.other.ScreenType;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;

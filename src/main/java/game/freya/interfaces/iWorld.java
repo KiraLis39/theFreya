@@ -1,7 +1,7 @@
 package game.freya.interfaces;
 
 import game.freya.GameController;
-import game.freya.enums.HardnessLevel;
+import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
 
 import java.awt.AWTException;

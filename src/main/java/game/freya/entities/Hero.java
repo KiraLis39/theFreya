@@ -1,9 +1,9 @@
 package game.freya.entities;
 
-import game.freya.enums.HeroCorpusType;
-import game.freya.enums.HeroPeriferiaType;
-import game.freya.enums.HeroType;
-import game.freya.enums.HurtLevel;
+import game.freya.enums.other.HeroCorpusType;
+import game.freya.enums.other.HeroPeriferiaType;
+import game.freya.enums.other.HeroType;
+import game.freya.enums.other.HurtLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

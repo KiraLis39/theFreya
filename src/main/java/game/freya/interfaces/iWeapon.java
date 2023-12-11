@@ -1,6 +1,6 @@
 package game.freya.interfaces;
 
-import game.freya.enums.HeroType;
+import game.freya.enums.other.HeroType;
 
 import java.util.Set;
 

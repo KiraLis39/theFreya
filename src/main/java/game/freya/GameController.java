@@ -9,14 +9,14 @@ import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.PlayerDTO;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.enums.HeroCorpusType;
-import game.freya.enums.HeroPeriferiaType;
-import game.freya.enums.HeroType;
-import game.freya.enums.HurtLevel;
-import game.freya.enums.MovingVector;
-import game.freya.enums.NetDataEvent;
-import game.freya.enums.NetDataType;
-import game.freya.enums.ScreenType;
+import game.freya.enums.net.NetDataEvent;
+import game.freya.enums.net.NetDataType;
+import game.freya.enums.other.HeroCorpusType;
+import game.freya.enums.other.HeroPeriferiaType;
+import game.freya.enums.other.HeroType;
+import game.freya.enums.other.HurtLevel;
+import game.freya.enums.other.MovingVector;
+import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
@@ -28,6 +28,11 @@ import game.freya.net.LocalSocketConnection;
 import game.freya.net.PlayedHeroesService;
 import game.freya.net.Server;
 import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.events.EventHeroMoving;
+import game.freya.net.data.events.EventHeroOffline;
+import game.freya.net.data.events.EventHeroRegister;
+import game.freya.net.data.events.EventPingPong;
+import game.freya.net.data.events.EventPlayerAuth;
 import game.freya.services.EventService;
 import game.freya.services.HeroService;
 import game.freya.services.PlayerService;
@@ -418,8 +423,7 @@ public class GameController extends GameControllerBase {
             playedHeroesService.setCurrentHeroVector(vector);
             if (isPlayerCanGo(visibleRect, vector, canvas)) {
                 playedHeroesService.getCurrentHero().move();
-                sendPacket(eventService
-                        .buildMove(playedHeroesService.getCurrentHero()));
+                sendPacket(eventService.buildMove(playedHeroesService.getCurrentHero()));
             }
 
             // move map:
@@ -669,14 +673,12 @@ public class GameController extends GameControllerBase {
 
         // передаём свои данные для авторизации:
         localSocketConnection.toServer(ClientDataDTO.builder()
-                .id(UUID.randomUUID())
-                .type(NetDataType.AUTH_REQUEST)
-
-                .playerUid(getCurrentPlayerUid())
-                .playerName(getCurrentPlayerNickName())
-                .passwordHash(passwordHash)
-
-
+                .dataType(NetDataType.AUTH_REQUEST)
+                .content(EventPlayerAuth.builder()
+                        .playerUid(getCurrentPlayerUid())
+                        .playerName(getCurrentPlayerNickName())
+                        .passwordHash(passwordHash)
+                        .build())
                 .build());
 
         Thread authThread = Thread.startVirtualThread(() -> {
@@ -820,7 +822,7 @@ public class GameController extends GameControllerBase {
 
     public boolean registerCurrentHeroOnServer() {
         log.info("Отправка данных текущего героя на Сервер...");
-        localSocketConnection.toServer(heroToCli(getCurrentHero(), playerService.getCurrentPlayer(), NetDataType.HERO_REQUEST));
+        localSocketConnection.toServer(heroToCli(getCurrentHero(), playerService.getCurrentPlayer()));
 
         Thread heroCheckThread = Thread.startVirtualThread(() -> {
             while (!localSocketConnection.isAccepted() && !Thread.currentThread().isInterrupted()) {
@@ -913,19 +915,28 @@ public class GameController extends GameControllerBase {
      * @param data модель обновлений для сетевого мира от другого участника игры.
      */
     public void syncServerDataWithCurrentWorld(@NotNull ClientDataDTO data) {
-        log.debug("Получены данные для синхронизации {} мира {} игрока {}'s (герой {})",
-                data.event(), data.worldUid(), data.playerName(), data.heroName());
+        log.debug("Получены данные для синхронизации {} игрока {}'s (герой {})", data.dataEvent(),
+                data.content().playerName(), playedHeroesService.getHeroByOwnerUid(data.content().playerUid()));
 
-        HeroDTO aim = playedHeroesService.getHero(data);
+        EventPingPong heroData = (EventPingPong) data.content();
+        HeroDTO aim = playedHeroesService.getHero(heroData.heroUid());
         if (aim == null) {
-            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", data.heroUuid());
-            requestHeroFromServer(data.heroUuid());
+            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", heroData.heroUid());
+            requestHeroFromServer(heroData.heroUid());
             return;
         }
 
-        if (Objects.requireNonNull(data.event()) == NetDataEvent.HERO_MOVING) {
-            aim.setPosition(new Point2D.Double(data.positionX(), data.positionY()));
-            aim.setVector(data.vector());
+        if (data.dataEvent() == NetDataEvent.HERO_OFFLINE) {
+            EventHeroOffline event = (EventHeroOffline) data.content();
+            UUID offlinePlayerUid = event.playerUid();
+            log.info("Игрок {} отключился от Сервера. Удаляем его из карты активных Героев...", offlinePlayerUid);
+            offlineSaveAndRemoveOtherHeroByPlayerUid(offlinePlayerUid);
+        }
+
+        if (data.dataEvent() == NetDataEvent.HERO_MOVING) {
+            EventHeroMoving event = (EventHeroMoving) data.content();
+            aim.setPosition(new Point2D.Double(event.positionX(), event.positionY()));
+            aim.setVector(event.vector());
         }
 
         // Обновляем здоровье, максимальное здоровье, силу, бафы-дебафы, текущий инструмент в руках и т.п. другого игрока:
@@ -1000,14 +1011,14 @@ public class GameController extends GameControllerBase {
 
     public void requestHeroFromServer(UUID uuid) {
         localSocketConnection.toServer(ClientDataDTO.builder()
-                .type(NetDataType.HERO_REMOTE_NEED)
-                .heroUuid(uuid)
+                .dataType(NetDataType.HERO_REMOTE_NEED)
+                .content(EventHeroRegister.builder().heroUid(uuid).build())
                 .build());
         setRemoteHeroRequestSent(true);
     }
 
-    public ClientDataDTO heroToCli(HeroDTO found, PlayerDTO currentPlayer, NetDataType netDataType) {
-        return heroService.heroToCli(found, currentPlayer, netDataType);
+    public ClientDataDTO heroToCli(HeroDTO found, PlayerDTO currentPlayer) {
+        return heroService.heroToCli(found, currentPlayer);
     }
 
     public HeroDTO cliToHero(ClientDataDTO readed) {

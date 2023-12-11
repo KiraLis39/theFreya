@@ -1,6 +1,6 @@
 package game.freya.entities;
 
-import game.freya.enums.HardnessLevel;
+import game.freya.enums.other.HardnessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

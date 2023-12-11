@@ -1,4 +1,4 @@
-package game.freya.enums;
+package game.freya.enums.other;
 
 import lombok.Getter;
 

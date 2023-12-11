@@ -3,10 +3,12 @@ package game.freya.net;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.enums.NetDataType;
+import game.freya.enums.net.NetDataEvent;
+import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.events.EventHeroOffline;
 import game.freya.net.interfaces.iServer;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -161,7 +163,11 @@ public class Server implements iServer {
                 log.info("Удаляем игрока {} ({}) из списка подключенных, т.к. его поток прерван.",
                         client.getPlayerName(), client.getPlayerUid());
                 destroyClient(client);
-                broadcast(ClientDataDTO.builder().type(NetDataType.HERO_OFFLINE).playerUid(client.getPlayerUid()).build(), null);
+                broadcast(ClientDataDTO.builder()
+                        .dataType(NetDataType.EVENT)
+                        .dataEvent(NetDataEvent.HERO_OFFLINE)
+                        .content(EventHeroOffline.builder().playerUid(client.getPlayerUid()).build())
+                        .build(), null);
             }
         });
     }

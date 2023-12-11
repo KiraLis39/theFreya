@@ -1,4 +1,4 @@
-package game.freya.enums;
+package game.freya.enums.net;
 
 public enum NetDataType {
     AUTH_REQUEST,
@@ -9,10 +9,5 @@ public enum NetDataType {
     AUTH_SUCCESS,
     AUTH_DENIED,
     CHAT,
-    PING,
-    PONG,
-    WRONG_WORLD_PING,
-    DIE,
-    HERO_OFFLINE,
     EVENT
 }

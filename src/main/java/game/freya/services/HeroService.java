@@ -3,7 +3,6 @@ package game.freya.services;
 import game.freya.entities.Hero;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.PlayerDTO;
-import game.freya.enums.NetDataType;
 import game.freya.mappers.HeroMapper;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.repositories.HeroRepository;
@@ -71,8 +70,8 @@ public class HeroService {
         return heroMapper.toDto(heroRepository.getReferenceById(uuid));
     }
 
-    public ClientDataDTO heroToCli(HeroDTO hero, PlayerDTO currentPlayer, NetDataType dataType) {
-        return heroMapper.heroToCli(hero, currentPlayer, dataType);
+    public ClientDataDTO heroToCli(HeroDTO hero, PlayerDTO currentPlayer) {
+        return heroMapper.heroToCli(hero, currentPlayer);
     }
 
     public HeroDTO cliToHero(ClientDataDTO cli) {

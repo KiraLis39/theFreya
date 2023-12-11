@@ -6,10 +6,12 @@ import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.Hero;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.PlayerDTO;
-import game.freya.enums.NetDataType;
+import game.freya.enums.net.NetDataEvent;
+import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.events.EventHeroRegister;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +21,6 @@ import java.awt.geom.Point2D;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -130,78 +131,84 @@ public final class HeroMapper {
         return heroes.stream().map(this::toDto).collect(Collectors.toList());
     }
 
-    public ClientDataDTO heroToCli(HeroDTO hero, PlayerDTO currentPlayer, NetDataType dataType) {
+    public ClientDataDTO heroToCli(HeroDTO hero, PlayerDTO currentPlayer) {
         return hero == null ? null : ClientDataDTO.builder()
-                .id(UUID.randomUUID())
-                .type(dataType)
+                .dataType(NetDataType.EVENT)
+                .dataEvent(NetDataEvent.HERO_REGISTER)
+                .content(EventHeroRegister.builder()
+                        .playerUid(currentPlayer.getUid())
+                        .playerName(currentPlayer.getNickName())
 
-                .playerUid(currentPlayer.getUid())
-                .playerName(currentPlayer.getNickName())
+                        .heroUid(hero.getHeroUid())
+                        .heroName(hero.getHeroName())
+                        .heroType(hero.getHeroType())
 
-                .heroUuid(hero.getHeroUid())
-                .heroName(hero.getHeroName())
-                .heroType(hero.getHeroType())
+                        .baseColor(hero.getBaseColor())
+                        .secondColor(hero.getSecondColor())
+                        .corpusType(hero.getCorpusType())
+                        .periferiaType(hero.getPeriferiaType())
+                        .periferiaSize(hero.getPeriferiaSize())
 
-                .baseColor(hero.getBaseColor())
-                .secondColor(hero.getSecondColor())
-                .corpusType(hero.getCorpusType())
-                .periferiaType(hero.getPeriferiaType())
-                .periferiaSize(hero.getPeriferiaSize())
+                        .level(hero.getLevel())
+                        .hp(hero.getCurHealth())
+                        .maxHp(hero.getMaxHealth())
+                        .oil(hero.getCurOil())
+                        .maxOil(hero.getMaxOil())
+                        .speed(hero.getSpeed())
+                        .vector(hero.getVector())
+                        .positionX(hero.getPosition().x)
+                        .positionY(hero.getPosition().y)
 
-                .level(hero.getLevel())
-                .hp(hero.getCurHealth())
-                .maxHp(hero.getMaxHealth())
-                .oil(hero.getCurOil())
-                .maxOil(hero.getMaxOil())
-                .speed(hero.getSpeed())
-                .vector(hero.getVector())
-                .positionX(hero.getPosition().x)
-                .positionY(hero.getPosition().y)
+                        .worldUid(hero.getWorldUid())
 
-                // временно отключил:
+                        // временно отключил:
 //                    .createDate(hero.getCreateDate())
 //                    .power(getCurrentHeroPower())
 //                    .experience(getCurrentHeroExperience())
 //                    .buffsJson(getCurrentHeroBuffsJson())
 //                    .inventoryJson(getCurrentHeroInventoryJson())
 //                    .inGameTime(readed.inGameTime())
-
-                .worldUid(hero.getWorldUid())
+                        .build())
                 .build();
     }
 
     public HeroDTO cliToHero(ClientDataDTO cli) {
-        return cli == null ? null : HeroDTO.builder()
-                .ownerUid(cli.playerUid())
+        if (cli == null) {
+            return null;
+        }
 
-                .heroUid(cli.heroUuid())
-                .heroName(cli.heroName())
-                .heroType(cli.heroType())
+        EventHeroRegister heroRegister = (EventHeroRegister) cli.content();
+        return HeroDTO.builder()
+                .ownerUid(heroRegister.playerUid())
 
-                .baseColor(cli.baseColor())
-                .secondColor(cli.secondColor())
-                .corpusType(cli.corpusType())
-                .periferiaType(cli.periferiaType())
-                .periferiaSize(cli.periferiaSize())
+                .heroUid(heroRegister.heroUid())
+                .heroName(heroRegister.heroName())
+                .heroType(heroRegister.heroType())
 
-                .speed(cli.speed())
-                .position(new Point2D.Double(cli.positionX(), cli.positionY()))
-                .curHealth(cli.hp())
-                .maxHealth(cli.maxHp())
-                .curOil(cli.oil())
-                .maxOil(cli.maxOil())
-                .worldUid(cli.worldUid())
-                .ownerUid(cli.playerUid())
-                .level(cli.level())
+                .baseColor(heroRegister.baseColor())
+                .secondColor(heroRegister.secondColor())
+                .corpusType(heroRegister.corpusType())
+                .periferiaType(heroRegister.periferiaType())
+                .periferiaSize(heroRegister.periferiaSize())
+
+                .speed(heroRegister.speed())
+                .position(new Point2D.Double(heroRegister.positionX(), heroRegister.positionY()))
+                .curHealth(heroRegister.hp())
+                .maxHealth(heroRegister.maxHp())
+                .curOil(heroRegister.oil())
+                .maxOil(heroRegister.maxOil())
+                .worldUid(heroRegister.worldUid())
+                .ownerUid(heroRegister.playerUid())
+                .level(heroRegister.level())
+
+                .worldUid(heroRegister.worldUid())
 
                 // временно отключил:
-//                .power(readed.power())
-//                .experience(readed.experience())
-//                .inGameTime(readed.inGameTime())
-//                .lastPlayDate(readed.lastPlayDate())
-//                .createDate(readed.createDate())
-
-                .worldUid(cli.worldUid())
+//                .power(heroRegister.power())
+//                .experience(heroRegister.experience())
+//                .inGameTime(heroRegister.inGameTime())
+//                .lastPlayDate(heroRegister.lastPlayDate())
+//                .createDate(heroRegister.createDate())
 
                 .build();
 

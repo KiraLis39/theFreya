@@ -6,7 +6,7 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.enums.HardnessLevel;
+import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;

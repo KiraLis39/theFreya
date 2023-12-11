@@ -3,7 +3,7 @@ package game.freya.entities.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.enums.HardnessLevel;
+import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.interfaces.iEnvironment;
 import game.freya.interfaces.iWorld;
@@ -40,7 +40,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     private final Color backColor = new Color(31, 31, 31);
 
-    private final String scobe = ")";
+    private static final String scobe = ")";
 
     @Getter
     @Builder.Default

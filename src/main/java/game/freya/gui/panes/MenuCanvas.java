@@ -5,7 +5,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.enums.ScreenType;
+import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.FoxCanvas;
