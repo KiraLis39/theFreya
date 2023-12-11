@@ -28,7 +28,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
@@ -153,10 +152,6 @@ public class HeroDTO extends PlayedCharacter {
     @JsonIgnore
     private transient Image heroViewImage;
 
-    @Transient
-    @JsonIgnore
-    private Rectangle collider;
-
     private void recheckHurtLevel() {
         if (this.curHealth <= 0) {
             this.hurtLevel = HurtLevel.DEAD;
@@ -226,8 +221,8 @@ public class HeroDTO extends PlayedCharacter {
 
     @Override
     public void draw(Graphics2D g2D) {
-        if (collider == null) {
-            resetCollider();
+        if (getCollider() == null || getShape() == null) {
+            resetCollider(position, size);
         }
 
         if (heroViewImage == null) {
@@ -236,17 +231,20 @@ public class HeroDTO extends PlayedCharacter {
 
         AffineTransform tr = g2D.getTransform();
         g2D.rotate(ONE_TURN_PI * vector.ordinal(),
-                collider.x + collider.width / 2d,
-                collider.y + collider.height / 2d);
+                getShape().x + getShape().width / 2d,
+                getShape().y + getShape().height / 2d);
 
         g2D.drawImage(heroViewImage,
-                collider.x, collider.y,
-                collider.width, collider.height, null);
+                getShape().x, getShape().y,
+                getShape().width, getShape().height, null);
         g2D.setTransform(tr);
 
         if (Constants.isDebugInfoVisible()) {
+            g2D.setColor(Color.GREEN);
+            g2D.draw(getShape());
+
             g2D.setColor(Color.RED);
-            g2D.draw(collider);
+            g2D.draw(getCollider());
         }
     }
 
@@ -293,24 +291,12 @@ public class HeroDTO extends PlayedCharacter {
     }
 
     @Override
-    public Rectangle getCollider() {
-        if (collider == null) {
-            resetCollider();
-        }
-        return collider;
-    }
-
-    @Override
     public void attack(iEntity entity) {
         if (!entity.equals(this)) {
             entity.hurt(power);
         } else {
             log.warn("Player {} can`t attack itself!", getHeroName());
         }
-    }
-
-    private void resetCollider() {
-        this.collider = new Rectangle((int) position.x - size.width / 2, (int) position.y - size.height / 2, size.width, size.height);
     }
 
     private void recolorHeroView() {
@@ -337,24 +323,9 @@ public class HeroDTO extends PlayedCharacter {
         this.power = power;
     }
 
-    private void moveUp() {
-        this.position.setLocation(position.x, position.y - 1);
-        resetCollider();
-    }
-
-    private void moveDown() {
-        this.position.setLocation(position.x, position.y + 1);
-        resetCollider();
-    }
-
-    private void moveLeft() {
-        this.position.setLocation(position.x - 1, position.y);
-        resetCollider();
-    }
-
-    private void moveRight() {
-        this.position.setLocation(position.x + 1, position.y);
-        resetCollider();
+    private void move(MovingVector vector) {
+        this.position.setLocation(position.x + vector.getX(), position.y + vector.getY());
+        resetCollider(position, size);
     }
 
     public Icon getIcon() {
@@ -362,90 +333,8 @@ public class HeroDTO extends PlayedCharacter {
         return null;
     }
 
-    public void move(boolean isNotInCollision) {
-        switch (vector) {
-            case UP -> {
-                if (isNotInCollision) {
-                    for (int i = 0; i < getSpeed(); i++) {
-                        moveUp();
-                    }
-                } else {
-                    moveDown();
-                }
-            }
-            case UP_RIGHT -> {
-                if (isNotInCollision) {
-                    for (int i = 0; i < getSpeed(); i++) {
-                        moveUp();
-                        moveRight();
-                    }
-                } else {
-                    moveDown();
-                    moveLeft();
-                }
-            }
-            case RIGHT -> {
-                if (isNotInCollision) {
-                    for (int i = 0; i < getSpeed(); i++) {
-                        moveRight();
-                    }
-                } else {
-                    moveLeft();
-                }
-            }
-            case RIGHT_DOWN -> {
-                if (isNotInCollision) {
-                    for (int i = 0; i < getSpeed(); i++) {
-                        moveRight();
-                        moveDown();
-                    }
-                } else {
-                    moveLeft();
-                    moveUp();
-                }
-            }
-            case DOWN -> {
-                if (isNotInCollision) {
-                    for (int i = 0; i < getSpeed(); i++) {
-                        moveDown();
-                    }
-                } else {
-                    moveUp();
-                }
-            }
-            case DOWN_LEFT -> {
-                if (isNotInCollision) {
-                    for (int i = 0; i < getSpeed(); i++) {
-                        moveDown();
-                        moveLeft();
-                    }
-                } else {
-                    moveUp();
-                    moveRight();
-                }
-            }
-            case LEFT -> {
-                if (isNotInCollision) {
-                    for (int i = 0; i < getSpeed(); i++) {
-                        moveLeft();
-                    }
-                } else {
-                    moveRight();
-                }
-            }
-            case LEFT_UP -> {
-                if (isNotInCollision) {
-                    for (int i = 0; i < getSpeed(); i++) {
-                        moveLeft();
-                        moveUp();
-                    }
-                } else {
-                    moveRight();
-                    moveDown();
-                }
-            }
-            default -> log.warn("Неизвестное направление вектора героя {}", vector);
-        }
+    public void move() {
+        move(vector);
     }
 
     public void setVector(MovingVector movingVector) {

@@ -1,5 +1,7 @@
 package game.freya.interfaces;
 
+import java.awt.Rectangle;
+
 public interface iEntity {
     int getHealth();
 
@@ -12,4 +14,12 @@ public interface iEntity {
     void hurt(float hurtPoints);
 
     boolean isDead();
+
+    Rectangle getCollider();
+
+    void setCollider(Rectangle collider);
+
+    Rectangle getShape();
+
+    void setShape(Rectangle shape);
 }

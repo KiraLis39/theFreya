@@ -420,9 +420,20 @@ public class GameController extends GameControllerBase {
                 vector = isPlayerMovingUp() ? MovingVector.LEFT_UP : isPlayerMovingDown() ? MovingVector.DOWN_LEFT : MovingVector.LEFT;
             }
 
+            // перемещаем камеру к ГГ:
+            if (!visibleRect.contains(playedHeroesService.getCurrentHero().getPosition())) {
+                canvas.moveViewToPlayer(0, 0);
+            }
+
             // set hero vector:
-            playedHeroesService.setCurrentHeroVector(vector);
-            playedHeroesService.getCurrentHero().move(isPlayerCanGo(visibleRect, vector, canvas));
+            playedHeroesService.setCurrentHeroVector(hasCollision(vector) ? vector.reverse(vector) : vector);
+
+            // move hero:
+            for (int i = 0; i < playedHeroesService.getCurrentHero().getSpeed(); i++) {
+                playedHeroesService.getCurrentHero().move();
+            }
+
+            // send moving data to Server:
             sendPacket(eventService.buildMove(playedHeroesService.getCurrentHero()));
 
             // move map:
@@ -484,31 +495,28 @@ public class GameController extends GameControllerBase {
         }
     }
 
-    private boolean isPlayerCanGo(Rectangle visibleRect, MovingVector vector, GameCanvas canvas) {
-        Point2D.Double pos = playedHeroesService.getCurrentHeroPosition();
-
-        // перемещаем камеру к ГГ:
-        if (!visibleRect.contains(pos)) {
-            canvas.moveViewToPlayer(0, 0);
-        }
-
-        // проверка коллизий с объектами:
-        for (Environment env : worldService.getCurrentWorld().getEnvironments()) {
-            if (env.hasCollision() && env.getCollider().intersects(playedHeroesService.getCurrentHeroCollider())) {
-                return false;
+    private boolean hasCollision(MovingVector vector) {
+        // если сущность - не призрак:
+        if (playedHeroesService.getCurrentHero().hasCollision()) {
+            // проверка коллизий с объектами:
+            for (Environment env : worldService.getCurrentWorld().getEnvironments()) {
+                if (env.hasCollision() && env.getCollider().intersects(playedHeroesService.getCurrentHeroCollider())) {
+                    return true;
+                }
             }
         }
 
+        Point2D.Double pos = playedHeroesService.getCurrentHeroPosition();
         VolatileImage gMap = worldService.getCurrentWorld().getGameMap();
         return switch (vector) {
-            case UP -> pos.y > 0;
-            case UP_RIGHT -> pos.y > 0 && pos.x < gMap.getWidth();
-            case RIGHT -> pos.x < gMap.getWidth();
-            case RIGHT_DOWN -> pos.x < gMap.getWidth() && pos.y < gMap.getHeight();
-            case DOWN -> pos.y < gMap.getHeight();
-            case DOWN_LEFT -> pos.y < gMap.getHeight() && pos.x > 0;
-            case LEFT -> pos.x > 0;
-            case LEFT_UP -> pos.x > 0 && pos.y > 0;
+            case UP -> pos.y < 0;
+            case UP_RIGHT -> pos.y < 0 && pos.x > gMap.getWidth();
+            case RIGHT -> pos.x > gMap.getWidth();
+            case RIGHT_DOWN -> pos.x > gMap.getWidth() && pos.y > gMap.getHeight();
+            case DOWN -> pos.y > gMap.getHeight();
+            case DOWN_LEFT -> pos.y > gMap.getHeight() && pos.x < 0;
+            case LEFT -> pos.x < 0;
+            case LEFT_UP -> pos.x < 0 && pos.y < 0;
         };
     }
 
