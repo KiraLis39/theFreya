@@ -34,13 +34,13 @@ import java.util.UUID;
 public class WorldDTO extends ComponentAdapter implements iWorld {
     private static final Random r = new Random(100);
 
+    private static final String scobe = ")";
+
     private final Color textColor = new Color(58, 175, 217, 191);
 
     private final Color linesColor = new Color(47, 84, 3, 64);
 
     private final Color backColor = new Color(31, 31, 31);
-
-    private static final String scobe = ")";
 
     @Getter
     @Builder.Default

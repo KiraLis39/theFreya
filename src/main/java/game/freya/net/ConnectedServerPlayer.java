@@ -126,7 +126,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                         } else if (lastEvent.equals(NetDataEvent.CLIENT_DIE)) {
                             log.warn("Клиент {} сообщил о скорой смерти соединения.", clientUid);
                         } else if (lastEvent.equals(NetDataEvent.HERO_REGISTER)) {
-                            saveConnectedHero(readed);
+                            saveConnectedHero(readed); // readed.heroUid!
                         } else {
                             server.broadcast(readed, this);
                         }
@@ -225,7 +225,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         HeroDTO hero;
         if (gameController.isHeroExist(connected.heroUid())) {
             hero = gameController.getHeroByUid(connected.heroUid());
-            BeanUtils.copyProperties(readed, hero);
+            BeanUtils.copyProperties(readed, hero, "heroUid");
         } else {
             hero = gameController.saveNewHero(gameController.cliToHero(readed), false);
         }

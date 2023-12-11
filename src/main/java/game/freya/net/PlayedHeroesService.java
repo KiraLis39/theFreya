@@ -55,6 +55,10 @@ public class PlayedHeroesService {
     }
 
     public void addHero(final HeroDTO heroDTO) {
+        if (heroDTO.getHeroUid() == null) {
+            log.warn("Нельзя работать c героем без heroUid. Нужно найти причину и устранить!");
+        }
+
         heroDTO.setOnline(true);
 
         if (heroes.containsKey(heroDTO.getHeroUid())) {

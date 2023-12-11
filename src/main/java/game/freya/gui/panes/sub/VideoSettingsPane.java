@@ -52,10 +52,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
         // left panel:
-        add(new JPanel() {{
-            setOpaque(false);
-            setDoubleBuffered(false);
-            setIgnoreRepaint(true);
+        add(new SubPane(null) {{
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
             add(new SubPane("Ограничить частоту кадров") {{
@@ -186,12 +183,8 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
         add(Box.createHorizontalStrut(16));
 
         // right panel:
-        add(new JPanel() {{
-            setOpaque(false);
+        add(new SubPane(null) {{
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-
-            setDoubleBuffered(false);
-            setIgnoreRepaint(true);
 
             add(Box.createVerticalStrut(9));
             add(new SubPane(null) {{

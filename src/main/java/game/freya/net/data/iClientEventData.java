@@ -7,7 +7,5 @@ public interface iClientEventData extends Serializable {
 
     UUID playerUid();
 
-    String playerName();
-
-//    UUID heroUid();
+    UUID heroUid();
 }

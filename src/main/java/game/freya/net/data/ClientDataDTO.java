@@ -24,7 +24,7 @@ public record ClientDataDTO(
 //        HeroCorpusType corpusType,
 //        HeroPeriferiaType periferiaType,
 //        short periferiaSize,
-//        UUID heroUid,
+        UUID heroUid,
         String heroName,
 //        HeroType heroType,
 //        short level,

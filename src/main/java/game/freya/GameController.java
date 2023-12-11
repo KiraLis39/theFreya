@@ -31,7 +31,6 @@ import game.freya.net.data.ClientDataDTO;
 import game.freya.net.data.events.EventHeroMoving;
 import game.freya.net.data.events.EventHeroOffline;
 import game.freya.net.data.events.EventHeroRegister;
-import game.freya.net.data.events.EventPingPong;
 import game.freya.net.data.events.EventPlayerAuth;
 import game.freya.services.EventService;
 import game.freya.services.HeroService;
@@ -915,14 +914,13 @@ public class GameController extends GameControllerBase {
      * @param data модель обновлений для сетевого мира от другого участника игры.
      */
     public void syncServerDataWithCurrentWorld(@NotNull ClientDataDTO data) {
-        log.debug("Получены данные для синхронизации {} игрока {}'s (герой {})", data.dataEvent(),
-                data.content().playerName(), playedHeroesService.getHeroByOwnerUid(data.content().playerUid()));
+        log.debug("Получены данные для синхронизации {} игрока {} (герой {})", data.dataEvent(),
+                data.content().playerUid(), playedHeroesService.getHeroByOwnerUid(data.content().playerUid()));
 
-        EventPingPong heroData = (EventPingPong) data.content();
-        HeroDTO aim = playedHeroesService.getHero(heroData.heroUid());
+        HeroDTO aim = playedHeroesService.getHero(data.content().heroUid());
         if (aim == null) {
-            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", heroData.heroUid());
-            requestHeroFromServer(heroData.heroUid());
+            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", data.content().heroUid());
+            requestHeroFromServer(data.content().heroUid());
             return;
         }
 
