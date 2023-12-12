@@ -34,4 +34,6 @@ public interface iWorld {
     LocalDateTime getCreateDate();
 
     HardnessLevel getHardnesslevel();
+
+    void generate();
 }

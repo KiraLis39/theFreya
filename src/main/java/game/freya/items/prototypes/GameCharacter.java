@@ -36,7 +36,7 @@ public abstract class GameCharacter implements iGameObject, iHero {
     protected void resetCollider(Point2D position) {
         setShape(new Rectangle((int) position.getX() - getSize().width / 2,
                 (int) position.getY() - getSize().height / 2, getSize().width, getSize().height));
-        setCollider(new Rectangle(getShape().x - 6, getShape().y - 6, getShape().width + 12, getShape().height + 12));
+        setCollider(new Rectangle(getShape().x + 3, getShape().y + 3, getShape().width - 6, getShape().height - 6));
     }
 
     @Override

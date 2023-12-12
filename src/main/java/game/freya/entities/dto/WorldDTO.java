@@ -6,6 +6,7 @@ import game.freya.config.Constants;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.interfaces.iWorld;
+import game.freya.items.MockEnvironmentWithStorage;
 import game.freya.items.prototypes.Environment;
 import lombok.Builder;
 import lombok.Getter;
@@ -147,6 +148,25 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     @Override
     public HardnessLevel getHardnesslevel() {
         return this.level;
+    }
+
+    @Override
+    public void generate() {
+        for (int i = 0; i < 32; ) {
+            MockEnvironmentWithStorage nextMock = new MockEnvironmentWithStorage("mock_" + (i + 1),
+                    dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM);
+            boolean isBusy = false;
+            for (Environment environment : getEnvironments()) {
+                if (environment.getCollider().intersects(nextMock.getCollider())) {
+                    isBusy = true;
+                    break;
+                }
+            }
+            if (!isBusy) {
+                i++;
+                addEnvironment(nextMock);
+            }
+        }
     }
 
     private VolatileImage repaintMap(Rectangle camera) throws AWTException {

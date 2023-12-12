@@ -22,7 +22,6 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.interfaces.iEnvironment;
-import game.freya.items.MockEnvironmentWithStorage;
 import game.freya.items.prototypes.Environment;
 import game.freya.mappers.WorldMapper;
 import game.freya.net.ConnectedServerPlayer;
@@ -57,7 +56,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Shape;
 import java.awt.event.KeyEvent;
+import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
@@ -433,21 +434,16 @@ public class GameController extends GameControllerBase {
                 canvas.moveViewToPlayer(0, 0);
             }
 
-            // set hero vector:
-            playedHeroesService.setCurrentHeroVector(vector);
-
             // move hero:
-            for (int i = 0; i < playedHeroesService.getCurrentHero().getSpeed(); i++) {
-                if (hasCollision(vector)) {
-                    break;
+            int[] collisionMarker = hasCollision();
+            playedHeroesService.setCurrentHeroVector(vector.mod(vector, collisionMarker));
+            if (!playedHeroesService.getCurrentHeroVector().equals(MovingVector.NONE)) {
+                // двигаемся по направлению вектора (взгляда):
+                for (int i = 0; i < playedHeroesService.getCurrentHero().getSpeed(); i++) {
+                    playedHeroesService.getCurrentHero().move();
                 }
-                playedHeroesService.getCurrentHero().move();
-            }
-
-            // push hero back:
-            if (hasCollision(vector)) {
-                playedHeroesService.setCurrentHeroVector(vector.reverse(vector));
-                playedHeroesService.getCurrentHero().move();
+            } else {
+                // тогда, стоя на месте, просто указываем направление вектора (взгляда):
                 playedHeroesService.setCurrentHeroVector(vector);
             }
 
@@ -513,33 +509,53 @@ public class GameController extends GameControllerBase {
         }
     }
 
-    private boolean hasCollision(MovingVector vector) {
+    private int[] hasCollision() {
         // если сущность - не призрак:
         if (playedHeroesService.getCurrentHero().hasCollision()) {
+            Rectangle heroCollider = playedHeroesService.getCurrentHeroCollider();
+
+            // проверка коллизии с краем мира:
+            Area worldMapBorder = new Area(new Rectangle(-12, -12,
+                    getCurrentWorldMap().getWidth() + 24, getCurrentWorldMap().getHeight() + 24));
+            worldMapBorder.subtract(new Area(new Rectangle(0, 0, getCurrentWorldMap().getWidth(), getCurrentWorldMap().getHeight())));
+            if (worldMapBorder.intersects(heroCollider)) {
+                return findVectorCorrection(worldMapBorder, heroCollider);
+            }
+
             // проверка коллизий с объектами:
             for (Environment env : worldService.getCurrentWorld().getEnvironments()) {
-                if (env.hasCollision() && env.getCollider().intersects(playedHeroesService.getCurrentHeroCollider())) {
-                    return true;
-                }
-                if (!new Rectangle(getCurrentWorldMap().getWidth(), getCurrentWorldMap().getHeight())
-                        .contains(playedHeroesService.getCurrentHeroCenterPoint())) {
-                    return true;
+                if (env.hasCollision() && env.getCollider().intersects(heroCollider)) {
+                    return findVectorCorrection(env.getCollider(), heroCollider);
                 }
             }
         }
 
-        Point2D.Double pos = playedHeroesService.getCurrentHeroPosition();
-        VolatileImage gMap = worldService.getCurrentWorld().getGameMap();
-        return switch (vector) {
-            case UP -> pos.y < 0;
-            case UP_RIGHT -> pos.y < 0 && pos.x > gMap.getWidth();
-            case RIGHT -> pos.x > gMap.getWidth();
-            case RIGHT_DOWN -> pos.x > gMap.getWidth() && pos.y > gMap.getHeight();
-            case DOWN -> pos.y > gMap.getHeight();
-            case DOWN_LEFT -> pos.y > gMap.getHeight() && pos.x < 0;
-            case LEFT -> pos.x < 0;
-            case LEFT_UP -> pos.x < 0 && pos.y < 0;
+        return new int[]{0, 0};
+    }
+
+    private int[] findVectorCorrection(Shape envColl, Rectangle heroColl) {
+        int[] result; // y, x
+
+        final Point upDotY01 = new Point((int) (heroColl.x + heroColl.width * 0.33d), heroColl.y);
+        final Point upDotY02 = new Point((int) (heroColl.x + heroColl.width * 0.66d), heroColl.y);
+        final Point downDotY01 = new Point((int) (heroColl.x + heroColl.width * 0.33d), heroColl.y + heroColl.height);
+        final Point downDotY02 = new Point((int) (heroColl.x + heroColl.width * 0.66d), heroColl.y + heroColl.height);
+
+        final Point leftDotX01 = new Point(heroColl.x, (int) (heroColl.y + heroColl.height * 0.33d));
+        final Point leftDotX02 = new Point(heroColl.x, (int) (heroColl.y + heroColl.height * 0.66d));
+        final Point rightDotX01 = new Point(heroColl.x + heroColl.width, (int) (heroColl.y + heroColl.height * 0.33d));
+        final Point rightDotX02 = new Point(heroColl.x + heroColl.width, (int) (heroColl.y + heroColl.height * 0.66d));
+
+        result = new int[]{
+                // y
+                envColl.contains(upDotY01) || envColl.contains(upDotY02) ? -1
+                        : envColl.contains(downDotY01) || envColl.contains(downDotY02) ? 1 : 0,
+
+                // x
+                envColl.contains(leftDotX01) || envColl.contains(leftDotX02) ? -1
+                        : envColl.contains(rightDotX01) || envColl.contains(rightDotX02) ? 1 : 0
         };
+        return result;
     }
 
     public void deleteHero(UUID heroUid) {
@@ -555,11 +571,8 @@ public class GameController extends GameControllerBase {
     }
 
     public WorldDTO saveNewWorld(WorldDTO newWorld) {
-        for (int i = 0; i < 10; i++) {
-            newWorld.addEnvironment(new MockEnvironmentWithStorage("mock_" + (i + 1)));
-        }
-
         newWorld.setAuthor(getCurrentPlayerUid());
+        newWorld.generate();
         return worldService.save(newWorld);
     }
 

@@ -1,5 +1,7 @@
 package game.freya.enums.other;
 
+import java.util.Arrays;
+
 /**
  * X = EAST\WEST; Y = NORTH\SOUTH; Z = INTER\OUTER
  */
@@ -11,9 +13,10 @@ public enum MovingVector {
     DOWN(1, 0, 0),
     DOWN_LEFT(1, -1, 0),
     LEFT(0, -1, 0),
-    LEFT_UP(-1, -1, 0);
+    LEFT_UP(-1, -1, 0),
+    NONE(0, 0, 0);
 
-    final int x, y, z;
+    final int y, x, z;
 
     MovingVector(int y, int x, int z) {
         this.y = y;
@@ -21,12 +24,12 @@ public enum MovingVector {
         this.z = z;
     }
 
-    public int getX() {
-        return x;
-    }
-
     public int getY() {
         return y;
+    }
+
+    public int getX() {
+        return x;
     }
 
     public int getZ() {
@@ -43,6 +46,15 @@ public enum MovingVector {
             case DOWN_LEFT -> UP_RIGHT;
             case RIGHT_DOWN -> LEFT_UP;
             case UP_RIGHT -> DOWN_LEFT;
+            default -> vector;
         };
+    }
+
+    public MovingVector mod(MovingVector vector, int[] collisionMarker) {
+        int ny = vector.y - collisionMarker[0];
+        int nx = vector.x - collisionMarker[1];
+        return Arrays.stream(values())
+                .filter(v -> v.getY() == ny && v.getX() == nx).findFirst()
+                .orElse(vector);
     }
 }

@@ -36,9 +36,11 @@ import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.ImageCapabilities;
+import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Shape;
@@ -530,6 +532,9 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                 v2D.drawString("Hero pos: %.0fx%.0f".formatted(playerShape.getBounds2D().getCenterX(), playerShape.getBounds2D().getCenterY()),
                         getWidth() - leftShift, getHeight() - 140);
                 v2D.drawString("Hero speed: %s".formatted(gameController.getCurrentHeroSpeed()), getWidth() - leftShift, getHeight() - 120);
+                v2D.drawString("Hero vector: %s %s %s".formatted(gameController.getCurrentHeroVector().getY(),
+                                gameController.getCurrentHeroVector().getX(), gameController.getCurrentHeroVector().getZ()),
+                        getWidth() - leftShift, getHeight() - 100);
             }
 
             // gameplay info:
@@ -909,7 +914,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
     }
 
     protected void createChat(GameCanvas gameCanvas) {
-        this.chat = new Chat(gameCanvas);
+        this.chat = new Chat(new Point(64, 128), new Dimension(getWidth() / 5, getHeight() / 5));
     }
 
     protected int getDrawErrors() {

@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>groupId</groupId>
-    <artifactId>theFreya</artifactId>
+    <artifactId>FreyaTheGame3D</artifactId>
     <version>0.1.5</version>
-    <name>Freya the game</name>
+    <name>Freya the game 3D</name>
     <developers>
         <developer>
             <name>KiraLis39</name>

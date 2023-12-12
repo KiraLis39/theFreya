@@ -16,10 +16,14 @@ public class MockEnvironmentWithStorage extends Environment {
     private short spriteIndex = 0;
 
     public MockEnvironmentWithStorage(String name) {
-        setName(name);
-        setImageNameInCache("mock_0" + Math.round(1 + 2 * getR().nextDouble()));
+        this(name, getR().nextDouble() * 1024, getR().nextDouble() * 1024);
+    }
 
-        setLocation(new Point2D.Double(getR().nextDouble() * 1024, getR().nextDouble() * 1024));
+    public MockEnvironmentWithStorage(String name, double locationW, double locationY) {
+        setName(name);
+        setImageNameInCache("mock_0" + Math.round(1 + getR().nextDouble() * 2));
+
+        setLocation(new Point2D.Double(getR().nextDouble() * locationW, getR().nextDouble() * locationY));
         setSize(new Dimension(128, 128));
 
         setHasCollision(true);
