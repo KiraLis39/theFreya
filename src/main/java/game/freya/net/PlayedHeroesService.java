@@ -165,34 +165,42 @@ public class PlayedHeroesService {
     }
 
     public byte getCurrentHeroSpeed() {
+        checkCHE();
         return heroes.get(currentHeroUid).getSpeed();
     }
 
     public LocalDateTime getCurrentHeroCreateDate() {
+        checkCHE();
         return heroes.get(currentHeroUid).getCreateDate();
     }
 
     public String getCurrentHeroName() {
+        checkCHE();
         return heroes.get(currentHeroUid).getHeroName();
     }
 
     public HeroType getCurrentHeroType() {
+        checkCHE();
         return heroes.get(currentHeroUid).getHeroType();
     }
 
     public short getCurrentHeroLevel() {
+        checkCHE();
         return heroes.get(currentHeroUid).getLevel();
     }
 
     public long getCurrentHeroExperience() {
+        checkCHE();
         return heroes.get(currentHeroUid).getExperience();
     }
 
     public int getCurrentHeroCurHealth() {
+        checkCHE();
         return heroes.get(currentHeroUid).getHealth();
     }
 
     public HurtLevel getCurrentHeroHurtLevel() {
+        checkCHE();
         return heroes.get(currentHeroUid).getHurtLevel();
     }
 

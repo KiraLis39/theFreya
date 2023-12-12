@@ -279,12 +279,6 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
         drawHeroesData(v2D);
 
-        // draw chat:
-        if (gameController.isCurrentWorldIsNetwork() && this.chat != null) {
-            Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
-            this.chat.draw(v2D);
-        }
-
         // рисуем миникарту:
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
         drawMinimap(v2D);
@@ -575,7 +569,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         v2D.setFont(Constants.DEBUG_FONT);
         v2D.setColor(Color.BLACK);
         if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 24);
+            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 25);
         }
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
@@ -583,7 +577,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
         v2D.setColor(Color.GRAY);
         if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 25);
+            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 24);
         }
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
@@ -841,11 +835,15 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
     }
 
     protected void drawUI(Graphics2D v2D, String canvasName) {
-        if (isShadowBackNeeds() && canvasName.equals("GameCanvas")) {
+        if (canvasName.equals("GameCanvas") && isShadowBackNeeds()) {
             v2D.setColor(grayBackColor);
             v2D.fillRect(0, 0, getWidth(), getHeight());
         }
         uiHandler.drawUI(v2D, this);
+    }
+
+    protected void createChat() {
+        this.chat = new Chat(new Point(getWidth() - getWidth() / 5 - 9, 64), new Dimension(getWidth() / 5, getHeight() / 4));
     }
 
     protected void decreaseDrawErrorCount() {
@@ -911,10 +909,6 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             }
             Thread.yield();
         }
-    }
-
-    protected void createChat(GameCanvas gameCanvas) {
-        this.chat = new Chat(new Point(64, 128), new Dimension(getWidth() / 5, getHeight() / 5));
     }
 
     protected int getDrawErrors() {

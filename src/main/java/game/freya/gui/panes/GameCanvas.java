@@ -263,7 +263,7 @@ public class GameCanvas extends FoxCanvas {
 
         requestFocusInWindow();
 
-        super.createChat(this);
+        super.createChat();
 
         Constants.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());

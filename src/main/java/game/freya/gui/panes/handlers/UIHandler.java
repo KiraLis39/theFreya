@@ -1,5 +1,6 @@
 package game.freya.gui.panes.handlers;
 
+import fox.FoxRender;
 import game.freya.config.Constants;
 import game.freya.gui.panes.MenuCanvas;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,9 @@ import org.springframework.stereotype.Component;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
 
 @Slf4j
@@ -75,6 +78,12 @@ public final class UIHandler {
             if (Constants.isDebugInfoVisible()) {
                 v2D.setColor(Color.YELLOW);
                 v2D.drawRect(downCenterPaneRect.x, downCenterPaneRect.y, downCenterPaneRect.width, downCenterPaneRect.height);
+            }
+
+            // draw chat:
+            if (canvas.getGameController().isCurrentWorldIsNetwork() && canvas.getChat() != null) {
+                Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
+                canvas.getChat().draw(v2D);
             }
         }
     }
@@ -204,5 +213,8 @@ public final class UIHandler {
                 (int) (canvasRect.getWidth() * 0.333f), (int) (canvasRect.getHeight() * 0.075f));
         downCenterPaneRect = new Rectangle((int) (canvasRect.getWidth() * 0.36f), (int) (canvasRect.getHeight() * 0.925f),
                 (int) (canvasRect.getWidth() * 0.28f), (int) (canvasRect.getHeight() * 0.075f));
+
+        canvas.getChat().setLocation(new Point(canvas.getWidth() - canvas.getWidth() / 5 - 6, 72));
+        canvas.getChat().setSize(new Dimension(canvas.getWidth() / 5, canvas.getHeight() / 4));
     }
 }
