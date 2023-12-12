@@ -24,13 +24,13 @@ public class EventService {
 //                .heroName(dto.getHeroName())
                 .dataEvent(NetDataEvent.HERO_MOVING)
                 .content(EventHeroMoving.builder()
-                        .playerUid(dto.getOwnerUid())
+                        .playerUid(dto.getAuthor())
                         .playerName(playerService.getCurrentPlayer().getNickName())
 
                         .heroUid(dto.getHeroUid())
                         .heroName(dto.getHeroName())
-                        .positionX(dto.getPosition().x)
-                        .positionY(dto.getPosition().y)
+                        .positionX(dto.getLocation().x)
+                        .positionY(dto.getLocation().y)
                         .vector(dto.getVector())
                         .build())
                 .build();

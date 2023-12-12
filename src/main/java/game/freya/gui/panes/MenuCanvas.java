@@ -558,18 +558,20 @@ public class MenuCanvas extends FoxCanvas {
      */
     public void saveNewHeroAndPlay(HeroCreatingPane newHeroTemplate) {
         // сохраняем нового героя и проставляем как текущего:
-        gameController.saveNewHero(HeroDTO.builder()
-                .heroUid(UUID.randomUUID())
-                .heroName(newHeroTemplate.getHeroName())
+        HeroDTO aNewToSave = HeroDTO.builder()
                 .baseColor(newHeroTemplate.getBaseColor())
                 .secondColor(newHeroTemplate.getSecondColor())
                 .corpusType(newHeroTemplate.getChosenCorpusType())
                 .periferiaType(newHeroTemplate.getChosenPeriferiaType())
                 .periferiaSize(newHeroTemplate.getPeriferiaSize())
-                .ownerUid(gameController.getCurrentPlayerUid())
                 .worldUid(newHeroTemplate.getWorldUid())
-                .createDate(LocalDateTime.now())
-                .build(), true);
+                .build();
+        aNewToSave.setHeroUid(UUID.randomUUID());
+        aNewToSave.setHeroName(newHeroTemplate.getHeroName());
+        aNewToSave.setOwnerUid(gameController.getCurrentPlayerUid());
+        aNewToSave.setCreateDate(LocalDateTime.now());
+
+        gameController.saveNewHero(aNewToSave, true);
 
         // если подключение к Серверу уже закрылось пока мы собирались:
         if (gameController.isCurrentWorldIsNetwork() && !gameController.isServerIsOpen()) {

@@ -372,8 +372,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             if (gameController.getCurrentHeroUid().equals(connectedHero.getHeroUid())) {
                 continue;
             }
-            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getPosition().x));
-            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getPosition().y));
+            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
+            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getLocation().y));
 //            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
             m2D.setColor(connectedHero.getBaseColor());
             m2D.fillRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
@@ -429,7 +429,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                 if (gameController.isHeroActive(hero, getViewPort().getBounds())) {
 
                     // Преобразуем координаты героя из карты мира в координаты текущего холста:
-                    Point2D relocatedPoint = FoxPointConverter.relocateOn(getViewPort(), getBounds(), hero.getPosition());
+                    Point2D relocatedPoint = FoxPointConverter.relocateOn(getViewPort(), getBounds(), hero.getLocation());
 
                     // draw hero name:
                     g2D.drawString(hero.getHeroName(),
@@ -442,7 +442,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                     g2D.setColor(Color.YELLOW);
                     g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
                             (int) (relocatedPoint.getY() - strutMod),
-                            hero.getCurHealth(), 9, 3, 3);
+                            hero.getHealth(), 9, 3, 3);
                     g2D.setColor(Color.WHITE);
                     g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
                             (int) (relocatedPoint.getY() - strutMod),
@@ -452,7 +452,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                     g2D.setColor(Color.RED);
                     g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
                             (int) (relocatedPoint.getY() - strutMod),
-                            hero.getCurHealth(), 9, 3, 3);
+                            hero.getHealth(), 9, 3, 3);
                     g2D.setColor(Color.WHITE);
                     g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
                             (int) (relocatedPoint.getY() - strutMod),

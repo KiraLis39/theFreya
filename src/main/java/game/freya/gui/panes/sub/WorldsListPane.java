@@ -1,6 +1,7 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
+import fox.components.tools.VerticalFlowLayout;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
@@ -17,8 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JViewport;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -33,11 +35,17 @@ import java.util.List;
 
 @Slf4j
 public class WorldsListPane extends JPanel implements iSubPane {
-    private static final int leftIconDim = 80;
+    private static final int maxElementsDim = 96;
+
+    private static final int maxImageDim = 88;
 
     private final transient FoxCanvas canvas;
 
     private final transient GameController gameController;
+
+    private final SubPane centerList;
+
+    private final JScrollPane centerScroll;
 
     private transient BufferedImage snap;
 
@@ -53,22 +61,65 @@ public class WorldsListPane extends JPanel implements iSubPane {
         setIgnoreRepaint(true);
 
         recalculate(canvas);
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setLayout(new BorderLayout(1, 1));
 
-        reloadWorlds(canvas);
+        centerList = new SubPane(null) {{
+            setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 1, 1));
+        }};
+
+        centerScroll = new JScrollPane(centerList) {
+            {
+                setBackground(Color.ORANGE);
+                setBorder(null);
+
+                getVerticalScrollBar().setUnitIncrement(16);
+                setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
+
+                JViewport vp = getViewport();
+                vp.setOpaque(false);
+                vp.setBackground(Color.BLUE);
+                vp.setBorder(null);
+
+                vp.setFocusable(false);
+                vp.setAutoscrolls(true);
+            }
+
+            @Override
+            public void paint(Graphics g) {
+                super.paintChildren(g);
+            }
+        };
+
+        add(new SubPane("Локальные миры:", Color.BLACK) {{
+            add(centerScroll);
+        }}, BorderLayout.CENTER);
+
+        if (isVisible()) {
+            reloadWorlds(canvas);
+        }
     }
 
     private void reloadWorlds(FoxCanvas canvas) {
-        WorldsListPane.this.removeAll();
+        centerList.removeAll();
+        centerList.add(Box.createVerticalStrut(6));
 
-        for (WorldDTO world : gameController.findAllWorldsByNetworkAvailable(false)) {
-            add(new SubPane("Мир: " + world.getTitle()) {{
-                setLayout(new BorderLayout(1, 1));
+        List<WorldDTO> worlds = gameController.findAllWorldsByNetworkAvailable(false);
+        for (WorldDTO world : worlds) {
+            centerList.add(new SubPane("Мир: " + world.getTitle()) {{
+                setWorld(world);
+                setPreferredSize(new Dimension(
+                        Constants.getUserConfig().isFullscreen()
+                                ? (worlds.size() > 5 ? centerScroll.getWidth() - 8 : centerScroll.getWidth() - 4)
+                                : (worlds.size() > 5 ? centerScroll.getWidth() - 24 : centerScroll.getWidth() - 8),
+                        128));
+
                 add(new SubPane(null) {{
+                    setOpaque(false);
+                    setBackground(Color.YELLOW);
+                    setFocusable(false);
                     setDoubleBuffered(false);
                     setIgnoreRepaint(true);
-                    setLayout(new BorderLayout(1, 1));
-                    setBorder(null);
+                    setBorder(new EmptyBorder(-3, -3, -3, -3));
 
                     add(new JPanel() {
                         private transient BufferedImage wImage = null;
@@ -77,7 +128,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                         protected void paintComponent(Graphics g) {
                             if (wImage == null) {
                                 g.setColor(Color.DARK_GRAY);
-                                g.fillRoundRect(0, 0, getWidth(), getHeight(), leftIconDim / 2, leftIconDim / 2);
+                                g.fillRoundRect(0, 0, getWidth(), getHeight(), maxImageDim / 2, maxImageDim / 2);
                                 g.setColor(Color.GRAY);
                                 g.setFont(Constants.DEBUG_FONT);
                                 g.drawString("NO IMAGE",
@@ -92,9 +143,9 @@ public class WorldsListPane extends JPanel implements iSubPane {
                         {
                             setOpaque(false);
                             setIgnoreRepaint(true);
-                            setMinimumSize(new Dimension(leftIconDim, leftIconDim));
-                            setPreferredSize(new Dimension(leftIconDim, leftIconDim));
-                            setMaximumSize(new Dimension(leftIconDim, leftIconDim));
+                            setMinimumSize(new Dimension(maxImageDim, maxImageDim));
+                            setPreferredSize(new Dimension(maxImageDim, maxImageDim));
+                            setMaximumSize(new Dimension(maxImageDim, maxImageDim));
 
                             try {
                                 wImage = ImageIO.read(new File(Constants.getWorldsImagesDir() + world.getUid() + Constants.getImageExtension()));
@@ -106,6 +157,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
                     add(new SubPane("Мир:") {{
                         setBorder(new EmptyBorder(-6, 3, 3, 3));
+                        setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 1, 1));
 
                         zlabel = new ZLabel(("<html><pre>"
                                 + "Уровень:<font color=#43F8C9><b>  %s</b></font>"
@@ -146,20 +198,22 @@ public class WorldsListPane extends JPanel implements iSubPane {
                             }
                             zlabel.setText(zlabel.getText().replace("</pre>", "%s</pre>".formatted(heroes)));
                         }
-                    }});
+                    }}, BorderLayout.CENTER);
 
                     add(new ZLabel("Создан: " + world.getCreateDate().format(Constants.DATE_FORMAT_3), null) {{
                         setFont(Constants.INFO_FONT);
                         setForeground(Color.GRAY);
                     }}, BorderLayout.SOUTH);
-                }}, BorderLayout.CENTER);
+                }}, BorderLayout.WEST);
 
-                add(new JPanel() {{
-                    setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+                add(new JPanel(new BorderLayout(1, 1)) {{
                     setOpaque(false);
-                    setBackground(new Color(0, 0, 0, 0));
-                    setFocusable(false);
+                    setBackground(Color.CYAN.darker());
                     setIgnoreRepaint(true);
+                    setDoubleBuffered(false);
+                    setMinimumSize(new Dimension(maxElementsDim, maxElementsDim));
+                    setPreferredSize(new Dimension(maxElementsDim, maxElementsDim));
+                    setMaximumSize(new Dimension(maxElementsDim, maxElementsDim));
                     add(new FButton() {
                         @Override
                         public void paintComponent(Graphics g) {
@@ -198,7 +252,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                 }
                             });
                         }
-                    });
+                    }, BorderLayout.WEST);
 
                     add(new FButton(" PLAY ") {{
                         setBackground(Color.BLUE.darker().darker().darker());
@@ -215,14 +269,12 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                 ((MenuCanvas) canvas).chooseOrCreateHeroForWorld(world.getUid());
                             }
                         });
-                    }});
+                    }}, BorderLayout.CENTER);
                 }}, BorderLayout.EAST);
             }});
-
-            add(Box.createVerticalStrut(6));
         }
 
-        add(Box.createVerticalStrut(canvas.getHeight()));
+        WorldsListPane.this.revalidate();
     }
 
     @Override
@@ -241,8 +293,10 @@ public class WorldsListPane extends JPanel implements iSubPane {
         if (super.isVisible() == isVisible) {
             return;
         }
-        reloadWorlds(canvas);
         super.setVisible(isVisible);
+        if (isVisible()) {
+            reloadWorlds(canvas);
+        }
     }
 
     @Override

@@ -1,11 +1,13 @@
 package game.freya.items;
 
 import game.freya.entities.logic.Buff;
+import game.freya.enums.other.MovingVector;
 import game.freya.items.prototypes.GameCharacter;
 
-import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.geom.Point2D;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class NotPlayedCharacter extends GameCharacter {
@@ -40,7 +42,7 @@ public class NotPlayedCharacter extends GameCharacter {
     }
 
     @Override
-    public UUID getCreator() {
+    public UUID getAuthor() {
         return null;
     }
 
@@ -50,12 +52,7 @@ public class NotPlayedCharacter extends GameCharacter {
     }
 
     @Override
-    public Point2D.Double getLocation() {
-        return null;
-    }
-
-    @Override
-    public Dimension getSize() {
+    public Point2D.Double getCenterPoint() {
         return null;
     }
 
@@ -77,6 +74,21 @@ public class NotPlayedCharacter extends GameCharacter {
     @Override
     public void draw(Graphics2D g2D) {
 
+    }
+
+    @Override
+    public boolean isInSector(Rectangle sector) {
+        return false;
+    }
+
+    @Override
+    public void setLocation(double x, double y) {
+
+    }
+
+    @Override
+    public Point2D.Double getLocation() {
+        return null;
     }
 
     @Override
@@ -102,5 +114,15 @@ public class NotPlayedCharacter extends GameCharacter {
     @Override
     public short getLevel() {
         return 0;
+    }
+
+    @Override
+    public LocalDateTime getCreateDate() {
+        return null;
+    }
+
+    @Override
+    public void setVector(MovingVector movingVector) {
+
     }
 }

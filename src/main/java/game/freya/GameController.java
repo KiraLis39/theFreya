@@ -173,9 +173,17 @@ public class GameController extends GameControllerBase {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("player", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/mock.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_01.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("mock_01", ImageIO.read(netResource));
+            }
+            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_02.png")) {
+                Objects.requireNonNull(netResource);
+                Constants.CACHE.addIfAbsent("mock_02", ImageIO.read(netResource));
+            }
+            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_03.png")) {
+                Objects.requireNonNull(netResource);
+                Constants.CACHE.addIfAbsent("mock_03", ImageIO.read(netResource));
             }
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
@@ -374,7 +382,7 @@ public class GameController extends GameControllerBase {
                         moveHeroIfAvailable(canvas); // узкое место!
                     }
                     hero.draw(v2D);
-                } else if (canvas.getViewPort().getBounds().contains(hero.getPosition())) {
+                } else if (canvas.getViewPort().getBounds().contains(hero.getLocation())) {
                     // если чужой герой в пределах видимости:
                     hero.draw(v2D);
                 }
@@ -393,7 +401,7 @@ public class GameController extends GameControllerBase {
     }
 
     public boolean isHeroActive(HeroDTO hero, Rectangle visibleRect) {
-        return visibleRect.contains(hero.getPosition()) && hero.isOnline();
+        return visibleRect.contains(hero.getLocation()) && hero.isOnline();
     }
 
     private void moveHeroIfAvailable(GameCanvas canvas) {
@@ -421,16 +429,26 @@ public class GameController extends GameControllerBase {
             }
 
             // перемещаем камеру к ГГ:
-            if (!visibleRect.contains(playedHeroesService.getCurrentHero().getPosition())) {
+            if (!visibleRect.contains(playedHeroesService.getCurrentHero().getLocation())) {
                 canvas.moveViewToPlayer(0, 0);
             }
 
             // set hero vector:
-            playedHeroesService.setCurrentHeroVector(hasCollision(vector) ? vector.reverse(vector) : vector);
+            playedHeroesService.setCurrentHeroVector(vector);
 
             // move hero:
             for (int i = 0; i < playedHeroesService.getCurrentHero().getSpeed(); i++) {
+                if (hasCollision(vector)) {
+                    break;
+                }
                 playedHeroesService.getCurrentHero().move();
+            }
+
+            // push hero back:
+            if (hasCollision(vector)) {
+                playedHeroesService.setCurrentHeroVector(vector.reverse(vector));
+                playedHeroesService.getCurrentHero().move();
+                playedHeroesService.setCurrentHeroVector(vector);
             }
 
             // send moving data to Server:
@@ -501,6 +519,10 @@ public class GameController extends GameControllerBase {
             // проверка коллизий с объектами:
             for (Environment env : worldService.getCurrentWorld().getEnvironments()) {
                 if (env.hasCollision() && env.getCollider().intersects(playedHeroesService.getCurrentHeroCollider())) {
+                    return true;
+                }
+                if (!new Rectangle(getCurrentWorldMap().getWidth(), getCurrentWorldMap().getHeight())
+                        .contains(playedHeroesService.getCurrentHeroCenterPoint())) {
                     return true;
                 }
             }
@@ -950,7 +972,7 @@ public class GameController extends GameControllerBase {
 
         if (data.dataEvent() == NetDataEvent.HERO_MOVING) {
             EventHeroMoving event = (EventHeroMoving) data.content();
-            aim.setPosition(new Point2D.Double(event.positionX(), event.positionY()));
+            aim.setLocation(event.positionX(), event.positionY());
             aim.setVector(event.vector());
         }
 

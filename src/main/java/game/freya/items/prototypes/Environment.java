@@ -1,17 +1,22 @@
 package game.freya.items.prototypes;
 
 import game.freya.interfaces.iEnvironment;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.io.Serial;
+import java.util.Random;
 import java.util.UUID;
 
 public abstract class Environment implements iEnvironment {
     @Serial
-    private static final long serialVersionUID = 1;
+    private static final long serialVersionUID = 2;
+
+    @Getter
+    private static final Random r = new Random();
 
     @Setter
     private UUID uuid;
@@ -43,7 +48,7 @@ public abstract class Environment implements iEnvironment {
     }
 
     @Override
-    public UUID getCreator() {
+    public UUID getAuthor() {
         return this.author;
     }
 
@@ -53,13 +58,25 @@ public abstract class Environment implements iEnvironment {
     }
 
     @Override
+    public Dimension getSize() {
+        return this.size;
+    }
+
+    @Override
     public Point2D.Double getLocation() {
         return this.location;
     }
 
+    protected void setLocation(Point2D.Double location) {
+        this.location = location;
+        if (this.size != null) {
+            resetCollider();
+        }
+    }
+
     @Override
-    public Dimension getSize() {
-        return this.size;
+    public Point2D.Double getCenterPoint() {
+        return new Point2D.Double(getLocation().x + getSize().width / 2d, getLocation().y + getSize().height / 2d);
     }
 
     @Override
@@ -85,6 +102,11 @@ public abstract class Environment implements iEnvironment {
         return collider;
     }
 
+    @Override
+    public boolean isInSector(Rectangle sector) {
+        return sector.contains(getCenterPoint());
+    }
+
     protected void setSize(Dimension size) {
         this.size = size;
         if (this.location != null) {
@@ -92,26 +114,9 @@ public abstract class Environment implements iEnvironment {
         }
     }
 
-    protected void setLocation(Point2D.Double location) {
-        this.location = location;
-        if (this.size != null) {
-            resetCollider();
-        }
-    }
-
-    @Override
-    public Point2D.Double getCenterPoint() {
-        return new Point2D.Double(getLocation().x + getSize().width / 2d, getLocation().y + getSize().height / 2d);
-    }
-
-    @Override
-    public boolean isInSector(Rectangle sector) {
-        return sector.contains(getCenterPoint());
-    }
-
     public abstract void init();
 
     private void resetCollider() {
-        this.collider = new Rectangle((int) location.x, (int) location.y, size.width, size.height);
+        this.collider = new Rectangle((int) location.x + 16, (int) location.y + 16, size.width - 32, size.height - 32);
     }
 }

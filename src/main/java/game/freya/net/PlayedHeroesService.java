@@ -63,7 +63,7 @@ public class PlayedHeroesService {
         heroDTO.setOnline(true);
 
         if (heroes.containsKey(heroDTO.getHeroUid())) {
-            log.debug("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getOwnerUid());
+            log.debug("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getAuthor());
             heroes.replace(heroDTO.getHeroUid(), heroDTO);
         } else {
             log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getHeroName());
@@ -97,7 +97,7 @@ public class PlayedHeroesService {
 
     public int getCurrentHeroCurOil() {
         checkCHE();
-        return heroes.get(currentHeroUid).getCurOil();
+        return heroes.get(currentHeroUid).getOil();
     }
 
     public void offlineSaveAndRemoveCurrentHero(Duration gameDuration) {
@@ -111,7 +111,7 @@ public class PlayedHeroesService {
     }
 
     public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID playerUid) {
-        HeroDTO otherHero = heroes.values().stream().filter(h -> h.getOwnerUid().equals(playerUid)).findFirst().orElse(null);
+        HeroDTO otherHero = heroes.values().stream().filter(h -> h.getAuthor().equals(playerUid)).findFirst().orElse(null);
         if (otherHero != null) {
             try {
                 heroService.saveHero(otherHero);
@@ -151,7 +151,7 @@ public class PlayedHeroesService {
 
     public Point2D.Double getCurrentHeroPosition() {
         checkCHE();
-        return heroes.get(currentHeroUid).getPosition();
+        return heroes.get(currentHeroUid).getLocation();
     }
 
     public long getCurrentHeroInGameTime() {
@@ -189,7 +189,7 @@ public class PlayedHeroesService {
     }
 
     public int getCurrentHeroCurHealth() {
-        return heroes.get(currentHeroUid).getCurHealth();
+        return heroes.get(currentHeroUid).getHealth();
     }
 
     public HurtLevel getCurrentHeroHurtLevel() {
@@ -259,11 +259,16 @@ public class PlayedHeroesService {
     }
 
     public HeroDTO getHeroByOwnerUid(UUID ouid) {
-        return heroes.values().stream().filter(h -> h.getOwnerUid().equals(ouid)).findAny().orElse(null);
+        return heroes.values().stream().filter(h -> h.getAuthor().equals(ouid)).findAny().orElse(null);
     }
 
     public Rectangle getCurrentHeroCollider() {
         checkCHE();
         return heroes.get(currentHeroUid).getCollider();
+    }
+
+    public Point2D getCurrentHeroCenterPoint() {
+        checkCHE();
+        return heroes.get(currentHeroUid).getCenterPoint();
     }
 }

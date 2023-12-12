@@ -73,8 +73,13 @@ public abstract class Storage implements iGameObject, iStorable {
     }
 
     @Override
-    public UUID getCreator() {
+    public UUID getAuthor() {
         return author;
+    }
+
+    @Override
+    public Dimension getSize() {
+        return size;
     }
 
     @Override
@@ -83,8 +88,8 @@ public abstract class Storage implements iGameObject, iStorable {
     }
 
     @Override
-    public Dimension getSize() {
-        return size;
+    public Point2D.Double getCenterPoint() {
+        return null;
     }
 
     @Override
@@ -98,6 +103,11 @@ public abstract class Storage implements iGameObject, iStorable {
             resetCollider();
         }
         return collider;
+    }
+
+    @Override
+    public boolean isInSector(Rectangle sector) {
+        return false;
     }
 
     private void resetCollider() {

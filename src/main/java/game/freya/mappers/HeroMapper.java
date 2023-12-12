@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.awt.geom.Point2D;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -46,17 +45,17 @@ public final class HeroMapper {
                 .type(dto.getHeroType())
                 .power(dto.getPower())
                 .experience(dto.getExperience())
-                .curHealth(dto.getCurHealth())
+                .curHealth(dto.getHealth())
                 .maxHealth(dto.getMaxHealth())
-                .curOil(dto.getCurOil())
+                .curOil(dto.getOil())
                 .maxOil(dto.getMaxOil())
                 .speed(dto.getSpeed())
-                .positionX(dto.getPosition().x)
-                .positionY(dto.getPosition().y)
+                .positionX(dto.getLocation().x)
+                .positionY(dto.getLocation().y)
                 .hurtLevel(dto.getHurtLevel())
                 .createDate(dto.getCreateDate())
                 .worldUid(dto.getWorldUid())
-                .ownerUid(dto.getOwnerUid())
+                .ownerUid(dto.getAuthor())
                 .inGameTime(dto.getInGameTime())
                 .lastPlayDate(dto.getLastPlayDate())
                 .build();
@@ -78,27 +77,13 @@ public final class HeroMapper {
         }
 
         HeroDTO result = HeroDTO.builder()
-                .heroUid(entity.getUid())
-                .heroName(entity.getHeroName())
                 .baseColor(entity.getBaseColor())
                 .secondColor(entity.getSecondColor())
                 .corpusType(entity.getCorpusType())
                 .periferiaType(entity.getPeriferiaType())
                 .periferiaSize(entity.getPeriferiaSize())
-                .level(entity.getLevel())
                 .heroType(entity.getType())
-                .power(entity.getPower())
-                .experience(entity.getExperience())
-                .curHealth(entity.getCurHealth())
-                .maxHealth(entity.getMaxHealth())
-                .curOil(entity.getCurOil())
-                .maxOil(entity.getMaxOil())
-                .speed(entity.getSpeed())
-                .position(new Point2D.Double(entity.getPositionX(), entity.getPositionY()))
-                .hurtLevel(entity.getHurtLevel())
-                .createDate(entity.getCreateDate())
                 .worldUid(entity.getWorldUid())
-                .ownerUid(entity.getOwnerUid())
                 .inGameTime(entity.getInGameTime())
                 .lastPlayDate(entity.getLastPlayDate())
                 .build();
@@ -113,6 +98,20 @@ public final class HeroMapper {
 //            log.error("Err in hero mapper: {}", ExceptionUtils.getFullExceptionMessage(e));
 //            throw new GlobalServiceException(ErrorMessages.JSON_PARSE_ERR);
 //        }
+
+        result.setHeroUid(entity.getUid());
+        result.setHeroName(entity.getHeroName());
+        result.setLevel(entity.getLevel());
+        result.setPower(entity.getPower());
+        result.setExperience(entity.getExperience());
+        result.setHealth(entity.getCurHealth());
+        result.setMaxHealth(entity.getMaxHealth());
+        result.setOil(entity.getCurOil());
+        result.setMaxOil(entity.getMaxOil());
+        result.setSpeed(entity.getSpeed());
+        result.setLocation(entity.getPositionX(), entity.getPositionY());
+        result.setCreateDate(entity.getCreateDate());
+        result.setAuthor(entity.getOwnerUid());
 
         return result;
     }
@@ -150,14 +149,14 @@ public final class HeroMapper {
                         .periferiaSize(hero.getPeriferiaSize())
 
                         .level(hero.getLevel())
-                        .hp(hero.getCurHealth())
+                        .hp(hero.getHealth())
                         .maxHp(hero.getMaxHealth())
-                        .oil(hero.getCurOil())
+                        .oil(hero.getOil())
                         .maxOil(hero.getMaxOil())
                         .speed(hero.getSpeed())
                         .vector(hero.getVector())
-                        .positionX(hero.getPosition().x)
-                        .positionY(hero.getPosition().y)
+                        .positionX(hero.getLocation().x)
+                        .positionY(hero.getLocation().y)
 
                         .worldUid(hero.getWorldUid())
 
@@ -178,11 +177,7 @@ public final class HeroMapper {
         }
 
         EventHeroRegister heroRegister = (EventHeroRegister) cli.content();
-        return HeroDTO.builder()
-                .ownerUid(heroRegister.playerUid())
-
-                .heroUid(heroRegister.heroUid())
-                .heroName(heroRegister.heroName())
+        HeroDTO result = HeroDTO.builder()
                 .heroType(heroRegister.heroType())
 
                 .baseColor(heroRegister.baseColor())
@@ -190,16 +185,6 @@ public final class HeroMapper {
                 .corpusType(heroRegister.corpusType())
                 .periferiaType(heroRegister.periferiaType())
                 .periferiaSize(heroRegister.periferiaSize())
-
-                .speed(heroRegister.speed())
-                .position(new Point2D.Double(heroRegister.positionX(), heroRegister.positionY()))
-                .curHealth(heroRegister.hp())
-                .maxHealth(heroRegister.maxHp())
-                .curOil(heroRegister.oil())
-                .maxOil(heroRegister.maxOil())
-                .worldUid(heroRegister.worldUid())
-                .ownerUid(heroRegister.playerUid())
-                .level(heroRegister.level())
 
                 .worldUid(heroRegister.worldUid())
 
@@ -226,5 +211,18 @@ public final class HeroMapper {
 //            } catch (Exception e) {
 //                log.error("Проблема при парсинге бафов Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
 //            }
+
+        result.setAuthor(heroRegister.playerUid());
+        result.setHeroUid(heroRegister.heroUid());
+        result.setHeroName(heroRegister.heroName());
+        result.setSpeed(heroRegister.speed());
+        result.setLocation(heroRegister.positionX(), heroRegister.positionY());
+        result.setHealth(heroRegister.hp());
+        result.setMaxHealth(heroRegister.maxHp());
+        result.setOil(heroRegister.oil());
+        result.setMaxOil(heroRegister.maxOil());
+        result.setLevel(heroRegister.level());
+
+        return result;
     }
 }

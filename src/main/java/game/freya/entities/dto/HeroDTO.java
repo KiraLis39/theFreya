@@ -8,7 +8,6 @@ import game.freya.enums.other.HeroPeriferiaType;
 import game.freya.enums.other.HeroType;
 import game.freya.enums.other.HurtLevel;
 import game.freya.enums.other.MovingVector;
-import game.freya.interfaces.iEntity;
 import game.freya.items.PlayedCharacter;
 import game.freya.items.containers.Backpack;
 import game.freya.items.prototypes.Storage;
@@ -25,12 +24,10 @@ import javax.persistence.Transient;
 import javax.swing.Icon;
 import javax.validation.constraints.NotNull;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.RGBImageFilter;
@@ -39,10 +36,8 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
-import static game.freya.config.Constants.MAP_CELL_DIM;
 import static game.freya.config.Constants.ONE_TURN_PI;
 
 @Slf4j
@@ -53,14 +48,7 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 public class HeroDTO extends PlayedCharacter {
     @NotNull
     @Builder.Default
-    private final List<Buff> buffs = new ArrayList<>(9);
-
-    @NotNull
-    @Setter
-    private UUID heroUid;
-
-    @NotNull
-    private String heroName;
+    private transient List<Buff> buffs = new ArrayList<>(9);
 
     @Setter
     private Color baseColor;
@@ -83,50 +71,10 @@ public class HeroDTO extends PlayedCharacter {
     private short periferiaSize = 50;
 
     @Builder.Default
-    private short level = 1;
-
-    @Builder.Default
     private HeroType heroType = HeroType.VOID;
-
-    @Builder.Default
-    private float power = 1.0f;
-
-    @Builder.Default
-    private long experience = 0;
-
-    @Builder.Default
-    private int curHealth = 100;
-
-    @Builder.Default
-    private int maxHealth = 100;
-
-    @Builder.Default
-    private int curOil = 100;
-
-    @Builder.Default
-    private int maxOil = 100;
-
-    @Builder.Default
-    private byte speed = 6;
-
-    @Builder.Default
-    private Point2D.Double position = new Point2D.Double(384d, 384d);
-
-    @Builder.Default
-    private Dimension size = new Dimension(MAP_CELL_DIM, MAP_CELL_DIM);
-
-    @Builder.Default
-    private MovingVector vector = MovingVector.UP;
 
     @Setter
     private UUID worldUid;
-
-    @Setter
-    private UUID ownerUid;
-
-    @Getter
-    @Builder.Default
-    private LocalDateTime createDate = LocalDateTime.now();
 
     @Getter
     @Setter
@@ -140,78 +88,20 @@ public class HeroDTO extends PlayedCharacter {
     private long inGameTime = 0;
 
     @Builder.Default
-    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
-
-    @Builder.Default
     private boolean isOnline = false;
-
-    @Builder.Default
-    private boolean isVisible = true;
 
     @Transient
     @JsonIgnore
     private transient Image heroViewImage;
 
-    private void recheckHurtLevel() {
-        if (this.curHealth <= 0) {
-            this.hurtLevel = HurtLevel.DEAD;
-            decreaseExp(getExperience() - getExperience() * 0.1f); // -10% exp by death
-        } else if (this.curHealth <= maxHealth * 0.3f) {
-            this.hurtLevel = HurtLevel.HARD_HURT;
-        } else if (this.curHealth <= maxHealth * 0.6f) {
-            this.hurtLevel = HurtLevel.MED_HURT;
-        } else if (this.curHealth <= maxHealth * 0.9f) {
-            this.hurtLevel = HurtLevel.LIGHT_HURT;
-        } else {
-            this.hurtLevel = HurtLevel.HEALTHFUL;
-        }
-    }
-
-    @Override
-    public void heal(float healPoints) {
-        if (isDead()) {
-            log.warn("Can`t heal the dead corps of player {}!", getHeroName());
-            return;
-        }
-        this.curHealth += healPoints;
-        if (this.curHealth > maxHealth) {
-            this.curHealth = maxHealth;
-        }
-        recheckHurtLevel();
-    }
-
-    @Override
-    public void hurt(float hurtPoints) {
-        this.curHealth -= hurtPoints;
-        if (this.curHealth < 0) {
-            this.curHealth = 0;
-        }
-        recheckHurtLevel();
-    }
-
-    @Override
-    public boolean isDead() {
-        return this.hurtLevel.equals(HurtLevel.DEAD);
-    }
-
-    @Override
-    public UUID getUid() {
-        return this.heroUid;
-    }
-
-    @Override
-    public String getName() {
-        return this.heroName;
-    }
-
-    @Override
-    public Dimension getSize() {
-        return this.size;
-    }
-
-    @Override
-    public boolean isVisible() {
-        return this.isVisible;
+    @Builder
+    public HeroDTO(@NotNull UUID heroUid, @NotNull String heroName, short level, int curHealth, int curOil,
+                   int maxHealth, int maxOil, float power, HurtLevel hurtLevel, byte speed, MovingVector vector,
+                   long experience, UUID ownerUid, String imageNameInCache, LocalDateTime createDate, boolean isVisible
+    ) {
+        super(heroUid, heroName, level, curHealth, curOil, maxHealth, maxOil, power, hurtLevel, speed, vector,
+                experience, ownerUid, imageNameInCache, createDate, isVisible);
+        buffs = new ArrayList<>(9);
     }
 
     @Override
@@ -222,7 +112,7 @@ public class HeroDTO extends PlayedCharacter {
     @Override
     public void draw(Graphics2D g2D) {
         if (getCollider() == null || getShape() == null) {
-            resetCollider(position, size);
+            resetCollider(getLocation());
         }
 
         if (heroViewImage == null) {
@@ -230,7 +120,7 @@ public class HeroDTO extends PlayedCharacter {
         }
 
         AffineTransform tr = g2D.getTransform();
-        g2D.rotate(ONE_TURN_PI * vector.ordinal(),
+        g2D.rotate(ONE_TURN_PI * getVector().ordinal(),
                 getShape().x + getShape().width / 2d,
                 getShape().y + getShape().height / 2d);
 
@@ -245,22 +135,10 @@ public class HeroDTO extends PlayedCharacter {
 
             g2D.setColor(Color.RED);
             g2D.draw(getCollider());
-        }
-    }
 
-    @Override
-    public void increaseExp(float increaseValue) {
-        if (isDead()) {
-            return;
+            g2D.setColor(Color.YELLOW);
+            g2D.fillOval((int) (getCenterPoint().x - 3), (int) (getCenterPoint().y - 3), 6, 6);
         }
-        this.experience += increaseValue;
-        recheckPlayerLevel();
-    }
-
-    @Override
-    public void decreaseExp(float decreaseValue) {
-        this.experience -= decreaseValue;
-        recheckPlayerLevel();
     }
 
     @Override
@@ -290,15 +168,6 @@ public class HeroDTO extends PlayedCharacter {
         }
     }
 
-    @Override
-    public void attack(iEntity entity) {
-        if (!entity.equals(this)) {
-            entity.hurt(power);
-        } else {
-            log.warn("Player {} can`t attack itself!", getHeroName());
-        }
-    }
-
     private void recolorHeroView() {
         int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
                 baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
@@ -311,21 +180,9 @@ public class HeroDTO extends PlayedCharacter {
                 }));
     }
 
-    public void setLevel(short level) {
-        this.level = level;
-    }
-
-    private void recheckPlayerLevel() {
-        this.level = (short) (this.experience / 1000);
-    }
-
-    public void setPower(float power) {
-        this.power = power;
-    }
-
     private void move(MovingVector vector) {
-        this.position.setLocation(position.x + vector.getX(), position.y + vector.getY());
-        resetCollider(position, size);
+        setLocation(getLocation().x + vector.getX(), getLocation().y + vector.getY());
+        resetCollider(getLocation());
     }
 
     public Icon getIcon() {
@@ -334,67 +191,18 @@ public class HeroDTO extends PlayedCharacter {
     }
 
     public void move() {
-        move(vector);
-    }
-
-    public void setVector(MovingVector movingVector) {
-        this.vector = movingVector;
-    }
-
-    public void setPosition(Point2D.Double position) {
-        this.position = position;
+        move(getVector());
     }
 
     public void setOnline(boolean b) {
         this.isOnline = b;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(getHeroName(), getWorldUid(), getOwnerUid());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        HeroDTO heroDTO = (HeroDTO) o;
-        return Objects.equals(getHeroName(), heroDTO.getHeroName())
-                && Objects.equals(getWorldUid(), heroDTO.getWorldUid()) && Objects.equals(getOwnerUid(), heroDTO.getOwnerUid());
-    }
-
-    @Override
-    public String toString() {
-        return "HeroDTO{"
-                + "heroUid=" + heroUid
-                + ", heroName='" + heroName + '\''
-                + ", level=" + level
-                + ", experience=" + experience
-                + ", maxHealth=" + maxHealth
-                + ", speed=" + speed
-                + ", position=" + position
-                + ", hurtLevel=" + hurtLevel
-                + '}';
-    }
-
     public Storage getInventory() {
         if (this.inventory == null) {
             this.inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"),
-                    this.heroUid, this.position, this.size, "hero_backpack");
+                    getHeroUid(), getLocation(), getSize(), "hero_backpack");
         }
         return this.inventory;
-    }
-
-    public void setInventory(Backpack inventory) {
-        this.inventory = inventory;
-    }
-
-    @Override
-    public Point2D.Double getLocation() {
-        return this.position;
     }
 }

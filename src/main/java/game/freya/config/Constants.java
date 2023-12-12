@@ -7,6 +7,7 @@ import fox.FoxRender;
 import fox.VideoMonitor;
 import fox.components.FOptionPane;
 import fox.images.FoxCursor;
+import fox.images.FoxSpritesCombiner;
 import fox.player.FoxPlayer;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
@@ -70,7 +71,7 @@ public final class Constants {
 
     public static final InputAction INPUT_ACTION = new InputAction();
 
-    // public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
+    public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
 
     // public static final FoxExperience EXP = new FoxExperience();
 

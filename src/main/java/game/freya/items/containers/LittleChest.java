@@ -26,17 +26,17 @@ public class LittleChest extends Storage {
     }
 
     @Override
-    public UUID getCreator() {
-        return null;
-    }
-
-    @Override
-    public Point2D.Double getLocation() {
+    public UUID getAuthor() {
         return null;
     }
 
     @Override
     public Dimension getSize() {
+        return null;
+    }
+
+    @Override
+    public Point2D.Double getLocation() {
         return null;
     }
 

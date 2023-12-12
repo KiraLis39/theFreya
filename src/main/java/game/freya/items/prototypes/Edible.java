@@ -45,7 +45,7 @@ public abstract class Edible implements iGameObject, iEdible {
     }
 
     @Override
-    public UUID getCreator() {
+    public UUID getAuthor() {
         return null;
     }
 
@@ -55,12 +55,12 @@ public abstract class Edible implements iGameObject, iEdible {
     }
 
     @Override
-    public Point2D.Double getLocation() {
+    public Dimension getSize() {
         return null;
     }
 
     @Override
-    public Dimension getSize() {
+    public Point2D.Double getLocation() {
         return null;
     }
 

@@ -13,13 +13,15 @@ import java.util.UUID;
 public interface iGameObject extends Serializable {
     UUID getUid();
 
-    UUID getCreator(); // UUID создателя данного объекта
+    UUID getAuthor();
 
     String getName();
 
+    Dimension getSize();
+
     Point2D.Double getLocation();
 
-    Dimension getSize();
+    Point2D.Double getCenterPoint();
 
     boolean isVisible();
 
@@ -30,4 +32,6 @@ public interface iGameObject extends Serializable {
     void draw(Graphics2D g2D);
 
     Rectangle getCollider();
+
+    boolean isInSector(Rectangle sector);
 }
