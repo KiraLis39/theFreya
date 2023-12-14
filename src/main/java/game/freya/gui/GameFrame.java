@@ -23,15 +23,22 @@ import java.awt.Dimension;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
+import static org.lwjgl.glfw.GLFW.GLFW_CENTER_CURSOR;
+import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_NO_ERROR;
 import static org.lwjgl.glfw.GLFW.GLFW_DECORATED;
+import static org.lwjgl.glfw.GLFW.GLFW_DONT_CARE;
+import static org.lwjgl.glfw.GLFW.GLFW_DOUBLEBUFFER;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_FOCUSED;
+import static org.lwjgl.glfw.GLFW.GLFW_FOCUS_ON_SHOW;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F11;
 import static org.lwjgl.glfw.GLFW.GLFW_MAXIMIZED;
+import static org.lwjgl.glfw.GLFW.GLFW_REFRESH_RATE;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
+import static org.lwjgl.glfw.GLFW.GLFW_SAMPLES;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
@@ -119,10 +126,17 @@ public class GameFrame {
             glfwFreeCallbacks(window);
         }
 
-        // Configure GLFW
+        // Configure GLFW Hints:
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
+        glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_TRUE); // курсор по центру вновь созданных полноэкранных окон
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
+        glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE); // будет ли окну предоставлен фокус ввода при вызове glfwShowWindow
+        glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_FALSE); // Если включен, ситуации, которые могли бы вызвать ошибки, вызывают неопределенное поведение
+
+        glfwWindowHint(GLFW_SAMPLES, 0); // количество выборок, которые будут использоваться для мультисэмплинга
+        glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE); // должен ли кадровый буфер иметь двойную буферизацию
+        glfwWindowHint(GLFW_REFRESH_RATE , GLFW_DONT_CARE); // определяет желаемую частоту обновления для полноэкранных окон
 
         // Setup an error callback. The default implementation will print the error message in System.err.
         try (GLFWErrorCallback callback = GLFWErrorCallback.createPrint(System.err)) {
@@ -164,7 +178,20 @@ public class GameFrame {
         glfwSetWindowCloseCallback(window, new GLFWWindowCloseCallback() {
             @Override
             public void invoke(long l) {
-                isGlWindowBreaked = true;
+                if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
+                        "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+                ) {
+                    isGlWindowBreaked = true;
+                    if (!glfwWindowShouldClose(window)) {
+                        glfwSetWindowShouldClose(window, true); // Закрывает окно
+
+                        // Free the window callbacks and destroy the window
+                        glfwFreeCallbacks(window);
+                        glfwDestroyWindow(window);
+                    }
+                } else {
+                    glfwSetWindowShouldClose(window, false); // Не закрывает окно :)
+                }
             }
         });
 
@@ -301,46 +328,6 @@ public class GameFrame {
                 loadScreen(currentScreen);
             }
         });
-
-//        final String frameName = "mainFrame";
-//
-//        Constants.INPUT_ACTION.add(frameName, frame.getRootPane());
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFullscreen",
-//                Constants.getUserConfig().getKeyFullscreen(), 0, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        log.debug("Try to switch the fullscreen mode...");
-//                        Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-//                        Constants.checkFullscreenMode(frame, windowSize);
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchPause",
-//                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        log.debug("Try to switch the pause mode...");
-//                        Constants.setPaused(!Constants.isPaused());
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchDebug",
-//                Constants.getUserConfig().getKeyDebug(), 0, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        log.debug("Try to switch the debug mode...");
-//                        Constants.setDebugInfoVisible(!Constants.isDebugInfoVisible());
-//                    }
-//                });
-//
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFps",
-//                Constants.getUserConfig().getKeyFps(), 0, new AbstractAction() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        log.debug("Try to switch the fps mode...");
-//                        Constants.setFpsInfoVisible(!Constants.isFpsInfoVisible());
-//                    }
-//                });
     }
 
     private void onGameRestore() {
