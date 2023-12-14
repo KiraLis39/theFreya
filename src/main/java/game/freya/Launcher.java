@@ -24,15 +24,6 @@ import java.util.TimeZone;
 @EnableConfigurationProperties({GameConfig.class})
 public class Launcher {
     public static void main(String[] args) {
-        SpringApplication app = new SpringApplication(Launcher.class);
-        app.setHeadless(false);
-
-        globalPreInitialization();
-
-        logApplicationStartup(app.run(args).getEnvironment());
-
-        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
-
         log.info("Setting up the system properties...");
         System.setProperty("sun.java2d.opengl", "True");
 
@@ -48,6 +39,15 @@ public class Launcher {
         // System.setProperty("sun.java2d.noddraw", "true");
 
         // System.setProperty("sun.awt.noerasebackground", "true");
+
+        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
+
+        globalPreInitialization();
+
+        SpringApplication app = new SpringApplication(Launcher.class);
+        app.setHeadless(false);
+
+        logApplicationStartup(app.run(args).getEnvironment());
     }
 
     // устанавливаем всё, что должно быть готово к запуску:

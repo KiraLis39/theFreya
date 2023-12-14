@@ -109,9 +109,6 @@ spring:
     # database-platform: org.hibernate.community.dialect.SQLiteDialect
     database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
 
-game:
-  dataBaseRootDir: ${DB_ROOT_DIRECTORY:./db/}
-
 springdoc:
   api-docs:
     enabled: true
