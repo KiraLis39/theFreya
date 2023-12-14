@@ -214,7 +214,9 @@ public final class UIHandler {
         downCenterPaneRect = new Rectangle((int) (canvasRect.getWidth() * 0.36f), (int) (canvasRect.getHeight() * 0.925f),
                 (int) (canvasRect.getWidth() * 0.28f), (int) (canvasRect.getHeight() * 0.075f));
 
-        canvas.getChat().setLocation(new Point(canvas.getWidth() - canvas.getWidth() / 5 - 6, 72));
-        canvas.getChat().setSize(new Dimension(canvas.getWidth() / 5, canvas.getHeight() / 4));
+        if (canvas.getChat() != null) {
+            canvas.getChat().setLocation(new Point(canvas.getWidth() - canvas.getWidth() / 5 - 6, 72));
+            canvas.getChat().setSize(new Dimension(canvas.getWidth() / 5, canvas.getHeight() / 4));
+        }
     }
 }

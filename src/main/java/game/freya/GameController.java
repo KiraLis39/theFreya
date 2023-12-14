@@ -119,9 +119,9 @@ public class GameController extends GameControllerBase {
         try {
             UIManager.setLookAndFeel(new NimbusLookAndFeel());
 
-//            UIManager.put("nimbusBase", new Color(...));
-//            UIManager.put("nimbusBlueGrey", new Color(...));
-//            UIManager.put("control", new Color(...));
+            // UIManager.put("nimbusBase", new Color(...));
+            // UIManager.put("nimbusBlueGrey", new Color(...));
+            // UIManager.put("control", new Color(...));
 
             // UIManager.put("Button.font", FONT);
             // UIManager.put("Label.font", FONT);
@@ -137,7 +137,7 @@ public class GameController extends GameControllerBase {
         }
 
         // показываем лого:
-        if (Constants.isShowStartLogo()) {
+        if (Constants.getUserConfig().isShowStartLogo()) {
             try (InputStream is = Constants.class.getResourceAsStream("/images/logo.png")) {
                 if (is != null) {
                     Constants.setLogo(new FoxLogo());
@@ -191,7 +191,7 @@ public class GameController extends GameControllerBase {
         }
 
         log.info("The game is started!");
-        this.gameFrame.showMainMenu(this);
+        this.gameFrame.appStart(this);
     }
 
     public void exitTheGame(WorldDTO world) {
@@ -254,12 +254,8 @@ public class GameController extends GameControllerBase {
     }
 
     public void loadScreen(ScreenType screenType) {
-        log.info("Try to load screen {}...", screenType);
-        switch (screenType) {
-            case MENU_SCREEN -> gameFrame.loadMenuScreen();
-            case GAME_SCREEN -> gameFrame.loadGameScreen();
-            default -> log.error("Unknown screen failed to load: {}", screenType);
-        }
+        log.info("Try to load screen {}...", screenType.name());
+        gameFrame.loadScreen(screenType);
     }
 
     public void startClientBroadcast() {

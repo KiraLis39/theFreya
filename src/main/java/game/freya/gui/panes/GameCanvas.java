@@ -112,6 +112,10 @@ public class GameCanvas extends FoxCanvas {
         getSecondThread().start();
     }
 
+    public static void render(long window) {
+
+    }
+
     private void setInAc() {
         final String frameName = "mainFrame";
 //        final String frameName = "game_canvas";

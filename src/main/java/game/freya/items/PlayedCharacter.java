@@ -23,7 +23,7 @@ public abstract class PlayedCharacter extends GameCharacter {
     @NotNull
     @Setter
     @Getter
-    public UUID heroUid;
+    private UUID heroUid;
 
     @Getter
     @NotNull

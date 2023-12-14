@@ -33,7 +33,7 @@ spring:
 
   application:
     name: Freya the Game
-    version: 0.1.5
+    version: 0.2.0
     author: KiraLis39
     company: Multiverse-39 Group, 2023
 

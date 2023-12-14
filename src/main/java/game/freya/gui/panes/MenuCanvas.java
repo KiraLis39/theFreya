@@ -75,6 +75,10 @@ public class MenuCanvas extends FoxCanvas {
         runSecondThread();
     }
 
+    public static void render(long window) {
+
+    }
+
     private void runSecondThread() {
         setSecondThread("Menu second thread", new Thread(() -> {
             if (!initialized) {

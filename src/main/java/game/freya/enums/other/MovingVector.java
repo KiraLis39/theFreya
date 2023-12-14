@@ -16,7 +16,7 @@ public enum MovingVector {
     LEFT_UP(-1, -1, 0),
     NONE(0, 0, 0);
 
-    final int y, x, z;
+    private final int y, x, z;
 
     MovingVector(int y, int x, int z) {
         this.y = y;

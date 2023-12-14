@@ -164,6 +164,11 @@ public final class UserConfig {
     @Builder.Default
     private boolean isPauseOnHidden = true;
 
+    @Getter
+    @Setter
+    @Builder.Default
+    private boolean isShowStartLogo = false;
+
     // graphics:
     @Getter
     @Setter
