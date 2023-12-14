@@ -6,20 +6,20 @@ import game.freya.config.Constants;
 import game.freya.enums.other.ScreenType;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.glfw.GLFWWindowCloseCallback;
+import org.lwjgl.glfw.GLFWWindowIconifyCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 import org.springframework.stereotype.Component;
 
 import javax.swing.SwingUtilities;
 import java.awt.Dimension;
-import java.awt.event.WindowEvent;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
@@ -29,6 +29,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_FOCUSED;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F11;
+import static org.lwjgl.glfw.GLFW.GLFW_MAXIMIZED;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
@@ -42,6 +43,8 @@ import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowIconifyCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowSize;
@@ -49,6 +52,7 @@ import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.glfw.GLFW.glfwTerminate;
+import static org.lwjgl.glfw.GLFW.glfwWaitEvents;
 import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
@@ -63,8 +67,6 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 @RequiredArgsConstructor
 public class GameFrame {
     private final Dimension monitorSize = Constants.MON.getConfiguration().getBounds().getSize();
-
-    private final UIHandler uIHandler;
 
     private Dimension windowSize;
 
@@ -138,6 +140,7 @@ public class GameFrame {
 
         if (Constants.getUserConfig().isFullscreen()) {
             glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+            glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
         } else {
             glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
         }
@@ -157,6 +160,26 @@ public class GameFrame {
             game = window;
         }
 
+        // при закрытии окна игры:
+        glfwSetWindowCloseCallback(window, new GLFWWindowCloseCallback() {
+            @Override
+            public void invoke(long l) {
+                isGlWindowBreaked = true;
+            }
+        });
+
+        // при сворачивании:
+        glfwSetWindowIconifyCallback(window, new GLFWWindowIconifyCallback() {
+            @Override
+            public void invoke(long l, boolean isIconify) {
+                if (isIconify) {
+                    onGameHide();
+                } else {
+                    onGameRestore();
+                }
+            }
+        });
+
         // Get the thread stack and push a new frame
         try (MemoryStack stack = stackPush()) {
             IntBuffer pWidth = stack.mallocInt(1); // int*
@@ -170,10 +193,7 @@ public class GameFrame {
 
             // Pos the window
             log.info("Fullscreen mode: {}", Constants.getUserConfig().isFullscreen());
-            if (Constants.getUserConfig().isFullscreen()) {
-                glfwSetWindowSize(window, videoMode.width(), videoMode.height());
-                glfwSetWindowPos(window, 0, 32); // для отловли шапки окна при сломанном андекорейте.
-            } else {
+            if (!Constants.getUserConfig().isFullscreen()) {
                 glfwSetWindowSize(window, windowSize.width, windowSize.height);
                 glfwSetWindowPos(window, 16, 32);
 //                glfwSetWindowPos(window,
@@ -231,6 +251,9 @@ public class GameFrame {
                 // Poll for window events. The key callback above will only be invoked during this call.
                 glfwPollEvents();
             }
+
+            //  переводит вызывающий поток в спящий режим до тех пор, пока не будет получено хотя бы одно событие:
+            glfwWaitEvents();
         }
         if (isGlWindowBreaked) {
             exit();
@@ -320,47 +343,8 @@ public class GameFrame {
 //                });
     }
 
-    public void windowIconified(WindowEvent e) {
-        onGameHide();
-    }
-
-    public void windowDeiconified(WindowEvent e) {
-        onGameRestore();
-    }
-
-    public void windowActivated(WindowEvent e) {
-        onGameRestore();
-    }
-
-    public void windowDeactivated(WindowEvent e) {
-        onGameHide();
-    }
-
-    public void windowStateChanged(WindowEvent e) {
-        int oldState = e.getOldState();
-        int newState = e.getNewState();
-
-        switch (newState) {
-            case 6 -> {
-                log.info("Restored to fullscreen");
-                if ((oldState == 1 || oldState == 7)) {
-                    onGameRestore();
-                }
-            }
-            case 0 -> {
-                log.info("Switch to windowed");
-                if ((oldState == 1 || oldState == 7)) {
-                    onGameRestore();
-                }
-            }
-            case 1, 7 -> onGameHide();
-            default -> log.warn("MainMenu: Unhandled windows state: " + e.getNewState());
-        }
-    }
-
     private void onGameRestore() {
-        if (Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
-//            log.info("Auto resume the game on frame restore is temporary off.");
+        if (!gameController.isCurrentWorldIsNetwork() && Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
             Constants.setPaused(false);
             log.debug("Resume game...");
         }
@@ -368,7 +352,7 @@ public class GameFrame {
 
     private void onGameHide() {
         log.debug("Hide or minimized");
-        if (!Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
+        if (!gameController.isCurrentWorldIsNetwork() && !Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
             Constants.setPaused(true);
             log.debug("Paused...");
         }
