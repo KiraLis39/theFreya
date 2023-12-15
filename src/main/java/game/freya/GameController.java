@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import fox.FoxLogo;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
+import game.freya.config.Media;
 import game.freya.entities.Player;
 import game.freya.entities.World;
 import game.freya.entities.dto.HeroDTO;
@@ -165,7 +166,10 @@ public class GameController extends GameControllerBase {
                     ImageIO.read(new File("./resources/images/menu_shadowed.png")));
             Constants.CACHE.addIfAbsent("green_arrow",
                     ImageIO.read(new File("./resources/images/green_arrow.png")));
-
+            try (InputStream netResource = getClass().getResourceAsStream("/images/cursors/default_cursor.png")) {
+                Objects.requireNonNull(netResource);
+                Constants.CACHE.addIfAbsent("default_cursor", ImageIO.read(netResource));
+            }
             try (InputStream netResource = getClass().getResourceAsStream("/images/net.png")) {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("net", ImageIO.read(netResource));
@@ -188,6 +192,17 @@ public class GameController extends GameControllerBase {
             }
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+
+        try {
+            Media.add("jump", new File(Objects.requireNonNull(getClass().getResource("/sounds/jump.wav")).getFile()));
+            Media.add("landing", new File(Objects.requireNonNull(getClass().getResource("/sounds/landing.wav")).getFile()));
+            Media.add("lifelost", new File(Objects.requireNonNull(getClass().getResource("/sounds/lifelost.wav")).getFile()));
+            Media.add("touch", new File(Objects.requireNonNull(getClass().getResource("/sounds/touch.wav")).getFile()));
+            Media.add("win", new File(Objects.requireNonNull(getClass().getResource("/sounds/win.wav")).getFile()));
+            Media.add("gameover", new File(Objects.requireNonNull(getClass().getResource("/sounds/gameover.wav")).getFile()));
+        } catch (Exception e1) {
+            e1.printStackTrace();
         }
 
         log.info("The game is started!");

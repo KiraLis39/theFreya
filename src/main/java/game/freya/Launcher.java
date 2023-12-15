@@ -25,7 +25,7 @@ import java.util.TimeZone;
 public class Launcher {
     public static void main(String[] args) {
         log.info("Setting up the system properties...");
-        System.setProperty("sun.java2d.opengl", "True");
+//        System.setProperty("sun.java2d.opengl", "True");
 
         // System.setProperty("sun.java2d.d3d", "false");
         // System.setProperty("sun.java2d.d3dtexbpp", "16");

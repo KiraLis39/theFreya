@@ -50,7 +50,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
     private final SubPane centerList;
 
-    private final String[] dot = new String[]{".", "..", "..."};
+    private final String[] dot = new String[]{".", "..", "..." };
 
     private transient BufferedImage snap;
 

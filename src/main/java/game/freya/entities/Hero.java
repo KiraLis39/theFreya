@@ -31,7 +31,7 @@ import java.util.UUID;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "heroes", uniqueConstraints = @UniqueConstraint(name = "uc_names_in_world", columnNames = {"hero_name", "world_uid"}))
+@Table(name = "heroes", uniqueConstraints = @UniqueConstraint(name = "uc_names_in_world", columnNames = {"hero_name", "world_uid" }))
 public class Hero {
     @Id
     @Comment("UUID героя")
