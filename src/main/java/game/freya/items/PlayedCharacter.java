@@ -1,8 +1,8 @@
 package game.freya.items;
 
-import game.freya.enums.other.HurtLevel;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import game.freya.config.Constants;
 import game.freya.enums.other.MovingVector;
-import game.freya.interfaces.iEntity;
 import game.freya.items.prototypes.GameCharacter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,211 +10,130 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.validation.constraints.NotNull;
-import java.awt.Rectangle;
-import java.awt.geom.Point2D;
+import javax.swing.Icon;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.geom.AffineTransform;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.RGBImageFilter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static game.freya.config.Constants.ONE_TURN_PI;
+
 @Slf4j
-@RequiredArgsConstructor
 @AllArgsConstructor
-public abstract class PlayedCharacter extends GameCharacter {
-    @NotNull
-    @Setter
-    @Getter
-    private UUID heroUid;
-
-    @Getter
-    @NotNull
-    private String heroName;
-
-    @Getter
-    @Setter
-    private short level = 1;
-
-    private int health = 100;
+@RequiredArgsConstructor
+public class PlayedCharacter extends GameCharacter {
+    @JsonIgnore
+    private transient Image heroViewImage;
 
     @Setter
-    private int oil = 100;
-
     @Getter
-    @Setter
-    private int maxHealth = 100;
-
-    @Getter
-    @Setter
-    private int maxOil = 100;
-
-    @Getter
-    @Setter
-    private float power = 1.0f;
-
-    @Getter
-    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
-
-    @Getter
-    @Setter
-    private byte speed = 6;
-
-    @Getter
-    private MovingVector vector = MovingVector.UP;
-
-    @Getter
-    private long experience = 0;
+    private Color baseColor;
 
     @Setter
-    private UUID ownerUid;
-
-    @Setter
-    private String imageNameInCache;
-
-    private LocalDateTime createDate = LocalDateTime.now();
+    @Getter
+    private Color secondColor;
 
     @Getter
-    @Setter
-    private boolean isVisible = true;
+    private boolean isOnline;
 
-    public void setHeroName(String heroName) {
-        this.heroName = heroName;
+    protected PlayedCharacter(UUID ownerUid, UUID heroUid, String heroName) {
+        this(ownerUid, heroUid, heroName, 1, 100, 100, 100, 100, 1f, 6, MovingVector.UP,
+                0, null, LocalDateTime.now(), true);
+    }
+
+    protected PlayedCharacter(
+            UUID ownerUid,
+            UUID heroUid,
+            String heroName,
+            int level,
+            int curHealth,
+            int curOil,
+            int maxHealth,
+            int maxOil,
+            float power,
+            int speed,
+            MovingVector vector,
+            long experience,
+            String imageNameInCache,
+            LocalDateTime createDate,
+            boolean isVisible
+    ) {
+        setOwnerUid(ownerUid);
+        setCharacterUid(heroUid);
+        setCharacterName(heroName);
+        setLevel(level);
+        setHealth(curHealth);
+        setOil(curOil);
+        setMaxHealth(maxHealth);
+        setMaxOil(maxOil);
+        setPower(power);
+        setSpeed(speed);
+        setVector(vector);
+        setExperience(experience);
+        setImageNameInCache(imageNameInCache);
+        setCreateDate(createDate);
+        setVisible(isVisible);
     }
 
     @Override
-    public int getHealth() {
-        return health;
-    }
-
-    @Override
-    public int getOil() {
-        return oil;
-    }
-
-    @Override
-    public void heal(float healPoints) {
-        if (isDead()) {
-            log.warn("Can`t heal the dead corps of player {}!", heroName);
+    public void draw(Graphics2D g2D) {
+        if (!isOnline) {
             return;
         }
-        this.health += healPoints;
-        if (getHealth() > maxHealth) {
-            setHealth(maxHealth);
+
+        if (heroViewImage == null) {
+            recolorHeroView();
+        }
+
+        if (getCollider() == null || getShape() == null) {
+            resetCollider(getLocation());
+        }
+
+        AffineTransform tr = g2D.getTransform();
+        g2D.rotate(ONE_TURN_PI * getVector().ordinal(),
+                getShape().x + getShape().width / 2d,
+                getShape().y + getShape().height / 2d);
+
+        g2D.drawImage(heroViewImage,
+                getShape().x, getShape().y,
+                getShape().width, getShape().height, null);
+        g2D.setTransform(tr);
+
+        if (Constants.isDebugInfoVisible()) {
+            g2D.setColor(Color.GREEN);
+            g2D.draw(getShape());
+
+            g2D.setColor(Color.RED);
+            g2D.draw(getCollider());
+
+            g2D.setColor(Color.YELLOW);
+            g2D.fillOval((int) (getCenterPoint().x - 3), (int) (getCenterPoint().y - 3), 6, 6);
         }
     }
 
-    @Override
-    public void hurt(float hurtPoints) {
-        this.health -= hurtPoints;
-        if (getHealth() < 0) {
-            setHealth(0);
-        }
+    private void recolorHeroView() {
+        int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
+                baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
+        heroViewImage = Toolkit.getDefaultToolkit().createImage(
+                new FilteredImageSource(((Image) Constants.CACHE.get("player")).getSource(), new RGBImageFilter() {
+                    @Override
+                    public int filterRGB(final int x, final int y, final int rgb) {
+                        return rgb & hexColor;
+                    }
+                }));
     }
 
-    @Override
-    public boolean isDead() {
-        return this.hurtLevel.equals(HurtLevel.DEAD);
+    public void setOnline(boolean isOnline) {
+        this.isOnline = isOnline;
     }
 
-    public void setHealth(int health) {
-        this.health = health;
-        recheckHurtLevel();
-    }
-
-    private void recheckHurtLevel() {
-        if (getHealth() <= 0) {
-            this.hurtLevel = HurtLevel.DEAD;
-            decreaseExp(experience - experience * 0.1f); // -10% exp by death
-        } else if (getHealth() <= maxHealth * 0.3f) {
-            this.hurtLevel = HurtLevel.HARD_HURT;
-        } else if (getHealth() <= maxHealth * 0.6f) {
-            this.hurtLevel = HurtLevel.MED_HURT;
-        } else if (getHealth() <= maxHealth * 0.9f) {
-            this.hurtLevel = HurtLevel.LIGHT_HURT;
-        } else {
-            this.hurtLevel = HurtLevel.HEALTHFUL;
-        }
-    }
-
-    @Override
-    public void attack(iEntity entity) {
-        if (!entity.equals(this)) {
-            entity.hurt(power);
-        } else {
-            log.warn("Player {} can`t attack itself!", getHeroName());
-        }
-    }
-
-    @Override
-    public UUID getUid() {
-        return this.heroUid;
-    }
-
-    @Override
-    public UUID getAuthor() {
-        return ownerUid;
-    }
-
-    public void setAuthor(UUID authorUid) {
-        ownerUid = authorUid;
-    }
-
-    @Override
-    public String getName() {
-        return this.heroName;
-    }
-
-    @Override
-    public Point2D.Double getCenterPoint() {
-        return new Point2D.Double(getLocation().x, getLocation().y);
-    }
-
-    @Override
-    public String getImageNameInCache() {
-        return imageNameInCache;
-    }
-
-    @Override
-    public boolean isInSector(Rectangle sector) {
-        return getCollider().intersects(sector);
-    }
-
-    @Override
-    public void increaseExp(float increaseValue) {
-        if (isDead()) {
-            return;
-        }
-        this.experience += increaseValue;
-        recheckPlayerLevel();
-    }
-
-    @Override
-    public void decreaseExp(float decreaseValue) {
-        this.experience -= decreaseValue;
-        recheckPlayerLevel();
-    }
-
-    @Override
-    public LocalDateTime getCreateDate() {
-        return createDate;
-    }
-
-    public void setCreateDate(LocalDateTime createDate) {
-        if (this.createDate == null) {
-            this.createDate = createDate;
-        }
-    }
-
-    @Override
-    public void setVector(MovingVector movingVector) {
-        this.vector = movingVector;
-    }
-
-    private void recheckPlayerLevel() {
-        this.level = (short) (this.experience / 1000);
-    }
-
-    public void setExperience(long experience) {
-        if (this.experience == 0) {
-            this.experience = experience;
-        }
+    public Icon getIcon() {
+        log.warn("Иконки типов героев ещё не заведены!");
+        return null;
     }
 }

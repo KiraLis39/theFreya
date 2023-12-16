@@ -56,18 +56,18 @@ public class PlayedHeroesService {
     }
 
     public void addHero(final HeroDTO heroDTO) {
-        if (heroDTO.getHeroUid() == null) {
+        if (heroDTO.getCharacterUid() == null) {
             log.warn("Нельзя работать c героем без heroUid. Нужно найти причину и устранить!");
         }
 
         heroDTO.setOnline(true);
 
-        if (heroes.containsKey(heroDTO.getHeroUid())) {
-            log.debug("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getAuthor());
-            heroes.replace(heroDTO.getHeroUid(), heroDTO);
+        if (heroes.containsKey(heroDTO.getCharacterUid())) {
+            log.debug("Обновление данных героя {} игрока {}...", heroDTO.getCharacterName(), heroDTO.getAuthor());
+            heroes.replace(heroDTO.getCharacterUid(), heroDTO);
         } else {
-            log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getHeroName());
-            heroes.put(heroDTO.getHeroUid(), heroDTO);
+            log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getCharacterName());
+            heroes.put(heroDTO.getCharacterUid(), heroDTO);
         }
     }
 
@@ -115,8 +115,8 @@ public class PlayedHeroesService {
         if (otherHero != null) {
             try {
                 heroService.saveHero(otherHero);
-                heroes.remove(otherHero.getHeroUid());
-                log.info("Удалён из карты игровых героев Герой {} ({})", otherHero.getHeroName(), otherHero.getHeroUid());
+                heroes.remove(otherHero.getCharacterUid());
+                log.info("Удалён из карты игровых героев Герой {} ({})", otherHero.getCharacterName(), otherHero.getCharacterUid());
             } catch (Exception e) {
                 log.error("Что случилось? Выяснить: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
@@ -131,7 +131,7 @@ public class PlayedHeroesService {
     }
 
     public boolean isCurrentHero(HeroDTO hero) {
-        return hero.getHeroUid().equals(currentHeroUid);
+        return hero.getCharacterUid().equals(currentHeroUid);
     }
 
     public HeroDTO getCurrentHero() {
@@ -164,7 +164,7 @@ public class PlayedHeroesService {
         heroes.get(currentHeroUid).setInGameTime(gameDuration);
     }
 
-    public byte getCurrentHeroSpeed() {
+    public float getCurrentHeroSpeed() {
         checkCHE();
         return heroes.get(currentHeroUid).getSpeed();
     }
@@ -176,7 +176,7 @@ public class PlayedHeroesService {
 
     public String getCurrentHeroName() {
         checkCHE();
-        return heroes.get(currentHeroUid).getHeroName();
+        return heroes.get(currentHeroUid).getCharacterName();
     }
 
     public HeroType getCurrentHeroType() {
@@ -184,7 +184,7 @@ public class PlayedHeroesService {
         return heroes.get(currentHeroUid).getHeroType();
     }
 
-    public short getCurrentHeroLevel() {
+    public int getCurrentHeroLevel() {
         checkCHE();
         return heroes.get(currentHeroUid).getLevel();
     }
@@ -224,7 +224,7 @@ public class PlayedHeroesService {
         hero.setOnline(true);
         hero.setLastPlayDate(LocalDateTime.now());
         addHero(hero);
-        currentHeroUid = hero.getHeroUid();
+        currentHeroUid = hero.getCharacterUid();
     }
 
     public float getCurrentHeroPower() {

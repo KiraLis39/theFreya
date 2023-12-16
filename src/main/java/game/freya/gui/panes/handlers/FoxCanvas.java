@@ -365,7 +365,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
         // отображаем других игроков на миникарте:
         for (HeroDTO connectedHero : gameController.getConnectedHeroes()) {
-            if (gameController.getCurrentHeroUid().equals(connectedHero.getHeroUid())) {
+            if (gameController.getCurrentHeroUid().equals(connectedHero.getCharacterUid())) {
                 continue;
             }
             int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
@@ -428,8 +428,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                     Point2D relocatedPoint = FoxPointConverter.relocateOn(getViewPort(), getBounds(), hero.getLocation());
 
                     // draw hero name:
-                    g2D.drawString(hero.getHeroName(),
-                            (int) (relocatedPoint.getX() - FFB.getHalfWidthOfString(g2D, hero.getHeroName())),
+                    g2D.drawString(hero.getCharacterName(),
+                            (int) (relocatedPoint.getX() - FFB.getHalfWidthOfString(g2D, hero.getCharacterName())),
                             (int) (relocatedPoint.getY() - strutMod));
 
                     strutMod += 24;

@@ -26,7 +26,7 @@ public record EventHeroRegister(
         UUID heroUid,
         String heroName,
         HeroType heroType,
-        short level,
+        int level,
         int hp,
         int oil,
         int maxHp,
@@ -34,7 +34,7 @@ public record EventHeroRegister(
         double positionX,
         double positionY,
         MovingVector vector,
-        byte speed,
+        float speed,
         UUID worldUid
 ) implements iClientEventData {
     @Override

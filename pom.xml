@@ -579,6 +579,13 @@
             -Dfile=H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-tools\fox-tools-6.2.6.jar
             -DgroupId=FoxLib39 -DartifactId=fox-tools -Dversion=6.2.6 -Dpackaging=jar -DcreateChecksum=true' before -->
         </dependency>
+        <dependency>
+            <groupId>TinySound</groupId>
+            <artifactId>kuusisto</artifactId>
+            <version>1.0.1</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/lib/TinySound.jar</systemPath>
+        </dependency>
 
     </dependencies>
 

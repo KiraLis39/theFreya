@@ -183,6 +183,9 @@ public final class Constants {
     private static boolean isGLDebugMode = true;
 
     @Getter
+    private static boolean isCullFaceGlEnabled = true;
+
+    @Getter
     private static String worldsImagesDir = "./worlds/img/";
 
     private static int realFreshRate = 0;

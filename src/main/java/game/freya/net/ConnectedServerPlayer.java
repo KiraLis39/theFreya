@@ -158,7 +158,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
     private void sendHeroDataByRequest(ClientDataDTO data) {
         EventHeroRegister heroNeed = (EventHeroRegister) data.content();
         HeroDTO found = gameController.getConnectedHeroes().stream()
-                .filter(h -> h.getHeroUid().equals(heroNeed.heroUid())).findFirst().orElse(null);
+                .filter(h -> h.getCharacterUid().equals(heroNeed.heroUid())).findFirst().orElse(null);
         if (found != null) {
             push(gameController.heroToCli(found, gameController.getCurrentPlayer()));
         } else {

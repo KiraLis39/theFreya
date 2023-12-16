@@ -34,8 +34,8 @@ public final class HeroMapper {
             return null;
         }
         Hero result = Hero.builder()
-                .uid(dto.getHeroUid())
-                .heroName(dto.getHeroName())
+                .uid(dto.getCharacterUid())
+                .heroName(dto.getCharacterName())
                 .baseColor(dto.getBaseColor())
                 .secondColor(dto.getSecondColor())
                 .corpusType(dto.getCorpusType())
@@ -76,17 +76,30 @@ public final class HeroMapper {
             return null;
         }
 
-        HeroDTO result = HeroDTO.builder()
-                .baseColor(entity.getBaseColor())
-                .secondColor(entity.getSecondColor())
-                .corpusType(entity.getCorpusType())
-                .periferiaType(entity.getPeriferiaType())
-                .periferiaSize(entity.getPeriferiaSize())
-                .heroType(entity.getType())
-                .worldUid(entity.getWorldUid())
-                .inGameTime(entity.getInGameTime())
-                .lastPlayDate(entity.getLastPlayDate())
-                .build();
+        HeroDTO result = new HeroDTO();
+        result.setPeriferiaType(entity.getPeriferiaType());
+        result.setPeriferiaSize(entity.getPeriferiaSize());
+        result.setCorpusType(entity.getCorpusType());
+        result.setHeroType(entity.getType());
+        result.setWorldUid(entity.getWorldUid());
+        result.setInGameTime(entity.getInGameTime());
+        result.setBaseColor(entity.getBaseColor());
+        result.setSecondColor(entity.getSecondColor());
+        result.setLastPlayDate(entity.getLastPlayDate());
+
+        result.setCharacterUid(entity.getUid());
+        result.setCharacterName(entity.getHeroName());
+        result.setLevel(entity.getLevel());
+        result.setPower(entity.getPower());
+        result.setExperience(entity.getExperience());
+        result.setHealth(entity.getCurHealth());
+        result.setMaxHealth(entity.getMaxHealth());
+        result.setOil(entity.getCurOil());
+        result.setMaxOil(entity.getMaxOil());
+        result.setSpeed(entity.getSpeed());
+        result.setLocation(entity.getPositionX(), entity.getPositionY());
+        result.setCreateDate(entity.getCreateDate());
+        result.setOwnerUid(entity.getOwnerUid());
 
 //        try {
 //            result.getBuffs().clear();
@@ -98,20 +111,6 @@ public final class HeroMapper {
 //            log.error("Err in hero mapper: {}", ExceptionUtils.getFullExceptionMessage(e));
 //            throw new GlobalServiceException(ErrorMessages.JSON_PARSE_ERR);
 //        }
-
-        result.setHeroUid(entity.getUid());
-        result.setHeroName(entity.getHeroName());
-        result.setLevel(entity.getLevel());
-        result.setPower(entity.getPower());
-        result.setExperience(entity.getExperience());
-        result.setHealth(entity.getCurHealth());
-        result.setMaxHealth(entity.getMaxHealth());
-        result.setOil(entity.getCurOil());
-        result.setMaxOil(entity.getMaxOil());
-        result.setSpeed(entity.getSpeed());
-        result.setLocation(entity.getPositionX(), entity.getPositionY());
-        result.setCreateDate(entity.getCreateDate());
-        result.setAuthor(entity.getOwnerUid());
 
         return result;
     }
@@ -138,8 +137,8 @@ public final class HeroMapper {
                         .playerUid(currentPlayer.getUid())
                         .playerName(currentPlayer.getNickName())
 
-                        .heroUid(hero.getHeroUid())
-                        .heroName(hero.getHeroName())
+                        .heroUid(hero.getCharacterUid())
+                        .heroName(hero.getCharacterName())
                         .heroType(hero.getHeroType())
 
                         .baseColor(hero.getBaseColor())
@@ -177,27 +176,33 @@ public final class HeroMapper {
         }
 
         EventHeroRegister heroRegister = (EventHeroRegister) cli.content();
-        HeroDTO result = HeroDTO.builder()
-                .heroType(heroRegister.heroType())
+        HeroDTO result = new HeroDTO();
+        result.setHeroType(heroRegister.heroType());
+        result.setBaseColor(heroRegister.baseColor());
+        result.setSecondColor(heroRegister.secondColor());
+        result.setCorpusType(heroRegister.corpusType());
+        result.setPeriferiaType(heroRegister.periferiaType());
+        result.setPeriferiaSize(heroRegister.periferiaSize());
+        result.setWorldUid(heroRegister.worldUid());
 
-                .baseColor(heroRegister.baseColor())
-                .secondColor(heroRegister.secondColor())
-                .corpusType(heroRegister.corpusType())
-                .periferiaType(heroRegister.periferiaType())
-                .periferiaSize(heroRegister.periferiaSize())
-
-                .worldUid(heroRegister.worldUid())
-
-                // временно отключил:
-//                .power(heroRegister.power())
-//                .experience(heroRegister.experience())
-//                .inGameTime(heroRegister.inGameTime())
-//                .lastPlayDate(heroRegister.lastPlayDate())
-//                .createDate(heroRegister.createDate())
-
-                .build();
+        result.setOwnerUid(heroRegister.playerUid());
+        result.setCharacterUid(heroRegister.heroUid());
+        result.setCharacterName(heroRegister.heroName());
+        result.setSpeed(heroRegister.speed());
+        result.setLocation(heroRegister.positionX(), heroRegister.positionY());
+        result.setHealth(heroRegister.hp());
+        result.setMaxHealth(heroRegister.maxHp());
+        result.setOil(heroRegister.oil());
+        result.setMaxOil(heroRegister.maxOil());
+        result.setLevel(heroRegister.level());
 
         // временно отключил:
+//      result.power(heroRegister.power())
+//      result.experience(heroRegister.experience())
+//      result.inGameTime(heroRegister.inGameTime())
+//      result.lastPlayDate(heroRegister.lastPlayDate())
+//      result.createDate(heroRegister.createDate())
+
 //            try {
 //                Backpack bPack = mapper.readValue(readed.inventoryJson(), Backpack.class);
 //                hero.setInventory(bPack);
@@ -211,17 +216,6 @@ public final class HeroMapper {
 //            } catch (Exception e) {
 //                log.error("Проблема при парсинге бафов Героя {}: {}", readed.heroName(), ExceptionUtils.getFullExceptionMessage(e));
 //            }
-
-        result.setAuthor(heroRegister.playerUid());
-        result.setHeroUid(heroRegister.heroUid());
-        result.setHeroName(heroRegister.heroName());
-        result.setSpeed(heroRegister.speed());
-        result.setLocation(heroRegister.positionX(), heroRegister.positionY());
-        result.setHealth(heroRegister.hp());
-        result.setMaxHealth(heroRegister.maxHp());
-        result.setOil(heroRegister.oil());
-        result.setMaxOil(heroRegister.maxOil());
-        result.setLevel(heroRegister.level());
 
         return result;
     }

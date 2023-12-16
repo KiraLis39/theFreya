@@ -182,17 +182,17 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                 }
                                 switch (her.getHeroType()) {
                                     case SNIPER ->
-                                            heroes.append("<font color=#f0ec22><b>").append(her.getHeroName()).append(lineEnd);
+                                            heroes.append("<font color=#f0ec22><b>").append(her.getCharacterName()).append(lineEnd);
                                     case TOWER ->
-                                            heroes.append("<font color=#0f294d><b>").append(her.getHeroName()).append(lineEnd);
+                                            heroes.append("<font color=#0f294d><b>").append(her.getCharacterName()).append(lineEnd);
                                     case FIXER ->
-                                            heroes.append("<font color=#bcd918><b>").append(her.getHeroName()).append(lineEnd);
+                                            heroes.append("<font color=#bcd918><b>").append(her.getCharacterName()).append(lineEnd);
                                     case HUNTER ->
-                                            heroes.append("<font color=#d95818><b>").append(her.getHeroName()).append(lineEnd);
+                                            heroes.append("<font color=#d95818><b>").append(her.getCharacterName()).append(lineEnd);
                                     case HACKER ->
-                                            heroes.append("<font color=#223df0><b>").append(her.getHeroName()).append(lineEnd);
+                                            heroes.append("<font color=#223df0><b>").append(her.getCharacterName()).append(lineEnd);
                                     default ->
-                                            heroes.append("<font color=#545454><b>").append(her.getHeroName()).append(lineEnd);
+                                            heroes.append("<font color=#545454><b>").append(her.getCharacterName()).append(lineEnd);
                                 }
                                 isFirst = false;
                             }

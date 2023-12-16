@@ -1,13 +1,13 @@
 package game.freya.entities.logic;
 
-import game.freya.entities.dto.HeroDTO;
+import game.freya.items.prototypes.GameCharacter;
 
 public abstract class Buff {
     private String name;
 
-    public abstract void activate(HeroDTO playerDTO);
+    public abstract void activate(GameCharacter character);
 
-    public abstract void deactivate(HeroDTO playerDTO);
+    public abstract void deactivate(GameCharacter character);
 
     public String getName() {
         return this.name;

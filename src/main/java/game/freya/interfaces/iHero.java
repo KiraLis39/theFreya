@@ -14,7 +14,7 @@ public interface iHero extends iEntity {
 
     void removeBuff(Buff buff);
 
-    short getLevel();
+    int getLevel();
 
     LocalDateTime getCreateDate();
 

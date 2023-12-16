@@ -115,6 +115,41 @@ public class GameController extends GameControllerBase {
     @Getter
     private volatile boolean isRemoteHeroRequestSent = false;
 
+    private static void loadAudio() {
+        // TinySound:
+        try {
+            Media.add("jump", new File(Objects.requireNonNull(GameController.class.getResource("/audio/sounds/jump.wav")).getFile()));
+            Media.add("landing", new File(Objects.requireNonNull(GameController.class.getResource("/audio/sounds/landing.wav")).getFile()));
+            Media.add("lifelost", new File(Objects.requireNonNull(GameController.class.getResource("/audio/sounds/lifelost.wav")).getFile()));
+            Media.add("touch", new File(Objects.requireNonNull(GameController.class.getResource("/audio/sounds/touch.wav")).getFile()));
+            Media.add("win", new File(Objects.requireNonNull(GameController.class.getResource("/audio/sounds/win.wav")).getFile()));
+            Media.add("gameover", new File(Objects.requireNonNull(GameController.class.getResource("/audio/sounds/gameover.wav")).getFile()));
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+
+        // FoxPlayer:
+//        FoxPlayer.getVolumeConverter().setMinimum(-50);
+//
+////        voicePlayer.load(audioVoicesDir);
+//
+//        musicPlayer.load(audioMusicDir);
+//        musicPlayer.mute(userConf.isMusicMuted());
+//        musicPlayer.setVolume(userConf.getMusicVolume());
+//
+//        backgPlayer.load(audioBackgDir);
+//        backgPlayer.mute(userConf.isBackgMuted());
+//        backgPlayer.setVolume(userConf.getBackgVolume());
+////        backgPlayer.setAudioBufDim(1024); // 4096
+//
+//        soundPlayer.load(audioSoundDir);
+//        soundPlayer.setParallelPlayable(true);
+//        soundPlayer.setLooped(false);
+//        soundPlayer.mute(userConf.isSoundMuted());
+//        soundPlayer.setVolume(userConf.getSoundVolume());
+////        soundPlayer.setAudioBufDim(8192); // 8192
+    }
+
     @PostConstruct
     public void init() throws IOException {
         try {
@@ -129,6 +164,16 @@ public class GameController extends GameControllerBase {
             // UIManager.put("OptionPane.cancelButtonText", "nope");
             // UIManager.put("OptionPane.okButtonText", "yup");
             // UIManager.put("OptionPane.inputDialogTitle", "Введите свой никнейм:");
+
+            // UIManager.put("FileChooser.saveButtonText", "Сохранить");
+            // UIManager.put("FileChooser.cancelButtonText", "Отмена");
+            // UIManager.put("FileChooser.openButtonText", "Выбрать");
+            // UIManager.put("FileChooser.fileNameLabelText", "Наименование файла");
+            // UIManager.put("FileChooser.filesOfTypeLabelText", "Типы файлов");
+            // UIManager.put("FileChooser.lookInLabelText", "Директория");
+            // UIManager.put("FileChooser.saveInLabelText", "Сохранить в директории");
+            // UIManager.put("FileChooser.folderNameLabelText", "Путь директории");
+
         } catch (Exception e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -194,16 +239,7 @@ public class GameController extends GameControllerBase {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
 
-        try {
-            Media.add("jump", new File(Objects.requireNonNull(getClass().getResource("/sounds/jump.wav")).getFile()));
-            Media.add("landing", new File(Objects.requireNonNull(getClass().getResource("/sounds/landing.wav")).getFile()));
-            Media.add("lifelost", new File(Objects.requireNonNull(getClass().getResource("/sounds/lifelost.wav")).getFile()));
-            Media.add("touch", new File(Objects.requireNonNull(getClass().getResource("/sounds/touch.wav")).getFile()));
-            Media.add("win", new File(Objects.requireNonNull(getClass().getResource("/sounds/win.wav")).getFile()));
-            Media.add("gameover", new File(Objects.requireNonNull(getClass().getResource("/sounds/gameover.wav")).getFile()));
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
+        loadAudio();
 
         log.info("The game is started!");
         this.gameFrame.appStart(this);
@@ -214,6 +250,21 @@ public class GameController extends GameControllerBase {
     }
 
     public void exitTheGame(WorldDTO world, int errCode) {
+//        try {
+//            backgPlayer.stop();
+//            musicPlayer.stop();
+//            soundPlayer.stop();
+//            voicePlayer.stop();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
+//        try {
+//            ModsLoaderEngine.stopMods();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
         saveTheGame(world);
         closeConnections();
 
@@ -333,7 +384,7 @@ public class GameController extends GameControllerBase {
     }
 
     public HeroDTO saveNewHero(HeroDTO aNewHeroDto, boolean setAsCurrent) {
-        if (!heroService.isHeroExist(aNewHeroDto.getHeroUid())) {
+        if (!heroService.isHeroExist(aNewHeroDto.getCharacterUid())) {
             HeroDTO saved = heroService.saveHero(aNewHeroDto);
             if (setAsCurrent) {
                 playedHeroesService.addCurrentHero(saved);
@@ -342,7 +393,7 @@ public class GameController extends GameControllerBase {
             }
             return saved;
         }
-        return heroService.getByUid(aNewHeroDto.getHeroUid());
+        return heroService.getByUid(aNewHeroDto.getCharacterUid());
     }
 
     public void saveNewRemoteHero(ClientDataDTO readed) {
@@ -355,7 +406,7 @@ public class GameController extends GameControllerBase {
 
     public void deleteWorld(UUID worldUid) {
         log.warn("Удаление Героев мира {}...", worldUid);
-        heroService.findAllByWorldUuid(worldUid).forEach(hero -> heroService.deleteHeroByUuid(hero.getHeroUid()));
+        heroService.findAllByWorldUuid(worldUid).forEach(hero -> heroService.deleteHeroByUuid(hero.getCharacterUid()));
 
         log.warn("Удаление мира {}...", worldUid);
         worldService.delete(worldUid);
@@ -672,7 +723,7 @@ public class GameController extends GameControllerBase {
         return null;
     }
 
-    public byte getCurrentHeroSpeed() {
+    public float getCurrentHeroSpeed() {
         if (playedHeroesService.getCurrentHero() != null) {
             return playedHeroesService.getCurrentHeroSpeed();
         }
@@ -836,7 +887,7 @@ public class GameController extends GameControllerBase {
         return playedHeroesService.getCurrentHeroExperience();
     }
 
-    public short getCurrentHeroLevel() {
+    public int getCurrentHeroLevel() {
         return playedHeroesService.getCurrentHeroLevel();
     }
 
@@ -937,11 +988,12 @@ public class GameController extends GameControllerBase {
                 playedHeroesService.setCurrentHeroOnline(true);
             } else if (playedHeroesService.isCurrentHeroOnline()) {
                 // если online другой герой - снимаем:
-                log.info("Снимаем он-лайн с Героя {} и передаём этот статус Герою {}...", getCurrentHero().getHeroName(), hero.getHeroName());
+                log.info("Снимаем он-лайн с Героя {} и передаём этот статус Герою {}...",
+                        getCurrentHero().getCharacterName(), hero.getCharacterName());
                 playedHeroesService.offlineSaveAndRemoveCurrentHero(null);
             }
         }
-        log.info("Теперь активный Герой - {}", hero.getHeroName());
+        log.info("Теперь активный Герой - {}", hero.getCharacterName());
         playedHeroesService.addCurrentHero(hero);
     }
 

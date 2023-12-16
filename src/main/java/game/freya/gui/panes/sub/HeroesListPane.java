@@ -55,7 +55,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
         HeroesListPane.this.removeAll();
 
         for (HeroDTO hero : gameController.getMyCurrentWorldHeroes()) {
-            add(new SubPane("Герой: " + hero.getHeroName(), hero.getHeroType().getColor()) {{
+            add(new SubPane("Герой: " + hero.getCharacterName(), hero.getHeroType().getColor()) {{
                 setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {
                     @Override
@@ -126,7 +126,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                                 "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                         ) {
-                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getHeroUid());
+                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getCharacterUid());
                                             reloadHeroes(canvas);
                                         }
                                     }

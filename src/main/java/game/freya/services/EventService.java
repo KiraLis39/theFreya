@@ -27,8 +27,8 @@ public class EventService {
                         .playerUid(dto.getAuthor())
                         .playerName(playerService.getCurrentPlayer().getNickName())
 
-                        .heroUid(dto.getHeroUid())
-                        .heroName(dto.getHeroName())
+                        .heroUid(dto.getCharacterUid())
+                        .heroName(dto.getCharacterName())
                         .positionX(dto.getLocation().x)
                         .positionY(dto.getLocation().y)
                         .vector(dto.getVector())

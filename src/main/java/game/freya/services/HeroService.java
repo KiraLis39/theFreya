@@ -44,14 +44,14 @@ public class HeroService {
     @Transactional
     public HeroDTO saveHero(HeroDTO heroDto) {
         HeroDTO aim;
-        Optional<Hero> old = heroRepository.findByUid(heroDto.getHeroUid());
+        Optional<Hero> old = heroRepository.findByUid(heroDto.getCharacterUid());
         if (old.isPresent()) {
             aim = heroMapper.toDto(old.get());
             BeanUtils.copyProperties(heroDto, aim);
         } else {
             aim = heroDto;
         }
-        log.info("Сохранение в БД героя {} ({})", heroDto.getHeroUid(), heroDto.getHeroName());
+        log.info("Сохранение в БД героя {} ({})", heroDto.getCharacterUid(), heroDto.getCharacterName());
         return heroMapper.toDto(heroRepository.save(heroMapper.toEntity(aim)));
     }
 

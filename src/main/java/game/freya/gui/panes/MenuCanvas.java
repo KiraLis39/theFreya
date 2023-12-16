@@ -31,16 +31,55 @@ import java.awt.event.MouseWheelEvent;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static org.lwjgl.opengl.GL11.GL_BACK;
+import static org.lwjgl.opengl.GL11.GL_CCW;
+import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
+import static org.lwjgl.opengl.GL11.GL_FILL;
+import static org.lwjgl.opengl.GL11.GL_FRONT;
+import static org.lwjgl.opengl.GL11.GL_LINE;
+import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;
+import static org.lwjgl.opengl.GL11.GL_LINE_STIPPLE;
+import static org.lwjgl.opengl.GL11.GL_POINTS;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.glBegin;
+import static org.lwjgl.opengl.GL11.glColor3f;
+import static org.lwjgl.opengl.GL11.glCullFace;
+import static org.lwjgl.opengl.GL11.glDisable;
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL11.glEnd;
+import static org.lwjgl.opengl.GL11.glFrontFace;
+import static org.lwjgl.opengl.GL11.glLineStipple;
+import static org.lwjgl.opengl.GL11.glLineWidth;
+import static org.lwjgl.opengl.GL11.glPointSize;
+import static org.lwjgl.opengl.GL11.glPolygonMode;
+import static org.lwjgl.opengl.GL11.glPopMatrix;
+import static org.lwjgl.opengl.GL11.glPushMatrix;
+import static org.lwjgl.opengl.GL11.glRotatef;
+import static org.lwjgl.opengl.GL11.glVertex2d;
+import static org.lwjgl.opengl.GL11.glVertex3f;
+
+//import static org.lwjgl.opengl.GL11.glBegin;
+//import static org.lwjgl.opengl.GL11.glColor3f;
+//import static org.lwjgl.opengl.GL11.glEnd;
+//import static org.lwjgl.opengl.GL11.glPopMatrix;
+//import static org.lwjgl.opengl.GL11.glPushMatrix;
+//import static org.lwjgl.opengl.GL11.glRotatef;
+//import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, Runnable
 public class MenuCanvas extends FoxCanvas {
+    static float theta = 0.5f;
+
+    private static volatile boolean initialized = false;
+
     private final transient GameController gameController;
 
     private final transient JFrame parentFrame;
 
     private transient Thread resizeThread = null;
 
-    private volatile boolean isMenuActive, initialized = false;
+    private volatile boolean isMenuActive;
 
     private double parentHeightMemory = 0;
 
@@ -76,7 +115,95 @@ public class MenuCanvas extends FoxCanvas {
     }
 
     public static void render(long window) {
+        if (Constants.isCullFaceGlEnabled()) {
+            cullFace();
+        }
 
+        glPushMatrix();
+        glRotatef(theta, 0.0f, 0.1f, 0.0f);
+
+        glBegin(GL_TRIANGLES); // GL_TRIANGLE_FAN | GL_TRIANGLE_STRIP
+        // 1
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(-0.8f, -0.8f, 0.8f);
+        glVertex3f(0.8f, -0.8f, 0.8f);
+        glVertex3f(0.0f, 0.75f, 0.0f);
+
+        // 2
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.8f, -0.8f, 0.8f);
+        glVertex3f(0.8f, -0.8f, -0.8f);
+        glVertex3f(0.0f, 0.75f, 0.0f);
+
+        // 3
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(-0.8f, -0.8f, -0.8f);
+        glVertex3f(-0.8f, -0.8f, 0.8f);
+        glVertex3f(0.0f, 0.75f, 0.0f);
+
+        // 4
+        glColor3f(1.0f, 1.0f, 0.0f);
+        glVertex3f(0.8f, -0.8f, -0.8f);
+        glVertex3f(-0.8f, -0.8f, -0.8f);
+        glVertex3f(0.0f, 0.75f, 0.0f);
+        glEnd();
+
+        glPointSize(6);
+        glBegin(GL_POINTS);
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(-0.9f, -0.9f, 0.0f);
+
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.9f, -0.9f, 0.0f);
+
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.9f, 0.0f);
+        glEnd();
+
+        glEnable(GL_LINE_STIPPLE);
+        glLineStipple(1, (short) 0x3F07); // 255 (0x00FF) | 0x3F07 | 0xAAAA
+        glLineWidth(5);
+
+        glBegin(GL_LINE_LOOP); // GL_LINES | GL_LINE_STRIP | GL_LINE_LOOP
+        glColor3f(1.0f, 1.0f, 0.0f);
+        glVertex2d(0.025f, 0.85f);
+        glVertex2d(0.875f, -0.825f);
+
+        glColor3f(1.0f, 0.0f, 1.0f);
+        glVertex2d(0.85f, -0.9f);
+        glVertex2d(-0.85f, -0.9f);
+
+        glColor3f(0.0f, 1.0f, 1.0f);
+        glVertex2d(-0.875f, -0.825f);
+        glVertex2d(-0.025f, 0.85f);
+        glEnd();
+
+        glDisable(GL_LINE_STIPPLE);
+
+        glPopMatrix();
+        theta += 1.0f;
+    }
+
+    private static void cullFace() {
+        /*
+            Управляет режимом рисования передней и задней части многоугольника.
+            Параметр face может иметь значение GL_FRONT_AND_BACK, GL_FRONT или GL_BACK;
+                режим может быть GL_POINT, GL_LINE или GL_FILL, чтобы указать, многоугольник должен быть нарисован в виде точек,
+                обведен контуром или залит.
+            По умолчанию оба передняя и задняя грани нарисованы заполненными. Например, вы можете заполнить передние грани,
+            а заднюю лица, выделенные двумя вызовами этой процедуры: glPolygonMode (GL_FRONT, GL_FILL); glPolygonMode (GL_BACK, GL_LINE);
+         */
+        // настройка отображения передней и задней частей полигонов:
+        glPolygonMode(GL_FRONT, GL_FILL); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
+        glPolygonMode(GL_BACK, GL_LINE); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
+
+        // задаём ориентацию по часовой\против часовой:
+        glFrontFace(GL_CCW); // GL_CW | GL_CCW
+
+        // отсечение прямоугольников, обращенных от или скрытых от глаз:
+        glCullFace(GL_BACK); // GL_FRONT, GL_BACK, или GL_FRONT_AND_BACK
+        glEnable(GL_CULL_FACE);
+        //glDisable(GL_CULL_FACE);
     }
 
     private void runSecondThread() {
@@ -308,7 +435,7 @@ public class MenuCanvas extends FoxCanvas {
         createSubPanes();
         reloadShapes(this);
 
-        this.initialized = true;
+        initialized = true;
     }
 
     @Override
@@ -562,16 +689,18 @@ public class MenuCanvas extends FoxCanvas {
      */
     public void saveNewHeroAndPlay(HeroCreatingPane newHeroTemplate) {
         // сохраняем нового героя и проставляем как текущего:
-        HeroDTO aNewToSave = HeroDTO.builder()
-                .baseColor(newHeroTemplate.getBaseColor())
-                .secondColor(newHeroTemplate.getSecondColor())
-                .corpusType(newHeroTemplate.getChosenCorpusType())
-                .periferiaType(newHeroTemplate.getChosenPeriferiaType())
-                .periferiaSize(newHeroTemplate.getPeriferiaSize())
-                .worldUid(newHeroTemplate.getWorldUid())
-                .build();
-        aNewToSave.setHeroUid(UUID.randomUUID());
-        aNewToSave.setHeroName(newHeroTemplate.getHeroName());
+        HeroDTO aNewToSave = new HeroDTO();
+
+        aNewToSave.setBaseColor(newHeroTemplate.getBaseColor());
+        aNewToSave.setSecondColor(newHeroTemplate.getSecondColor());
+
+        aNewToSave.setCorpusType(newHeroTemplate.getChosenCorpusType());
+        aNewToSave.setPeriferiaType(newHeroTemplate.getChosenPeriferiaType());
+        aNewToSave.setPeriferiaSize(newHeroTemplate.getPeriferiaSize());
+
+        aNewToSave.setWorldUid(newHeroTemplate.getWorldUid());
+        aNewToSave.setCharacterUid(UUID.randomUUID());
+        aNewToSave.setCharacterName(newHeroTemplate.getHeroName());
         aNewToSave.setOwnerUid(gameController.getCurrentPlayerUid());
         aNewToSave.setCreateDate(LocalDateTime.now());
 

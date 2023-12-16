@@ -64,11 +64,9 @@ import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwMaximizeWindow;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwPostEmptyEvent;
-import static org.lwjgl.glfw.GLFW.glfwRestoreWindow;
 import static org.lwjgl.glfw.GLFW.glfwSetCursor;
 import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowAspectRatio;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowFocusCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowIconifyCallback;
@@ -210,10 +208,10 @@ public class GameFrame {
         }
 
         // Минимальный и максимальный размер:
-//        glfwSetWindowSizeLimits(window, windowSize.width, windowSize.height, windowSize.width, windowSize.height);
+        // glfwSetWindowSizeLimits(window, windowSize.width, windowSize.height, windowSize.width, windowSize.height);
 
         // Соотношение сторон области содержимого окна оконного режима:
-        glfwSetWindowAspectRatio(window, 16, 10);
+        // glfwSetWindowAspectRatio(window, 16, 10);
 
         GLFWVidMode mode = glfwGetVideoMode(window);
         if (mode != null) {
@@ -241,7 +239,7 @@ public class GameFrame {
             glfwSetWindowPos(window,
                     (videoMode.width() - windowSize.width) / 2,
                     (videoMode.height() - windowSize.height) / 2);
-            glfwRestoreWindow(window);
+            // glfwRestoreWindow(window);
         } else if (Constants.getUserConfig().getFullscreenType().equals(UserConfig.FullscreenType.MAXIMIZE_WINDOW)) {
             log.info("Работаем в псевдо-полноэкране...");
             glfwMaximizeWindow(window);
@@ -283,11 +281,11 @@ public class GameFrame {
 
         // Set the clear color
         if (currentScreen.equals(ScreenType.MENU_SCREEN)) {
-            glClearColor(0.0f, 0.0f, 1.0f, 0.5f);
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         } else if (currentScreen.equals(ScreenType.GAME_SCREEN)) {
-            glClearColor(0.0f, 1.0f, 0.0f, 0.5f);
+            glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
         } else {
-            glClearColor(1.0f, 0.0f, 0.0f, 0.5f);
+            glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         }
 
         // Run the rendering loop until the user has attempted to close the window or has pressed the ESCAPE key.
@@ -320,16 +318,22 @@ public class GameFrame {
 
                 //  переводит вызывающий поток в спящий режим до тех пор, пока не будет получено хотя бы одно событие:
                 // glfwWaitEvents();
-                glfwWaitEventsTimeout(1.0d);
+                glfwWaitEventsTimeout(0.015625d);
                 // Если основной поток спит в glfwWaitEvents, можете разбудить его из другого потока, отправив событие glfwPostEmptyEvent();
             }
         }
         if (isGlWindowBreaked) {
-            exit();
+            try {
+                glfwFreeCallbacks(window);
+            } finally {
+                exit();
+            }
         }
     }
 
     private void exit() {
+        Media.playSound("landing");
+
         // Terminate GLFW and free the error callback
         glfwTerminate();
 
@@ -420,7 +424,6 @@ public class GameFrame {
                         glfwDestroyWindow(window);
                     }
                 } else {
-                    Media.playSound("landing");
                     glfwSetWindowShouldClose(window, false); // Не закрывает окно :)
                 }
             }

@@ -31,7 +31,7 @@ import java.util.UUID;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "heroes", uniqueConstraints = @UniqueConstraint(name = "uc_names_in_world", columnNames = {"hero_name", "world_uid" }))
+@Table(name = "heroes", uniqueConstraints = @UniqueConstraint(name = "uc_names_in_world", columnNames = {"hero_name", "world_uid"}))
 public class Hero {
     @Id
     @Comment("UUID героя")
@@ -74,7 +74,7 @@ public class Hero {
     @Builder.Default
     @Comment("Уровень героя")
     @Column(name = "level", nullable = false)
-    private short level = 1;
+    private int level = 1;
 
     @Builder.Default
     @Comment("Тип корпуса героя")
@@ -115,7 +115,7 @@ public class Hero {
     @Builder.Default
     @Comment("Скорость героя")
     @Column(name = "speed", nullable = false)
-    private byte speed = 6;
+    private float speed = 6;
 
     @Comment("Имеющиеся бафы героя")
     @Column(name = "buffs_json", length = 1024, nullable = false)
