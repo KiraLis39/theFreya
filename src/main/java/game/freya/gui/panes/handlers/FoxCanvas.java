@@ -51,6 +51,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -60,6 +61,59 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static game.freya.config.Constants.FFB;
 import static game.freya.config.Constants.ONE_TURN_PI;
 import static javax.swing.JLayeredPane.PALETTE_LAYER;
+import static org.lwjgl.opengl.GL11.GL_ALPHA_TEST;
+import static org.lwjgl.opengl.GL11.GL_AMBIENT;
+import static org.lwjgl.opengl.GL11.GL_BACK;
+import static org.lwjgl.opengl.GL11.GL_BLEND;
+import static org.lwjgl.opengl.GL11.GL_CCW;
+import static org.lwjgl.opengl.GL11.GL_COLOR_MATERIAL;
+import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
+import static org.lwjgl.opengl.GL11.GL_FILL;
+import static org.lwjgl.opengl.GL11.GL_FLAT;
+import static org.lwjgl.opengl.GL11.GL_FOG;
+import static org.lwjgl.opengl.GL11.GL_FOG_COLOR;
+import static org.lwjgl.opengl.GL11.GL_FOG_DENSITY;
+import static org.lwjgl.opengl.GL11.GL_FRONT;
+import static org.lwjgl.opengl.GL11.GL_GEQUAL;
+import static org.lwjgl.opengl.GL11.GL_LEQUAL;
+import static org.lwjgl.opengl.GL11.GL_LIGHT0;
+import static org.lwjgl.opengl.GL11.GL_LIGHTING;
+import static org.lwjgl.opengl.GL11.GL_LINE;
+import static org.lwjgl.opengl.GL11.GL_LINEAR_ATTENUATION;
+import static org.lwjgl.opengl.GL11.GL_LINE_SMOOTH;
+import static org.lwjgl.opengl.GL11.GL_LINE_SMOOTH_HINT;
+import static org.lwjgl.opengl.GL11.GL_NICEST;
+import static org.lwjgl.opengl.GL11.GL_NORMALIZE;
+import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH;
+import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH_HINT;
+import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH;
+import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH_HINT;
+import static org.lwjgl.opengl.GL11.GL_POSITION;
+import static org.lwjgl.opengl.GL11.GL_SMOOTH;
+import static org.lwjgl.opengl.GL11.GL_SPECULAR;
+import static org.lwjgl.opengl.GL11.GL_SPOT_DIRECTION;
+import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.glAlphaFunc;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glBlendFunc;
+import static org.lwjgl.opengl.GL11.glClearDepth;
+import static org.lwjgl.opengl.GL11.glCullFace;
+import static org.lwjgl.opengl.GL11.glDepthFunc;
+import static org.lwjgl.opengl.GL11.glDepthMask;
+import static org.lwjgl.opengl.GL11.glDepthRange;
+import static org.lwjgl.opengl.GL11.glDisable;
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL11.glFogf;
+import static org.lwjgl.opengl.GL11.glFogfv;
+import static org.lwjgl.opengl.GL11.glFrontFace;
+import static org.lwjgl.opengl.GL11.glHint;
+import static org.lwjgl.opengl.GL11.glIsEnabled;
+import static org.lwjgl.opengl.GL11.glLightfv;
+import static org.lwjgl.opengl.GL11.glPolygonMode;
+import static org.lwjgl.opengl.GL11.glShadeModel;
 
 @Getter
 @Setter
@@ -98,6 +152,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private final AtomicBoolean isPingAwait = new AtomicBoolean(false);
 
+    private final ArrayList<Integer> textures = new ArrayList<>();
+
     private AtomicInteger drawErrors = new AtomicInteger(0);
 
     private transient Thread secondThread;
@@ -124,7 +180,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private float downShift = 0;
 
-    private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
+    private boolean firstButtonOver = false, firstButtonPressed = false, secondButtonOver = false, secondButtonPressed = false,
+            thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
 
     private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false;
 
@@ -134,12 +191,15 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private byte creatingSubsRetry = 0;
 
-    protected FoxCanvas(String name, GameController controller, JFrame parentFrame, UIHandler uiHandler) {
+    private long lastTimestamp;
+
+    private int fps;
+
+    protected FoxCanvas(String name, GameController controller, UIHandler uiHandler) {
         super(null, true);
 
         this.name = name;
         this.uiHandler = uiHandler;
-        this.parentFrame = parentFrame;
         this.gameController = controller;
 
         this.audioSettingsButtonText = "Настройки звука";
@@ -153,8 +213,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         this.optionsButtonText = "Настройки";
         this.saveButtonText = "Сохранить";
 
-        this.downInfoString1 = controller.getGameConfig().getAppCompany();
-        this.downInfoString2 = controller.getGameConfig().getAppName().concat(" v.").concat(controller.getGameConfig().getAppVersion());
+        this.downInfoString1 = Constants.getAppCompany();
+        this.downInfoString2 = Constants.getAppName().concat(" v.").concat(Constants.getAppVersion());
 
         this.pausedString = "- PAUSED -";
 
@@ -1003,4 +1063,239 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             }
         }
     }
+
+    protected void setSmooth() {
+        if (glIsEnabled(GL_SMOOTH)) {
+            return;
+        }
+
+        glDisable(GL_FLAT);
+
+        glEnable(GL_POINT_SMOOTH);
+        glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+
+        glEnable(GL_LINE_SMOOTH);
+        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+
+        glEnable(GL_POLYGON_SMOOTH);
+        glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+
+        glEnable(GL_SMOOTH);
+        glShadeModel(GL_SMOOTH);
+    }
+
+    protected void setFlat() {
+        glDisable(GL_SMOOTH);
+        glDisable(GL_LINE_SMOOTH);
+        glDisable(GL_POINT_SMOOTH);
+        glDisable(GL_POLYGON_SMOOTH);
+
+        glEnable(GL_FLAT);
+        glShadeModel(GL_FLAT);
+    }
+
+    protected void setLights() {
+        if (glIsEnabled(GL_LIGHTING) && glIsEnabled(GL_COLOR_MATERIAL)) {
+            return;
+        }
+
+        final float[] ambientLight = {0.75f, 0.75f, 1.0f, 1};
+        final float[] ambientSpecular = {1.0f, 1.0f, 1.0f, 1};
+        final float[] ambientPosition = {1.0f, 1.0f, 3.0f, 1};
+        final float[] ambientDirection = {-1.0f, -1.0f, -1.0f, -1.0f};
+        final float[] ambientAttenuation = {1.0f, 1.0f, 1.0f, 1};
+
+        // *** *** ***
+        // 1) Enable GL_LIGHTING:
+
+        // glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientLight);
+        // glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+
+        glLightfv(GL_LIGHT0, GL_POSITION, ambientPosition);
+        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
+        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, ambientDirection);
+        glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, ambientAttenuation);
+        // glLightfv(GL_LIGHT0, GL_CONSTANT_ATTENUATION, lightAttenuation);
+        // glLightfv(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, lightAttenuation);
+
+        // glLighti(GL_LIGHT0, GL_SPOT_EXPONENT, 64); //range 0-128
+        // glLighti(GL_LIGHT0, GL_SPOT_CUTOFF, 90); //range 0-90 and the special value 180
+        glEnable(GL_LIGHT0);
+
+        // glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
+        // glLightfv(GL_LIGHT1, GL_POSITION, diffuseIntensity);
+        // glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseIntensity);
+        // glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, new float[] {0.25f, 0.25f, -0.75f, 0.5f});
+        // glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.5f); // GL_LINEAR_ATTENUATION | GL_QUADRATIC_ATTENUATION | GL_CONSTANT_ATTENUATION
+        // glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);
+        // glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 2.0f);
+        // glEnable(GL_LIGHT1);
+
+        glEnable(GL_LIGHTING);
+        glEnable(GL_NORMALIZE);
+
+        if (Constants.getGameConfig().isColorMaterialEnabled()) {
+            // *** *** ***
+            // 2) Enable GL_COLOR_MATERIAL:
+        /*
+            Локальная точка зрения имеет тенденцию давать более реалистичные результаты, но поскольку направление необходимо вычислять
+             для каждой вершины, при использовании локальной точки зрения общая производительность снижается. По умолчанию предполагается
+             бесконечная точка обзора. Вот как можно перейти на локальную точку обзора:
+         */
+            // glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE); // GL_FALSE
+
+        /*
+            Возможно, вам захочется, чтобы внутренняя поверхность была полностью освещена в соответствии с заданными условиями освещения;
+             вы также можете указать другое описание материала для задних сторон При включении двустороннего освещения с помощью
+         */
+            // glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE); // GL_FALSE
+
+            // glMaterialfv(GL_FRONT, GL_AMBIENT, ambientColor);
+            // glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseColor);
+            // glMaterialfv(GL_FRONT, GL_SPECULAR, specularColor);
+            // glMaterialfv(GL_FRONT, GL_EMISSION, new float[] {0.1f, 0.1f, 0.1f, 1.0f});
+            // glMaterialfv(GL_FRONT, GL_SHININESS, new float[] {1.0f, 1.0f, 1.0f, 1.0f});
+            // glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, new float[] {0.5f, 0.5f, 0.6f, 0.75f});
+
+            // glMaterialf(GL_BACK, GL_SHININESS, 128);
+            // glMaterialf(GL_BACK, GL_SHININESS, 128);
+
+            /*
+             * GL_AMBIENT рассеянный свет GL_DIFFUSE тоже рассеянный свет, пояснения смотри ниже GL_SPECULAR отраженный свет GL_EMISSION
+             * излучаемый свет GL_SHININESS степень отраженного света GL_AMBIENT_AND_DIFFUSE оба рассеянных света
+             */
+            // glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+            // glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+            // glColorMaterial(GL_FRONT_AND_BACK, GL_SPECULAR);
+
+            // glEnable(GL_COLOR_MATERIAL);
+        }
+    }
+
+    protected void cullFace() {
+        if (glIsEnabled(GL_CULL_FACE)) {
+            return;
+        }
+
+        // настройка отображения передней и задней частей полигонов:
+        glPolygonMode(GL_FRONT, GL_FILL); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
+        glPolygonMode(GL_BACK, GL_LINE); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
+
+        // задаём ориентацию по часовой\против часовой:
+        glFrontFace(GL_CCW); // GL_CW | GL_CCW
+
+        // отсечение прямоугольников, обращенных от или скрытых от глаз:
+        glCullFace(GL_BACK); // GL_FRONT, GL_BACK, или GL_FRONT_AND_BACK
+        glEnable(GL_CULL_FACE);
+    }
+
+    protected void setDepth() {
+        if (glIsEnabled(GL_DEPTH_TEST) && !glIsEnabled(GL_BLEND)) {
+            return;
+        }
+
+        if (glIsEnabled(GL_BLEND)) {
+            glDisable(GL_BLEND);
+        }
+        glClearDepth(1.00);
+        glDepthMask(true);
+        glDepthRange(0, 100);
+
+        // glDepthFunc(GL_LESS);
+        glDepthFunc(GL_LEQUAL);
+        // glDepthFunc(GL_EQUAL);
+        // glDepthFunc(GL_NOTEQUAL);
+        // glDepthFunc(GL_GEQUAL);
+        // glDepthFunc(GL_GREATER);
+        // glDepthFunc(GL_ALWAYS);
+        // glDepthFunc(GL_NEVER);
+
+        // Буфер глубины или z-буфер используется для удаления невидимых линий и поверхностей:
+        glEnable(GL_DEPTH_TEST);
+    }
+
+    protected void setBlend() {
+        if (glIsEnabled(GL_BLEND)) {
+            return;
+        }
+
+//        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // "нормальное" смешивание. с сортировкой полигонов от ближнего к дальнему
+//        glBlendFunc(GL_ONE, GL_ONE); // аддиктивное смешивание, сложение нового и старого цвета. Полезно для "энергетических" эффектов вроде огня и электричества.
+//        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // то же самое, но с учетом прозрачности с текстуры. с сортировкой полигонов от ближнего к дальнему
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Буфер глубины или z-буфер используется для удаления невидимых линий и поверхностей:
+        if (glIsEnabled(GL_DEPTH_TEST)) {
+            glDepthMask(false);
+            glDisable(GL_DEPTH_TEST);
+        }
+
+        // glEnable(GL_ALPHA_TEST); // нужно?..
+        glEnable(GL_BLEND);
+    }
+
+    protected void setFog() {
+        if (glIsEnabled(GL_FOG)) {
+            return;
+        }
+
+        final float[] fogcolor = {0.2f, 0.2f, 0.2f, 1.00f}; // цвет тумана
+
+        glEnable(GL_FOG);
+        glFogfv(GL_FOG_COLOR, fogcolor); // устанавливаем цвет тумана
+        glFogf(GL_FOG_DENSITY, 0.75f);
+
+//	      glHint(GL_FOG_HINT, GL_FASTEST);
+//		  glHint(GL_FOG_HINT, GL_NICEST);
+//        glHint(GL_FOG_HINT, GL_DONT_CARE);
+    }
+
+    protected void setAlphaTest() {
+        if (glIsEnabled(GL_ALPHA_TEST)) {
+            return;
+        }
+
+//		  glAlphaFunc(GL_ALWAYS, 0.33f);
+//		  glAlphaFunc(GL_LESS, 0.50f);
+//		  glAlphaFunc(GL_EQUAL, 1.00f);
+//		  glAlphaFunc(GL_LEQUAL, 0.5f);
+//		  glAlphaFunc(GL_GREATER, 0.75f);
+//		  glAlphaFunc(GL_NOTEQUAL, 0.00f);
+        glAlphaFunc(GL_GEQUAL, 0.5f);
+//		  glAlphaFunc(GL_NEVER, 0.00f);
+
+        glEnable(GL_ALPHA_TEST);
+    }
+
+    protected void bindTextureByIndex(int textureIndex) {
+        glBindTexture(GL_TEXTURE_2D, textures.get(textureIndex));
+    }
+
+    protected void loadMenuTextures() {
+        if (textures.isEmpty()) {
+            try {
+//            textures.add(0, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest"), true).getTextureObject(gl2));
+//            textures.add(1, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest2"), true).getTextureObject(gl2));
+//            textures.add(2, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest3"), true).getTextureObject(gl2));
+//            textures.add(3, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest4"), true).getTextureObject(gl2));
+//            textures.add(4, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList0"), true).getTextureObject(gl2));
+//            textures.add(5, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList1"), true).getTextureObject(gl2));
+//            textures.add(6, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList2"), true).getTextureObject(gl2));
+//            textures.add(7, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList0_0"), true).getTextureObject(gl2));
+//            textures.add(8, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList1_0"), true).getTextureObject(gl2));
+//            textures.add(9, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList2_0"), true).getTextureObject(gl2));
+//            textures.add(10, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList3"), true).getTextureObject(gl2));
+//            textures.add(11, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList4"), true).getTextureObject(gl2));
+//            textures.add(12, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList5"), true).getTextureObject(gl2));
+            } catch (Exception e) {
+                log.error("Проблема возникла при обработке текстур в центральном окне главного меню игры: {}", ExceptionUtils.getFullExceptionMessage(e));
+            }
+        }
+    }
+
+//        Out.Print("\nДанная программа использует " +
+//                (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576 +
+//                "мб из " + Runtime.getRuntime().totalMemory() / 1048576 +
+//                "мб выделенных под неё. \nСпасибо за использование утилиты компании MultyVerse39 Group!");
 }

@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
-import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import java.awt.AWTException;
 import java.awt.Color;
@@ -24,7 +23,6 @@ import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
-import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -33,8 +31,6 @@ import java.awt.geom.Point2D;
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
 public class GameCanvas extends FoxCanvas {
-    private final transient JFrame parentFrame;
-
     private final transient GameController gameController;
 
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
@@ -43,30 +39,27 @@ public class GameCanvas extends FoxCanvas {
 
     private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
 
-    private double parentHeightMemory = 0;
-
     private transient Thread resizeThread = null;
 
 
-    public GameCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
-        super("GameCanvas", gameController, parentFrame, uiHandler);
+    public GameCanvas(UIHandler uiHandler, GameController gameController) {
+        super("GameCanvas", gameController, uiHandler);
 
         this.gameController = gameController;
-        this.parentFrame = parentFrame;
 
-        setSize(parentFrame.getSize());
+//        setSize(parentFrame.getSize());
         setBackground(Color.BLACK);
         setIgnoreRepaint(true);
         setOpaque(false);
 //        setFocusable(false);
 
-        addMouseMotionListener(this);
-        addMouseWheelListener(this);
-        addMouseListener(this);
-        addKeyListener(this);
+//        addMouseMotionListener(this);
+//        addMouseWheelListener(this);
+//        addMouseListener(this);
+//        addKeyListener(this);
 //        addComponentListener(this);
 
-        if (gameController.isCurrentWorldIsNetwork()) {
+        if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
             if (gameController.isCurrentWorldIsLocal() && !gameController.isServerIsOpen()) {
                 gameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в локальной сетевой игре, но наш Сервер не запущен!");
@@ -78,7 +71,7 @@ public class GameCanvas extends FoxCanvas {
             }
         }
 
-        Thread.startVirtualThread(this);
+//        Thread.startVirtualThread(this);
 
         // запуск вспомогательного потока процессов игры:
         setSecondThread("Game second thread", new Thread(() -> {
@@ -96,11 +89,11 @@ public class GameCanvas extends FoxCanvas {
                 checkGameplayDuration(gameController.getCurrentHeroInGameTime());
 
                 // если изменился размер фрейма:
-                if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
-                    log.debug("Resizing by parent frame...");
-                    onResize();
-                    parentHeightMemory = parentFrame.getBounds().getHeight();
-                }
+//                if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
+//                    log.debug("Resizing by parent frame...");
+//                    onResize();
+//                    parentHeightMemory = parentFrame.getBounds().getHeight();
+//                }
 
                 try {
                     Thread.sleep(SECOND_THREAD_SLEEP_MILLISECONDS);
@@ -109,11 +102,11 @@ public class GameCanvas extends FoxCanvas {
                 }
             }
         }));
-        getSecondThread().start();
+//        getSecondThread().start();
     }
 
-    public static void render(long window) {
-
+    public void render() {
+        // not realized yet
     }
 
     private void setInAc() {
@@ -138,7 +131,6 @@ public class GameCanvas extends FoxCanvas {
         this.isControlsMapped = true;
     }
 
-    @Override
     public void run() {
         long lastTime = System.currentTimeMillis();
         long delta;
@@ -165,14 +157,14 @@ public class GameCanvas extends FoxCanvas {
             delta = System.currentTimeMillis() - lastTime;
             lastTime = System.currentTimeMillis();
 
-            if (!parentFrame.isActive()) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                continue;
-            }
+//            if (!parentFrame.isActive()) {
+//                try {
+//                    Thread.sleep(100);
+//                } catch (InterruptedException e) {
+//                    Thread.currentThread().interrupt();
+//                }
+//                continue;
+//            }
 
             if (!Constants.isPaused()) {
                 dragViewIfNeeds();
@@ -361,7 +353,7 @@ public class GameCanvas extends FoxCanvas {
 
             Constants.setPaused(false);
             Constants.setDebugInfoVisible(false);
-            gameController.doScreenShot(parentFrame.getLocation(), getBounds());
+//            gameController.doScreenShot(parentFrame.getLocation(), getBounds());
             Constants.setPaused(paused);
             Constants.setDebugInfoVisible(debug);
 
@@ -400,17 +392,6 @@ public class GameCanvas extends FoxCanvas {
         gameController.saveCurrentWorld();
     }
 
-    @Override
-    public void mouseClicked(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-        this.mousePressedOnPoint = e.getPoint();
-    }
-
-    @Override
     public void mouseReleased(MouseEvent e) {
         if (isFirstButtonOver()) {
             if (isOptionsMenuSetVisible()) {
@@ -478,17 +459,6 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    @Override
-    public void mouseEntered(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
-
-    @Override
     public void mouseDragged(MouseEvent e) {
         if (SwingUtilities.isRightMouseButton(e)) {
             Point p = e.getPoint();
@@ -506,7 +476,6 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    @Override
     public void mouseMoved(MouseEvent e) {
         Point p = e.getPoint();
 
@@ -529,7 +498,6 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         if (Constants.isPaused()) {
             // not work into pause
@@ -540,27 +508,6 @@ public class GameCanvas extends FoxCanvas {
             case -1 -> zoomIn();
             default -> log.warn("MouseWheelEvent unknown action: {}", e.getWheelRotation());
         }
-    }
-
-    @Override
-    public void componentResized(ComponentEvent e) {
-        onResize();
-    }
-
-    @Override
-    public void componentMoved(ComponentEvent e) {
-
-    }
-
-    @Override
-    public void componentShown(ComponentEvent e) {
-        log.info("Возврат фокуса на холст...");
-        requestFocus();
-    }
-
-    @Override
-    public void componentHidden(ComponentEvent e) {
-
     }
 
     private void onResize() {
@@ -577,11 +524,11 @@ public class GameCanvas extends FoxCanvas {
 
             log.debug("Resizing of game canvas...");
 
-            if (Constants.getUserConfig().isFullscreen()) {
-                setSize(parentFrame.getSize());
-            } else if (!getSize().equals(parentFrame.getRootPane().getSize())) {
-                setSize(parentFrame.getRootPane().getSize());
-            }
+//            if (Constants.getUserConfig().isFullscreen()) {
+//                setSize(parentFrame.getSize());
+//            } else if (!getSize().equals(parentFrame.getRootPane().getSize())) {
+//                setSize(parentFrame.getRootPane().getSize());
+//            }
 
             if (isVisible()) {
                 reloadShapes(this);
@@ -597,12 +544,6 @@ public class GameCanvas extends FoxCanvas {
         resizeThread.start();
     }
 
-    @Override
-    public void keyTyped(KeyEvent e) {
-
-    }
-
-    @Override
     public void keyPressed(KeyEvent e) {
         // hero movement:
         if (e.getKeyCode() == HotKeys.MOVE_UP.getEvent()) {
@@ -633,7 +574,6 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    @Override
     public void keyReleased(KeyEvent e) {
         if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
             gameController.setPlayerMovingUp(false);

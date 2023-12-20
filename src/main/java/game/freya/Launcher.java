@@ -1,13 +1,10 @@
 package game.freya;
 
-import game.freya.config.Constants;
-import game.freya.config.GameConfig;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.env.Environment;
 
 import java.io.IOException;
@@ -21,7 +18,7 @@ import java.util.TimeZone;
 @Slf4j
 //@EnableAsync
 @SpringBootApplication
-@EnableConfigurationProperties({GameConfig.class})
+//@EnableConfigurationProperties({GameConfig.class})
 public class Launcher {
     public static void main(String[] args) {
         log.info("Setting up the system properties...");
@@ -50,12 +47,10 @@ public class Launcher {
         logApplicationStartup(app.run(args).getEnvironment());
     }
 
-    // устанавливаем всё, что должно быть готово к запуску:
     private static void globalPreInitialization() {
         try {
-            Path dataBasePath = Constants.getDatabaseRootDir();
-            if (Files.notExists(dataBasePath.getParent())) {
-                Files.createDirectory(dataBasePath.getParent());
+            if (Files.notExists(Path.of("./db/"))) {
+                Files.createDirectory(Path.of("./db/"));
             }
         } catch (IOException e) {
             log.error("Init database creation error: {}", ExceptionUtils.getFullExceptionMessage(e));

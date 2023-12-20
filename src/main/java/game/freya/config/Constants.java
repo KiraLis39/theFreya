@@ -30,24 +30,11 @@ import java.awt.GraphicsConfiguration;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 @Slf4j
 public final class Constants {
-    // net:
-    public static final int DEFAULT_SERVER_PORT = 13958;
-
-    public static final int SOCKET_BUFFER_SIZE = 4096; // 65536 | 16384 | 8192 | 4096
-
-    public static final long SERVER_BROADCAST_DELAY = 50L; // миллисекунд ждать между отправками данных
-
-    public static final int SOCKET_PING_AWAIT_TIMEOUT = 9_000; // сколько миллисекунд клиент ждёт данные от Сервера
-
-    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд клиент ждёт данные от Сервера
-
     // other:
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
 
@@ -55,10 +42,9 @@ public final class Constants {
 
     public static final int MAP_CELL_DIM = 64;
 
-    public static final String DEFAULT_AVATAR_URL = "/images/defaultAvatar.png";
+    public static final String DEFAULT_AVATAR_URL = "/images/player/defaultAvatar.png";
 
     public static final double ONE_TURN_PI = Math.PI / 4d;
-
 
     // libraries objects:
     public static final VideoMonitor MON = new VideoMonitor();
@@ -72,8 +58,6 @@ public final class Constants {
     public static final InputAction INPUT_ACTION = new InputAction();
 
     public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
-
-    // public static final FoxExperience EXP = new FoxExperience();
 
     // public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.of("ru"));
     public static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("День dd (HH:mm)", Locale.of("ru"));
@@ -91,6 +75,8 @@ public final class Constants {
 
     public static final Font GAME_FONT_03 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 32, true, MON.getEnvironment());
 
+    // public static final FoxExperience EXP = new FoxExperience();
+
     public static final Font MENU_BUTTONS_BIG_FONT;
 
     public static final Font LITTLE_UNICODE_FONT;
@@ -101,13 +87,28 @@ public final class Constants {
 
     public static final Font PROPAGANDA_BIG_FONT;
 
+    @Getter
+    private static final String appVersion = "0.2.0";
+
+    @Getter
+    private static final String appName = "Freya the Game";
+
+    @Getter
+    private static final String authorName = "KiraLis39";
+
+    @Getter
+    private static final String appCompany = "Multiverse-39 Group, 2023";
+
+    @Getter
+    private static final double dragSpeed = 12D;
+
+    @Getter
+    private static final double scrollSpeed = 20D;
+
+    @Getter
+    private static final double gravity = 9.800000190734863D;
+
     // project:
-    @Getter
-    private static final String gameAuthor = "KiraLis39";
-
-    @Getter
-    private static final Path databaseRootDir = FileSystems.getDefault().getPath("./db/freya.db").toAbsolutePath();
-
     @Getter
     private static final String imageExtension = ".png"; // .png
 
@@ -122,13 +123,10 @@ public final class Constants {
     private static final FoxPlayer musicPlayer = new FoxPlayer("musicPlayer");
 
     @Getter
-    private static final double dragSpeed = 12D;
+    private static final String userSaveUrl = "./saves/".concat(SystemUtils.getUserName()).concat("/save.json");
 
     @Getter
-    private static final double scrollSpeed = 20D;
-
-    @Getter
-    private static final String userSave = "./saves/".concat(SystemUtils.getUserName()).concat("/save.json");
+    private static final String gameConfigUrl = "./game_config.json";
 
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
@@ -157,10 +155,14 @@ public final class Constants {
     @Getter
     private static Cursor defaultCursor;
 
-    // user config:
+    // configs:
     @Getter
     @Setter
     private static UserConfig userConfig;
+
+    @Getter
+    @Setter
+    private static GameConfig gameConfig;
 
     // dynamic game booleans:
     @Getter
@@ -179,13 +181,6 @@ public final class Constants {
     private static boolean isMinimapShowed = true;
 
     @Getter
-    @Setter
-    private static boolean isGLDebugMode = true;
-
-    @Getter
-    private static boolean isCullFaceGlEnabled = true;
-
-    @Getter
     private static String worldsImagesDir = "./worlds/img/";
 
     private static int realFreshRate = 0;
@@ -193,6 +188,9 @@ public final class Constants {
     private static long timePerFrame = -1;
 
     private static long fpsLimitMem = -1;
+
+    @Getter
+    private static volatile int fps = 0;
 
     static {
         try (InputStream is = Constants.class.getResourceAsStream("/cursors/default.png")) {
@@ -239,7 +237,7 @@ public final class Constants {
     }
 
     public static int getMaxConnectionWasteTime() {
-        return SOCKET_CONNECTION_AWAIT_TIMEOUT - SOCKET_PING_AWAIT_TIMEOUT;
+        return gameConfig.getSocketConnectionAwaitTimeout() - gameConfig.getSocketPingAwaitTimeout();
     }
 
     public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {
@@ -311,5 +309,9 @@ public final class Constants {
             log.info("TPF now: {} to FPS limit {}", timePerFrame, fpsLimitMem);
         }
         return timePerFrame;
+    }
+
+    public static void setCurrentFps(int _fps) {
+        fps = _fps;
     }
 }

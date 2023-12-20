@@ -31,12 +31,6 @@ spring:
     lazy-initialization: false
     allow-bean-definition-overriding: false
 
-  application:
-    name: Freya the Game
-    version: 0.2.0
-    author: KiraLis39
-    company: Multiverse-39 Group, 2023
-
   profiles:
     group:
       dev: dev

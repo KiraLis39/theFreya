@@ -72,7 +72,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
         this.isControlledExit = false;
 
         this.host = host;
-        this.port = port != null ? port : Constants.DEFAULT_SERVER_PORT;
+        this.port = port != null ? port : Constants.getGameConfig().getDefaultServerPort();
         connectionThread = new Thread(LocalSocketConnection.this) {{
             setName("Socket connection thread");
             setDaemon(true);
@@ -330,14 +330,14 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
     public void run() {
         try (Socket client = new Socket()) {
             this.socket = client;
-            this.socket.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
-            this.socket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
+            this.socket.setSendBufferSize(Constants.getGameConfig().getSocketBufferSize());
+            this.socket.setReceiveBufferSize(Constants.getGameConfig().getSocketBufferSize());
             this.socket.setReuseAddress(true);
             // this.socket.setKeepAlive(true);
             this.socket.setTcpNoDelay(true);
 
-            this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
-            this.socket.connect(new InetSocketAddress(this.host, this.port), Constants.SOCKET_PING_AWAIT_TIMEOUT);
+            this.socket.setSoTimeout(Constants.getGameConfig().getSocketConnectionAwaitTimeout());
+            this.socket.connect(new InetSocketAddress(this.host, this.port), Constants.getGameConfig().getSocketPingAwaitTimeout());
 
             try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()));
                  ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))

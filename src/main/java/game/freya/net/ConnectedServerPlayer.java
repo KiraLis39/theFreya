@@ -76,12 +76,12 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.clientUid = UUID.randomUUID();
 
         this.client = client;
-        this.client.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
-        this.client.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
+        this.client.setSendBufferSize(Constants.getGameConfig().getSocketBufferSize());
+        this.client.setReceiveBufferSize(Constants.getGameConfig().getSocketBufferSize());
         // this.client.setReuseAddress(true);
         // this.client.setKeepAlive(true);
         this.client.setTcpNoDelay(true);
-        this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
+        this.client.setSoTimeout(Constants.getGameConfig().getSocketConnectionAwaitTimeout());
 
         setDaemon(true);
         setUncaughtExceptionHandler((t, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));

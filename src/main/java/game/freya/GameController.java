@@ -3,7 +3,6 @@ package game.freya;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import fox.FoxLogo;
 import game.freya.config.Constants;
-import game.freya.config.GameConfig;
 import game.freya.config.Media;
 import game.freya.entities.Player;
 import game.freya.entities.World;
@@ -101,9 +100,6 @@ public class GameController extends GameControllerBase {
     private final Server server;
 
     @Getter
-    private final GameConfig gameConfig;
-
-    @Getter
     private LocalSocketConnection localSocketConnection;
 
     private Thread pingThread;
@@ -187,7 +183,7 @@ public class GameController extends GameControllerBase {
             try (InputStream is = Constants.class.getResourceAsStream("/images/logo.png")) {
                 if (is != null) {
                     Constants.setLogo(new FoxLogo());
-                    Constants.getLogo().start(getGameConfig().getAppVersion(),
+                    Constants.getLogo().start(Constants.getAppVersion(),
                             Constants.getUserConfig().isFullscreen() ? FoxLogo.IMAGE_STYLE.FILL : FoxLogo.IMAGE_STYLE.DEFAULT,
                             FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
                 }
@@ -215,23 +211,23 @@ public class GameController extends GameControllerBase {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("default_cursor", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/net.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/icons/net/net.png")) {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("net", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/player/player.png")) {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("player", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_01.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/objects/mock_01.png")) {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("mock_01", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_02.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/objects/mock_02.png")) {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("mock_02", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_03.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/objects/mock_03.png")) {
                 Objects.requireNonNull(netResource);
                 Constants.CACHE.addIfAbsent("mock_03", ImageIO.read(netResource));
             }
@@ -340,7 +336,7 @@ public class GameController extends GameControllerBase {
                 }
 
                 try {
-                    Thread.sleep(Constants.SERVER_BROADCAST_DELAY);
+                    Thread.sleep(Constants.getGameConfig().getServerBroadcastDelay());
                 } catch (InterruptedException e) {
                     log.warn("Прерывание потока отправки данных на сервер!");
                     Thread.currentThread().interrupt();
@@ -427,7 +423,7 @@ public class GameController extends GameControllerBase {
                         location.y + 30 + canvasRect.getBounds().y,
                         canvasRect.getBounds().width, canvasRect.getBounds().height
                 ),
-                Constants.getWorldsImagesDir() + worldService.getCurrentWorld().getUid());
+                Constants.getWorldsImagesDir() + worldService.getCurrentWorld().getUid(), false);
     }
 
     /**

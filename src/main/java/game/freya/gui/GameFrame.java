@@ -10,6 +10,7 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Component;
 
 import javax.swing.SwingUtilities;
 import java.awt.Dimension;
+import java.awt.Rectangle;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_AUTO_ICONIFY;
@@ -84,8 +86,15 @@ import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_NICEST;
+import static org.lwjgl.opengl.GL11.GL_PERSPECTIVE_CORRECTION_HINT;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
+import static org.lwjgl.opengl.GL11.glFrustum;
+import static org.lwjgl.opengl.GL11.glHint;
+import static org.lwjgl.opengl.GL11.glLoadIdentity;
+import static org.lwjgl.opengl.GL11.glScalef;
+import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 @Slf4j
@@ -93,6 +102,8 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 @RequiredArgsConstructor
 public class GameFrame {
     private final Dimension monitorSize = Constants.MON.getConfiguration().getBounds().getSize();
+
+    private final UIHandler uiHandler;
 
     private Dimension windowSize;
 
@@ -104,8 +115,15 @@ public class GameFrame {
 
     private ScreenType currentScreen;
 
+    private MenuCanvas menuCanvas;
+
+    private GameCanvas gameCanvas;
+
     public void appStart(GameController gameController) {
         this.gameController = gameController;
+
+        menuCanvas = new MenuCanvas(uiHandler, gameController);
+        gameCanvas = new GameCanvas(uiHandler, gameController);
 
         double newWidth = monitorSize.getWidth() * 0.75d;
         double newHeight = newWidth / (monitorSize.getWidth() / monitorSize.getHeight());
@@ -128,7 +146,7 @@ public class GameFrame {
         if (!glfwInit()) {
             throw new IllegalStateException("Unable to initialize GLFW");
         } else {
-            final boolean DEBUG = Constants.isGLDebugMode();
+            final boolean DEBUG = Constants.getGameConfig().isGlDebugMode();
             if (DEBUG) {
                 // When we are in debug mode, enable all LWJGL debug flags
                 Configuration.DEBUG.set(true);
@@ -155,14 +173,14 @@ public class GameFrame {
 
         // Configure GLFW Hints:
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
-        glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_TRUE); // курсор по центру вновь созданных полноэкранных окон
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
         glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE); // будет ли полноэкранное окно автоматически иконизироваться и восстанавливать предыдущий видеорежим при потере фокуса ввода
         glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE); // будет ли окну предоставлен фокус ввода при вызове glfwShowWindow
-        glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_FALSE); // Если включен, ситуации, которые могли бы вызвать ошибки, вызывают неопределенное поведение
-        glfwWindowHint(GLFW_SAMPLES, 0); // количество выборок, которые будут использоваться для мультисэмплинга
+        glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_TRUE); // курсор по центру вновь созданных полноэкранных окон
         glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE); // должен ли кадровый буфер иметь двойную буферизацию
+        glfwWindowHint(GLFW_SAMPLES, 6); // количество выборок, которые будут использоваться для мультисэмплинга
+        glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_FALSE); // Если включен, ситуации, которые могли бы вызвать ошибки, вызывают неопределенное поведение
 
 //        GLFWImage.Buffer buff = new GLFWImage.Buffer(ByteBuffer.wrap(ImageIO.read().getData().))[2];
 //        GLFWImage images = new GLFWImage(window)[2];
@@ -197,7 +215,7 @@ public class GameFrame {
         byte monitorIndex = 0;
         byte share = 0;
         window = glfwCreateWindow(800, 600,
-                gameController.getGameConfig().getAppName().concat(" v.").concat(gameController.getGameConfig().getAppVersion()),
+                Constants.getAppName().concat(" v.").concat(Constants.getAppVersion()),
                 monitorIndex, share);
         if (window == NULL) {
             throw new GlobalServiceException(ErrorMessages.GL, "Failed to create the GLFW menu");
@@ -219,11 +237,6 @@ public class GameFrame {
         } else {
             glfwWindowHint(GLFW_REFRESH_RATE, GLFW_DONT_CARE); // GLFW_DONT_CARE = игнорировать
         }
-
-        // Get the thread stack and push a new frame
-//        try (MemoryStack stack = stackPush()) {
-//            IntBuffer pWidth = stack.mallocInt(1); // int*
-//            IntBuffer pHeight = stack.mallocInt(1); // int*
 
         // Get the resolution of the primary monitor
         GLFWVidMode videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -251,12 +264,15 @@ public class GameFrame {
         glfwMakeContextCurrent(window);
 
         // Enable v-sync
-        glfwSwapInterval(1);
+        if (Constants.getGameConfig().isUseVSync()) {
+            glfwSwapInterval(1);
+        } else {
+            glfwSwapInterval(0);
+        }
 
         // Make the window visible
         glfwShowWindow(window);
         glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-//        }
 
         // прозрачность окна:
 //        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
@@ -271,6 +287,7 @@ public class GameFrame {
     }
 
     private void loop() {
+        final int UPDATE_EVERY = 3; // update FPS every seconds
         long lastUpdate = System.currentTimeMillis();
         int frames = 0;
 
@@ -278,6 +295,8 @@ public class GameFrame {
         // LWJGL detects the context that is current in the current thread, creates the GLCapabilities instance and makes the OpenGL
         // bindings available for use.
         GL.createCapabilities();
+
+        glLoadIdentity();
 
         // Set the clear color
         if (currentScreen.equals(ScreenType.MENU_SCREEN)) {
@@ -288,47 +307,114 @@ public class GameFrame {
             glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         }
 
-        // Run the rendering loop until the user has attempted to close the window or has pressed the ESCAPE key.
+        // корректирует масштабы OpenGL < -1; 1 > на разрешение окна игры:
+        float aspect = 1f;
+        if (windowSize.width < windowSize.height) { // или наоборот?..
+            aspect = (float) windowSize.width / windowSize.height;
+        } else if (windowSize.width > windowSize.height) {
+            aspect = (float) windowSize.height / windowSize.width;
+        }
+
+        // Подготовка к циклу рисований:
+        if (Constants.getUserConfig().isFullscreen()) {
+            Rectangle monDim = Constants.MON.getConfiguration().getBounds();
+            glViewport(0, 0, monDim.width, monDim.height);
+        } else {
+            glViewport(0, 0, windowSize.width, windowSize.height);
+        }
+        glScalef(aspect, 1, 1);
+
+        double fov = 45;
+        double zNear = 0.0001;
+        double zFar = 100;
+        double frHeight = Math.tan((fov / 360) * Math.PI) * zNear;
+        double frWidth = frHeight * aspect;
+        log.info("Frustum parameters: horizontal {} x {}, vertical {} x {}, near {}, far {}", -frWidth, frWidth, -frHeight, frHeight, zNear, zFar);
+        glFrustum(-frWidth, frWidth, -frHeight, frHeight, zNear, zFar); // обычная проекция (ближе - больше, дальше - меньше)
+        // glOrtho(-2, 2, -2, 2, 1, -1); // ортогональная (плоская) проекция.
+        // glDepthRange(0, 100);
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
+        // Начинаем цикл рисований:
         while (!isGlWindowBreaked && !glfwWindowShouldClose(window)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
             if (window == menu) {
-                MenuCanvas.render(window);
+                menuCanvas.render();
+
+//                FloatBuffer pVertxs = FloatBuffer.wrap(new float[] {-0.9f, -0.9f, 0.0f, 0.9f, -0.9f, 0.0f, 0.0f, 0.9f, 0.0f});
+//                glEnableClientState(GL_VERTEX_ARRAY);
+//                glVertexPointer(9, GL_FLOAT, 0, pVertxs);
+//                glColor3f(1.0f, 0.0f, 0.0f);
+//                glDrawArrays(GL_TRIANGLES, 0, 3);
             } else if (window == game) {
-                GameCanvas.render(window);
+                gameCanvas.render();
             } else {
                 log.error("Нет требуемого окна для рендеринга {}", window);
             }
 
-            glfwSwapBuffers(window); // swap the color buffers
+            if (Constants.isFpsInfoVisible()) {
+                drawFps();
+            }
+
+            // swap the color buffers
+            glfwSwapBuffers(window);
 
             // fps:
             frames++;
             long time = System.currentTimeMillis();
-            int UPDATE_EVERY = 3; // update FPS every seconds
             if (UPDATE_EVERY * 1000L <= time - lastUpdate) {
                 lastUpdate = time;
                 log.info("{} frames in {} seconds = {} fps", frames, UPDATE_EVERY, (frames / (float) UPDATE_EVERY));
                 frames = 0;
             }
 
+            // poll and wait:
             if (!isGlWindowBreaked) {
                 // Poll for window events. The key callback above will only be invoked during this call.
                 glfwPollEvents();
 
                 //  переводит вызывающий поток в спящий режим до тех пор, пока не будет получено хотя бы одно событие:
                 // glfwWaitEvents();
-                glfwWaitEventsTimeout(0.015625d);
+                glfwWaitEventsTimeout(0.0078125d);
                 // Если основной поток спит в glfwWaitEvents, можете разбудить его из другого потока, отправив событие glfwPostEmptyEvent();
             }
         }
+
+        // end of work:
         if (isGlWindowBreaked) {
             try {
                 glfwFreeCallbacks(window);
+            } catch (Throwable e) {
+                log.warn("Non-critical exception: {}", e.getMessage());
             } finally {
                 exit();
             }
         }
+    }
+
+    private void drawFps() {
+        // glEnable(GL_BLEND);
+        // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // textRenderer.beginRendering(900, 50);
+        // textRenderer.beginRendering((int) canvasWidth, (int) canvasHeight);
+
+        // glBegin(GL_QUADS);
+        //
+        // glTexCoord2f(-0.9f, 0.75f);
+        // glTexCoord2f(-0.8f, 0.75f);
+        // glTexCoord2f(-0.8f, 0.9f);
+        // glTexCoord2f(-0.9f, 0.9f);
+        //
+        // glEnd();
+        // glDisable(GL_BLEND);
+
+        // textRenderer.setColor(Color.RED);
+        // textRenderer.setColor(0.8f, 1f, 0.2f, 1.0f);
+        // textRenderer.draw(String.valueOf(fps), 5, 20);
+        // textRenderer.endRendering();
+        // textRenderer.flush();
     }
 
     private void exit() {

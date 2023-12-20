@@ -1,0 +1,21 @@
+{
+  "defaultServerPort": 13958,
+  "socketBufferSize": 4096,
+  "serverBroadcastDelay": 50,
+  "socketPingAwaitTimeout": 9000,
+  "socketConnectionAwaitTimeout": 180000,
+  "databaseRootDirUrl": "H:\\JavaProj\\Games\\FreyaTheGame3D\\.\\db\\freya.db",
+
+  "glDebugMode": true,
+  "useVSync": true,
+
+  "cullFaceGlEnabled": true,
+  "smoothEnabled": false,
+  "lightsEnabled": false,
+  "colorMaterialEnabled": false,
+  "depthEnabled": true,
+  "useAlphaTest": false,
+  "blendEnabled": false,
+  "useTextures": false,
+  "useFog": false
+}

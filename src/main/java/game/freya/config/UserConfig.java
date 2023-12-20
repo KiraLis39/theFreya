@@ -1,5 +1,6 @@
 package game.freya.config;
 
+import game.freya.enums.gl.TexturesFilterMode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +20,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public final class UserConfig {
+
+    @Getter
+    @Builder.Default
+    public TexturesFilterMode texturesFilteringLevel = TexturesFilterMode.NEAREST;
 
     @Getter
     @Setter
@@ -197,7 +202,6 @@ public final class UserConfig {
     @Setter
     @Builder.Default
     private int maxBufferedDeep = 2;
-
 
     // other:
     public int getBufferedDeep() {

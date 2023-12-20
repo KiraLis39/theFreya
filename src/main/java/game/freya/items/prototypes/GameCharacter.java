@@ -23,9 +23,9 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 public abstract class GameCharacter implements iGameObject, iHero {
-    private final boolean isOnGround = false;
+    private boolean isOnGround = false;
 
-    private final boolean hasCollision = true;
+    private boolean hasCollision = true;
 
     @Setter
     private UUID ownerUid;
@@ -371,4 +371,12 @@ public abstract class GameCharacter implements iGameObject, iHero {
         setLocation(getLocation().x + vector.getX(), getLocation().y + vector.getY());
         resetCollider(getLocation());
     }
+
+    public float getDistance(float x1, float y1, float x2, float y2) {
+        return (float) Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+    }
+
+//    public static float getDistance(Vector2 point1, Vector2 point2) {
+//        return (float) Math.sqrt((point1x - point2.x) * (point1.x - point2.x) + (point1.y - point2.y) * (point1.y - point2.y));
+//    }
 }

@@ -51,10 +51,10 @@ public class Server implements iServer {
 
             serverThread = new Thread(() -> {
                 log.info("Создание Сервера...");
-                try (ServerSocket socket = new ServerSocket(Constants.DEFAULT_SERVER_PORT)) {
+                try (ServerSocket socket = new ServerSocket(Constants.getGameConfig().getDefaultServerPort())) {
                     this.serverSocket = socket;
                     this.serverSocket.setReuseAddress(true);
-                    this.serverSocket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
+                    this.serverSocket.setReceiveBufferSize(Constants.getGameConfig().getSocketBufferSize());
 
                     this.address = serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort();
                     log.info("Создан сервер на {} (buffer: {})", address, serverSocket.getReceiveBufferSize());

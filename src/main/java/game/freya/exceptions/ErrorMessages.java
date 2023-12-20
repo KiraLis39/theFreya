@@ -22,7 +22,8 @@ public enum ErrorMessages {
     WRONG_STATE("ER13", "Не верный статус приложения"),
     HERO_NOT_FOUND("ER14", "Не обнаружен Герой"),
     SOCKET_CLOSED("ER15", "Сокет закрыт и не может быть использован"),
-    GL("ER16", "Ошибка OpenGL");
+    GL("ER16", "Ошибка OpenGL"),
+    SCREENSHOT_FAILED("ER17", "Ошибка скриншотера");
 
     private final String errorCode;
 
