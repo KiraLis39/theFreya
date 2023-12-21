@@ -1,6 +1,8 @@
 package game.freya.items.prototypes;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import game.freya.gl.Collider3D;
+import game.freya.gl.iCollider;
 import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iStorable;
 import lombok.Getter;
@@ -30,7 +32,7 @@ public abstract class Storage implements iGameObject, iStorable {
     private final String imageNameInCache;
 
     @JsonIgnore
-    private transient Rectangle collider;
+    private transient Collider3D collider;
 
     protected Storage(String name, UUID author, Point2D.Double location, Dimension size, String imageNameInCache) {
         this.name = name;
@@ -39,7 +41,14 @@ public abstract class Storage implements iGameObject, iStorable {
         this.size = size;
         this.imageNameInCache = imageNameInCache;
 
-        this.collider = new Rectangle((int) (this.location.x + this.size.width / 2d), (int) (this.location.y + this.size.height / 2d));
+        this.collider = Collider3D.builder()
+                .x(0)
+                .y(0)
+                .z(0)
+                .xw(this.location.x + this.size.width / 2d)
+                .yw(this.location.y + this.size.height / 2d)
+                .h(1)
+                .build();
     }
 
     @Override
@@ -98,7 +107,7 @@ public abstract class Storage implements iGameObject, iStorable {
     }
 
     @Override
-    public Rectangle getCollider() {
+    public iCollider getCollider() {
         if (collider == null) {
             resetCollider();
         }
@@ -111,6 +120,13 @@ public abstract class Storage implements iGameObject, iStorable {
     }
 
     private void resetCollider() {
-        this.collider = new Rectangle((int) location.x, (int) location.y, size.width, size.height);
+        this.collider = Collider3D.builder()
+                .x(location.x)
+                .y(location.y)
+                .z(0)
+                .xw(size.width)
+                .yw(size.height)
+                .h(1)
+                .build();
     }
 }

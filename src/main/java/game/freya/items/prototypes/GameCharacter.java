@@ -4,6 +4,8 @@ import game.freya.entities.logic.Buff;
 import game.freya.enums.other.HeroType;
 import game.freya.enums.other.HurtLevel;
 import game.freya.enums.other.MovingVector;
+import game.freya.gl.Collider3D;
+import game.freya.gl.iCollider;
 import game.freya.interfaces.iEntity;
 import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iHero;
@@ -47,8 +49,7 @@ public abstract class GameCharacter implements iGameObject, iHero {
     private Weapon weapon;
 
     @Getter
-    @Setter
-    private Rectangle collider;
+    private transient Collider3D collider;
 
     @Getter
     @Setter
@@ -196,28 +197,8 @@ public abstract class GameCharacter implements iGameObject, iHero {
     }
 
     @Override
-    public boolean isWalking() {
-        return false;
-    }
-
-    @Override
-    public boolean isImmortal() {
-        return false;
-    }
-
-    @Override
-    public boolean isLoaded() {
-        return isLoaded;
-    }
-
-    @Override
-    public boolean isOnGround() {
-        return isOnGround;
-    }
-
-    @Override
-    public long lifeTime() {
-        return 0;
+    public void setCollider(iCollider collider) {
+        this.collider = (Collider3D) collider;
     }
 
     public void setHealth(int health) {
@@ -228,7 +209,14 @@ public abstract class GameCharacter implements iGameObject, iHero {
     protected void resetCollider(Point2D position) {
         setShape(new Rectangle((int) position.getX() - getSize().width / 2,
                 (int) position.getY() - getSize().height / 2, getSize().width, getSize().height));
-        setCollider(new Rectangle(getShape().x + 3, getShape().y + 3, getShape().width - 6, getShape().height - 6));
+        setCollider(Collider3D.builder()
+                .x(getShape().x + 3d)
+                .y(getShape().y + 3d)
+                .z(0)
+                .xw(getShape().width - 6d)
+                .yw(getShape().height - 6d)
+                .h(1)
+                .build());
     }
 
     @Override
@@ -275,6 +263,31 @@ public abstract class GameCharacter implements iGameObject, iHero {
     @Override
     public String getImageNameInCache() {
         return imageNameInCache;
+    }
+
+    @Override
+    public boolean isWalking() {
+        return false;
+    }
+
+    @Override
+    public boolean isImmortal() {
+        return false;
+    }
+
+    @Override
+    public boolean isLoaded() {
+        return isLoaded;
+    }
+
+    @Override
+    public boolean isOnGround() {
+        return isOnGround;
+    }
+
+    @Override
+    public long lifeTime() {
+        return 0;
     }
 
     @Override

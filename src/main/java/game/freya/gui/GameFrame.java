@@ -5,6 +5,8 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.Media;
 import game.freya.config.UserConfig;
+import game.freya.config.UserConfig.DefaultHotKeys;
+import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -18,11 +20,6 @@ import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
-import org.lwjgl.glfw.GLFWWindowCloseCallback;
-import org.lwjgl.glfw.GLFWWindowFocusCallback;
-import org.lwjgl.glfw.GLFWWindowIconifyCallback;
-import org.lwjgl.glfw.GLFWWindowMaximizeCallback;
-import org.lwjgl.glfw.GLFWWindowSizeCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
 import org.springframework.stereotype.Component;
@@ -30,6 +27,7 @@ import org.springframework.stereotype.Component;
 import javax.swing.SwingUtilities;
 import java.awt.Dimension;
 import java.awt.Rectangle;
+import java.util.UUID;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_AUTO_ICONIFY;
@@ -42,13 +40,13 @@ import static org.lwjgl.glfw.GLFW.GLFW_DOUBLEBUFFER;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_FOCUSED;
 import static org.lwjgl.glfw.GLFW.GLFW_FOCUS_ON_SHOW;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_F11;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F2;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT;
 import static org.lwjgl.glfw.GLFW.GLFW_MAXIMIZED;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
+import static org.lwjgl.glfw.GLFW.GLFW_RAW_MOUSE_MOTION;
 import static org.lwjgl.glfw.GLFW.GLFW_REFRESH_RATE;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
@@ -67,6 +65,7 @@ import static org.lwjgl.glfw.GLFW.glfwMaximizeWindow;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwPostEmptyEvent;
 import static org.lwjgl.glfw.GLFW.glfwSetCursor;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback;
@@ -92,7 +91,6 @@ import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
 import static org.lwjgl.opengl.GL11.glFrustum;
 import static org.lwjgl.opengl.GL11.glHint;
-import static org.lwjgl.opengl.GL11.glLoadIdentity;
 import static org.lwjgl.opengl.GL11.glScalef;
 import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -113,6 +111,8 @@ public class GameFrame {
 
     private volatile boolean isGlWindowBreaked = false;
 
+    private double oldPitch = 0, oldYaw = 0;
+
     private ScreenType currentScreen;
 
     private MenuCanvas menuCanvas;
@@ -123,7 +123,6 @@ public class GameFrame {
         this.gameController = gameController;
 
         menuCanvas = new MenuCanvas(uiHandler, gameController);
-        gameCanvas = new GameCanvas(uiHandler, gameController);
 
         double newWidth = monitorSize.getWidth() * 0.75d;
         double newHeight = newWidth / (monitorSize.getWidth() / monitorSize.getHeight());
@@ -164,23 +163,16 @@ public class GameFrame {
     }
 
     public void loadScreen(ScreenType screen) {
-        this.currentScreen = screen;
+        if (this.currentScreen != screen) {
+            this.currentScreen = screen;
 
-        if (window != -1) {
-            glfwSetWindowShouldClose(window, true);
-            glfwFreeCallbacks(window);
-        }
+            if (window != -1) {
+                glfwSetWindowShouldClose(window, true);
+                glfwFreeCallbacks(window);
+            }
 
-        // Configure GLFW Hints:
-        glfwDefaultWindowHints(); // optional, the current window hints are already the default
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
-        glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE); // будет ли полноэкранное окно автоматически иконизироваться и восстанавливать предыдущий видеорежим при потере фокуса ввода
-        glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE); // будет ли окну предоставлен фокус ввода при вызове glfwShowWindow
-        glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_TRUE); // курсор по центру вновь созданных полноэкранных окон
-        glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE); // должен ли кадровый буфер иметь двойную буферизацию
-        glfwWindowHint(GLFW_SAMPLES, 6); // количество выборок, которые будут использоваться для мультисэмплинга
-        glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_FALSE); // Если включен, ситуации, которые могли бы вызвать ошибки, вызывают неопределенное поведение
+            // Configure GLFW Hints:
+            doHintsPreset();
 
 //        GLFWImage.Buffer buff = new GLFWImage.Buffer(ByteBuffer.wrap(ImageIO.read().getData().))[2];
 //        GLFWImage images = new GLFWImage(window)[2];
@@ -188,14 +180,31 @@ public class GameFrame {
 //        images[1] = load_icon("my_icon_small.png");
 //        glfwSetWindowIcon(window, 2, images);
 
-        // Setup an error callback. The default implementation will print the error message in System.err.
-        try (GLFWErrorCallback callback = GLFWErrorCallback.createPrint(System.err)) {
-            callback.set();
-            resize(currentScreen);
+            if (currentScreen.equals(ScreenType.GAME_SCREEN)) {
+                WorldDTO any = gameController.getAnyWorld();
+                gameController.setCurrentWorld(any != null ? any : WorldDTO.builder()
+                        .author(UUID.randomUUID())
+                        .build());
+                gameCanvas = new GameCanvas(uiHandler, gameController);
+            } else if (gameCanvas != null) {
+                gameCanvas.stop();
+            }
         }
 
-        Media.playSound("landing", 6d);
-        loop(); // блокируется до закрытия окна.
+        draw(); // блокируется до закрытия окна.
+    }
+
+    private void doHintsPreset() {
+        glfwDefaultWindowHints(); // optional, the current window hints are already the default
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
+        // будет ли полноэкранное окно автоматически иконизироваться и восстанавливать предыдущий видеорежим при потере фокуса ввода
+        glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
+        glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE); // будет ли окну предоставлен фокус ввода при вызове glfwShowWindow
+        glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_TRUE); // курсор по центру вновь созданных полноэкранных окон
+        glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE); // должен ли кадровый буфер иметь двойную буферизацию
+        glfwWindowHint(GLFW_SAMPLES, 4); // количество выборок, которые будут использоваться для мультисэмплинга
+        glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_FALSE); // Если включен, ситуации, которые могли бы вызвать ошибки, вызывают неопределенное поведение
     }
 
     private void resize(ScreenType screen) {
@@ -223,6 +232,10 @@ public class GameFrame {
             menu = window;
         } else if (screen.equals(ScreenType.GAME_SCREEN)) {
             game = window;
+
+            // необработанное движение мыши можно включить или отключить для каждого окна и в любое время,
+            //  но оно будет обеспечиваться только тогда, когда курсор отключен.
+            glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
         }
 
         // Минимальный и максимальный размер:
@@ -286,109 +299,125 @@ public class GameFrame {
         setInAc();
     }
 
-    private void loop() {
-        final int UPDATE_EVERY = 3; // update FPS every seconds
+    private void draw() {
         long lastUpdate = System.currentTimeMillis();
         int frames = 0;
 
-        // This line is critical for LWJGL's interoperation with GLFW's OpenGL context, or any context that is managed externally.
-        // LWJGL detects the context that is current in the current thread, creates the GLCapabilities instance and makes the OpenGL
-        // bindings available for use.
-        GL.createCapabilities();
+        // Setup an error callback. The default implementation will print the error message in System.err.
+        try (GLFWErrorCallback callback = GLFWErrorCallback.createPrint(System.err)) {
+            callback.set();
+            resize(currentScreen);
 
-        glLoadIdentity();
+            GL.createCapabilities();
 
-        // Set the clear color
-        if (currentScreen.equals(ScreenType.MENU_SCREEN)) {
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        } else if (currentScreen.equals(ScreenType.GAME_SCREEN)) {
-            glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
-        } else {
-            glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-        }
+            // Set the clear color
+            if (currentScreen.equals(ScreenType.MENU_SCREEN)) {
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-        // корректирует масштабы OpenGL < -1; 1 > на разрешение окна игры:
-        float aspect = 1f;
-        if (windowSize.width < windowSize.height) { // или наоборот?..
-            aspect = (float) windowSize.width / windowSize.height;
-        } else if (windowSize.width > windowSize.height) {
-            aspect = (float) windowSize.height / windowSize.width;
-        }
+                // перевод по-умолчанию в режим меню:
+                Constants.setAltControlMode(true, window);
+            } else if (currentScreen.equals(ScreenType.GAME_SCREEN)) {
+                glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
 
-        // Подготовка к циклу рисований:
-        if (Constants.getUserConfig().isFullscreen()) {
-            Rectangle monDim = Constants.MON.getConfiguration().getBounds();
-            glViewport(0, 0, monDim.width, monDim.height);
-        } else {
-            glViewport(0, 0, windowSize.width, windowSize.height);
-        }
-        glScalef(aspect, 1, 1);
-
-        double fov = 45;
-        double zNear = 0.0001;
-        double zFar = 100;
-        double frHeight = Math.tan((fov / 360) * Math.PI) * zNear;
-        double frWidth = frHeight * aspect;
-        log.info("Frustum parameters: horizontal {} x {}, vertical {} x {}, near {}, far {}", -frWidth, frWidth, -frHeight, frHeight, zNear, zFar);
-        glFrustum(-frWidth, frWidth, -frHeight, frHeight, zNear, zFar); // обычная проекция (ближе - больше, дальше - меньше)
-        // glOrtho(-2, 2, -2, 2, 1, -1); // ортогональная (плоская) проекция.
-        // glDepthRange(0, 100);
-        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-        // Начинаем цикл рисований:
-        while (!isGlWindowBreaked && !glfwWindowShouldClose(window)) {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
-
-            if (window == menu) {
-                menuCanvas.render();
-
-//                FloatBuffer pVertxs = FloatBuffer.wrap(new float[] {-0.9f, -0.9f, 0.0f, 0.9f, -0.9f, 0.0f, 0.0f, 0.9f, 0.0f});
-//                glEnableClientState(GL_VERTEX_ARRAY);
-//                glVertexPointer(9, GL_FLOAT, 0, pVertxs);
-//                glColor3f(1.0f, 0.0f, 0.0f);
-//                glDrawArrays(GL_TRIANGLES, 0, 3);
-            } else if (window == game) {
-                gameCanvas.render();
+                // перевод по-умолчанию в игровой режим мыши:
+                Constants.setAltControlMode(false, window);
             } else {
-                log.error("Нет требуемого окна для рендеринга {}", window);
+                glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
             }
 
-            if (Constants.isFpsInfoVisible()) {
-                drawFps();
+            // корректирует масштабы OpenGL < -1; 1 > на разрешение окна игры:
+            float aspect = 1f;
+            if (windowSize.width < windowSize.height) { // или наоборот?..
+                aspect = (float) windowSize.width / windowSize.height;
+            } else if (windowSize.width > windowSize.height) {
+                aspect = (float) windowSize.height / windowSize.width;
+            }
+            log.info("Aspect: {}", aspect);
+            glScalef(0.33f, 1, 1); // aspect
+
+            // Подготовка к циклу рисований:
+            if (Constants.getUserConfig().isFullscreen()) {
+                Rectangle monDim = Constants.MON.getConfiguration().getBounds();
+                glViewport(0, 0, monDim.width, monDim.height);
+            } else {
+                glViewport(0, 0, windowSize.width, windowSize.height);
             }
 
-            // swap the color buffers
-            glfwSwapBuffers(window);
+            double frHeight = Math.tan((Constants.getUserConfig().getFov() / 360) * Math.PI) * Constants.getUserConfig().getZNear();
+            double frWidth = frHeight * aspect;
+            log.info("Frustum parameters: horizontal {} x {}, vertical {} x {}, near {}, far {}",
+                    -frWidth, frWidth, -frHeight, frHeight, Constants.getUserConfig().getZNear(), Constants.getUserConfig().getZFar());
+            // обычная проекция (ближе - больше, дальше - меньше)
+            glFrustum(-frWidth, frWidth, -frHeight, frHeight, Constants.getUserConfig().getZNear(), Constants.getUserConfig().getZFar());
 
-            // fps:
-            frames++;
-            long time = System.currentTimeMillis();
-            if (UPDATE_EVERY * 1000L <= time - lastUpdate) {
-                lastUpdate = time;
-                log.info("{} frames in {} seconds = {} fps", frames, UPDATE_EVERY, (frames / (float) UPDATE_EVERY));
-                frames = 0;
+            // ортогональная (плоская) проекция.
+            // glOrtho(-2, 2, -2, 2, 1, -1);
+            // glDepthRange(0, 100);
+
+            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
+            Media.playSound("landing");
+
+            // Начинаем цикл рисований:
+            while (!isGlWindowBreaked && !glfwWindowShouldClose(window)) {
+                try {
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
+
+                    if (window == menu) {
+                        menuCanvas.render();
+                    } else if (window == game) {
+                        gameCanvas.render();
+                    } else {
+                        log.error("Нет требуемого окна для рендеринга {}", window);
+                    }
+
+                    if (Constants.isFpsInfoVisible() && !isGlWindowBreaked) {
+                        drawFps();
+                    }
+
+                    // swap the color buffers
+                    glfwSwapBuffers(window);
+
+                    // fps:
+                    if (Constants.isFpsInfoVisible()) {
+                        frames++;
+                        long time = System.currentTimeMillis();
+                        if (Constants.getFpsDelaySeconds() * 1000L <= time - lastUpdate) {
+                            lastUpdate = time;
+                            log.info("{} frames in {} seconds = {} fps",
+                                    frames, Constants.getFpsDelaySeconds(), (frames / (float) Constants.getFpsDelaySeconds()));
+                            frames = 0;
+                        }
+                    }
+
+                    // poll and wait:
+                    if (!isGlWindowBreaked) {
+                        // Poll for window events. The key callback above will only be invoked during this call.
+                        glfwPollEvents();
+
+                    }
+                    if (!isGlWindowBreaked) {
+                        //  переводит вызывающий поток в спящий режим до тех пор, пока не будет получено хотя бы одно событие:
+                        // glfwWaitEvents();
+                        glfwWaitEventsTimeout(0.0078125d);
+                        // Если основной поток спит в glfwWaitEvents, можете разбудить его из другого потока, отправив событие glfwPostEmptyEvent();
+                    }
+                } catch (NullPointerException npe) {
+                    log.error("NPE here: {}", ExceptionUtils.getFullExceptionMessage(npe));
+                } catch (Exception e) {
+                    log.error("Some strange happened: {}", ExceptionUtils.getFullExceptionMessage(e));
+                }
             }
 
-            // poll and wait:
-            if (!isGlWindowBreaked) {
-                // Poll for window events. The key callback above will only be invoked during this call.
-                glfwPollEvents();
-
-                //  переводит вызывающий поток в спящий режим до тех пор, пока не будет получено хотя бы одно событие:
-                // glfwWaitEvents();
-                glfwWaitEventsTimeout(0.0078125d);
-                // Если основной поток спит в glfwWaitEvents, можете разбудить его из другого потока, отправив событие glfwPostEmptyEvent();
-            }
-        }
-
-        // end of work:
-        if (isGlWindowBreaked) {
-            try {
-                glfwFreeCallbacks(window);
-            } catch (Throwable e) {
-                log.warn("Non-critical exception: {}", e.getMessage());
-            } finally {
-                exit();
+            // end of work:
+            if (isGlWindowBreaked) {
+                try {
+                    glfwFreeCallbacks(window);
+                } catch (Throwable e) {
+                    log.warn("Non-critical exception: {}", e.getMessage());
+                } finally {
+                    exit();
+                }
             }
         }
     }
@@ -431,58 +460,119 @@ public class GameFrame {
 
     private void setInAc() {
         // когда физическая клавиша нажата или отпущена или когда она повторяется:
-        glfwSetKeyCallback(window, (windowVar, key, scancode, action, mods) -> {
-            if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
-                if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
-                        "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                ) {
-                    isGlWindowBreaked = true;
-                    if (!glfwWindowShouldClose(window)) {
-                        glfwPostEmptyEvent();
-                        glfwSetWindowShouldClose(window, true); // Закрывает окно
+        glfwSetKeyCallback(window, (win, key, scancode, action, mods) -> {
 
-                        // Free the window callbacks and destroy the window
-                        glfwFreeCallbacks(window);
-                        glfwDestroyWindow(window);
-                    }
-                } else {
-                    glfwSetWindowShouldClose(window, false); // Не закрывает окно :)
-                }
+            if (key == DefaultHotKeys.PAUSE.getGlEvent() && action == GLFW_RELEASE) {
+                showConfirmExitRequest();
             }
 
-            if (key == GLFW_KEY_F1 && action == GLFW_RELEASE) {
-                if (currentScreen.equals(ScreenType.MENU_SCREEN)) {
-                    loadScreen(ScreenType.GAME_SCREEN);
-                } else {
-                    loadScreen(ScreenType.MENU_SCREEN);
-                }
-            }
-
-            if (key == GLFW_KEY_F11 && action == GLFW_RELEASE) {
+            // Переключение в полноэкранный режим или в оконный:
+            if (key == DefaultHotKeys.FULLSCREEN.getGlEvent() && action == GLFW_RELEASE) {
                 Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
                 loadScreen(currentScreen);
             }
 
             // установка курсора:
-            // Если вы хотите реализовать управление камерой на основе движения мыши или другие схемы ввода, требующие неограниченного
-            //  движения мыши, установите режим курсора на GLFW_CURSOR_DISABLED. Это скроет курсор и зафиксирует его в указанном окне:
-            // glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+            // Если хотите реализовать управление камерой на основе движения мыши, требующие неограниченного движения,
+            //  установите режим курсора на GLFW_CURSOR_DISABLED.
+            // Это скроет курсор и зафиксирует его в указанном окне: glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
             if (key == GLFW_KEY_F2 && action == GLFW_PRESS) {
                 glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 glfwSetCursor(window, glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR));
             }
             if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS) {
-                glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                glfwSetCursor(window, glfwCreateStandardCursor(GLFW.GLFW_CROSSHAIR_CURSOR));
+                Constants.setAltControlMode(true, win);
             }
             if (key == GLFW_KEY_LEFT_ALT && action == GLFW_RELEASE) {
-                glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-                glfwSetCursor(window, NULL);
+                Constants.setAltControlMode(false, win);
+            }
+
+            // просто жмём энтер для быстрого запуска последней игры:
+            if (key == GLFW_KEY_ENTER && action == GLFW_RELEASE) {
+                if (menuCanvas.getHeroesListPane().isVisible()) {
+                    menuCanvas.playWithThisHero(gameController.getMyCurrentWorldHeroes().get(0));
+                    menuCanvas.getHeroesListPane().setVisible(false);
+                } else if (menuCanvas.getWorldsListPane().isVisible()) {
+                    UUID lastWorldUid = gameController.getCurrentPlayerLastPlayedWorldUid();
+                    if (gameController.isWorldExist(lastWorldUid)) {
+                        menuCanvas.chooseOrCreateHeroForWorld(lastWorldUid);
+                    } else {
+                        menuCanvas.chooseOrCreateHeroForWorld(
+                                gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
+                    }
+                } else {
+                    menuCanvas.getWorldsListPane().setVisible(true);
+                }
+            }
+
+            // бег\ускорение:
+            if (key == DefaultHotKeys.ACCELERATION.getGlEvent()) {
+                gameCanvas.setAcceleration(action != GLFW_RELEASE);
+            }
+
+            // приседание:
+            if (key == DefaultHotKeys.SNEAK.getGlEvent()) {
+                gameCanvas.setSneak(action != GLFW_RELEASE);
+            }
+
+            // Кнопки влево-вправо, вверх-вниз (камера):
+            if (window == game) {
+                if (key == DefaultHotKeys.CAM_FORWARD.getGlEvent() || key == DefaultHotKeys.MOVE_FORWARD.getGlEvent()) {
+                    gameCanvas.setCameraMovingForward(action != GLFW_RELEASE);
+                } else if (key == DefaultHotKeys.CAM_BACK.getGlEvent() || key == DefaultHotKeys.MOVE_BACK.getGlEvent()) {
+                    gameCanvas.setCameraMovingBack(action != GLFW_RELEASE);
+                }
+                if (key == DefaultHotKeys.CAM_LEFT.getGlEvent() || key == DefaultHotKeys.MOVE_LEFT.getGlEvent()) {
+                    gameCanvas.setCameraMovingLeft(action != GLFW_RELEASE);
+                } else if (key == DefaultHotKeys.CAM_RIGHT.getGlEvent() || key == DefaultHotKeys.MOVE_RIGHT.getGlEvent()) {
+                    gameCanvas.setCameraMovingRight(action != GLFW_RELEASE);
+                }
+            }
+
+            // временная заглушка для теста смены сцен:
+            if (key == GLFW_KEY_F1 && action == GLFW_RELEASE) {
+                if (currentScreen.equals(ScreenType.MENU_SCREEN)) {
+//                    glfwFreeCallbacks(menu);
+                    loadScreen(ScreenType.GAME_SCREEN);
+                } else {
+//                    glfwFreeCallbacks(game);
+                    loadScreen(ScreenType.MENU_SCREEN);
+                }
             }
         });
 
         // уведомление, когда курсор перемещается по окну:
-        // glfwSetCursorPosCallback(window, курсор_позиция_callback);
+        glfwSetCursorPosCallback(window, (cursor, yaw, pitch) -> {
+            if (Constants.isAltControlMode()) {
+                return;
+            }
+
+            if (window == game) {
+                // преобразуем координаты курсора в изменение от предыдущего значения:
+                float curPitch = (float) (pitch - oldPitch);
+                gameCanvas.setCameraPitch(-curPitch);
+                oldPitch = pitch;
+
+                float curYaw = (float) (yaw - oldYaw);
+                gameCanvas.setCameraYaw(curYaw);
+                oldYaw = yaw;
+
+//                if (key == DefaultHotKeys.CAM_UP.getGlEvent()) {
+//                    gameCanvas.setMovingKeysActive(action == GLFW_PRESS ? 1 : -1);
+//                    gameCanvas.isMouseUpEdgeOver = action != GLFW_RELEASE;
+//                } else if (key == DefaultHotKeys.CAM_DOWN.getGlEvent()) {
+//                    gameCanvas.setMovingKeysActive(action == GLFW_PRESS ? 1 : -1);
+//                    gameCanvas.isMouseDownEdgeOver = action != GLFW_RELEASE;
+//                }
+//                if (key == DefaultHotKeys.CAM_LEFT.getGlEvent()) {
+//                    gameCanvas.setMovingKeysActive(action == GLFW_PRESS ? 1 : -1);
+//                    gameCanvas.isMouseLeftEdgeOver = action != GLFW_RELEASE;
+//                } else if (key == DefaultHotKeys.CAM_RIGHT.getGlEvent()) {
+//                    gameCanvas.setMovingKeysActive(action == GLFW_PRESS ? 1 : -1);
+//                    gameCanvas.isMouseRightEdgeOver = action != GLFW_RELEASE;
+//                }
+            }
+        });
 
         // уведомление, когда курсор входит или покидает область содержимого окна:
         // glfwSetCursorEnterCallback(window, курсор_enter_callback);
@@ -494,63 +584,71 @@ public class GameFrame {
         // glfwSetDropCallback(окно, drop_callback);
 
         // при закрытии окна игры:
-        glfwSetWindowCloseCallback(window, new GLFWWindowCloseCallback() {
-            @Override
-            public void invoke(long l) {
-                if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
-                        "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                ) {
-                    isGlWindowBreaked = true;
-                    if (!glfwWindowShouldClose(window)) {
-                        glfwPostEmptyEvent();
-                        glfwSetWindowShouldClose(window, true); // Закрывает окно
+        glfwSetWindowCloseCallback(window, (long win) -> {
+            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол без сохранения?",
+                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
+                isGlWindowBreaked = true;
+                if (!glfwWindowShouldClose(window)) {
+                    glfwPostEmptyEvent();
+                    glfwSetWindowShouldClose(window, true); // Закрывает окно
 
-                        // Free the window callbacks and destroy the window
-                        glfwFreeCallbacks(window);
-                        glfwDestroyWindow(window);
-                    }
-                } else {
-                    glfwSetWindowShouldClose(window, false); // Не закрывает окно :)
+                    // Free the window callbacks and destroy the window
+                    glfwFreeCallbacks(window);
+                    glfwDestroyWindow(window);
                 }
+            } else {
+                glfwSetWindowShouldClose(window, false); // Не закрывает окно :)
             }
         });
 
         // при сворачивании:
-        glfwSetWindowIconifyCallback(window, new GLFWWindowIconifyCallback() {
-            @Override
-            public void invoke(long l, boolean isIconify) {
-                if (isIconify) {
-                    onGameHide();
-                } else {
-                    onGameRestore();
-                }
+        glfwSetWindowIconifyCallback(window, (long win, boolean isIconify) -> {
+            if (isIconify) {
+                onGameHide();
+            } else {
+                onGameRestore();
             }
         });
 
-        glfwSetWindowSizeCallback(window, new GLFWWindowSizeCallback() {
-            @Override
-            public void invoke(long l, int w, int h) {
-                Media.playSound("landing");
-                log.info("Размер окна был изменен на {}x{}", w, h);
-            }
+        glfwSetWindowSizeCallback(window, (long win, int w, int h) -> {
+            Media.playSound("landing");
+            log.info("Размер окна был изменен на {}x{}", w, h);
         });
 
-        glfwSetWindowMaximizeCallback(window, new GLFWWindowMaximizeCallback() {
-            @Override
-            public void invoke(long l, boolean isMaximized) {
-                Media.playSound("landing");
-                log.info("Размер окна был {}", isMaximized ? "максимизирован." : "восстановлен.");
-            }
+        glfwSetWindowMaximizeCallback(window, (long win, boolean isMaximized) -> {
+            Media.playSound("landing");
+            log.info("Размер окна был {}", isMaximized ? "максимизирован." : "восстановлен.");
         });
 
         // если игру надо приостанавливать во время обучения при всплывающих подсказках:
-        glfwSetWindowFocusCallback(window, new GLFWWindowFocusCallback() {
-            @Override
-            public void invoke(long win, boolean focusState) {
-                Media.playSound("landing");
-                log.info("Фокус был {} на окно {}", focusState ? "(1)." : "(2).", win);
-            }
+        glfwSetWindowFocusCallback(window, (long win, boolean focusState) -> {
+            Media.playSound("landing");
+            log.info("Фокус был {} на окно {}", focusState ? "(1)." : "(2).", win);
         });
+    }
+
+    private void showConfirmExitRequest() {
+        if (window == menu) {
+            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
+                    "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+            ) {
+                isGlWindowBreaked = true;
+                if (!glfwWindowShouldClose(window)) {
+                    glfwPostEmptyEvent();
+                    glfwSetWindowShouldClose(window, true); // Закрывает окно
+
+                    // Free the window callbacks and destroy the window
+                    glfwFreeCallbacks(window);
+                    glfwDestroyWindow(window);
+                }
+            } else {
+                glfwSetWindowShouldClose(window, false); // Не закрывает окно :)
+            }
+        } else if (window == game) {
+            gameCanvas.onExitBack();
+        } else {
+            log.error("WTF: {}", window);
+        }
     }
 
     private void onGameRestore() {
@@ -574,22 +672,27 @@ public class GameFrame {
         * Если вы будете использовать Vulkan для рендеринга в окне, отключите создание контекста, установив для подсказки GLFW_CLIENT_API значение GLFW_NO_API
             https://www.glfw.org/docs/3.3/vulkan_guide.html
 
-        * Каждый раз, когда вы опрашиваете состояние, вы рискуете пропустить желаемое изменение состояния. Если нажатая клавиша снова будет отпущена до того, как вы опросите ее состояние, вы пропустите нажатие клавиши. Рекомендуемое решение — использовать обратный вызов клавиши, но существует также режим ввода GLFW_STICKY_KEYS.
+        * Каждый раз, когда вы опрашиваете состояние, вы рискуете пропустить желаемое изменение состояния. Если нажатая клавиша снова будет отпущена до того,
+        * как вы опросите ее состояние, вы пропустите нажатие клавиши. Рекомендуемое решение — использовать обратный вызов клавиши, но существует также режим
+        * ввода GLFW_STICKY_KEYS.
 
             glfwSetInputMode(окно, GLFW_STICKY_KEYS, GLFW_TRUE);
-            Когда включен режим липких ключей, опрашиваемое состояние ключа будет оставаться GLFW_PRESS до тех пор, пока состояние этого ключа не будет опросено с помощью glfwGetKeyGLFW_RELEASE, в противном случае оно останется GLFW_PRESS.
+            Когда включен режим липких ключей, опрашиваемое состояние ключа будет оставаться GLFW_PRESS до тех пор, пока состояние этого ключа не будет опрошено с
+            * помощью glfwGetKeyGLFW_RELEASE, в противном случае оно останется GLFW_PRESS.
 
             Если вы хотите знать, в каком состоянии находились клавиши Caps Lock и Num Lock при создании событий ввода, установите GLFW_LOCK_KEY_MODS режим ввода.
 
             glfwSetInputMode(окно, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
-            Когда этот режим ввода включен, любой обратный вызов, который получает биты-модификаторы, будет иметь GLFW_MOD_CAPS_LOCK< Бит /span> установлен. а>, если был включен Num Lock.GLFW_MOD_NUM_LOCK установлен, если в момент возникновения события был включен Caps Lock, и бит
+            Когда этот режим ввода включен, любой обратный вызов, который получает биты-модификаторы, будет иметь GLFW_MOD_CAPS_LOCK< Бит /span> установлен. а>, если
+            * был включен Num Lock.GLFW_MOD_NUM_LOCK установлен, если в момент возникновения события был включен Caps Lock, и бит
 
             Константа GLFW_KEY_LAST содержит наибольшее значение любого токена ключа.
 
         * glfwIconifyWindow(окно); / glfwRestoreWindow(окно); = > иконизировать (т.е. свернуть) / восстанавливает окна после развертывания
 
         * Если хотите уведомить пользователя о событии, не прерывая его, вы можете запросить внимание с помощью glfwRequestWindowAttention(окно);
-            Система подсветит указанное окно, а на платформах, где это не поддерживается, приложение в целом. Как только пользователь обратит на это внимание, система автоматически завершит запрос.
+            Система подсветит указанное окно, а на платформах, где это не поддерживается, приложение в целом. Как только пользователь обратит на это
+            * внимание, система автоматически завершит запрос.
 
         * Узнать, находится ли курсор внутри области содержимого if (glfwGetWindowAttrib(окно, GLFW_HOVERED))
 

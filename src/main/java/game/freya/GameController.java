@@ -19,6 +19,7 @@ import game.freya.enums.other.MovingVector;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
+import game.freya.gl.Collider3D;
 import game.freya.gui.GameFrame;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.interfaces.iEnvironment;
@@ -60,6 +61,7 @@ import java.awt.Shape;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Area;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.io.File;
@@ -487,11 +489,6 @@ public class GameController extends GameControllerBase {
                 vector = isPlayerMovingUp() ? MovingVector.LEFT_UP : isPlayerMovingDown() ? MovingVector.DOWN_LEFT : MovingVector.LEFT;
             }
 
-            // перемещаем камеру к ГГ:
-            if (!visibleRect.contains(playedHeroesService.getCurrentHero().getLocation())) {
-                canvas.moveViewToPlayer(0, 0);
-            }
-
             // move hero:
             int[] collisionMarker = hasCollision();
             playedHeroesService.setCurrentHeroVector(vector.mod(vector, collisionMarker));
@@ -570,20 +567,20 @@ public class GameController extends GameControllerBase {
     private int[] hasCollision() {
         // если сущность - не призрак:
         if (playedHeroesService.getCurrentHero().hasCollision()) {
-            Rectangle heroCollider = playedHeroesService.getCurrentHeroCollider();
+            Collider3D heroCollider = playedHeroesService.getCurrentHeroCollider();
 
             // проверка коллизии с краем мира:
             Area worldMapBorder = new Area(new Rectangle(-12, -12,
                     getCurrentWorldMap().getWidth() + 24, getCurrentWorldMap().getHeight() + 24));
             worldMapBorder.subtract(new Area(new Rectangle(0, 0, getCurrentWorldMap().getWidth(), getCurrentWorldMap().getHeight())));
-            if (worldMapBorder.intersects(heroCollider)) {
-                return findVectorCorrection(worldMapBorder, heroCollider);
+            if (worldMapBorder.intersects(heroCollider.getFlatRectangle())) {
+                return findVectorCorrection(worldMapBorder, heroCollider.getFlatRectangle());
             }
 
             // проверка коллизий с объектами:
             for (Environment env : worldService.getCurrentWorld().getEnvironments()) {
-                if (env.hasCollision() && env.getCollider().intersects(heroCollider)) {
-                    return findVectorCorrection(env.getCollider(), heroCollider);
+                if (env.hasCollision() && env.getCollider().intersects(heroCollider.getFlatRectangle())) {
+                    return findVectorCorrection(env.getCollider().getShape(), heroCollider.getFlatRectangle());
                 }
             }
         }
@@ -591,18 +588,18 @@ public class GameController extends GameControllerBase {
         return new int[]{0, 0};
     }
 
-    private int[] findVectorCorrection(Shape envColl, Rectangle heroColl) {
+    private int[] findVectorCorrection(Shape envColl, Rectangle2D heroColl) {
         int[] result; // y, x
 
-        final Point upDotY01 = new Point((int) (heroColl.x + heroColl.width * 0.33d), heroColl.y);
-        final Point upDotY02 = new Point((int) (heroColl.x + heroColl.width * 0.66d), heroColl.y);
-        final Point downDotY01 = new Point((int) (heroColl.x + heroColl.width * 0.33d), heroColl.y + heroColl.height);
-        final Point downDotY02 = new Point((int) (heroColl.x + heroColl.width * 0.66d), heroColl.y + heroColl.height);
+        final Point2D.Double upDotY01 = new Point2D.Double(heroColl.getX() + heroColl.getWidth() * 0.33d, heroColl.getY());
+        final Point2D.Double upDotY02 = new Point2D.Double(heroColl.getX() + heroColl.getWidth() * 0.66d, heroColl.getY());
+        final Point2D.Double downDotY01 = new Point2D.Double(heroColl.getX() + heroColl.getWidth() * 0.33d, heroColl.getY() + heroColl.getHeight());
+        final Point2D.Double downDotY02 = new Point2D.Double(heroColl.getX() + heroColl.getWidth() * 0.66d, heroColl.getY() + heroColl.getHeight());
 
-        final Point leftDotX01 = new Point(heroColl.x, (int) (heroColl.y + heroColl.height * 0.33d));
-        final Point leftDotX02 = new Point(heroColl.x, (int) (heroColl.y + heroColl.height * 0.66d));
-        final Point rightDotX01 = new Point(heroColl.x + heroColl.width, (int) (heroColl.y + heroColl.height * 0.33d));
-        final Point rightDotX02 = new Point(heroColl.x + heroColl.width, (int) (heroColl.y + heroColl.height * 0.66d));
+        final Point2D.Double leftDotX01 = new Point2D.Double(heroColl.getX(), heroColl.getY() + heroColl.getHeight() * 0.33d);
+        final Point2D.Double leftDotX02 = new Point2D.Double(heroColl.getX(), heroColl.getY() + heroColl.getHeight() * 0.66d);
+        final Point2D.Double rightDotX01 = new Point2D.Double(heroColl.getX() + heroColl.getWidth(), heroColl.getY() + heroColl.getHeight() * 0.33d);
+        final Point2D.Double rightDotX02 = new Point2D.Double(heroColl.getX() + heroColl.getWidth(), heroColl.getY() + heroColl.getHeight() * 0.66d);
 
         result = new int[]{
                 // y
@@ -1064,36 +1061,6 @@ public class GameController extends GameControllerBase {
         playedHeroesService.addHero(aim);
     }
 
-    public void exitToMenu(Duration gameDuration) {
-        // защита от зацикливания т.к. loadScreen может снова вызвать этот метод контрольно:
-        if (isGameActive) {
-            isGameActive = false;
-
-            saveCurrentWorld();
-
-            if (gameDuration != null && playedHeroesService.isCurrentHeroNotNull()) {
-                setCurrentHeroOfflineAndSave(gameDuration);
-            }
-
-            // если игра сетевая и локальная - останавливаем сервер при выходе из игры:
-            if (isCurrentWorldIsNetwork()) {
-                if (isCurrentWorldIsLocal()) {
-                    if (closeServer()) {
-                        log.info("Сервер успешно остановлен");
-                    } else {
-                        log.warn("Возникла ошибка при закрытии сервера.");
-                    }
-                }
-                if (isSocketIsOpen()) {
-                    closeSocket();
-                }
-            }
-
-
-            loadScreen(ScreenType.MENU_SCREEN);
-        }
-    }
-
     public boolean isWorldExist(UUID worldUid) {
         return worldService.isWorldExist(worldUid);
     }
@@ -1140,5 +1107,13 @@ public class GameController extends GameControllerBase {
 
     public void setRemoteHeroRequestSent(boolean b) {
         this.isRemoteHeroRequestSent = b;
+    }
+
+    public double getCurrentHeroCorpusHeight() {
+        return playedHeroesService.getCurrentHeroCorpusHeight();
+    }
+
+    public WorldDTO getAnyWorld() {
+        return worldService.findAnyWorld();
     }
 }

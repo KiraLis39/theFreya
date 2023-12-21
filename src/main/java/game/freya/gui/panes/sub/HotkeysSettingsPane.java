@@ -43,7 +43,7 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPa
             add(new SubPane("Горячие клавиши:") {{
                 setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 9, 9));
 
-                for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
+                for (UserConfig.DefaultHotKeys key : UserConfig.DefaultHotKeys.values()) {
                     add(new SubPane(key.getDescription()) {{
                         setOpaque(false);
                         setIgnoreRepaint(true);

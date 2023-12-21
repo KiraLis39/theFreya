@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
+import org.lwjgl.glfw.GLFW;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -32,6 +33,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL;
+import static org.lwjgl.glfw.GLFW.glfwCreateStandardCursor;
+import static org.lwjgl.glfw.GLFW.glfwSetCursor;
+import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 @Slf4j
 public final class Constants {
@@ -88,7 +95,7 @@ public final class Constants {
     public static final Font PROPAGANDA_BIG_FONT;
 
     @Getter
-    private static final String appVersion = "0.2.0";
+    private static final String appVersion = "0.2.1";
 
     @Getter
     private static final String appName = "Freya the Game";
@@ -130,6 +137,11 @@ public final class Constants {
 
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
+
+    private static final int FPS_UPDATE_DELAY_SECONDS = 3;
+
+    @Getter
+    private static volatile boolean altControlMode = false;
 
     @Getter
     @Setter
@@ -188,9 +200,6 @@ public final class Constants {
     private static long timePerFrame = -1;
 
     private static long fpsLimitMem = -1;
-
-    @Getter
-    private static volatile int fps = 0;
 
     static {
         try (InputStream is = Constants.class.getResourceAsStream("/cursors/default.png")) {
@@ -311,7 +320,23 @@ public final class Constants {
         return timePerFrame;
     }
 
-    public static void setCurrentFps(int _fps) {
-        fps = _fps;
+    public static long getFpsDelaySeconds() {
+        return FPS_UPDATE_DELAY_SECONDS;
     }
+
+    public static void setAltControlMode(boolean altMode, long window) {
+        altControlMode = altMode;
+        if (altControlMode) {
+            glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            glfwSetCursor(window, glfwCreateStandardCursor(GLFW.GLFW_CROSSHAIR_CURSOR));
+        } else {
+            glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+            glfwSetCursor(window, NULL);
+        }
+    }
+
+//        Out.Print("\nДанная программа использует " +
+//                (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576 +
+//                "мб из " + Runtime.getRuntime().totalMemory() / 1048576 +
+//                "мб выделенных под неё. \nСпасибо за использование утилиты компании MultiVerse39 Group!");
 }

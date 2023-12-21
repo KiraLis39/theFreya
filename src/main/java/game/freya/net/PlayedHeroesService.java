@@ -10,6 +10,7 @@ import game.freya.enums.other.HurtLevel;
 import game.freya.enums.other.MovingVector;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
+import game.freya.gl.Collider3D;
 import game.freya.services.HeroService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
@@ -18,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.awt.Color;
-import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -270,13 +270,18 @@ public class PlayedHeroesService {
         return heroes.values().stream().filter(h -> h.getAuthor().equals(ouid)).findAny().orElse(null);
     }
 
-    public Rectangle getCurrentHeroCollider() {
+    public Collider3D getCurrentHeroCollider() {
         checkCHE();
-        return heroes.get(currentHeroUid).getCollider();
+        return (Collider3D) heroes.get(currentHeroUid).getCollider();
     }
 
     public Point2D getCurrentHeroCenterPoint() {
         checkCHE();
         return heroes.get(currentHeroUid).getCenterPoint();
+    }
+
+    public double getCurrentHeroCorpusHeight() {
+        checkCHE();
+        return heroes.get(currentHeroUid).getCollider().getHeight();
     }
 }

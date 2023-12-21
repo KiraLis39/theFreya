@@ -109,7 +109,7 @@ public class PlayedCharacter extends GameCharacter {
             g2D.draw(getShape());
 
             g2D.setColor(Color.RED);
-            g2D.draw(getCollider());
+            g2D.draw(getCollider().getShape());
 
             g2D.setColor(Color.YELLOW);
             g2D.fillOval((int) (getCenterPoint().x - 3), (int) (getCenterPoint().y - 3), 6, 6);

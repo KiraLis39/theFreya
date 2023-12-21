@@ -152,9 +152,9 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @Override
     public void generate() {
-        for (int i = 0; i < 32; ) {
+        for (int i = 0; i < 32;) {
             MockEnvironmentWithStorage nextMock = new MockEnvironmentWithStorage("mock_" + (i + 1),
-                    dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM);
+                    dimension.getWidth() * Constants.MAP_CELL_DIM, dimension.getHeight() * Constants.MAP_CELL_DIM);
             boolean isBusy = false;
             for (Environment environment : getEnvironments()) {
                 if (environment.getCollider().intersects(nextMock.getCollider())) {
@@ -242,7 +242,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
                 env.draw(g2D);
                 if (Constants.isDebugInfoVisible()) {
                     g2D.setColor(Color.ORANGE);
-                    g2D.draw(env.getCollider());
+                    g2D.draw(env.getCollider().getShape());
                 }
             }
         }

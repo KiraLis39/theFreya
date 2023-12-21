@@ -1,5 +1,7 @@
 package game.freya.interfaces;
 
+import game.freya.gl.iCollider;
+
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -31,7 +33,7 @@ public interface iGameObject extends Serializable {
 
     void draw(Graphics2D g2D);
 
-    Rectangle getCollider();
+    iCollider getCollider();
 
     boolean isInSector(Rectangle sector);
 }

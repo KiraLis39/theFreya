@@ -1,5 +1,7 @@
 package game.freya.interfaces;
 
+import game.freya.gl.iCollider;
+
 import java.awt.Rectangle;
 
 public interface iEntity {
@@ -26,9 +28,9 @@ public interface iEntity {
 
     boolean isDead();
 
-    Rectangle getCollider();
+    iCollider getCollider();
 
-    void setCollider(Rectangle collider);
+    void setCollider(iCollider collider);
 
     Rectangle getShape();
 

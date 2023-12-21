@@ -9,8 +9,6 @@ import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.other.MovingVector;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.gui.panes.GameCanvas;
-import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.interfaces.iCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.AudioSettingsPane;
@@ -69,33 +67,33 @@ import static org.lwjgl.opengl.GL11.GL_CCW;
 import static org.lwjgl.opengl.GL11.GL_COLOR_MATERIAL;
 import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
-import static org.lwjgl.opengl.GL11.GL_FILL;
 import static org.lwjgl.opengl.GL11.GL_FLAT;
 import static org.lwjgl.opengl.GL11.GL_FOG;
 import static org.lwjgl.opengl.GL11.GL_FOG_COLOR;
 import static org.lwjgl.opengl.GL11.GL_FOG_DENSITY;
-import static org.lwjgl.opengl.GL11.GL_FRONT;
 import static org.lwjgl.opengl.GL11.GL_GEQUAL;
 import static org.lwjgl.opengl.GL11.GL_LEQUAL;
 import static org.lwjgl.opengl.GL11.GL_LIGHT0;
 import static org.lwjgl.opengl.GL11.GL_LIGHTING;
 import static org.lwjgl.opengl.GL11.GL_LINE;
-import static org.lwjgl.opengl.GL11.GL_LINEAR_ATTENUATION;
+import static org.lwjgl.opengl.GL11.GL_LINEAR;
+import static org.lwjgl.opengl.GL11.GL_LINEAR_MIPMAP_NEAREST;
 import static org.lwjgl.opengl.GL11.GL_LINE_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_LINE_SMOOTH_HINT;
+import static org.lwjgl.opengl.GL11.GL_NEAREST;
 import static org.lwjgl.opengl.GL11.GL_NICEST;
-import static org.lwjgl.opengl.GL11.GL_NORMALIZE;
 import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH_HINT;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH_HINT;
-import static org.lwjgl.opengl.GL11.GL_POSITION;
 import static org.lwjgl.opengl.GL11.GL_SMOOTH;
-import static org.lwjgl.opengl.GL11.GL_SPECULAR;
-import static org.lwjgl.opengl.GL11.GL_SPOT_DIRECTION;
 import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_S;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_T;
 import static org.lwjgl.opengl.GL11.glAlphaFunc;
 import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
@@ -114,6 +112,10 @@ import static org.lwjgl.opengl.GL11.glIsEnabled;
 import static org.lwjgl.opengl.GL11.glLightfv;
 import static org.lwjgl.opengl.GL11.glPolygonMode;
 import static org.lwjgl.opengl.GL11.glShadeModel;
+import static org.lwjgl.opengl.GL11.glTexParameteri;
+import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
+import static org.lwjgl.opengl.GL13.GL_MULTISAMPLE;
+import static org.lwjgl.opengl.GL13.GL_SAMPLES;
 
 @Getter
 @Setter
@@ -154,6 +156,20 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private final ArrayList<Integer> textures = new ArrayList<>();
 
+    private final float[] ambientLight = {1.0f, 1.0f, 1.0f, 1.0f}; // 0.0f, 0.0f, 0.3f, 1.0f
+
+    private final float[] ambientSpecular = {1.0f, 0.33f, 0.33f, 0.75f};
+
+    private final float[] ambientPosition = {0.5f, 0.5f, 0.5f, 0.75f}; // 31.84215f, 36.019997f, 28.262873f, 1.0f
+
+    private final float[] ambientDirection = {0.0f, -0.25f, -0.5f, 0.75f};
+
+    private final float[] ambientAttenuation = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    private final float[] diffuseLight = {0.5f, 0.6f, 0.4f, 0.75f};
+
+    private final float[] diffusePosition = {0.5f, 1.0f, 1.0f, 1.0f};
+
     private AtomicInteger drawErrors = new AtomicInteger(0);
 
     private transient Thread secondThread;
@@ -184,6 +200,11 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
 
     private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false;
+
+    @Setter
+    @Getter
+    private volatile boolean cameraMovingLeft = false, cameraMovingRight = false, cameraMovingForward = false,
+            cameraMovingBack = false, cameraMovingUp = false, cameraMovingDown = false;
 
     private transient Chat chat;
 
@@ -770,44 +791,40 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         this.backImage.getGraphics().dispose();
     }
 
-    protected void onExitBack(FoxCanvas canvas) {
+    public void onExitBack() {
         if (isOptionsMenuSetVisible()) {
             setOptionsMenuSetVisible(false);
             audiosPane.setVisible(false);
             videosPane.setVisible(false);
             hotkeysPane.setVisible(false);
             gameplayPane.setVisible(false);
-        } else if (audiosPane.isVisible()) {
+        } else if (audiosPane != null && audiosPane.isVisible()) {
             audiosPane.setVisible(false);
-        } else if (videosPane.isVisible()) {
+        } else if (videosPane != null && videosPane.isVisible()) {
             videosPane.setVisible(false);
-        } else if (hotkeysPane.isVisible()) {
+        } else if (hotkeysPane != null && hotkeysPane.isVisible()) {
             hotkeysPane.setVisible(false);
-        } else if (gameplayPane.isVisible()) {
+        } else if (gameplayPane != null && gameplayPane.isVisible()) {
             gameplayPane.setVisible(false);
-        } else if (heroCreatingPane.isVisible()) {
+        } else if (heroCreatingPane != null && heroCreatingPane.isVisible()) {
             heroCreatingPane.setVisible(false);
             heroesListPane.setVisible(true);
             return;
-        } else if (worldCreatingPane.isVisible()) {
+        } else if (worldCreatingPane != null && worldCreatingPane.isVisible()) {
             worldCreatingPane.setVisible(false);
             worldsListPane.setVisible(true);
             return;
-        } else if (worldsListPane.isVisible()) {
+        } else if (worldsListPane != null && worldsListPane.isVisible()) {
             worldsListPane.setVisible(false);
-        } else if (heroesListPane.isVisible()) {
+        } else if (heroesListPane != null && heroesListPane.isVisible()) {
             heroesListPane.setVisible(false);
-        } else if (networkListPane.isVisible()) {
+        } else if (networkListPane != null && networkListPane.isVisible()) {
             networkListPane.setVisible(false);
-        } else if (networkCreatingPane.isVisible()) {
+        } else if (networkCreatingPane != null && networkCreatingPane.isVisible()) {
             networkCreatingPane.setVisible(false);
             networkListPane.setVisible(true);
             return;
-        } else if (canvas instanceof MenuCanvas mCanvas
-                && (int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
-                FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
-            mCanvas.exitTheGame();
-        } else if (canvas instanceof GameCanvas) {
+        } else {
             Constants.setPaused(!Constants.isPaused());
         }
 
@@ -1064,6 +1081,147 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         }
     }
 
+    protected void configureThis() {
+        // обрезка области рисования:
+        // Запрещает отрисовку за пределами указанной квадратной зоны на экране. Естественно, основное применение этой фичи - GUI
+        //  (например, довольно сложно реализовать скроллящуюся панель без этой возможности).
+        // Сопутствующая функция: glScissor(x, y, width, height).
+        //  Координаты и размеры указываются в пикселях в окне, а не в том, что называется "пикселями" в ГУИ и на практике обычно
+        //  оказывается больше реальных пикселей. Кроме того, ось Y идет снизу, а не сверху. Пример использования (запретить отрисовку
+        //  за пределами квадрата 100х100 в верхнем левом углу экрана): glScissor(0, mc.displayHeight - 100, 100, 100);
+        // glEnable(GL_SCISSOR_TEST);
+        // glScissor(x, y, width, height);
+
+        // текстуры:
+        if (Constants.getGameConfig().isUseTextures()) {
+            if (glIsEnabled(GL_TEXTURE_2D)) {
+                return;
+            }
+
+            loadMenuTextures(); // подключаем текстуры, если требуется.
+            glEnable(GL_TEXTURE_2D); // включаем отображение текстур.
+            glEnable(GL_MULTISAMPLE);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            // glEnable(GL_POLYGON_OFFSET_POINT);
+            // glEnable(GL_POLYGON_OFFSET_LINE);
+
+            // Включает смещение данных из буфера глубины при отрисовке.
+            //  Звучит немного непонятно, зато решает гораздо более понятную проблему.
+            //  Если попробовать отрендерить что-то поверх уже отрисованной поверхности (пример из Майна -
+            //  текстура разрушения блока поверх самого блока), то начнутся проблемы, связанные с точностью буфера глубины.
+            // glEnable(GL_POLYGON_OFFSET_FILL);
+            // Задает смещение. Обычное использование в майне - glPolygonOffset(-3.0F, -3.0F).
+            //  Кроме того, перед рендерингом, с использованием этой возможности, обычно отключают glDepthMask().
+            // glPolygonOffset(-1.0f, -1.0f);
+
+            switch (Constants.getUserConfig().getTexturesFilteringLevel()) {
+                case NEAREST -> {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                }
+                case LINEAR -> {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
+                case MIPMAP -> {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+//                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+//                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+//                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+
+                    glHint(GL_SAMPLES, 4);
+                    glEnable(GL_MULTISAMPLE);
+                }
+                default ->
+                        log.error("Нет такого типа фильтрации текстур: {}", Constants.getUserConfig().getTexturesFilteringLevel());
+            }
+
+//            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+//		      glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+//            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_DONT_CARE);
+
+//		      glHint(GL_TEXTURE_COMPRESSION_HINT, GL_FASTEST);
+//            glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
+//            glHint(GL_TEXTURE_COMPRESSION_HINT, GL_DONT_CARE);
+
+//		      glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_FASTEST);
+//		      glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
+//            glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_DONT_CARE);
+
+//		      glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST);
+//            glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+//            glHint(GL_GENERATE_MIPMAP_HINT, GL_DONT_CARE);
+        } else {
+            glDisable(GL_TEXTURE_2D);
+//            glDisable(GL_POLYGON_OFFSET_POINT);
+//            glDisable(GL_POLYGON_OFFSET_LINE);
+//            glDisable(GL_POLYGON_OFFSET_FILL);
+//            glPolygonOffset(0f, 0f);
+        }
+
+        // обрезание невидимых глазу частей:
+        if (Constants.getGameConfig().isCullFaceGlEnabled()) {
+            cullFace();
+        } else {
+            glDisable(GL_CULL_FACE);
+        }
+
+        // освещение:
+        if (Constants.getGameConfig().isLightsEnabled()) {
+            setLights();
+        } else {
+            // glDisable(GL_LIGHT1); // надо ли?
+            // glDisable(GL_LIGHT0); // надо ли?
+            glDisable(GL_LIGHTING);
+            // glDisable(GL_NORMALIZE); // надо ли?
+        }
+
+        if (Constants.getGameConfig().isColorMaterialEnabled()) {
+            setColorMaterial();
+        } else {
+            glDisable(GL_COLOR_MATERIAL);
+        }
+
+        // интерполяция
+        if (Constants.getGameConfig().isSmoothEnabled()) {
+            setSmooth();
+        } else {
+            setFlat();
+        }
+
+        // ?..
+        if (Constants.getGameConfig().isBlendEnabled()) {
+            setBlend();
+        } else {
+            setDepth();
+        }
+
+        // буфер глубины (учёт расположения объектов в глубину псевдо-объема):
+        if (Constants.getGameConfig().isDepthEnabled()) {
+            setDepth();
+        } else {
+            glDisable(GL_DEPTH_TEST);
+        }
+
+        // туман:
+        if (Constants.getGameConfig().isUseFog()) {
+            setFog();
+        } else {
+            glDisable(GL_FOG);
+        }
+
+        // учёт прозрачности?..
+        if (Constants.getGameConfig().isUseAlphaTest()) {
+            setAlphaTest();
+        } else {
+            glDisable(GL_ALPHA_TEST);
+        }
+    }
+
     protected void setSmooth() {
         if (glIsEnabled(GL_SMOOTH)) {
             return;
@@ -1081,6 +1239,10 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 
         glEnable(GL_SMOOTH);
+
+        // Задает простое или сглаженное освещение. GL_FLAT стоит использовать, если в качестве нормалей
+        //  вы используете перпендикуляр к полигону,
+        //  GL_SMOOTH - если средний вектор между перпендикулярами к нескольким полигонам.
         glShadeModel(GL_SMOOTH);
     }
 
@@ -1091,6 +1253,10 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         glDisable(GL_POLYGON_SMOOTH);
 
         glEnable(GL_FLAT);
+
+        // Задает простое или сглаженное освещение. GL_FLAT стоит использовать, если в качестве нормалей
+        //  вы используете перпендикуляр к полигону,
+        //  GL_SMOOTH - если средний вектор между перпендикулярами к нескольким полигонам.
         glShadeModel(GL_FLAT);
     }
 
@@ -1099,28 +1265,18 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             return;
         }
 
-        final float[] ambientLight = {0.75f, 0.75f, 1.0f, 1};
-        final float[] ambientSpecular = {1.0f, 1.0f, 1.0f, 1};
-        final float[] ambientPosition = {1.0f, 1.0f, 3.0f, 1};
-        final float[] ambientDirection = {-1.0f, -1.0f, -1.0f, -1.0f};
-        final float[] ambientAttenuation = {1.0f, 1.0f, 1.0f, 1};
-
-        // *** *** ***
-        // 1) Enable GL_LIGHTING:
-
-        // glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientLight);
-        // glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
-
-        glLightfv(GL_LIGHT0, GL_POSITION, ambientPosition);
+//        glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
         glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
-        glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
-        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, ambientDirection);
-        glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, ambientAttenuation);
-        // glLightfv(GL_LIGHT0, GL_CONSTANT_ATTENUATION, lightAttenuation);
-        // glLightfv(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, lightAttenuation);
+//        glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
+//        glLightfv(GL_LIGHT0, GL_POSITION, ambientPosition);
+        //glLightfv(GL_LIGHT0, GL_POSITION, temp.asFloatBuffer().put(ambientPosition).flip());
+//        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, ambientDirection);
+//        glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, ambientAttenuation);
+//        glLightfv(GL_LIGHT0, GL_CONSTANT_ATTENUATION, ambientAttenuation);
+//        glLightfv(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, ambientAttenuation);
 
-        // glLighti(GL_LIGHT0, GL_SPOT_EXPONENT, 64); //range 0-128
-        // glLighti(GL_LIGHT0, GL_SPOT_CUTOFF, 90); //range 0-90 and the special value 180
+//        glLighti(GL_LIGHT0, GL_SPOT_EXPONENT, 64); //range 0-128
+//        glLighti(GL_LIGHT0, GL_SPOT_CUTOFF, 90); //range 0-90 and the special value 180
         glEnable(GL_LIGHT0);
 
         // glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
@@ -1133,44 +1289,49 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         // glEnable(GL_LIGHT1);
 
         glEnable(GL_LIGHTING);
-        glEnable(GL_NORMALIZE);
+        // glEnable(GL_NORMALIZE); // "Довольно затратно, на практике использовать не стоит"?..
 
-        if (Constants.getGameConfig().isColorMaterialEnabled()) {
-            // *** *** ***
-            // 2) Enable GL_COLOR_MATERIAL:
+        // Упрощенный ускоренный вариант GL_NORMALIZE. Он подразумевает, что переданные в openGL нормали уже были нормализованы,
+        //  но вы масштабировали матрицу трансформации (использовали glScale()).
+        //  Работает верно только в тех случаях, когда матрица была масштабирована без искажений,
+        //  то есть x, y и z, которые вы передали в glScale(), были равны.
+        // glEnable(GL_RESCALE_NORMAL);
+
+        setColorMaterial();
+    }
+
+    protected void setColorMaterial() {
         /*
             Локальная точка зрения имеет тенденцию давать более реалистичные результаты, но поскольку направление необходимо вычислять
-             для каждой вершины, при использовании локальной точки зрения общая производительность снижается. По умолчанию предполагается
-             бесконечная точка обзора. Вот как можно перейти на локальную точку обзора:
-         */
-            // glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE); // GL_FALSE
+            для каждой вершины, при использовании локальной точки зрения общая производительность снижается. По умолчанию предполагается
+            бесконечная точка обзора. Вот как можно перейти на локальную точку обзора:
+        */
+        // glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE); // GL_FALSE
 
         /*
             Возможно, вам захочется, чтобы внутренняя поверхность была полностью освещена в соответствии с заданными условиями освещения;
-             вы также можете указать другое описание материала для задних сторон При включении двустороннего освещения с помощью
+            вы также можете указать другое описание материала для задних сторон При включении двустороннего освещения с помощью
+        */
+        // glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE); // GL_FALSE
+
+        // glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientLight);
+
+        // glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, new float[] {0.5f, 0.6f, 0.4f, 0.75f});
+        // glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseLight);
+        // glMaterialfv(GL_FRONT, GL_SPECULAR, ambientSpecular);
+        // glMaterialfv(GL_FRONT, GL_SHININESS, new float[] {0.5f, 0.5f, 0.5f, 0.75f});
+        // glMaterialfv(GL_FRONT, GL_EMISSION, new float[] {0.1f, 0.1f, 0.1f, 1.0f});
+
+        // glMaterialf(GL_FRONT, GL_SHININESS, 128);
+        // glMaterialf(GL_BACK, GL_SHININESS, 128);
+
+        /*
+         * GL_AMBIENT рассеянный свет GL_DIFFUSE тоже рассеянный свет, пояснения смотри ниже GL_SPECULAR отраженный свет GL_EMISSION
+         * излучаемый свет GL_SHININESS степень отраженного света GL_AMBIENT_AND_DIFFUSE оба рассеянных света
          */
-            // glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE); // GL_FALSE
+        // glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
-            // glMaterialfv(GL_FRONT, GL_AMBIENT, ambientColor);
-            // glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseColor);
-            // glMaterialfv(GL_FRONT, GL_SPECULAR, specularColor);
-            // glMaterialfv(GL_FRONT, GL_EMISSION, new float[] {0.1f, 0.1f, 0.1f, 1.0f});
-            // glMaterialfv(GL_FRONT, GL_SHININESS, new float[] {1.0f, 1.0f, 1.0f, 1.0f});
-            // glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, new float[] {0.5f, 0.5f, 0.6f, 0.75f});
-
-            // glMaterialf(GL_BACK, GL_SHININESS, 128);
-            // glMaterialf(GL_BACK, GL_SHININESS, 128);
-
-            /*
-             * GL_AMBIENT рассеянный свет GL_DIFFUSE тоже рассеянный свет, пояснения смотри ниже GL_SPECULAR отраженный свет GL_EMISSION
-             * излучаемый свет GL_SHININESS степень отраженного света GL_AMBIENT_AND_DIFFUSE оба рассеянных света
-             */
-            // glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-            // glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-            // glColorMaterial(GL_FRONT_AND_BACK, GL_SPECULAR);
-
-            // glEnable(GL_COLOR_MATERIAL);
-        }
+        glEnable(GL_COLOR_MATERIAL);
     }
 
     protected void cullFace() {
@@ -1179,7 +1340,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         }
 
         // настройка отображения передней и задней частей полигонов:
-        glPolygonMode(GL_FRONT, GL_FILL); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
+        // glPolygonMode(GL_FRONT, GL_FILL); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
         glPolygonMode(GL_BACK, GL_LINE); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
 
         // задаём ориентацию по часовой\против часовой:
@@ -1275,7 +1436,10 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
     protected void loadMenuTextures() {
         if (textures.isEmpty()) {
             try {
-//            textures.add(0, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest"), true).getTextureObject(gl2));
+//                wood = TextureLoader.getTexture("PNG", ResourceLoader.getResourceAsStream("res/texture/wood.png"));
+//                box = TextureLoader.getTexture("PNG", ResourceLoader.getResourceAsStream("res/texture/box.png"));
+
+//                textures.add(0, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest"), true).getTextureObject(gl2));
 //            textures.add(1, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest2"), true).getTextureObject(gl2));
 //            textures.add(2, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest3"), true).getTextureObject(gl2));
 //            textures.add(3, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest4"), true).getTextureObject(gl2));
@@ -1293,9 +1457,4 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             }
         }
     }
-
-//        Out.Print("\nДанная программа использует " +
-//                (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576 +
-//                "мб из " + Runtime.getRuntime().totalMemory() / 1048576 +
-//                "мб выделенных под неё. \nСпасибо за использование утилиты компании MultyVerse39 Group!");
 }

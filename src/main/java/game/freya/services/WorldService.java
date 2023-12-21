@@ -80,7 +80,13 @@ public class WorldService {
         return this.currentWorld;
     }
 
+    @Transactional(readOnly = true)
     public boolean isWorldExist(UUID worldUid) {
         return worldRepository.existsById(worldUid);
+    }
+
+    @Transactional(readOnly = true)
+    public WorldDTO findAnyWorld() {
+        return worldMapper.toDto(worldRepository.findFirstByTitleIsNotNull());
     }
 }

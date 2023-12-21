@@ -14,4 +14,6 @@ public interface WorldRepository extends JpaRepository<World, UUID>, JpaSpecific
     Optional<World> findByUid(UUID uid);
 
     List<World> findAllByIsNetAvailableIs(boolean isNetAvailable);
+
+    World findFirstByTitleIsNotNull();
 }

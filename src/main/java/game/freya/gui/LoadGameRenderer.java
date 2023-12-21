@@ -317,7 +317,8 @@ public class LoadGameRenderer {
 //            ImageIO.write(pBuf, "png", os);
 //            pBuf.flush();
 //            tipTexture = TextureIO.newTexture(new ByteArrayInputStream(os.toByteArray()), true, "png");
-////					BufferedImage bigImage = GraphicsUtilities.createThumbnail(ImageIO.read(file), 300);		ImageInputStream bigInputStream = ImageIO.createImageInputStream(pBuf);
+////			BufferedImage bigImage = GraphicsUtilities.createThumbnail(ImageIO.read(file), 300);
+//            ImageInputStream bigInputStream = ImageIO.createImageInputStream(pBuf);
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }

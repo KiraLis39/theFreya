@@ -41,7 +41,7 @@ public final class Screenshoter {
         try {
             Robot robot = new Robot(Constants.MON.getDevice());
             return robot.createScreenCapture(new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height));
-        } catch (AWTException e) {
+        } catch (AWTException | IllegalArgumentException e) {
             log.error("Ошибка сриншотера: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
         return null;

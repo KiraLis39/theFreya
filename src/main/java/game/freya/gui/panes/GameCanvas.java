@@ -3,7 +3,6 @@ package game.freya.gui.panes;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.config.UserConfig.HotKeys;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -12,52 +11,83 @@ import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.AbstractAction;
-import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
-import java.awt.AWTException;
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
-import java.awt.geom.Point2D;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
+import static org.lwjgl.opengl.GL11.GL_FRONT;
+import static org.lwjgl.opengl.GL11.GL_LIGHT0;
+import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;
+import static org.lwjgl.opengl.GL11.GL_LINE_STIPPLE;
+import static org.lwjgl.opengl.GL11.GL_POINTS;
+import static org.lwjgl.opengl.GL11.GL_POSITION;
+import static org.lwjgl.opengl.GL11.GL_QUADS;
+import static org.lwjgl.opengl.GL11.GL_SHININESS;
+import static org.lwjgl.opengl.GL11.GL_SPECULAR;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.glBegin;
+import static org.lwjgl.opengl.GL11.glColor3f;
+import static org.lwjgl.opengl.GL11.glColor4f;
+import static org.lwjgl.opengl.GL11.glDisable;
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL11.glEnd;
+import static org.lwjgl.opengl.GL11.glLightfv;
+import static org.lwjgl.opengl.GL11.glLineStipple;
+import static org.lwjgl.opengl.GL11.glLineWidth;
+import static org.lwjgl.opengl.GL11.glMaterialfv;
+import static org.lwjgl.opengl.GL11.glNormal3f;
+import static org.lwjgl.opengl.GL11.glPointSize;
+import static org.lwjgl.opengl.GL11.glPopMatrix;
+import static org.lwjgl.opengl.GL11.glPushMatrix;
+import static org.lwjgl.opengl.GL11.glRotatef;
+import static org.lwjgl.opengl.GL11.glScalef;
+import static org.lwjgl.opengl.GL11.glTranslated;
+import static org.lwjgl.opengl.GL11.glTranslatef;
+import static org.lwjgl.opengl.GL11.glVertex2d;
+import static org.lwjgl.opengl.GL11.glVertex3f;
 
 @Slf4j
-// FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
 public class GameCanvas extends FoxCanvas {
     private final transient GameController gameController;
 
-    private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
+    private float camZspeed = 0f;
 
-    private boolean isControlsMapped = false, isMovingKeyActive = false;
+    private float heroSpeed = 0.05f;
 
-    private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
+    private float accelerationMod = 2.0f;
 
-    private transient Thread resizeThread = null;
+    private float pitchSpeed = 0.15f;
 
+    private float yawSpeed = 0.33f;
+
+    private final transient ByteBuffer temp = ByteBuffer.allocateDirect(16).order(ByteOrder.nativeOrder());
+
+    private boolean isAccelerated = false, isSneaked = false;
+
+    private float theta = 0.5f;
+
+    private float velocity = 0;
+
+    private float currentPitch = 30;
+
+    private float currentYaw = 0;
+
+    private float heroXPos = 0, heroYPos = 0, heroHeight = -6;
+
+    private transient Thread sneakThread;
 
     public GameCanvas(UIHandler uiHandler, GameController gameController) {
         super("GameCanvas", gameController, uiHandler);
 
         this.gameController = gameController;
 
-//        setSize(parentFrame.getSize());
         setBackground(Color.BLACK);
         setIgnoreRepaint(true);
         setOpaque(false);
-//        setFocusable(false);
-
-//        addMouseMotionListener(this);
-//        addMouseWheelListener(this);
-//        addMouseListener(this);
-//        addKeyListener(this);
-//        addComponentListener(this);
 
         if (gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
             if (gameController.isCurrentWorldIsLocal() && !gameController.isServerIsOpen()) {
@@ -103,32 +133,183 @@ public class GameCanvas extends FoxCanvas {
             }
         }));
 //        getSecondThread().start();
+        setGameActive();
+    }
+
+    // вызывается в главном меню в начале работы данного класса:
+    private void setGameActive() {
+        init();
+        gameController.setGameActive(true);
+
+        super.createChat();
+
+        Constants.setPaused(false);
+        Constants.setGameStartedIn(System.currentTimeMillis());
     }
 
     public void render() {
-        // not realized yet
+        if (gameController.isGameActive()) {
+            configureThis();
+
+            glPushMatrix();
+
+            moveHero();
+
+            drawFloor();
+            drawPyramid();
+
+            glPopMatrix();
+
+            glLightfv(GL_LIGHT0, GL_POSITION, temp.asFloatBuffer().put(new float[]{0.0f, -1.5f, 1.0f, 1.0f}).flip());
+        }
     }
 
-    private void setInAc() {
-        final String frameName = "mainFrame";
-//        final String frameName = "game_canvas";
+    private void drawFloor() {
+        for (int i = -10; i < 10; i++) {
+            for (int j = -10; j < 10; j++) {
+                if ((i + j) % 2 == 0) {
+                    glColor3f(0, 0, 0);
+                } else {
+                    glColor3f(255, 255, 255);
+                }
+                glPushMatrix();
+                glTranslatef(i * 2f, j * 2f, 0);
+                drawField();
+                glPopMatrix();
+            }
+        }
+    }
 
-        // KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_MASK)
-//        Constants.INPUT_ACTION.add(frameName, parentFrame.getRootPane());
+    private void drawPyramid() {
+        glPushMatrix();
+        glScalef(0.65f, 0.65f, 0.65f);
+        glTranslatef(0.0f, 0.0f, 5.0f);
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+        glRotatef(theta, 0.0f, 1.0f, 0.0f);
 
-        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "backFunction",
-                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        if (isVisible() && Constants.isPaused()) {
-                            onExitBack(GameCanvas.this);
-                        } else {
-                            Constants.setPaused(!Constants.isPaused());
-                        }
-                    }
-                });
+        drawPoly();
+        drawPoints();
+        drawLines();
 
-        this.isControlsMapped = true;
+        theta += 0.5f;
+        glPopMatrix();
+    }
+
+    private void drawField() {
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, new float[]{0.5f, 0.5f, 0.5f, 0.5f});
+        glMaterialfv(GL_FRONT, GL_SPECULAR, new float[]{0.2f, 0.2f, 0.2f, 0.5f});
+        glMaterialfv(GL_FRONT, GL_SHININESS, new float[]{0.2f, 0.2f, 0.2f, 0.5f});
+
+        glBegin(GL_QUADS);
+        // grass:
+        glNormal3f(0.0f, 0.0f, -1.0f);
+//        glColor3f(0.0f, 1.0f, 0.0f);
+
+//        glTexCoord2f(-1.0f, -1.0f);
+        glVertex3f(-1.0f, -1.0f, 0.0f);
+
+//        glTexCoord2f(1.0f, -1.0f);
+        glVertex3f(1.0f, -1.0f, 0.0f);
+
+//        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, 0.0f);
+
+//        glTexCoord2f(-1.0f, 1.0f);
+        glVertex3f(-1.0f, 1.0f, 0.0f);
+
+        glEnd();
+    }
+
+    private void drawPoly() {
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, new float[]{0.33f, 0.33f, 0.33f, 0.5f});
+        glMaterialfv(GL_FRONT, GL_SPECULAR, new float[]{0.75f, 0.75f, 0.75f, 0.5f});
+        glMaterialfv(GL_FRONT, GL_SHININESS, new float[]{1.0f, 1.0f, 1.0f, 1.0f});
+
+        final float mod = 0.8f;
+
+        glBegin(GL_TRIANGLES); // GL_TRIANGLES | GL_TRIANGLE_FAN | GL_TRIANGLE_STRIP
+
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+        // glTexCoord2f(0.0f, 0.0f);
+        glNormal3f(0.0f, 0.5f, 1.0f);
+        glVertex3f(-mod, -mod, mod);
+        glVertex3f(mod, -mod, mod);
+        glVertex3f(0.0f, mod, 0.0f);
+
+        glColor4f(0.0f, 0.85f, 0.0f, 0.5f);
+        // glTexCoord2f(0.0f, 0.0f);
+        glNormal3f(0.0f, 0.5f, 0.0f);
+        glVertex3f(mod, -mod, mod);
+        glVertex3f(mod, -mod, -mod);
+        glVertex3f(0.0f, mod, 0.0f);
+
+        glColor4f(0.25f, 0.33f, 1.0f, 1.0f);
+        // glTexCoord2f(0.0f, 0.0f);
+        glNormal3f(0.0f, 0.5f, -1.0f);
+        glVertex3f(mod, -mod, -mod);
+        glVertex3f(-mod, -mod, -mod);
+        glVertex3f(0.0f, mod, 0.0f);
+
+        glColor4f(0.85f, 0.85f, 0.85f, 0.5f);
+        // glTexCoord2f(0.0f, 0.0f);
+        glNormal3f(-1.0f, 0.5f, 0.0f);
+        glVertex3f(-mod, -mod, -mod);
+        glVertex3f(-mod, -mod, mod);
+        glVertex3f(0.0f, mod, 0.0f);
+
+        glEnd();
+
+        glBegin(GL_QUADS);
+
+        // при CCW низ рисуется по часовой (потому что вверх ногами!):
+        glColor4f(0.8f, 0.2f, 0.1f, 1.0f);
+        // glTexCoord2f(0.0f, 0.0f);
+        glNormal3f(0.0f, -1.0f, 0.0f);
+        glVertex3f(-mod, -mod, mod);
+        glVertex3f(-mod, -mod, -mod);
+        glVertex3f(mod, -mod, -mod);
+        glVertex3f(mod, -mod, mod);
+
+        glEnd();
+    }
+
+    private void drawLines() {
+        glEnable(GL_LINE_STIPPLE);
+        glLineStipple(1, (short) 0x0FFF); // 255 (0x00FF) | 0x3F07 | 0xAAAA
+        glLineWidth(3);
+
+        glBegin(GL_LINE_LOOP); // GL_LINES | GL_LINE_STRIP | GL_LINE_LOOP
+        glColor3f(1.0f, 0.5f, 0.5f);
+        glVertex2d(0.025f, 0.85f);
+        glVertex2d(0.875f, -0.825f);
+
+        glColor3f(1.0f, 0.0f, 1.0f);
+        glVertex2d(0.85f, -0.9f);
+        glVertex2d(-0.85f, -0.9f);
+
+        glColor3f(0.0f, 1.0f, 1.0f);
+        glVertex2d(-0.875f, -0.825f);
+        glVertex2d(-0.025f, 0.85f);
+        glEnd();
+        glDisable(GL_LINE_STIPPLE);
+    }
+
+    private void drawPoints() {
+        glMaterialfv(GL_FRONT, GL_SPECULAR, new float[]{0.0f, 0.0f, 0.0f, 0.0f});
+        glMaterialfv(GL_FRONT, GL_SHININESS, new float[]{0.1f, 0.1f, 0.1f, 0.0f});
+        glPointSize(6);
+
+        glBegin(GL_POINTS);
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(-1.0f, -1.0f, 0.0f);
+
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(1.0f, -1.0f, 0.0f);
+
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 1.0f, 0.0f);
+
+        glEnd();
     }
 
     public void run() {
@@ -144,9 +325,6 @@ public class GameCanvas extends FoxCanvas {
             }
         }
 
-        // инициализируем все для игры, отображаем окно игры:
-        setGameActive();
-
         if (gameController.isCurrentWorldIsNetwork()) {
             log.info("Начинается трансляция данных на Сервер...");
             gameController.startClientBroadcast();
@@ -157,21 +335,8 @@ public class GameCanvas extends FoxCanvas {
             delta = System.currentTimeMillis() - lastTime;
             lastTime = System.currentTimeMillis();
 
-//            if (!parentFrame.isActive()) {
-//                try {
-//                    Thread.sleep(100);
-//                } catch (InterruptedException e) {
-//                    Thread.currentThread().interrupt();
-//                }
-//                continue;
-//            }
-
-            if (!Constants.isPaused()) {
-                dragViewIfNeeds();
-            }
-
             try {
-                drawNextFrame();
+                repaint();
 
                 // при успешной отрисовке:
                 if (getDrawErrors() > 0) {
@@ -194,197 +359,67 @@ public class GameCanvas extends FoxCanvas {
         log.info("Thread of Game canvas is finalized.");
     }
 
-    /**
-     * Основной цикл отрисовки игрового окна.
-     */
-    private void drawNextFrame() {
-        repaint();
-    }
+//    private void paint() {
+//        Graphics2D g2D = (Graphics2D) g;
+//        try {
+//            super.drawBackground(g2D);
+//        } catch (AWTException e) {
+//            log.error("Game paint exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+//        }
+//        g2D.dispose();
+//    }
 
-    @Override
-    public void paint(Graphics g) {
-        if (isDisplayable()) {
-            Graphics2D g2D = (Graphics2D) g;
-            try {
-                super.drawBackground(g2D);
-            } catch (AWTException e) {
-                log.error("Game paint exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
-            }
-            g2D.dispose();
-        } else {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    private void recreateViewPort() {
-        setViewPort(new Rectangle(0, 0, getWidth(), getHeight()));
-    }
-
-    private void dragViewIfNeeds() {
-        if (isMouseRightEdgeOver) {
-            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
-                dragLeft(2d);
-                Thread.yield();
-            }
-        }
-        if (isMouseLeftEdgeOver) {
-            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
-                dragRight(2d);
-                Thread.yield();
-            }
-        }
-        if (isMouseUpEdgeOver) {
-            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
-                dragDown(2d);
-                Thread.yield();
-            }
-        }
-        if (isMouseDownEdgeOver) {
-            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
-                dragUp(2d);
-                Thread.yield();
-            }
-        }
-    }
-
-    private void setGameActive() {
-        setVisible(true);
-        createSubPanes();
-        init();
-        gameController.setGameActive(true);
-
-        requestFocusInWindow();
-
-        super.createChat();
-
-        Constants.setPaused(false);
-        Constants.setGameStartedIn(System.currentTimeMillis());
-    }
-
-    private void zoomIn() {
-        log.debug("Zoom in...");
-
-        // если окно меньше установленного лимита:
-        if (getViewPort().getWidth() - getViewPort().getX() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
-                || getViewPort().getHeight() - getViewPort().getY() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
-        ) {
-            log.debug("Can`t zoom in: vpWidth = {}, vpHeight = {} but minSize = {}",
-                    getViewPort().getWidth() - getViewPort().getX(), getViewPort().getHeight() - getViewPort().getY(),
-                    Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS);
-            return;
-        }
-
-        moveViewToPlayer(Constants.getScrollSpeed(), (int) (Constants.getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
-    }
-
-    private void zoomOut() {
-        log.debug("Zoom out...");
-
-        // если окно больше установленного лимита или и так максимального размера:
-        if (!canZoomOut(getViewPort().getWidth() - getViewPort().getX(), getViewPort().getHeight() - getViewPort().getY(),
-                gameController.getCurrentWorldMap().getWidth(), gameController.getCurrentWorldMap().getHeight())) {
-            return;
-        }
-
-        moveViewToPlayer(-Constants.getScrollSpeed(), -(int) (Constants.getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
-
-//        double delta = getBounds().getWidth() / getBounds().getHeight();
-////        double widthPercent = getBounds().getWidth() * Constants.getScrollSpeed();
-////        double heightPercent = getBounds().getHeight() * Constants.getScrollSpeed();
-//
-////        double factor = getBounds().getWidth() % getBounds().getHeight();
-////        double resultX = getBounds().getWidth() / factor * 10;
-////        double resultY = getBounds().getHeight() / factor * 10;
-//        double sdf = (viewPort.getWidth() - viewPort.getX()) / 100d;
-//        double sdf2 = (viewPort.getHeight() - viewPort.getY()) / (100d / delta);
-//        viewPort.setRect(
-//                viewPort.getX() - sdf,
-//                viewPort.getY() - sdf2,
-//                viewPort.getWidth() + sdf,
-//                viewPort.getHeight() + sdf2);
-////        log.info("f): {}, r1): {}, r2): {}", factor, resultX, resultY);
-
-        // проверка на выход за края игрового поля:
-        checkOutOfFieldCorrection();
-    }
-
-    public void moveViewToPlayer(double x, double y) {
-        if (gameController.getCurrentWorldMap() != null && getViewPort() != null) {
-            Point2D.Double p = gameController.getCurrentHeroPosition();
-            Rectangle viewRect = getViewPort().getBounds();
-            getViewPort().setRect(
-                    p.x - (viewRect.getWidth() - viewRect.getX()) / 2D + x,
-                    p.y - (viewRect.getHeight() - viewRect.getY()) / 2D + y,
-                    p.x + (viewRect.getWidth() - viewRect.getX()) / 2D - x,
-                    p.y + (viewRect.getHeight() - viewRect.getY()) / 2D - y);
-
-            checkOutOfFieldCorrection();
-        }
-    }
-
-    private boolean canZoomOut(double viewWidth, double viewHeight, double mapWidth, double mapHeight) {
-        int maxCellsSize = Constants.MAP_CELL_DIM * Constants.MAX_ZOOM_OUT_CELLS;
-
-        // если окно больше установленного лимита:
-        if (viewWidth >= maxCellsSize || viewHeight >= maxCellsSize) {
-            log.debug("Can`t zoom out: viewWidth = {} and viewHeight = {} but maxCellsSize is {}", viewWidth, viewHeight, maxCellsSize);
-            return false;
-        }
-
-        // если окно уже максимального размера:
-        if (viewWidth >= mapWidth || viewHeight >= mapHeight) {
-            log.debug("Can`t zoom out: maximum size reached.");
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
     public synchronized void stop() {
         if (gameController.isGameActive() || isVisible()) {
+            if (gameController.getCurrentWorld() != null) {
+                boolean paused = Constants.isPaused();
+                boolean debug = Constants.isDebugInfoVisible();
 
-            boolean paused = Constants.isPaused();
-            boolean debug = Constants.isDebugInfoVisible();
+                Constants.setPaused(false);
+                Constants.setDebugInfoVisible(false);
+                gameController.doScreenShot(new Point(0, 0), new Rectangle(0, 0, 400, 400));
+                Constants.setPaused(paused);
+                Constants.setDebugInfoVisible(debug);
+            }
 
-            Constants.setPaused(false);
-            Constants.setDebugInfoVisible(false);
-//            gameController.doScreenShot(parentFrame.getLocation(), getBounds());
-            Constants.setPaused(paused);
-            Constants.setDebugInfoVisible(debug);
+            if (getSecondThread() != null) {
+                getSecondThread().interrupt();
+            }
 
-            getSecondThread().interrupt();
-            gameController.exitToMenu(getDuration());
+            // защита от зацикливания т.к. loadScreen может снова вызвать этот метод контрольно:
+            if (gameController.isGameActive()) {
+                gameController.setGameActive(false);
+
+                gameController.saveCurrentWorld();
+
+                if (getDuration() != null && gameController.getPlayedHeroesService().isCurrentHeroNotNull()) {
+                    gameController.setCurrentHeroOfflineAndSave(getDuration());
+                }
+
+                // если игра сетевая и локальная - останавливаем сервер при выходе из игры:
+                if (gameController.isCurrentWorldIsNetwork()) {
+                    if (gameController.isCurrentWorldIsLocal()) {
+                        if (gameController.closeServer()) {
+                            log.info("Сервер успешно остановлен");
+                        } else {
+                            log.warn("Возникла ошибка при закрытии сервера.");
+                        }
+                    }
+                    if (gameController.isSocketIsOpen()) {
+                        gameController.closeSocket();
+                    }
+                }
+
+//                gameController.loadScreen(ScreenType.MENU_SCREEN);
+            }
         }
     }
 
-    @Override
     public void init() {
         log.info("Do canvas re-initialization...");
 
         // проводим основную инициализацию класса текущего мира:
         gameController.initCurrentWorld(this);
-
-        reloadShapes(this);
-        recalculateMenuRectangles();
-
-        // если не создан вьюпорт - создаём:
-        if (getViewPort() == null) {
-            recreateViewPort();
-        }
-
-        if (!isControlsMapped) {
-            // назначаем горячие клавиши управления:
-            setInAc();
-        }
-
-        moveViewToPlayer(0, 0);
-
-        requestFocus();
     }
 
     private void justSave() {
@@ -442,7 +477,7 @@ public class GameCanvas extends FoxCanvas {
         }
         if (isExitButtonOver()) {
             if (isOptionsMenuSetVisible()) {
-                onExitBack(this);
+                onExitBack();
             } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти в главное меню?",
                     FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
                 stop();
@@ -459,148 +494,97 @@ public class GameCanvas extends FoxCanvas {
         }
     }
 
-    public void mouseDragged(MouseEvent e) {
-        if (SwingUtilities.isRightMouseButton(e)) {
-            Point p = e.getPoint();
-            log.debug("drag: {}x{}", p.x, p.y);
-            if (p.getX() < mousePressedOnPoint.getX()) {
-                isMouseLeftEdgeOver = true;
-            } else if (p.getX() > mousePressedOnPoint.getX()) {
-                isMouseRightEdgeOver = true;
-            } else if (p.getY() < mousePressedOnPoint.getY()) {
-                isMouseUpEdgeOver = true;
-            } else if (p.getY() > mousePressedOnPoint.getY()) {
-                isMouseDownEdgeOver = true;
-            }
-            this.mousePressedOnPoint = p;
+    public void moveHero() {
+        glRotatef(-currentPitch, 1, 0, 0);
+        glRotatef(currentYaw, 0, 0, 1);
+
+        float ugol = (float) (currentYaw / 180f * Math.PI);
+        velocity = isCameraMovingForward() ? getHeroSpeed() : isCameraMovingBack() ? -getHeroSpeed() : 0;
+        if (isCameraMovingLeft()) {
+            velocity = getHeroSpeed();
+            ugol -= Math.PI * (isCameraMovingForward() ? 0.25 : isCameraMovingBack() ? 0.75 : 0.5);
         }
+        if (isCameraMovingRight()) {
+            velocity = getHeroSpeed();
+            ugol += Math.PI * (isCameraMovingForward() ? 0.25 : isCameraMovingBack() ? 0.75 : 0.5);
+        }
+
+        if (velocity != 0) {
+            heroXPos += Math.sin(ugol) * velocity;
+            heroYPos += Math.cos(ugol) * velocity;
+        }
+
+//        glTranslated(gameController.getCurrentHeroPosition().x, gameController.getCurrentHeroPosition().y, gameController.getCurrentHeroCorpusHeight());
+        glTranslated(-heroXPos, -heroYPos, heroHeight);
     }
 
-    public void mouseMoved(MouseEvent e) {
-        Point p = e.getPoint();
-
-        if (Constants.isPaused()) {
-            // если пауза - проверяем меню:
-            setFirstButtonOver(getFirstButtonRect().contains(p));
-            setSecondButtonOver(getSecondButtonRect().contains(p));
-            setThirdButtonOver(getThirdButtonRect().contains(p));
-            setFourthButtonOver(getFourthButtonRect().contains(p));
-            setExitButtonOver(getExitButtonRect().contains(p));
-        } else { // иначе мониторим наведение на край окна для прокрутки поля:
-            if (!isMovingKeyActive && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
-                isMouseLeftEdgeOver = p.getX() <= 15
-                        && (Constants.getUserConfig().isFullscreen() || p.getX() > 1) && !getMinimapHideRect().contains(p);
-                isMouseRightEdgeOver = p.getX() >= getWidth() - 15 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1);
-                isMouseUpEdgeOver = p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1);
-                isMouseDownEdgeOver = p.getY() >= getHeight() - 15
-                        && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1) && !getMinimapHideRect().contains(p);
-            }
-        }
+    private float getHeroSpeed() {
+        return isAccelerated ? heroSpeed * accelerationMod : heroSpeed;
     }
 
-    public void mouseWheelMoved(MouseWheelEvent e) {
-        if (Constants.isPaused()) {
-            // not work into pause
-            return;
-        }
-        switch (e.getWheelRotation()) {
-            case 1 -> zoomOut();
-            case -1 -> zoomIn();
-            default -> log.warn("MouseWheelEvent unknown action: {}", e.getWheelRotation());
-        }
-    }
-
-    private void onResize() {
-        if (resizeThread != null && resizeThread.isAlive()) {
-            return;
-        }
-
-        resizeThread = new Thread(() -> {
-            try {
-                Thread.sleep(30);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            log.debug("Resizing of game canvas...");
-
-//            if (Constants.getUserConfig().isFullscreen()) {
-//                setSize(parentFrame.getSize());
-//            } else if (!getSize().equals(parentFrame.getRootPane().getSize())) {
-//                setSize(parentFrame.getRootPane().getSize());
+    public void setCameraYaw(double yaw) {
+        if (yaw != 0) {
+            currentYaw += (float) (yaw * yawSpeed);
+//            if (currentYaw > 360) {
+//                currentYaw = 0;
 //            }
+//            if (currentYaw < 0) {
+//                currentYaw = 360;
+//            }
+//            log.info("Yaw: {}", (int) currentYaw);
+        }
+    }
 
-            if (isVisible()) {
-                reloadShapes(this);
-                recalculateMenuRectangles();
+    public void setCameraPitch(double pitch) {
+        if (pitch != 0) {
+            currentPitch += (float) (pitch * pitchSpeed);
+            if (currentPitch < 0) {
+                currentPitch = 0;
             }
-
-            recreateViewPort();
-            moveViewToPlayer(0, 0);
-            requestFocusInWindow();
-
-            setRevolatileNeeds(true);
-        });
-        resizeThread.start();
-    }
-
-    public void keyPressed(KeyEvent e) {
-        // hero movement:
-        if (e.getKeyCode() == HotKeys.MOVE_UP.getEvent()) {
-            gameController.setPlayerMovingUp(true);
-        } else if (e.getKeyCode() == HotKeys.MOVE_BACK.getEvent()) {
-            gameController.setPlayerMovingDown(true);
-        }
-        if (e.getKeyCode() == HotKeys.MOVE_LEFT.getEvent()) {
-            gameController.setPlayerMovingLeft(true);
-        } else if (e.getKeyCode() == HotKeys.MOVE_RIGHT.getEvent()) {
-            gameController.setPlayerMovingRight(true);
-        }
-
-        // camera movement:
-        if (e.getKeyCode() == HotKeys.CAM_UP.getEvent()) {
-            isMovingKeyActive = true;
-            isMouseUpEdgeOver = true;
-        } else if (e.getKeyCode() == HotKeys.CAM_DOWN.getEvent()) {
-            isMovingKeyActive = true;
-            isMouseDownEdgeOver = true;
-        }
-        if (e.getKeyCode() == HotKeys.CAM_LEFT.getEvent()) {
-            isMovingKeyActive = true;
-            isMouseLeftEdgeOver = true;
-        } else if (e.getKeyCode() == HotKeys.CAM_RIGHT.getEvent()) {
-            isMovingKeyActive = true;
-            isMouseRightEdgeOver = true;
+            if (currentPitch > 180) {
+                currentPitch = 180;
+            }
+//            log.info("Pitch: {}", (int) currentPitch);
         }
     }
 
-    public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
-            gameController.setPlayerMovingUp(false);
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
-            gameController.setPlayerMovingDown(false);
-        }
+    public void moveCameraToHero() {
+//        glTranslated(gameController.getCurrentHeroPosition().x, gameController.getCurrentHeroPosition().y, gameController.getCurrentHeroCorpusHeight());
+        glTranslated(heroXPos, heroYPos, -6);
+    }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
-            gameController.setPlayerMovingLeft(false);
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
-            gameController.setPlayerMovingRight(false);
-        }
+    public void setAcceleration(boolean b) {
+        this.isAccelerated = b;
+    }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {
-            isMovingKeyActive = false;
-            isMouseUpEdgeOver = false;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookDown()) {
-            isMovingKeyActive = false;
-            isMouseDownEdgeOver = false;
+    public void setSneak(boolean b) {
+        this.isSneaked = b;
+        if (sneakThread != null && sneakThread.isAlive()) {
+            sneakThread.interrupt();
         }
-
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookLeft()) {
-            isMovingKeyActive = false;
-            isMouseLeftEdgeOver = false;
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookRight()) {
-            isMovingKeyActive = false;
-            isMouseRightEdgeOver = false;
+        if (isSneaked) {
+            sneakThread = new Thread(() -> {
+                while (heroHeight < -4 && !Thread.currentThread().isInterrupted()) {
+                    try {
+                        heroHeight += 0.1f;
+                        Thread.sleep(18);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            });
+        } else {
+            sneakThread = new Thread(() -> {
+                while (heroHeight > -6 && !Thread.currentThread().isInterrupted()) {
+                    try {
+                        heroHeight -= 0.1f;
+                        Thread.sleep(18);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            });
         }
+        sneakThread.start();
     }
 }

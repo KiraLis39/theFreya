@@ -1,5 +1,6 @@
 package game.freya.items.prototypes;
 
+import game.freya.gl.Collider3D;
 import game.freya.interfaces.iEnvironment;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +32,7 @@ public abstract class Environment implements iEnvironment {
 
     private Point2D.Double location;
 
-    private Rectangle collider;
+    private Collider3D collider;
 
     @Setter
     private boolean isVisible;
@@ -95,7 +96,7 @@ public abstract class Environment implements iEnvironment {
     }
 
     @Override
-    public Rectangle getCollider() {
+    public Collider3D getCollider() {
         if (collider == null && location != null && size != null) {
             resetCollider();
         }
@@ -117,6 +118,13 @@ public abstract class Environment implements iEnvironment {
     public abstract void init();
 
     private void resetCollider() {
-        this.collider = new Rectangle((int) location.x + 16, (int) location.y + 16, size.width - 32, size.height - 32);
+        this.collider = Collider3D.builder()
+                .x(location.x + 16)
+                .y(location.y + 16)
+                .z(0)
+                .xw(size.width - 32)
+                .yw(size.height - 32)
+                .h(1)
+                .build();
     }
 }
