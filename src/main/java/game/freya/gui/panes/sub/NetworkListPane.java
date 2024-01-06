@@ -7,8 +7,8 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -44,7 +44,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
     private static final int maxElementsDim = 96;
 
-    private final transient FoxCanvas canvas;
+    private final transient FoxWindow canvas;
 
     private final transient GameController gameController;
 
@@ -66,7 +66,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
     private transient Thread pingActionThread;
 
-    public NetworkListPane(FoxCanvas canvas, GameController controller) {
+    public NetworkListPane(FoxWindow canvas, GameController controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -124,7 +124,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                         return;
                     }
                     address = address.replace(",", ".");
-                    if (canvas instanceof MenuCanvas mCanvas) {
+                    if (canvas instanceof MenuWindow mCanvas) {
                         password = (String) new FOptionPane()
                                 .buildFOptionPane("Подключиться по IP:", "Пароль сервера:",
                                         FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
@@ -144,7 +144,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
         }
     }
 
-    public void reloadNet(FoxCanvas canvas) {
+    public void reloadNet(FoxWindow canvas) {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
@@ -251,7 +251,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                                             if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                                                     "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
                                                     FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                                    && canvas instanceof MenuCanvas mCanvas
+                                                    && canvas instanceof MenuWindow mCanvas
                                             ) {
                                                 mCanvas.deleteExistsWorldAndCloseThatPanel(getWorld().getUid());
                                                 reloadNet(canvas);
@@ -281,7 +281,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
                                 if (getWorld().isLocalWorld()) {
                                     canvas.setConnectionAwait(true);
-                                    ((MenuCanvas) canvas).serverUp(world);
+                                    ((MenuWindow) canvas).serverUp(world);
                                 } else {
                                     address = getWorld().getNetworkAddress();
                                     password = (String) new FOptionPane()
@@ -289,7 +289,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                                                     FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
 
                                     canvas.setConnectionAwait(true);
-                                    ((MenuCanvas) canvas).connectToServer(NetConnectTemplate.builder()
+                                    ((MenuWindow) canvas).connectToServer(NetConnectTemplate.builder()
                                             .address(address)
                                             .worldUid(world.getUid())
                                             .passwordHash(password.hashCode())
@@ -412,7 +412,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(FoxWindow canvas) {
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));

@@ -272,7 +272,7 @@ public class PlayedHeroesService {
 
     public Collider3D getCurrentHeroCollider() {
         checkCHE();
-        return (Collider3D) heroes.get(currentHeroUid).getCollider();
+        return heroes.get(currentHeroUid).getCollider();
     }
 
     public Point2D getCurrentHeroCenterPoint() {

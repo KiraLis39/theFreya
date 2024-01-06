@@ -2,6 +2,7 @@ package game.freya;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import fox.FoxLogo;
+import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.config.Media;
 import game.freya.entities.Player;
@@ -20,8 +21,10 @@ import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gl.Collider3D;
-import game.freya.gui.GameFrame;
-import game.freya.gui.panes.GameCanvas;
+import game.freya.gui.Window;
+import game.freya.gui.WindowManager;
+import game.freya.gui.panes.GameWindow;
+import game.freya.gui.panes.MenuWindow;
 import game.freya.interfaces.iEnvironment;
 import game.freya.items.prototypes.Environment;
 import game.freya.mappers.WorldMapper;
@@ -79,6 +82,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
+import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -95,11 +101,13 @@ public class GameController extends GameControllerBase {
 
     private final WorldMapper worldMapper;
 
-    private final GameFrame gameFrame;
+    private final WindowManager gameFrame;
 
     private final PlayedHeroesService playedHeroesService;
 
     private final Server server;
+
+    private volatile boolean isGlWindowBreaked = false;
 
     @Getter
     private LocalSocketConnection localSocketConnection;
@@ -434,7 +442,7 @@ public class GameController extends GameControllerBase {
      * @param v2D    хост для отрисовки.
      * @param canvas класс холста.
      */
-    public void drawHeroes(Graphics2D v2D, GameCanvas canvas) {
+    public void drawHeroes(Graphics2D v2D, GameWindow canvas) {
         if (isCurrentWorldIsNetwork()) { // если игра по сети:
             for (HeroDTO hero : getConnectedHeroes()) {
                 if (playedHeroesService.isCurrentHero(hero)) {
@@ -465,7 +473,7 @@ public class GameController extends GameControllerBase {
         return visibleRect.contains(hero.getLocation()) && hero.isOnline();
     }
 
-    private void moveHeroIfAvailable(GameCanvas canvas) {
+    private void moveHeroIfAvailable(GameWindow canvas) {
         if (isPlayerMoving()) {
             Rectangle visibleRect = canvas.getViewPort().getBounds();
             MovingVector vector = playedHeroesService.getCurrentHeroVector();
@@ -694,7 +702,7 @@ public class GameController extends GameControllerBase {
         worldService.saveCurrentWorld();
     }
 
-    public void initCurrentWorld(GameCanvas gameCanvas) {
+    public void initCurrentWorld(GameWindow gameCanvas) {
         worldService.getCurrentWorld().init(gameCanvas, this);
     }
 
@@ -728,7 +736,8 @@ public class GameController extends GameControllerBase {
     }
 
     public boolean isCurrentWorldIsNetwork() {
-        return worldService.getCurrentWorld().isNetAvailable();
+        WorldDTO cw = worldService.getCurrentWorld();
+        return cw != null && cw.isNetAvailable();
     }
 
     public HeroDTO findHeroByNameAndWorld(String heroName, UUID worldUid) {
@@ -1115,5 +1124,32 @@ public class GameController extends GameControllerBase {
 
     public WorldDTO getAnyWorld() {
         return worldService.findAnyWorld();
+    }
+
+    public void showConfirmExitRequest(Window window) {
+        if (window instanceof MenuWindow bf) {
+            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
+                    "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+            ) {
+                isGlWindowBreaked = true;
+                if (!glfwWindowShouldClose(window.getWindow())) {
+                    bf.setActiveWindow(false, ScreenType.MENU_SCREEN);
+                }
+            } else {
+                glfwSetWindowShouldClose(window.getWindow(), false); // Не закрывает окно :)
+            }
+        } else if (window instanceof GameWindow fg) {
+            fg.onExitBack();
+        } else {
+            log.error("WTF: {}", window.getWindow());
+        }
+    }
+
+    public boolean isGlWindowBreaked() {
+        return isGlWindowBreaked;
+    }
+
+    public void setGlWindowBreaked(boolean b) {
+        isGlWindowBreaked = b;
     }
 }

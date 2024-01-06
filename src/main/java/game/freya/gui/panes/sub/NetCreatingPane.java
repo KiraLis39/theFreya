@@ -4,8 +4,8 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Random;
 
 @Slf4j
@@ -60,7 +61,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
     @Getter
     private int netPasswordHash;
 
-    public NetCreatingPane(FoxCanvas canvas) {
+    public NetCreatingPane(FoxWindow canvas) {
         setName("Net creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -90,7 +91,8 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
                 add(new JComboBox<>(Arrays.stream(HardnessLevel.values()).map(HardnessLevel::getDescription).toArray()) {{
                     setSelectedIndex(1);
                     addActionListener(e -> hardnessLevel = Arrays.stream(HardnessLevel.values())
-                            .filter(hl -> hl.getDescription().equals(getSelectedItem().toString())).findFirst().orElseThrow());
+                            .filter(hl -> hl.getDescription().equals(Objects.requireNonNull(getSelectedItem()).toString()))
+                            .findFirst().orElseThrow());
                 }});
             }});
 
@@ -159,7 +161,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
                                     .passwordHash(getNetPasswordHash())
                                     .networkAddress(addresses.get(0))
                                     .build();
-                            ((MenuCanvas) canvas).serverUp(aNewWorld);
+                            ((MenuWindow) canvas).serverUp(aNewWorld);
                         }
                     });
                 }});
@@ -195,7 +197,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(FoxWindow canvas) {
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));

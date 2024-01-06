@@ -6,8 +6,8 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.other.HeroCorpusType;
 import game.freya.enums.other.HeroPeriferiaType;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JZlider;
@@ -90,7 +90,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
 
     private transient HeroDTO editableHero;
 
-    public HeroCreatingPane(FoxCanvas canvas, GameController gameController) {
+    public HeroCreatingPane(FoxWindow canvas, GameController gameController) {
         setName("Hero creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -172,7 +172,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 JColorChooser bcc = new JColorChooser(baseColor);
-                                JOptionPane.showMessageDialog(canvas, Arrays.stream(bcc.getChooserPanels())
+                                JOptionPane.showMessageDialog(null, Arrays.stream(bcc.getChooserPanels())
                                                 .filter(p -> p.getDisplayName().equalsIgnoreCase("rgb")).findFirst()
                                                 .orElse(bcc.getChooserPanels()[0]), "Выбор основного цвета героя:",
                                         JOptionPane.QUESTION_MESSAGE);
@@ -193,7 +193,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 JColorChooser bcc = new JColorChooser(secondColor);
-                                JOptionPane.showMessageDialog(canvas, Arrays.stream(bcc.getChooserPanels())
+                                JOptionPane.showMessageDialog(null, Arrays.stream(bcc.getChooserPanels())
                                                 .filter(p -> p.getDisplayName().equalsIgnoreCase("rgb")).findFirst()
                                                 .orElse(bcc.getChooserPanels()[0]), "Выбор дополнительного цвета героя:",
                                         JOptionPane.QUESTION_MESSAGE);
@@ -230,7 +230,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                                 if (existsHero != null) {
                                     new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
                                 } else {
-                                    ((MenuCanvas) canvas).saveNewHeroAndPlay(HeroCreatingPane.this);
+                                    ((MenuWindow) canvas).saveNewHeroAndPlay(HeroCreatingPane.this);
                                 }
                             } else {
                                 editableHero.setBaseColor(baseColor);
@@ -362,7 +362,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(FoxWindow canvas) {
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
     }

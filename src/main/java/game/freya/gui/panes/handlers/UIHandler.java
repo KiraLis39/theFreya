@@ -2,7 +2,7 @@ package game.freya.gui.panes.handlers;
 
 import fox.FoxRender;
 import game.freya.config.Constants;
-import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.MenuWindow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.Point;
 import java.awt.Rectangle;
 
 @Slf4j
@@ -36,12 +34,12 @@ public final class UIHandler {
         repingButtonText = "Обновить";
     }
 
-    public void drawUI(Graphics2D v2D, FoxCanvas canvas) {
-        if (heightMemory != canvas.getBounds().getHeight()) {
-            recreateRectangles(canvas);
-        }
+    public void drawUI(Graphics2D v2D, FoxWindow canvas) {
+//        if (heightMemory != canvas.getBounds().getHeight()) {
+//            recreateRectangles(canvas);
+//        }
 
-        if (canvas instanceof MenuCanvas menuCanvas) {
+        if (canvas instanceof MenuWindow menuCanvas) {
             drawMainMenu(v2D, menuCanvas);
             drawCreatorInfo(v2D, menuCanvas);
         } else if (canvas.isOptionsMenuSetVisible()) {
@@ -88,7 +86,7 @@ public final class UIHandler {
         }
     }
 
-    private void drawCreatorInfo(Graphics2D g2D, FoxCanvas canvas) {
+    private void drawCreatorInfo(Graphics2D g2D, FoxWindow canvas) {
         // down right corner text:
         g2D.setFont(Constants.INFO_FONT);
         g2D.setColor(Color.WHITE);
@@ -100,7 +98,7 @@ public final class UIHandler {
                 canvas.getHeight() - 25);
     }
 
-    private void drawMainMenu(Graphics2D g2D, FoxCanvas canvas) {
+    private void drawMainMenu(Graphics2D g2D, FoxWindow canvas) {
         g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
 
         if (canvas.isOptionsMenuSetVisible()) {
@@ -182,7 +180,7 @@ public final class UIHandler {
                 ? canvas.getBackButtonText() : canvas.getExitButtonText(), canvas.getExitButtonRect().x, canvas.getExitButtonRect().y + 18);
     }
 
-    private void showHeroCreating(Graphics2D g2D, FoxCanvas canvas) {
+    private void showHeroCreating(Graphics2D g2D, FoxWindow canvas) {
         canvas.drawHeader(g2D, "Создание героя");
 
         // creating hero buttons text:
@@ -202,9 +200,7 @@ public final class UIHandler {
         g2D.drawString(canvas.getBackButtonText(), canvas.getExitButtonRect().x, canvas.getExitButtonRect().y + 18);
     }
 
-    private void recreateRectangles(FoxCanvas canvas) {
-        Rectangle canvasRect = canvas.getBounds();
-
+    private void recreateRectangles(Rectangle canvasRect) {
         heightMemory = canvasRect.getHeight();
         upLeftPaneRect = new Rectangle(1, 1, (int) (canvasRect.getWidth() * 0.333f), (int) (canvasRect.getHeight() * 0.075f));
         upCenterPaneRect = new Rectangle((int) (canvasRect.getWidth() * 0.36f), 1,
@@ -214,9 +210,9 @@ public final class UIHandler {
         downCenterPaneRect = new Rectangle((int) (canvasRect.getWidth() * 0.36f), (int) (canvasRect.getHeight() * 0.925f),
                 (int) (canvasRect.getWidth() * 0.28f), (int) (canvasRect.getHeight() * 0.075f));
 
-        if (canvas.getChat() != null) {
-            canvas.getChat().setLocation(new Point(canvas.getWidth() - canvas.getWidth() / 5 - 6, 72));
-            canvas.getChat().setSize(new Dimension(canvas.getWidth() / 5, canvas.getHeight() / 4));
-        }
+//        if (canvas.getChat() != null) {
+//            canvas.getChat().setLocation(new Point(canvas.getWidth() - canvas.getWidth() / 5 - 6, 72));
+//            canvas.getChat().setSize(new Dimension(canvas.getWidth() / 5, canvas.getHeight() / 4));
+//        }
     }
 }

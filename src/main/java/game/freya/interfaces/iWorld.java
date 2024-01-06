@@ -2,7 +2,7 @@ package game.freya.interfaces;
 
 import game.freya.GameController;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.GameCanvas;
+import game.freya.gui.panes.GameWindow;
 import game.freya.items.prototypes.Environment;
 
 import java.awt.AWTException;
@@ -17,7 +17,7 @@ public interface iWorld {
 
     UUID getAuthor();
 
-    void init(GameCanvas canvas, GameController controller);
+    void init(GameWindow canvas, GameController controller);
 
     Dimension getDimension();
 

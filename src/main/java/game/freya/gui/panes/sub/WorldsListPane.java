@@ -6,8 +6,8 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -39,7 +39,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private static final int maxImageDim = 88;
 
-    private final transient FoxCanvas canvas;
+    private final transient FoxWindow canvas;
 
     private final transient GameController gameController;
 
@@ -51,7 +51,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private transient ZLabel zlabel;
 
-    public WorldsListPane(FoxCanvas canvas, GameController controller) {
+    public WorldsListPane(FoxWindow canvas, GameController controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -99,7 +99,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
         }
     }
 
-    private void reloadWorlds(FoxCanvas canvas) {
+    private void reloadWorlds(FoxWindow canvas) {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
@@ -243,7 +243,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                     if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                                             "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                            && canvas instanceof MenuCanvas mCanvas
+                                            && canvas instanceof MenuWindow mCanvas
                                     ) {
                                         mCanvas.deleteExistsWorldAndCloseThatPanel(world.getUid());
                                         reloadWorlds(canvas);
@@ -266,7 +266,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                ((MenuCanvas) canvas).chooseOrCreateHeroForWorld(world.getUid());
+                                canvas.chooseOrCreateHeroForWorld(world.getUid());
                             }
                         });
                     }}, BorderLayout.CENTER);
@@ -300,7 +300,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(FoxWindow canvas) {
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));

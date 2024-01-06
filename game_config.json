@@ -14,8 +14,8 @@
   "lightsEnabled": true,
   "colorMaterialEnabled": true,
   "depthEnabled": true,
-  "useAlphaTest": false,
-  "blendEnabled": false,
+  "useAlphaTest": true,
+  "blendEnabled": true,
   "useTextures": true,
   "useFog": true
 }

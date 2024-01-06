@@ -4,8 +4,8 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.FButton;
@@ -58,7 +58,7 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
 
     private SubPane netPassPane;
 
-    public WorldCreatingPane(FoxCanvas canvas) {
+    public WorldCreatingPane(FoxWindow canvas) {
         setName("World creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -141,7 +141,7 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            if (canvas instanceof MenuCanvas mCanvas) {
+                            if (canvas instanceof MenuWindow mCanvas) {
                                 WorldDTO aNewWorld = WorldDTO.builder()
                                         .uid(UUID.randomUUID())
                                         .author(canvas.getGameController().getCurrentPlayerUid())
@@ -189,7 +189,7 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(FoxWindow canvas) {
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));

@@ -2,7 +2,7 @@ package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.FButton;
@@ -42,7 +42,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
 
     private JComboBox<DisplayMode> displayModeBox;
 
-    public VideoSettingsPane(FoxCanvas canvas) {
+    public VideoSettingsPane(FoxWindow canvas) {
         setName("Video settings pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -231,7 +231,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(FoxWindow canvas) {
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));

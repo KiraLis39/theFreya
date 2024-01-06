@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.GameCanvas;
+import game.freya.gui.panes.GameWindow;
 import game.freya.interfaces.iWorld;
 import game.freya.items.MockEnvironmentWithStorage;
 import game.freya.items.prototypes.Environment;
@@ -14,12 +14,10 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.AWTException;
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.ImageCapabilities;
 import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.image.BufferedImage;
@@ -94,7 +92,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     // custom fields:
     @JsonIgnore
-    private GameCanvas canvas;
+    private GameWindow canvas;
 
     @Getter
     @JsonIgnore
@@ -107,7 +105,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     private GameController gameController;
 
     @Override
-    public void init(GameCanvas canvas, GameController controller) {
+    public void init(GameWindow canvas, GameController controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -122,22 +120,22 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
      */
     @Override
     public void draw(Graphics2D v2D) throws AWTException {
-        if (canvas == null) {
-            log.error("Нельзя рисовать мир, пока canvas = null!");
-            return;
-        }
-        Rectangle camera = canvas.getViewPort().getBounds();
+//        if (canvas == null) {
+//            log.error("Нельзя рисовать мир, пока canvas = null!");
+//            return;
+//        }
+//        Rectangle camera = canvas.getViewPort().getBounds();
 
         // рисуем готовый кадр мира:
-        v2D.drawImage(repaintMap(camera),
-
-                0, 0,
-                canvas.getWidth(), canvas.getHeight(),
-
-                camera.x, camera.y,
-                camera.width, camera.height,
-
-                canvas);
+//        v2D.drawImage(repaintMap(camera),
+//
+//                0, 0,
+//                canvas.getWidth(), canvas.getHeight(),
+//
+//                camera.x, camera.y,
+//                camera.width, camera.height,
+//
+//                canvas);
     }
 
     @Override
@@ -152,7 +150,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @Override
     public void generate() {
-        for (int i = 0; i < 32;) {
+        for (int i = 0; i < 32; ) {
             MockEnvironmentWithStorage nextMock = new MockEnvironmentWithStorage("mock_" + (i + 1),
                     dimension.getWidth() * Constants.MAP_CELL_DIM, dimension.getHeight() * Constants.MAP_CELL_DIM);
             boolean isBusy = false;
@@ -169,68 +167,68 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         }
     }
 
-    private VolatileImage repaintMap(Rectangle camera) throws AWTException {
-        if (this.gameMap == null) {
-            this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
-                    dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
-        }
+    private VolatileImage repaintMap(Rectangle camera) {
+//        if (this.gameMap == null) {
+//            this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
+//                    dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
+//        }
 
-        Graphics2D v2D;
-        int valid = this.gameMap.validate(canvas.getGraphicsConfiguration());
-        while (valid == VolatileImage.IMAGE_INCOMPATIBLE) {
-            this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
-                    dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
-            valid = this.gameMap.validate(canvas.getGraphicsConfiguration());
-        }
-        if (valid == VolatileImage.IMAGE_RESTORED) {
-            v2D = this.gameMap.createGraphics();
-        } else {
-            v2D = (Graphics2D) this.gameMap.getGraphics();
-        }
+//        Graphics2D v2D;
+//        int valid = this.gameMap.validate(canvas.getGraphicsConfiguration());
+//        while (valid == VolatileImage.IMAGE_INCOMPATIBLE) {
+//            this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
+//                    dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
+//            valid = this.gameMap.validate(canvas.getGraphicsConfiguration());
+//        }
+//        if (valid == VolatileImage.IMAGE_RESTORED) {
+//            v2D = this.gameMap.createGraphics();
+//        } else {
+//            v2D = (Graphics2D) this.gameMap.getGraphics();
+//        }
 
-        v2D.setClip(0, 0, camera.width, camera.height);
+//        v2D.setClip(0, 0, camera.width, camera.height);
 
-        v2D.setColor(backColor);
-        v2D.fillRect(0, 0, camera.width, camera.height);
+//        v2D.setColor(backColor);
+//        v2D.fillRect(0, 0, camera.width, camera.height);
 
-        int n = 1;
-        v2D.setStroke(new BasicStroke(2f));
-        for (int i = Constants.MAP_CELL_DIM; i <= gameMap.getWidth(); i += Constants.MAP_CELL_DIM) {
-
-            // draw numbers of rows and columns:
-            if (Constants.isDebugInfoVisible()) {
-                String ns = n + scobe;
-                v2D.setColor(textColor);
-                v2D.drawString(ns, i - 26, 12);
-                v2D.drawString(ns, i - 34, gameMap.getHeight() - 12);
-
-                v2D.drawString(ns, 6, i - 16);
-                v2D.drawString(ns, gameMap.getWidth() - 24, i - 26);
-            }
-
-            // draw map grid cells:
-            v2D.setColor(linesColor);
-            v2D.drawLine(i, 0, i, gameMap.getHeight());
-            v2D.drawLine(0, i, gameMap.getWidth(), i);
-
-            n++;
-        }
+//        int n = 1;
+//        v2D.setStroke(new BasicStroke(2f));
+//        for (int i = Constants.MAP_CELL_DIM; i <= gameMap.getWidth(); i += Constants.MAP_CELL_DIM) {
+//
+//            // draw numbers of rows and columns:
+//            if (Constants.isDebugInfoVisible()) {
+//                String ns = n + scobe;
+//                v2D.setColor(textColor);
+//                v2D.drawString(ns, i - 26, 12);
+//                v2D.drawString(ns, i - 34, gameMap.getHeight() - 12);
+//
+//                v2D.drawString(ns, 6, i - 16);
+//                v2D.drawString(ns, gameMap.getWidth() - 24, i - 26);
+//            }
+//
+//            // draw map grid cells:
+//            v2D.setColor(linesColor);
+//            v2D.drawLine(i, 0, i, gameMap.getHeight());
+//            v2D.drawLine(0, i, gameMap.getWidth(), i);
+//
+//            n++;
+//        }
 
         // рисуем центральные оси:
-        if (Constants.isDebugInfoVisible()) {
-            v2D.setColor(Color.RED);
-            v2D.setStroke(new BasicStroke(2f));
-            v2D.drawLine(0, gameMap.getHeight() / 2, gameMap.getWidth(), gameMap.getHeight() / 2);
-            v2D.drawLine(gameMap.getWidth() / 2, 0, gameMap.getWidth() / 2, gameMap.getHeight());
-        }
+//        if (Constants.isDebugInfoVisible()) {
+//            v2D.setColor(Color.RED);
+//            v2D.setStroke(new BasicStroke(2f));
+//            v2D.drawLine(0, gameMap.getHeight() / 2, gameMap.getWidth(), gameMap.getHeight() / 2);
+//            v2D.drawLine(gameMap.getWidth() / 2, 0, gameMap.getWidth() / 2, gameMap.getHeight());
+//        }
 
         // рисуем окружение на карте:
-        drawEnvironments(v2D, camera);
+//        drawEnvironments(v2D, camera);
 
         // рисуем игроков из контроллера на карте:
-        gameController.drawHeroes(v2D, canvas);
+//        gameController.drawHeroes(v2D, canvas);
 
-        v2D.dispose();
+//        v2D.dispose();
 
         // return drown result:
         return this.gameMap;

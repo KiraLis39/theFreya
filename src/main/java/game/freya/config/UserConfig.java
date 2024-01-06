@@ -30,6 +30,7 @@ import static java.awt.event.KeyEvent.VK_S;
 import static java.awt.event.KeyEvent.VK_SHIFT;
 import static java.awt.event.KeyEvent.VK_UP;
 import static java.awt.event.KeyEvent.VK_W;
+import static java.awt.event.KeyEvent.VK_Z;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_APOSTROPHE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
@@ -47,6 +48,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_UP;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_W;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_Z;
 
 @Slf4j
 @Getter
@@ -64,6 +66,11 @@ public final class UserConfig {
     @Setter
     @Builder.Default
     private float miniMapOpacity = 0.65f;
+
+    @Getter
+    @Setter
+    @Builder.Default
+    private int zoomValue = 600;
 
     // player:
     @Getter
@@ -161,6 +168,11 @@ public final class UserConfig {
     @Setter
     @Getter
     @Builder.Default
+    private int keyZoom = GLFW_KEY_Z; // KeyEvent.VK_Z;
+
+    @Setter
+    @Getter
+    @Builder.Default
     private int keyConsole = KeyEvent.VK_BACK_QUOTE;
 
     @Setter
@@ -237,7 +249,7 @@ public final class UserConfig {
 
     @Setter
     @Builder.Default
-    private double fov = 45;
+    private double fov = 90;
 
     @Setter
     @Builder.Default
@@ -271,6 +283,7 @@ public final class UserConfig {
         setKeyRotateCounter(VK_Q);
         setKeyAccelerate(GLFW_KEY_LEFT_SHIFT); // KeyEvent.VK_SHIFT;
         setKeySneak(GLFW_KEY_LEFT_CONTROL);
+        setKeyZoom(GLFW_KEY_Z);
     }
 
     public enum DefaultHotKeys {
@@ -290,7 +303,8 @@ public final class UserConfig {
         FPS("FPS", VK_F9, GLFW_KEY_F9, 0),
         FULLSCREEN("Переключение режима экрана", VK_F11, GLFW_KEY_F11, 0),
         ACCELERATION("Ускорение", VK_SHIFT, GLFW_KEY_LEFT_SHIFT, 0),
-        SNEAK("Приседание", VK_CONTROL, GLFW_KEY_LEFT_CONTROL, 0);
+        SNEAK("Приседание", VK_CONTROL, GLFW_KEY_LEFT_CONTROL, 0),
+        ZOOM("Зум", VK_Z, GLFW_KEY_Z, 0);
 
         @Getter
         private final String description;

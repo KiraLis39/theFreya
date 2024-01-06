@@ -25,8 +25,10 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 public abstract class GameCharacter implements iGameObject, iHero {
+    @Setter
     private boolean isOnGround = false;
 
+    @Setter
     private boolean hasCollision = true;
 
     @Setter
@@ -201,6 +203,31 @@ public abstract class GameCharacter implements iGameObject, iHero {
         this.collider = (Collider3D) collider;
     }
 
+    @Override
+    public boolean isWalking() {
+        return false;
+    }
+
+    @Override
+    public boolean isImmortal() {
+        return false;
+    }
+
+    @Override
+    public boolean isLoaded() {
+        return isLoaded;
+    }
+
+    @Override
+    public boolean isOnGround() {
+        return isOnGround;
+    }
+
+    @Override
+    public long lifeTime() {
+        return 0;
+    }
+
     public void setHealth(int health) {
         this.health = health;
         recheckHurtLevel();
@@ -266,38 +293,8 @@ public abstract class GameCharacter implements iGameObject, iHero {
     }
 
     @Override
-    public boolean isWalking() {
-        return false;
-    }
-
-    @Override
-    public boolean isImmortal() {
-        return false;
-    }
-
-    @Override
-    public boolean isLoaded() {
-        return isLoaded;
-    }
-
-    @Override
-    public boolean isOnGround() {
-        return isOnGround;
-    }
-
-    @Override
-    public long lifeTime() {
-        return 0;
-    }
-
-    @Override
     public boolean isInSector(Rectangle sector) {
         return getCollider().intersects(sector);
-    }
-
-    // чтобы рассчитать общую мощь рывка?
-    public float getAbsVelocity() {
-        return Math.abs(this.getVelocityX()) + Math.abs(this.getVelocityY());
     }
 
     private void recheckHurtLevel() {
@@ -383,6 +380,11 @@ public abstract class GameCharacter implements iGameObject, iHero {
 
         setLocation(getLocation().x + vector.getX(), getLocation().y + vector.getY());
         resetCollider(getLocation());
+    }
+
+    // чтобы рассчитать общую мощь рывка?
+    public float getAbsVelocity() {
+        return Math.abs(this.getVelocityX()) + Math.abs(this.getVelocityY());
     }
 
     public float getDistance(float x1, float y1, float x2, float y2) {

@@ -4,8 +4,8 @@ import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -28,13 +28,13 @@ import java.awt.image.BufferedImage;
 
 @Slf4j
 public class HeroesListPane extends JPanel implements iSubPane {
-    private final transient FoxCanvas canvas;
+    private final transient FoxWindow canvas;
 
     private final transient GameController gameController;
 
     private transient BufferedImage snap;
 
-    public HeroesListPane(FoxCanvas canvas, GameController controller) {
+    public HeroesListPane(FoxWindow canvas, GameController controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -51,7 +51,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
         }
     }
 
-    private void reloadHeroes(FoxCanvas canvas) {
+    private void reloadHeroes(FoxWindow canvas) {
         HeroesListPane.this.removeAll();
 
         for (HeroDTO hero : gameController.getMyCurrentWorldHeroes()) {
@@ -126,7 +126,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                                 "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                         ) {
-                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getCharacterUid());
+                                            ((MenuWindow) canvas).deleteExistsPlayerHero(hero.getCharacterUid());
                                             reloadHeroes(canvas);
                                         }
                                     }
@@ -161,7 +161,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                 addActionListener(new AbstractAction() {
                                     @Override
                                     public void actionPerformed(ActionEvent e) {
-                                        ((MenuCanvas) canvas).openCreatingNewHeroPane(hero);
+                                        ((MenuWindow) canvas).openCreatingNewHeroPane(hero);
                                     }
                                 });
                             }
@@ -182,13 +182,13 @@ public class HeroesListPane extends JPanel implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 if (gameController.isCurrentWorldIsNetwork() && !gameController.isSocketIsOpen()) {
-                                    ((MenuCanvas) canvas).connectToServer(NetConnectTemplate.builder()
+                                    ((MenuWindow) canvas).connectToServer(NetConnectTemplate.builder()
                                             .address(gameController.getCurrentWorldAddress())
                                             .worldUid(gameController.getCurrentWorldUid())
                                             .passwordHash(gameController.getCurrentWorldPassword())
                                             .build());
                                 } else {
-                                    ((MenuCanvas) canvas).playWithThisHero(hero);
+                                    canvas.playWithThisHero(hero);
                                 }
                             }
                         });
@@ -233,7 +233,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(FoxWindow canvas) {
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
