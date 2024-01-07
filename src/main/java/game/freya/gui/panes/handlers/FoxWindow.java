@@ -1,6 +1,5 @@
 package game.freya.gui.panes.handlers;
 
-import fox.FoxRender;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
@@ -46,7 +45,6 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -93,14 +91,13 @@ import static org.lwjgl.opengl.GL11.GL_LEQUAL;
 import static org.lwjgl.opengl.GL11.GL_LIGHT0;
 import static org.lwjgl.opengl.GL11.GL_LIGHTING;
 import static org.lwjgl.opengl.GL11.GL_LINE;
-import static org.lwjgl.opengl.GL11.GL_LINEAR;
-import static org.lwjgl.opengl.GL11.GL_LINEAR_MIPMAP_NEAREST;
 import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;
 import static org.lwjgl.opengl.GL11.GL_LINE_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_LINE_SMOOTH_HINT;
-import static org.lwjgl.opengl.GL11.GL_NEAREST;
 import static org.lwjgl.opengl.GL11.GL_NICEST;
+import static org.lwjgl.opengl.GL11.GL_NORMALIZE;
 import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_PERSPECTIVE_CORRECTION_HINT;
 import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH_HINT;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_OFFSET_FILL;
@@ -109,13 +106,8 @@ import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH_HINT;
 import static org.lwjgl.opengl.GL11.GL_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_S;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_WRAP_T;
 import static org.lwjgl.opengl.GL11.glAlphaFunc;
 import static org.lwjgl.opengl.GL11.glBegin;
-import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
 import static org.lwjgl.opengl.GL11.glClearDepth;
 import static org.lwjgl.opengl.GL11.glColor3f;
@@ -137,12 +129,13 @@ import static org.lwjgl.opengl.GL11.glPolygonMode;
 import static org.lwjgl.opengl.GL11.glPolygonOffset;
 import static org.lwjgl.opengl.GL11.glRotatef;
 import static org.lwjgl.opengl.GL11.glShadeModel;
-import static org.lwjgl.opengl.GL11.glTexParameteri;
 import static org.lwjgl.opengl.GL11.glTranslated;
 import static org.lwjgl.opengl.GL11.glVertex2d;
-import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
 import static org.lwjgl.opengl.GL13.GL_MULTISAMPLE;
 import static org.lwjgl.opengl.GL13.GL_SAMPLES;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE_COMPRESSION_HINT;
+import static org.lwjgl.opengl.GL14.GL_GENERATE_MIPMAP_HINT;
+import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER_DERIVATIVE_HINT;
 
 @Getter
 @Setter
@@ -160,33 +153,7 @@ public abstract class FoxWindow extends Window {
 
     private static final int halfDim = (int) (minimapDim / 2d);
 
-    private static long timeStamp = System.currentTimeMillis();
-
-    private static double oldPitch = 0, oldYaw = 0;
-
-    private static float currentPitch = 30;
-
-    private static float currentYaw = 0;
-
-    private static float heroXPos = 0, heroYPos = 0;
-
-    private final String name;
-
-    private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
-
-    private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
-
-    private final String pausedString, downInfoString1, downInfoString2;
-
-    private final GameController gameController;
-
     private static final Color grayBackColor = new Color(0, 0, 0, 223);
-
-    private final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
-
-    private final AtomicBoolean isPingAwait = new AtomicBoolean(false);
-
-    private static final ArrayList<Integer> textures = new ArrayList<>();
 
     private static final float[] ambientLight = {1.0f, 1.0f, 1.0f, 1.0f}; // 0.0f, 0.0f, 0.3f, 1.0f
 
@@ -209,6 +176,30 @@ public abstract class FoxWindow extends Window {
     private static final float pitchSpeed = 0.15f;
 
     private static final float yawSpeed = 0.33f;
+
+    private static long timeStamp = System.currentTimeMillis();
+
+    private static double oldPitch = 0, oldYaw = 0;
+
+    private static float currentPitch = 30;
+
+    private static float currentYaw = 0;
+
+    private static float heroXPos = 0, heroYPos = 0;
+
+    private final String name;
+
+    private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
+
+    private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
+
+    private final String pausedString, downInfoString1, downInfoString2;
+
+    private final GameController gameController;
+
+    private final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
+
+    private final AtomicBoolean isPingAwait = new AtomicBoolean(false);
 
     private Rectangle2D viewPort;
 
@@ -340,9 +331,6 @@ public abstract class FoxWindow extends Window {
     }
 
 //    private void drawFps(double width, double height) {
-//        if (!isVisible() || !isDisplayable() || !isShowing()) {
-//            return;
-//        }
 
     // FPS check:
 //        incrementFramesCounter();
@@ -350,10 +338,6 @@ public abstract class FoxWindow extends Window {
 //            Constants.setRealFreshRate(frames.get());
 //            frames.set(0);
 //            timeStamp = System.currentTimeMillis();
-//        }
-
-//        if (downShift == 0) {
-//            downShift = getHeight() * 0.14f;
 //        }
 
 //        v2D.setFont(Constants.DEBUG_FONT);
@@ -372,61 +356,6 @@ public abstract class FoxWindow extends Window {
 //        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
 //                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
 //                        Constants.getRealFreshRate()), rightShift, downShift);
-//    }
-
-//    protected void reloadShapes(FoxCanvas canvas) {
-//        downShift = getHeight() * 0.14f;
-
-//        setLeftGrayMenuPoly(new Polygon(
-//                new int[]{0, (int) (canvas.getBounds().getWidth() * 0.25D), (int) (canvas.getBounds().getWidth() * 0.2D), 0},
-//                new int[]{0, 0, canvas.getHeight(), canvas.getHeight()},
-//                4));
-
-//        setHeaderPoly(new Polygon(
-//                new int[]{0, (int) (canvas.getWidth() * 0.3D), (int) (canvas.getWidth() * 0.29D), (int) (canvas.getWidth() * 0.3D), 0},
-//                new int[]{3, 3, (int) (canvas.getHeight() * 0.031D), (int) (canvas.getHeight() * 0.061D), (int) (canvas.getHeight() * 0.061D)},
-//                5));
-
-//        try {
-//            ((iSubPane) getAudiosPane()).recalculate(canvas);
-//            ((iSubPane) getVideosPane()).recalculate(canvas);
-//            ((iSubPane) getHotkeysPane()).recalculate(canvas);
-//            ((iSubPane) getGameplayPane()).recalculate(canvas);
-//            ((iSubPane) getHeroCreatingPane()).recalculate(canvas);
-//            ((iSubPane) getWorldCreatingPane()).recalculate(canvas);
-//            ((iSubPane) getWorldsListPane()).recalculate(canvas);
-//            ((iSubPane) getHeroesListPane()).recalculate(canvas);
-//            ((iSubPane) getNetworkListPane()).recalculate(canvas);
-//            ((iSubPane) getNetworkCreatingPane()).recalculate(canvas);
-//        } catch (Exception e) {
-//            log.error("Ошибка при коррекции размеров панелей: {}", ExceptionUtils.getFullExceptionMessage(e));
-//        }
-//    }
-
-//    protected void recalculateMenuRectangles() {
-//        int buttonsRectsWidth = (int) (getWidth() * 0.14D);
-//        // стандартное меню:
-//        firstButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-//                (int) (getHeight() * 0.15D),
-//                buttonsRectsWidth, 30);
-//        secondButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-//                (int) (getHeight() * 0.20D),
-//                buttonsRectsWidth, 30);
-//        thirdButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-//                (int) (getHeight() * 0.25D),
-//                buttonsRectsWidth, 30);
-//        fourthButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-//                (int) (getHeight() * 0.30D),
-//                buttonsRectsWidth, 30);
-//        exitButtonRect = new Rectangle((int) (getWidth() * 0.03525D),
-//                (int) (getHeight() * 0.85D),
-//                buttonsRectsWidth, 30);
-//
-//        avatarRect = new Rectangle(getWidth() - 135, 8, 128, 128);
-//
-//        minimapRect = new Rectangle(2, getHeight() - 258, 256, 256);
-//        minimapShowRect = new Rectangle(minimapRect.width - 14, minimapRect.y, 16, 16);
-//        minimapHideRect = new Rectangle(0, getHeight() - 16, 16, 16);
 //    }
 
     private void drawEscMenu(Graphics2D g2D) {
@@ -451,37 +380,6 @@ public abstract class FoxWindow extends Window {
         g2D.drawString(getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
         g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
-    }
-
-    private void repaintMenu(Graphics2D v2D) {
-//        v2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
-//                0, 0, getWidth(), getHeight(), this);
-
-        drawLeftGrayPoly(v2D);
-
-        if (!isShadowBackNeeds()) {
-            drawAvatar(v2D);
-        }
-    }
-
-    private void repaintGame(Graphics2D v2D) throws AWTException {
-        // рисуем мир:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH,
-                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-        gameController.getDrawCurrentWorld(v2D);
-
-        // рисуем данные героев поверх игры:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
-        drawHeroesData(v2D);
-
-        // рисуем миникарту:
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
-        drawMinimap(v2D);
-
-        Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH, true, true);
-        if (Constants.isPaused()) {
-            drawPauseMode(v2D);
-        }
     }
 
     private void drawMinimap(Graphics2D v2D) {
@@ -816,23 +714,6 @@ public abstract class FoxWindow extends Window {
         g2D.fillPolygon(getLeftGrayMenuPoly());
     }
 
-//    protected void drawUI(Graphics2D v2D, String canvasName) {
-//        if (canvasName.equals("GameCanvas") && isShadowBackNeeds()) {
-//            v2D.setColor(grayBackColor);
-//            v2D.fillRect(0, 0, getWidth(), getHeight());
-//        }
-//        uiHandler.drawUI(v2D, this);
-//    }
-
-//    protected int validateBackImage() {
-//        return this.backImage.validate(Constants.getGraphicsConfiguration());
-//    }
-
-//    protected void closeBackImage() {
-//        this.backImage.flush();
-//        this.backImage.getGraphics().dispose();
-//    }
-
     public void onExitBack() {
         if (isOptionsMenuSetVisible()) {
             setOptionsMenuSetVisible(false);
@@ -1005,15 +886,15 @@ public abstract class FoxWindow extends Window {
 
     protected void throwExceptionAndYield(Exception e) {
 //        if (drawErrors.getAndIncrement() >= 100) {
-            new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
-                    "Что-то не так с графической системой (%s). Передайте последний лог (error.*) разработчику для решения проблемы."
-                            .formatted(ExceptionUtils.getFullExceptionMessage(e)), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-            if (gameController.isGameActive()) {
-                throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
-            } else {
-                gameController.exitTheGame(null, 11);
-            }
-            Thread.yield();
+        new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
+                "Что-то не так с графической системой (%s). Передайте последний лог (error.*) разработчику для решения проблемы."
+                        .formatted(ExceptionUtils.getFullExceptionMessage(e)), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+        if (gameController.isGameActive()) {
+            throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
+        } else {
+            gameController.exitTheGame(null, 11);
+        }
+        Thread.yield();
 //        }
     }
 
@@ -1115,8 +996,8 @@ public abstract class FoxWindow extends Window {
         //  Координаты и размеры указываются в пикселях в окне, а не в том, что называется "пикселями" в ГУИ и на практике обычно
         //  оказывается больше реальных пикселей. Кроме того, ось Y идет снизу, а не сверху. Пример использования (запретить отрисовку
         //  за пределами квадрата 100х100 в верхнем левом углу экрана): glScissor(0, mc.displayHeight - 100, 100, 100);
-        // glEnable(GL_SCISSOR_TEST);
-        // glScissor(x, y, width, height);
+//         glEnable(GL_SCISSOR_TEST);
+//         glScissor(256, getHeight() - 256, 512, 128);
 
         // текстуры:
         if (Constants.getGameConfig().isUseTextures()) {
@@ -1124,69 +1005,45 @@ public abstract class FoxWindow extends Window {
                 return;
             }
 
-            loadMenuTextures(); // подключаем текстуры, если требуется.
             glEnable(GL_TEXTURE_2D); // включаем отображение текстур.
+            glHint(GL_SAMPLES, 4);
             glEnable(GL_MULTISAMPLE);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            gameController.loadMenuTextures(); // подключаем текстуры, если требуется.
 
-            // glEnable(GL_POLYGON_OFFSET_POINT);
-            // glEnable(GL_POLYGON_OFFSET_LINE);
-
-            // Включает смещение данных из буфера глубины при отрисовке.
-            //  Звучит немного непонятно, зато решает гораздо более понятную проблему.
+            // Включает смещение данных из буфера глубины при отрисовке. Звучит немного непонятно, зато решает гораздо более понятную проблему.
             //  Если попробовать отрендерить что-то поверх уже отрисованной поверхности (пример из Майна -
             //  текстура разрушения блока поверх самого блока), то начнутся проблемы, связанные с точностью буфера глубины.
+//            glEnable(GL_POLYGON_OFFSET_POINT);
+//            glEnable(GL_POLYGON_OFFSET_LINE);
             glEnable(GL_POLYGON_OFFSET_FILL);
             // Задает смещение. Обычное использование в майне - glPolygonOffset(-3.0F, -3.0F).
             //  Кроме того, перед рендерингом, с использованием этой возможности, обычно отключают glDepthMask().
-            glPolygonOffset(0.5f, 0.5f);
+            glPolygonOffset(1.0f, 1.0f);
+            // glPolygonOffset(-0.5f, -0.5f);
 
-            switch (Constants.getUserConfig().getTexturesFilteringLevel()) {
-                case NEAREST -> {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                }
-                case LINEAR -> {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                }
-                case MIPMAP -> {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-//                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-//                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-//                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-
-                    glHint(GL_SAMPLES, 4);
-                    glEnable(GL_MULTISAMPLE);
-                }
-                default ->
-                        log.error("Нет такого типа фильтрации текстур: {}", Constants.getUserConfig().getTexturesFilteringLevel());
-            }
-
-//            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 //		      glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 //            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_DONT_CARE);
 
 //		      glHint(GL_TEXTURE_COMPRESSION_HINT, GL_FASTEST);
-//            glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
+            glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
 //            glHint(GL_TEXTURE_COMPRESSION_HINT, GL_DONT_CARE);
 
 //		      glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_FASTEST);
-//		      glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
+            glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
 //            glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_DONT_CARE);
 
 //		      glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST);
-//            glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+            glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
 //            glHint(GL_GENERATE_MIPMAP_HINT, GL_DONT_CARE);
         } else {
             glDisable(GL_TEXTURE_2D);
+            glDisable(GL_MULTISAMPLE);
 //            glDisable(GL_POLYGON_OFFSET_POINT);
 //            glDisable(GL_POLYGON_OFFSET_LINE);
-//            glDisable(GL_POLYGON_OFFSET_FILL);
-//            glPolygonOffset(0f, 0f);
+            glDisable(GL_POLYGON_OFFSET_FILL);
+            glPolygonOffset(0f, 0f);
         }
 
         // обрезание невидимых глазу частей:
@@ -1203,7 +1060,7 @@ public abstract class FoxWindow extends Window {
             // glDisable(GL_LIGHT1); // надо ли?
             // glDisable(GL_LIGHT0); // надо ли?
             glDisable(GL_LIGHTING);
-            // glDisable(GL_NORMALIZE); // надо ли?
+            glDisable(GL_NORMALIZE); // надо ли?
         }
 
         if (Constants.getGameConfig().isColorMaterialEnabled()) {
@@ -1383,11 +1240,11 @@ public abstract class FoxWindow extends Window {
         }
 
         if (glIsEnabled(GL_BLEND)) {
-            glDisable(GL_BLEND);
+            // glDisable(GL_BLEND); // не совсем ясно, надо или нет, но раскомментирование убивает прозрачность.
         }
-        glClearDepth(1.00);
         glDepthMask(true);
-        glDepthRange(0, 100);
+        glClearDepth(Constants.getUserConfig().getClearDepth());
+        glDepthRange(Constants.getUserConfig().getZNear(), Constants.getUserConfig().getZFar());
 
         // glDepthFunc(GL_LESS);
         glDepthFunc(GL_LEQUAL);
@@ -1410,7 +1267,7 @@ public abstract class FoxWindow extends Window {
 //        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // "нормальное" смешивание. с сортировкой полигонов от ближнего к дальнему
 //        glBlendFunc(GL_ONE, GL_ONE); // аддиктивное смешивание, сложение нового и старого цвета. Полезно для "энергетических" эффектов вроде огня и электричества.
 //        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // то же самое, но с учетом прозрачности с текстуры. с сортировкой полигонов от ближнего к дальнему
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Включить альфа-смешение
 
         // Буфер глубины или z-буфер используется для удаления невидимых линий и поверхностей:
         if (glIsEnabled(GL_DEPTH_TEST)) {
@@ -1446,46 +1303,13 @@ public abstract class FoxWindow extends Window {
 //		  glAlphaFunc(GL_ALWAYS, 0.33f);
 //		  glAlphaFunc(GL_LESS, 0.50f);
 //		  glAlphaFunc(GL_EQUAL, 1.00f);
-//		  glAlphaFunc(GL_LEQUAL, 0.5f);
+//		  glAlphaFunc(GL_LEQUAL, 0.75f);
 //		  glAlphaFunc(GL_GREATER, 0.75f);
 //		  glAlphaFunc(GL_NOTEQUAL, 0.00f);
-        glAlphaFunc(GL_GEQUAL, 0.5f);
+        glAlphaFunc(GL_GEQUAL, 0.25f);
 //		  glAlphaFunc(GL_NEVER, 0.00f);
 
         glEnable(GL_ALPHA_TEST);
-    }
-
-    protected void bindTextureByIndex(int textureIndex) {
-        glBindTexture(GL_TEXTURE_2D, textures.get(textureIndex));
-    }
-
-    protected boolean isTextureExistsWithIndex(int index) {
-        return textures.size() > index;
-    }
-
-    protected void loadMenuTextures() {
-        if (textures.isEmpty()) {
-            try {
-//                wood = TextureLoader.getTexture("PNG", ResourceLoader.getResourceAsStream("res/texture/wood.png"));
-//                box = TextureLoader.getTexture("PNG", ResourceLoader.getResourceAsStream("res/texture/box.png"));
-
-//                textures.add(0, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest"), true).getTextureObject(gl2));
-//            textures.add(1, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest2"), true).getTextureObject(gl2));
-//            textures.add(2, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest3"), true).getTextureObject(gl2));
-//            textures.add(3, TextureIO.newTexture(ResourceManager.getFilesLink("textureTest4"), true).getTextureObject(gl2));
-//            textures.add(4, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList0"), true).getTextureObject(gl2));
-//            textures.add(5, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList1"), true).getTextureObject(gl2));
-//            textures.add(6, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList2"), true).getTextureObject(gl2));
-//            textures.add(7, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList0_0"), true).getTextureObject(gl2));
-//            textures.add(8, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList1_0"), true).getTextureObject(gl2));
-//            textures.add(9, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList2_0"), true).getTextureObject(gl2));
-//            textures.add(10, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList3"), true).getTextureObject(gl2));
-//            textures.add(11, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList4"), true).getTextureObject(gl2));
-//            textures.add(12, TextureIO.newTexture(ResourceManager.getFilesLink("menuButtonsList5"), true).getTextureObject(gl2));
-            } catch (Exception e) {
-                log.error("Проблема возникла при обработке текстур в центральном окне главного меню игры: {}", ExceptionUtils.getFullExceptionMessage(e));
-            }
-        }
     }
 
     public void setAcceleration(boolean b) {
@@ -1532,10 +1356,6 @@ public abstract class FoxWindow extends Window {
         float heroSpeed = 0.085f;
 //        heroSpeed = gameController.getCurrentHeroSpeed();
         return isAccelerated ? heroSpeed * accelerationMod : isSneaked ? heroSpeed * 0.5f : heroSpeed;
-    }
-
-    public GameController getController() {
-        return gameController;
     }
 
     private void setInAc() {

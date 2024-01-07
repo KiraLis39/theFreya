@@ -33,6 +33,7 @@ import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glTexCoord2f;
 import static org.lwjgl.opengl.GL11.glVertex2d;
+import static org.lwjgl.opengl.GL11.glVertex3d;
 
 @Slf4j
 public class MenuWindow extends FoxWindow {
@@ -79,10 +80,11 @@ public class MenuWindow extends FoxWindow {
     }
 
     private void drawBackground() {
-        glBegin(GL_QUADS);
-        if (isTextureExistsWithIndex(0)) {
-            bindTextureByIndex(0);
+        if (gameController.isTextureExist("menu")) {
+            gameController.bindTexture("menu");
         }
+
+        glBegin(GL_QUADS);
 
         glColor3f(0.75f, 0.75f, 0.75f);
         glNormal3f(0, 0, -1);
@@ -100,20 +102,25 @@ public class MenuWindow extends FoxWindow {
         glVertex2d(0, getHeight());
 
         glEnd();
+
+        gameController.unbindTexture("menu");
     }
 
     private void drawGreyCorner() {
+        // glEnable(GL_BLEND);
+
         glBegin(GL_QUADS);
 
-        glColor4f(0.1f, 0.1f, 0.1f, 0.5f);
-        glNormal3f(0, 0, -1);
+        glColor4f(0.0f, 0.0f, 0.0f, 0.8f);
 
-        glVertex2d(0, 0);
+        glVertex2d(0.0f, 0.0f);
         glVertex2d(getWidth() / 3.5f, 0);
-        glVertex2d(getWidth() / 4.25f, getHeight());
+        glVertex2d(getWidth() / 4.0f, getHeight());
         glVertex2d(0, getHeight());
 
         glEnd();
+
+        // glDisable(GL_BLEND);
     }
 
     private void drawMenu() {
@@ -127,34 +134,46 @@ public class MenuWindow extends FoxWindow {
             widthMemory = getWidth();
         }
 
+        if (gameController.isTextureExist("metallicBtnOFF")) {
+            gameController.bindTexture("metallicBtnOFF");
+        }
+
         glBegin(GL_QUADS);
 
-        glColor3f(0.15f, 0.15f, 0.15f);
+        glColor4f(0.2f, 0.4f, 0.75f, 0.5f);
+        glNormal3f(0, 0, -1);
+
         drawButton("start", new Rectangle2D.Float(leftShift, upShift, btnWidth, btnHeight));
-        drawButton("net game", new Rectangle2D.Float(leftShift, upShift + (verticalSpace + btnHeight) * 1,
+        drawButton("net game", new Rectangle2D.Float(leftShift, upShift + (verticalSpace + btnHeight),
                 btnWidth, btnHeight));
         drawButton("options", new Rectangle2D.Float(leftShift, upShift + (verticalSpace + btnHeight) * 2,
                 btnWidth, btnHeight));
+        drawButton("something else", new Rectangle2D.Float(leftShift, upShift + (verticalSpace + btnHeight) * 3,
+                btnWidth, btnHeight));
+        drawButton("something else", new Rectangle2D.Float(leftShift, upShift + (verticalSpace + btnHeight) * 4,
+                btnWidth, btnHeight));
+
+        glNormal3f(0, 0, 1);
         drawButton("exit", new Rectangle2D.Float(leftShift, getHeight() - downShift - btnHeight,
                 btnWidth, btnHeight));
 
         glEnd();
+
+        gameController.unbindTexture("metallicBtnOFF");
     }
 
     private void drawButton(String text, Rectangle2D btnRect) {
-        glNormal3f(0, 0, -1);
-
         glTexCoord2f(0, 0);
-        glVertex2d(btnRect.getX(), btnRect.getY());
+        glVertex3d(btnRect.getX(), btnRect.getY(), 0.2f);
 
         glTexCoord2f(1, 0);
-        glVertex2d(btnRect.getX() + btnRect.getWidth(), btnRect.getY());
+        glVertex3d(btnRect.getX() + btnRect.getWidth(), btnRect.getY(), 0.2f);
 
         glTexCoord2f(1, 1);
-        glVertex2d(btnRect.getX() + btnRect.getWidth(), btnRect.getY() + btnRect.getHeight());
+        glVertex3d(btnRect.getX() + btnRect.getWidth(), btnRect.getY() + btnRect.getHeight(), 0.2f);
 
         glTexCoord2f(0, 1);
-        glVertex2d(btnRect.getX(), btnRect.getY() + btnRect.getHeight());
+        glVertex3d(btnRect.getX(), btnRect.getY() + btnRect.getHeight(), 0.2f);
     }
 
     private void drawGameInfo() {

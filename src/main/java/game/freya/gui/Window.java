@@ -34,7 +34,6 @@ import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
 import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwMaximizeWindow;
-import static org.lwjgl.glfw.GLFW.glfwRestoreWindow;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowIcon;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
@@ -148,6 +147,8 @@ public abstract class Window {
             glfwMakeContextCurrent(window);
             GL.createCapabilities();
 
+            //gameController.loadMenuTextures(); // подключаем текстуры, если требуется.
+
             // Enable v-sync
             if (Constants.getGameConfig().isUseVSync()) {
                 glfwSwapInterval(1);
@@ -249,7 +250,7 @@ public abstract class Window {
             height = windowedSize.height;
 
             log.info("Работаем в оконном режиме экрана...");
-            glfwRestoreWindow(window);
+            //glfwRestoreWindow(window);
             glfwSetWindowSize(window, width, height);
             glfwSetWindowPos(window,
                     (videoMode.width() - width) / 2,

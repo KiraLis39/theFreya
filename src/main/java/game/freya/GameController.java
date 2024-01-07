@@ -21,6 +21,7 @@ import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gl.Collider3D;
+import game.freya.gl.Texture;
 import game.freya.gui.Window;
 import game.freya.gui.WindowManager;
 import game.freya.gui.panes.GameWindow;
@@ -70,17 +71,20 @@ import java.awt.image.VolatileImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
@@ -90,6 +94,8 @@ import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 @RequiredArgsConstructor
 public class GameController extends GameControllerBase {
     private final ArrayDeque<ClientDataDTO> deque = new ArrayDeque<>();
+
+    private final HashMap<String, Texture> textures = new HashMap<>();
 
     private final PlayerService playerService;
 
@@ -211,15 +217,15 @@ public class GameController extends GameControllerBase {
         checkCurrentPlayerExists();
 
         try {
-            Constants.CACHE.addIfAbsent("backMenuImage",
-                    ImageIO.read(new File("./resources/images/menu.png")));
-            Constants.CACHE.addIfAbsent("backMenuImageShadowed",
-                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
+//            Constants.CACHE.addIfAbsent("backMenuImage",
+//                    ImageIO.read(new File("./resources/images/menu.png")));
+//            Constants.CACHE.addIfAbsent("backMenuImageShadowed",
+//                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
             Constants.CACHE.addIfAbsent("green_arrow",
                     ImageIO.read(new File("./resources/images/green_arrow.png")));
-            try (InputStream netResource = getClass().getResourceAsStream("/images/cursors/default_cursor.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/cursors/default.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("default_cursor", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("default", ImageIO.read(netResource));
             }
             try (InputStream netResource = getClass().getResourceAsStream("/images/icons/net/net.png")) {
                 Objects.requireNonNull(netResource);
@@ -249,6 +255,40 @@ public class GameController extends GameControllerBase {
 
         log.info("The game is started!");
         this.gameFrame.appStart(this);
+    }
+
+    public void loadMenuTextures() {
+        URL imgsResource = getClass().getResource("/images");
+        if (imgsResource == null) {
+            log.error("Не обнаружен источник изображений игры!");
+            return;
+        }
+
+        try (Stream<Path> images = Files.walk(Path.of(imgsResource.getPath().substring(1)))) {
+            images
+                    .filter(path -> !Files.isDirectory(path) && !path.getFileName().toString().endsWith(".ico"))
+                    .forEach(imagePath -> {
+                        String name = imagePath.getFileName().toString().split("\\.")[0];
+                        log.info("Bind texture {}...", name);
+                        textures.put(name, new Texture(imagePath.toAbsolutePath().toString()));
+                    });
+        } catch (Exception e) {
+            log.error("Проблема возникла при обработке текстуры: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+    }
+
+    public boolean isTextureExist(String textureName) {
+        return textures.containsKey(textureName);
+    }
+
+    public void bindTexture(String textureName) {
+        textures.get(textureName).bind();
+    }
+
+    public void unbindTexture(String textureName) {
+        if (textures.containsKey(textureName)) {
+            textures.get(textureName).unbind();
+        }
     }
 
     public void exitTheGame(WorldDTO world) {

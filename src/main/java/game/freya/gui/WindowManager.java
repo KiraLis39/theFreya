@@ -106,6 +106,10 @@ public class WindowManager {
         } catch (IOException e) {
             log.error("Не удалось загрузить иконку окна: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
+
+        if (Constants.getGameConfig().isUseTextures()) {
+            gameController.loadMenuTextures(); // подключаем текстуры, если требуется.
+        }
     }
 
     private void doHintsPreset() {
@@ -146,7 +150,7 @@ public class WindowManager {
                 currentWindow = menu;
             }
 
-            // загружаем значок окна и прочие ресурсы, необходимые для старта:
+            // загружаем значок окна и прочие ресурсы:
             loadBaseResources();
 
             draw(); // блокируется до закрытия окна.

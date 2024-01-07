@@ -60,7 +60,7 @@ public final class UserConfig {
 
     @Getter
     @Builder.Default
-    private TexturesFilterMode texturesFilteringLevel = TexturesFilterMode.NEAREST;
+    private TexturesFilterMode texturesFilteringLevel = TexturesFilterMode.CUSTOM;
 
     @Getter
     @Setter
@@ -258,6 +258,10 @@ public final class UserConfig {
     @Setter
     @Builder.Default
     private double zFar = 100;
+
+    @Setter
+    @Builder.Default
+    private double clearDepth = 1.0f;
 
     // other:
     public int getBufferedDeep() {
