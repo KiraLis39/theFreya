@@ -216,7 +216,7 @@ public final class UserConfig {
     @Getter
     @Setter
     @Builder.Default
-    private boolean isShowStartLogo = false;
+    private boolean isShowStartLogo = true;
 
     // graphics:
     @Getter

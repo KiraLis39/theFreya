@@ -196,12 +196,14 @@ public class GameController extends GameControllerBase {
 
         // показываем лого:
         if (Constants.getUserConfig().isShowStartLogo()) {
-            try (InputStream is = Constants.class.getResourceAsStream("/images/logo.png")) {
-                if (is != null) {
+            try (InputStream is = Constants.class.getResourceAsStream("/images/logo/logo_0.png");
+                 InputStream is2 = Constants.class.getResourceAsStream("/images/logo/logo_1.png")
+            ) {
+                if (is != null && is2 != null) {
                     Constants.setLogo(new FoxLogo());
                     Constants.getLogo().start(Constants.getAppVersion(),
                             Constants.getUserConfig().isFullscreen() ? FoxLogo.IMAGE_STYLE.FILL : FoxLogo.IMAGE_STYLE.DEFAULT,
-                            FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
+                            FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is), ImageIO.read(is2));
                 }
             } catch (IOException e) {
                 throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/logo.png");
@@ -269,7 +271,7 @@ public class GameController extends GameControllerBase {
                     .filter(path -> !Files.isDirectory(path) && !path.getFileName().toString().endsWith(".ico"))
                     .forEach(imagePath -> {
                         String name = imagePath.getFileName().toString().split("\\.")[0];
-                        log.info("Bind texture {}...", name);
+                        log.debug("Bind texture {}...", name);
                         textures.put(name, new Texture(imagePath.toAbsolutePath().toString()));
                     });
         } catch (Exception e) {

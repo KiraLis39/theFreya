@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
 
+import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_AUTO_ICONIFY;
 import static org.lwjgl.glfw.GLFW.GLFW_CENTER_CURSOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_NO_ERROR;
@@ -33,6 +34,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_SAMPLES;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
+import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
@@ -57,9 +59,6 @@ public class WindowManager {
     public void appStart(GameController gameController) {
         this.gameController = gameController;
 
-        // ждём пока кончится показ лого:
-        logoEndAwait();
-
         log.info("LWJGL v." + Version.getVersion() + "!");
         if (!glfwInit()) {
             throw new IllegalStateException("Unable to initialize GLFW");
@@ -80,14 +79,17 @@ public class WindowManager {
         // Configure GLFW Hints:
         doHintsPreset();
 
+        // ждём пока кончится показ лого:
+        logoEndAwait();
+
         loadScreen(ScreenType.MENU_SCREEN);
     }
 
     private void logoEndAwait() {
-        if (Constants.getLogo() != null && Constants.getLogo().getEngine().isAlive()) {
+        if (Constants.getLogo() != null && Constants.getLogo().isAlive()) {
             try {
                 log.info("Logo finished await...");
-                Constants.getLogo().getEngine().join(3_000);
+                Constants.getLogo().join(15_000);
             } catch (InterruptedException ie) {
                 log.warn("Logo thread joining was interrupted: {}", ExceptionUtils.getFullExceptionMessage(ie));
                 Constants.getLogo().getEngine().interrupt();
@@ -251,22 +253,21 @@ public class WindowManager {
     }
 
     private void exit() {
-        Media.playSound("landing");
-//        if (currentWindow != null && currentWindow.getWindow() != 0) {
-//            try {
-//                glfwDestroyWindow(currentWindow.getWindow());
-//            } catch (Exception w) {
-//                log.error(ExceptionUtils.getFullExceptionMessage(w));
-//            }
-//        }
+        Media.playSound("jump");
 
         // Terminate GLFW and free the error callback
+        if (!currentWindow.isDestroyed()) {
+            glfwFreeCallbacks(currentWindow.getWindow());
+            glfwDestroyWindow(currentWindow.getWindow());
+        }
         glfwTerminate();
 
         SwingUtilities.invokeLater(() -> {
             gameController.saveCurrentWorld();
             gameController.exitTheGame(null);
         });
+
+        // Objects.requireNonNull(glfwSetErrorCallback(null)).free();
     }
 
     /*

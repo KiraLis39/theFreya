@@ -77,6 +77,8 @@ public abstract class Window {
     @Getter
     private boolean isActiveWindow = false;
 
+    private boolean isDestroyed = false;
+
     protected Window(GameController gameController) {
         this.gameController = gameController;
 
@@ -157,11 +159,6 @@ public abstract class Window {
             }
 
             glfwShowWindow(window);
-            glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-
-            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-            glViewport(0, 0, width, height);
 
             if (screen.equals(ScreenType.MENU_SCREEN)) {
                 glOrtho(0, width, height, 0, -1.0f, 1.0f);
@@ -170,11 +167,18 @@ public abstract class Window {
                 double frWidth = frHeight * getAspect();
                 glFrustum(-frWidth, frWidth, -frHeight, frHeight, Constants.getUserConfig().getZNear(), Constants.getUserConfig().getZFar());
             }
+
+            glViewport(0, 0, width, height);
+            glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+
+            glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+            isDestroyed = false;
         } else {
             glfwSetWindowShouldClose(window, true);
             glfwFreeCallbacks(window);
             // glfwPostEmptyEvent();
             glfwDestroyWindow(window);
+            isDestroyed = true;
         }
     }
 
@@ -259,5 +263,9 @@ public abstract class Window {
             // set the icon to app window:
             setWindowIcon();
         }
+    }
+
+    public boolean isDestroyed() {
+        return isDestroyed;
     }
 }

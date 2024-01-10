@@ -9,6 +9,7 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.WindowManager;
 import game.freya.gui.panes.handlers.FoxWindow;
 import lombok.extern.slf4j.Slf4j;
+import org.lwjgl.glfw.GLFW;
 
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -18,6 +19,8 @@ import java.nio.ByteOrder;
 
 import static org.lwjgl.glfw.GLFW.GLFW_RAW_MOUSE_MOTION;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
+import static org.lwjgl.glfw.GLFW.glfwCreateStandardCursor;
+import static org.lwjgl.glfw.GLFW.glfwSetCursor;
 import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
 import static org.lwjgl.opengl.GL11.GL_FRONT;
@@ -76,9 +79,10 @@ public class GameWindow extends FoxWindow {
             }
         }
 
-        // перевод по-умолчанию в игровой режим мыши:
+        // перевод по-умолчанию в режим мыши:
         Constants.setAltControlMode(false, getWindow());
         glfwSetInputMode(getWindow(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        glfwSetCursor(getWindow(), glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR));
 
 //        Thread.startVirtualThread(this);
 

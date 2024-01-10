@@ -82,6 +82,7 @@ import static org.lwjgl.opengl.GL11.GL_CCW;
 import static org.lwjgl.opengl.GL11.GL_COLOR_MATERIAL;
 import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
+import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
 import static org.lwjgl.opengl.GL11.GL_FLAT;
 import static org.lwjgl.opengl.GL11.GL_FOG;
 import static org.lwjgl.opengl.GL11.GL_FOG_COLOR;
@@ -89,6 +90,7 @@ import static org.lwjgl.opengl.GL11.GL_FOG_DENSITY;
 import static org.lwjgl.opengl.GL11.GL_GEQUAL;
 import static org.lwjgl.opengl.GL11.GL_LEQUAL;
 import static org.lwjgl.opengl.GL11.GL_LIGHT0;
+import static org.lwjgl.opengl.GL11.GL_LIGHT1;
 import static org.lwjgl.opengl.GL11.GL_LIGHTING;
 import static org.lwjgl.opengl.GL11.GL_LINE;
 import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;
@@ -103,7 +105,9 @@ import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH_HINT;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_OFFSET_FILL;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH_HINT;
+import static org.lwjgl.opengl.GL11.GL_POSITION;
 import static org.lwjgl.opengl.GL11.GL_SMOOTH;
+import static org.lwjgl.opengl.GL11.GL_SPECULAR;
 import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glAlphaFunc;
@@ -131,6 +135,7 @@ import static org.lwjgl.opengl.GL11.glRotatef;
 import static org.lwjgl.opengl.GL11.glShadeModel;
 import static org.lwjgl.opengl.GL11.glTranslated;
 import static org.lwjgl.opengl.GL11.glVertex2d;
+import static org.lwjgl.opengl.GL12.GL_RESCALE_NORMAL;
 import static org.lwjgl.opengl.GL13.GL_MULTISAMPLE;
 import static org.lwjgl.opengl.GL13.GL_SAMPLES;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE_COMPRESSION_HINT;
@@ -155,19 +160,21 @@ public abstract class FoxWindow extends Window {
 
     private static final Color grayBackColor = new Color(0, 0, 0, 223);
 
-    private static final float[] ambientLight = {1.0f, 1.0f, 1.0f, 1.0f}; // 0.0f, 0.0f, 0.3f, 1.0f
+    private static final float[] ambientLight = {0.5f, 0.5f, 0.5f, 1.0f}; // 0.0f, 0.0f, 0.3f, 1.0f
 
-    private static final float[] ambientSpecular = {1.0f, 0.33f, 0.33f, 0.75f};
+    private static final float[] ambientSpecular = {1.0f, 0.33f, 0.33f, 1.0f};
 
-    private static final float[] ambientPosition = {0.5f, 0.5f, 0.5f, 0.75f}; // 31.84215f, 36.019997f, 28.262873f, 1.0f
+    private static final float[] ambientPosition = {0.0f, 0.0f, -2.0f, 1.0f}; // 31.84215f, 36.019997f, 28.262873f, 1.0f
 
-    private static final float[] ambientDirection = {0.0f, -0.25f, -0.5f, 0.75f};
+    private static final float[] ambientDirection = {0.0f, -0.25f, -0.5f, 1.0f};
 
     private static final float[] ambientAttenuation = {1.0f, 1.0f, 1.0f, 1.0f};
 
-    private static final float[] diffuseLight = {0.5f, 0.6f, 0.4f, 0.75f};
+    private static final float[] diffuseLight = {1.0f, 1.0f, 1.0f, 1.0f};
 
-    private static final float[] diffusePosition = {0.5f, 1.0f, 1.0f, 1.0f};
+    private static final float[] diffusePosition = {0.5f, 0.5f, -1.5f, 1.0f};
+
+    private static final float[] diffuseSpecular = {0.65f, 0.65f, 0.65f, 1.0f};
 
     private static final float accelerationMod = 2.0f;
 
@@ -1148,11 +1155,9 @@ public abstract class FoxWindow extends Window {
             return;
         }
 
-//        glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
         glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
 //        glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
 //        glLightfv(GL_LIGHT0, GL_POSITION, ambientPosition);
-        //glLightfv(GL_LIGHT0, GL_POSITION, temp.asFloatBuffer().put(ambientPosition).flip());
 //        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, ambientDirection);
 //        glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, ambientAttenuation);
 //        glLightfv(GL_LIGHT0, GL_CONSTANT_ATTENUATION, ambientAttenuation);
@@ -1162,23 +1167,23 @@ public abstract class FoxWindow extends Window {
 //        glLighti(GL_LIGHT0, GL_SPOT_CUTOFF, 90); //range 0-90 and the special value 180
         glEnable(GL_LIGHT0);
 
-        // glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
-        // glLightfv(GL_LIGHT1, GL_POSITION, diffuseIntensity);
-        // glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseIntensity);
+        glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
+        glLightfv(GL_LIGHT1, GL_POSITION, diffusePosition);
+        glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseSpecular);
         // glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, new float[] {0.25f, 0.25f, -0.75f, 0.5f});
         // glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.5f); // GL_LINEAR_ATTENUATION | GL_QUADRATIC_ATTENUATION | GL_CONSTANT_ATTENUATION
         // glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);
         // glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 2.0f);
-        // glEnable(GL_LIGHT1);
+        glEnable(GL_LIGHT1);
 
         glEnable(GL_LIGHTING);
-        // glEnable(GL_NORMALIZE); // "Довольно затратно, на практике использовать не стоит"?..
+        //glEnable(GL_NORMALIZE); // "Довольно затратно, на практике использовать не стоит"?..
 
         // Упрощенный ускоренный вариант GL_NORMALIZE. Он подразумевает, что переданные в openGL нормали уже были нормализованы,
         //  но вы масштабировали матрицу трансформации (использовали glScale()).
         //  Работает верно только в тех случаях, когда матрица была масштабирована без искажений,
         //  то есть x, y и z, которые вы передали в glScale(), были равны.
-        // glEnable(GL_RESCALE_NORMAL);
+        glEnable(GL_RESCALE_NORMAL);
 
         setColorMaterial();
     }
@@ -1515,7 +1520,7 @@ public abstract class FoxWindow extends Window {
 
         // если игру надо приостанавливать во время обучения при всплывающих подсказках:
         glfwSetWindowFocusCallback(getWindow(), (long win, boolean focusState) -> {
-            Media.playSound("landing");
+            Media.playSound("touch");
             log.info("Фокус был {} на окно {}", focusState ? "(1)." : "(2).", win);
         });
 

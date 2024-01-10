@@ -579,12 +579,27 @@
             -Dfile=H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-tools\fox-tools-6.2.6.jar
             -DgroupId=FoxLib39 -DartifactId=fox-tools -Dversion=6.2.6 -Dpackaging=jar -DcreateChecksum=true' before -->
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>newdawn</groupId>-->
+<!--            <artifactId>slick</artifactId>-->
+<!--&lt;!&ndash;            <version>6.2.82</version>&ndash;&gt;-->
+<!--            &lt;!&ndash; Run the 'install:install-file-->
+<!--            -Dfile=H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-tools\slick-util.jar-->
+<!--            -DgroupId=FoxLib39 -DartifactId=fox-tools -Dversion=6.2.6 -Dpackaging=jar -DcreateChecksum=true' before &ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>TinySound</groupId>-->
+<!--            <artifactId>kuusisto</artifactId>-->
+<!--            <version>1.0.1</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/lib/TinySound.jar</systemPath>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>TinySound</groupId>
             <artifactId>kuusisto</artifactId>
             <version>1.0.1</version>
             <scope>system</scope>
-            <systemPath>${pom.basedir}/lib/TinySound.jar</systemPath>
+            <systemPath>${project.basedir}/lib/TinySound.jar</systemPath>
         </dependency>
 
     </dependencies>

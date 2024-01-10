@@ -16,6 +16,7 @@ import game.freya.net.data.NetConnectTemplate;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.awt.Font;
 import java.awt.geom.Rectangle2D;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -39,6 +40,8 @@ import static org.lwjgl.opengl.GL11.glVertex3d;
 public class MenuWindow extends FoxWindow {
     private final GameController gameController;
 
+    private final Font f = new Font("Serif", Font.BOLD, 48); // Times New Roman | Serif | Courier New
+
     private double widthMemory = -1;
 
     private volatile float leftShift, upShift, downShift, verticalSpace = -1, btnHeight, btnWidth;
@@ -61,13 +64,17 @@ public class MenuWindow extends FoxWindow {
 
         setActiveWindow(true, ScreenType.MENU_SCREEN);
     }
+//    private STBTruetype tt = STBTruetype.;
+//    private final UnicodeFont ttf01 = new UnicodeFont(f, 24, true, false);
+//    private final UnicodeFont ttf02 = new UnicodeFont(f, 48, false, false);
+//    private final UnicodeFont ttf03 = new UnicodeFont(f.deriveFont(Font.PLAIN, 32));
 
     @Override
     public void render() {
         configureThis();
         glFrontFace(GL_CW);
 
-        glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glPushMatrix();
 
         drawBackground();
@@ -77,6 +84,14 @@ public class MenuWindow extends FoxWindow {
         drawDebug(getWidth(), getHeight(), null);
 
         glPopMatrix();
+
+//        ttf01.drawString(0.25f, -0.25f, "something else 12345", Color.cyan);
+//        ttf01.drawString(0.25f, 0.25f, "something else 12345", Color.blue);
+//        ttf02.drawString(0.0f, 0.1f, "something else 12345", Color.yellow);
+//        ttf02.drawString(16f, 48f, "something else 12345", Color.magenta);
+//        ttf03.drawString(0, 0, "something else 12345", Color.green);
+//        ttf03.drawString(0.25f, -0.25f, "something else 12345", Color.green);
+//        ttf03.drawString(0.25f, 0.25f, "something else 12345", Color.green);
     }
 
     private void drawBackground() {
