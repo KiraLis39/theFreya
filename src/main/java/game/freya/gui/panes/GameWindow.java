@@ -3,6 +3,7 @@ package game.freya.gui.panes;
 import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -16,6 +17,7 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.UUID;
 
 import static org.lwjgl.glfw.GLFW.GLFW_RAW_MOUSE_MOTION;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
@@ -64,6 +66,13 @@ public class GameWindow extends FoxWindow {
 
     public GameWindow(WindowManager windowManager, GameController gameController) {
         super(ScreenType.GAME_SCREEN, "GameCanvas", windowManager, gameController);
+
+        // mock start:
+        WorldDTO any = gameController.getAnyWorld();
+        gameController.setCurrentWorld(any != null ? any : WorldDTO.builder()
+                .author(UUID.randomUUID())
+                .build());
+        // mock end.
 
         this.gameController = gameController;
 
@@ -116,20 +125,22 @@ public class GameWindow extends FoxWindow {
 //            }
 //        }));
 //        getSecondThread().start();
-        setGameActive();
+        init();
     }
 
-    // вызывается в главном меню в начале работы данного класса:
-    private void setGameActive() {
-        init();
-        gameController.setGameActive(true);
+    @Override
+    public void init() {
+        // проводим основную инициализацию класса текущего мира:
+        gameController.initCurrentWorld(this);
+
+        createWindowContext(ScreenType.GAME_SCREEN);
+
+        // load textures:
+        if (Constants.getGameConfig().isUseTextures()) {
+            gameController.loadGameTextures();
+        }
 
         super.createChat();
-
-        Constants.setPaused(false);
-        Constants.setGameStartedIn(System.currentTimeMillis());
-
-        setActiveWindow(true, ScreenType.GAME_SCREEN);
     }
 
     @Override
@@ -142,14 +153,10 @@ public class GameWindow extends FoxWindow {
 
             moveHero();
 
-//            if (isZoomEnabled) { // not work.
-//                glScalef(1.5f, 1.5f, 1.5f);
-//                glTranslatef(0.0f, 0.0f, -0.5f);
-//            }
-
             drawFloor();
             drawPyramid();
 
+            super.render();
             glPopMatrix();
 
             glLightfv(GL_LIGHT0, GL_POSITION, temp.asFloatBuffer().put(new float[]{0.0f, -1.5f, 1.0f, 1.0f}).flip());
@@ -344,13 +351,6 @@ public class GameWindow extends FoxWindow {
 //                gameController.loadScreen(ScreenType.MENU_SCREEN);
             }
         }
-    }
-
-    public void init() {
-        log.info("Do canvas re-initialization...");
-
-        // проводим основную инициализацию класса текущего мира:
-        gameController.initCurrentWorld(this);
     }
 
     private void justSave() {

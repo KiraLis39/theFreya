@@ -50,20 +50,31 @@ public class MenuWindow extends FoxWindow {
         super(ScreenType.MENU_SCREEN, "MenuCanvas", windowManager, gameController);
         this.gameController = gameController;
 
-        if (gameController.isServerIsOpen()) {
-            gameController.closeServer();
-            log.error("Мы в меню, но Сервер ещё запущен! Закрытие Сервера...");
-        }
-        if (gameController.isSocketIsOpen()) {
-            gameController.closeSocket();
-            log.error("Мы в меню, но соединение с Сервером ещё запущено! Закрытие подключения...");
-        }
+//        if (gameController.isServerIsOpen()) {
+//            gameController.closeServer();
+//            log.error("Мы в меню, но Сервер ещё запущен! Закрытие Сервера...");
+//        }
+//        if (gameController.isSocketIsOpen()) {
+//            gameController.closeSocket();
+//            log.error("Мы в меню, но соединение с Сервером ещё запущено! Закрытие подключения...");
+//        }
 
-        // перевод по-умолчанию в режим меню:
+        init();
+    }
+
+    @Override
+    public void init() {
+        // перевод курсора в режим меню:
         Constants.setAltControlMode(true, getWindow());
 
-        setActiveWindow(true, ScreenType.MENU_SCREEN);
+        createWindowContext(ScreenType.MENU_SCREEN);
+
+        // load textures:
+        if (Constants.getGameConfig().isUseTextures()) {
+            gameController.loadMenuTextures();
+        }
     }
+
 //    private STBTruetype tt = STBTruetype.;
 //    private final UnicodeFont ttf01 = new UnicodeFont(f, 24, true, false);
 //    private final UnicodeFont ttf02 = new UnicodeFont(f, 48, false, false);
@@ -82,6 +93,7 @@ public class MenuWindow extends FoxWindow {
         drawMenu();
         drawGameInfo();
         drawDebug(getWidth(), getHeight(), null);
+        super.render();
 
         glPopMatrix();
 

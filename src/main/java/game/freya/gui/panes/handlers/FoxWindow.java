@@ -55,14 +55,17 @@ import static game.freya.config.Constants.FFB;
 import static javax.swing.JLayeredPane.PALETTE_LAYER;
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL;
+import static org.lwjgl.glfw.GLFW.GLFW_FOCUSED;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F2;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
+import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.glfwCreateStandardCursor;
 import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
+import static org.lwjgl.glfw.GLFW.glfwHideWindow;
 import static org.lwjgl.glfw.GLFW.glfwPostEmptyEvent;
 import static org.lwjgl.glfw.GLFW.glfwSetCursor;
 import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
@@ -73,6 +76,8 @@ import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowFocusCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
+import static org.lwjgl.glfw.GLFW.glfwShowWindow;
+import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.opengl.GL11.GL_ALPHA_TEST;
 import static org.lwjgl.opengl.GL11.GL_AMBIENT;
@@ -262,6 +267,8 @@ public abstract class FoxWindow extends Window {
 
     private ScreenType type;
 
+    private boolean isVisible = false;
+
     protected FoxWindow(ScreenType type, String name, WindowManager windowManager, GameController controller) {
         super(controller);
 
@@ -335,6 +342,23 @@ public abstract class FoxWindow extends Window {
         drawLeftGrayPoly(g2D);
 
         drawEscMenu(g2D);
+    }
+
+    @Override
+    protected boolean isVisible() {
+        return isVisible;
+    }
+
+    @Override
+    public void setVisible(boolean isVisible) {
+        this.isVisible = isVisible;
+        if (isVisible) {
+            render(); // одна прокрутка рендера что б не появлялось сначала пустое окно.
+            glfwShowWindow(getWindow());
+            glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+        } else {
+            glfwHideWindow(getWindow());
+        }
     }
 
 //    private void drawFps(double width, double height) {
@@ -1016,7 +1040,12 @@ public abstract class FoxWindow extends Window {
             glHint(GL_SAMPLES, 4);
             glEnable(GL_MULTISAMPLE);
 
-            gameController.loadMenuTextures(); // подключаем текстуры, если требуется.
+            // подключаем текстуры, если требуется.
+            if (type.equals(ScreenType.MENU_SCREEN)) {
+                gameController.loadMenuTextures();
+            } else if (type.equals(ScreenType.GAME_SCREEN)) {
+                gameController.loadGameTextures();
+            }
 
             // Включает смещение данных из буфера глубины при отрисовке. Звучит немного непонятно, зато решает гораздо более понятную проблему.
             //  Если попробовать отрендерить что-то поверх уже отрисованной поверхности (пример из Майна -
@@ -1640,4 +1669,6 @@ public abstract class FoxWindow extends Window {
 //        glTranslated(gameController.getCurrentHeroPosition().x, gameController.getCurrentHeroPosition().y, gameController.getCurrentHeroCorpusHeight());
         glTranslated(-heroXPos, -heroYPos, getHeroHeight());
     }
+
+    public abstract void init();
 }

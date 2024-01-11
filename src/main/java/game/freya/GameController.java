@@ -219,35 +219,21 @@ public class GameController extends GameControllerBase {
         checkCurrentPlayerExists();
 
         try {
-//            Constants.CACHE.addIfAbsent("backMenuImage",
-//                    ImageIO.read(new File("./resources/images/menu.png")));
-//            Constants.CACHE.addIfAbsent("backMenuImageShadowed",
-//                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
-            Constants.CACHE.addIfAbsent("green_arrow",
-                    ImageIO.read(new File("./resources/images/green_arrow.png")));
-            try (InputStream netResource = getClass().getResourceAsStream("/images/cursors/default.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/cursors/yellow.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("default", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("yellow", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/icons/net/net.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/cursors/blue.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("net", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("blue", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player/player.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/cursors/red.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("red", ImageIO.read(netResource));
             }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/objects/mock_01.png")) {
+            try (InputStream netResource = getClass().getResourceAsStream("/images/cursors/cross.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_01", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/objects/mock_02.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_02", ImageIO.read(netResource));
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/objects/mock_03.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_03", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("cross", ImageIO.read(netResource));
             }
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
@@ -260,12 +246,15 @@ public class GameController extends GameControllerBase {
     }
 
     public void loadMenuTextures() {
+        clearTextures();
+
         URL imgsResource = getClass().getResource("/images");
         if (imgsResource == null) {
-            log.error("Не обнаружен источник изображений игры!");
+            log.error("Не обнаружен источник изображений меню!");
             return;
         }
 
+        log.info("Начата загрузка текстур меню...");
         try (Stream<Path> images = Files.walk(Path.of(imgsResource.getPath().substring(1)))) {
             images
                     .filter(path -> !Files.isDirectory(path) && !path.getFileName().toString().endsWith(".ico"))
@@ -274,9 +263,40 @@ public class GameController extends GameControllerBase {
                         log.debug("Bind texture {}...", name);
                         textures.put(name, new Texture(imagePath.toAbsolutePath().toString()));
                     });
+            log.info("Загрузка текстур меню завершена.");
         } catch (Exception e) {
-            log.error("Проблема возникла при обработке текстуры: {}", ExceptionUtils.getFullExceptionMessage(e));
+            log.error("Проблема возникла при обработке текстуры меню: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
+    }
+
+    public void loadGameTextures() {
+        clearTextures();
+
+        URL imgsResource = getClass().getResource("/images");
+        if (imgsResource == null) {
+            log.error("Не обнаружен источник изображений игры!");
+            return;
+        }
+
+        log.info("Начата загрузка текстур игры...");
+        try (Stream<Path> images = Files.walk(Path.of(imgsResource.getPath().substring(1)))) {
+            images
+                    .filter(path -> !Files.isDirectory(path) && !path.getFileName().toString().endsWith(".ico"))
+                    .forEach(imagePath -> {
+                        String name = imagePath.getFileName().toString().split("\\.")[0];
+                        log.debug("Bind texture {}...", name);
+                        textures.put(name, new Texture(imagePath.toAbsolutePath().toString()));
+                    });
+            log.info("Загрузка текстур игры завершена.");
+        } catch (Exception e) {
+            log.error("Проблема возникла при обработке текстуры игры: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+    }
+
+    private void clearTextures() {
+        log.info("Очистка текстур...");
+        textures.values().iterator().forEachRemaining(Texture::unbind);
+        textures.clear();
     }
 
     public boolean isTextureExist(String textureName) {
@@ -1175,7 +1195,7 @@ public class GameController extends GameControllerBase {
             ) {
                 isGlWindowBreaked = true;
                 if (!glfwWindowShouldClose(window.getWindow())) {
-                    bf.setActiveWindow(false, ScreenType.MENU_SCREEN);
+                    bf.destroyWindowContext(ScreenType.MENU_SCREEN);
                 }
             } else {
                 glfwSetWindowShouldClose(window.getWindow(), false); // Не закрывает окно :)

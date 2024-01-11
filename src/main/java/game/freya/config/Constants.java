@@ -195,7 +195,7 @@ public final class Constants {
     @Getter
     private static String worldsImagesDir = "./worlds/img/";
 
-    private static int realFreshRate = 0;
+    private static long realFreshRate = 0;
 
     private static long timePerFrame = -1;
 
@@ -303,11 +303,11 @@ public final class Constants {
         return userConfig.getFpsLimit() > 0;
     }
 
-    public static int getRealFreshRate() {
+    public static long getRealFreshRate() {
         return realFreshRate;
     }
 
-    public static void setRealFreshRate(int fps) {
+    public static void setRealFreshRate(long fps) {
         realFreshRate = fps;
     }
 

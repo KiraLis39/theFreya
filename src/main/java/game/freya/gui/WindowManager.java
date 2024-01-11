@@ -3,7 +3,6 @@ package game.freya.gui;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.Media;
-import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.ScreenType;
 import game.freya.gui.panes.GameWindow;
 import game.freya.gui.panes.MenuWindow;
@@ -13,14 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
 import org.springframework.stereotype.Component;
 
-import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.UUID;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_AUTO_ICONIFY;
@@ -37,6 +33,7 @@ import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
 import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
+import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.glfw.GLFW.glfwTerminate;
 import static org.lwjgl.glfw.GLFW.glfwWaitEventsTimeout;
@@ -52,7 +49,7 @@ import static org.lwjgl.opengl.GL11.glClear;
 public class WindowManager {
     private GameController gameController;
 
-    private FoxWindow menu, game, currentWindow;
+    private FoxWindow currentWindow;
 
     private ScreenType currentScreen;
 
@@ -79,9 +76,7 @@ public class WindowManager {
         // Configure GLFW Hints:
         doHintsPreset();
 
-        // ждём пока кончится показ лого:
-        logoEndAwait();
-
+        GLFWErrorCallback.createPrint(System.err).set();
         loadScreen(ScreenType.MENU_SCREEN);
     }
 
@@ -99,21 +94,6 @@ public class WindowManager {
         }
     }
 
-    private void loadBaseResources() {
-        try (InputStream winIconRes = getClass().getResourceAsStream("/images/icons/0.png")) {
-            if (winIconRes == null) {
-                throw new IOException("/images/icons/0.png");
-            }
-            currentWindow.setWIcon(ImageIO.read(winIconRes));
-        } catch (IOException e) {
-            log.error("Не удалось загрузить иконку окна: {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
-
-        if (Constants.getGameConfig().isUseTextures()) {
-            gameController.loadMenuTextures(); // подключаем текстуры, если требуется.
-        }
-    }
-
     private void doHintsPreset() {
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
@@ -128,44 +108,30 @@ public class WindowManager {
     }
 
     public void loadScreen(ScreenType screen) {
-        closeAll();
-
+        close(currentWindow);
         if (screen != null) {
             this.currentScreen = screen;
         }
 
-        // Setup an error callback. The default implementation will print the error message in System.err.
-        try (GLFWErrorCallback callback = GLFWErrorCallback.createPrint(System.err)) {
-            callback.set();
-
-            if (currentScreen.equals(ScreenType.GAME_SCREEN)) {
-                // todo: temp
-                WorldDTO any = gameController.getAnyWorld();
-                gameController.setCurrentWorld(any != null ? any : WorldDTO.builder()
-                        .author(UUID.randomUUID())
-                        .build());
-
-                game = new GameWindow(this, gameController);
-                currentWindow = game;
-            } else if (currentScreen.equals(ScreenType.MENU_SCREEN)) {
-                menu = new MenuWindow(this, gameController);
-                currentWindow = menu;
-            }
-
-            // загружаем значок окна и прочие ресурсы:
-            loadBaseResources();
-
-            draw(); // блокируется до закрытия окна.
+        if (currentScreen.equals(ScreenType.MENU_SCREEN)) {
+            currentWindow = new MenuWindow(this, gameController);
+        } else if (currentScreen.equals(ScreenType.GAME_SCREEN)) {
+            currentWindow = new GameWindow(this, gameController);
         }
+
+        // ждём пока кончится показ лого:
+        logoEndAwait();
+
+        currentWindow.setVisible(true);
+        draw(); // блокируется до закрытия окна.
     }
 
     private void draw() {
         long lastUpdate = System.currentTimeMillis();
         int frames = 0;
 
-        Media.playSound("landing");
-
         // Начинаем цикл рисований:
+        Media.playSound("landing");
         while (!gameController.isGlWindowBreaked() && !glfwWindowShouldClose(currentWindow.getWindow())) {
             try {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
@@ -178,14 +144,15 @@ public class WindowManager {
                 // draw fps:
                 if (Constants.isFpsInfoVisible() && !gameController.isGlWindowBreaked()) {
                     frames++;
+                    drawFps();
+
                     long time = System.currentTimeMillis();
                     if (Constants.getFpsDelaySeconds() * 1000L <= time - lastUpdate) {
                         lastUpdate = time;
-                        log.info("{} frames in {} seconds = {} fps",
-                                frames, Constants.getFpsDelaySeconds(), (frames / (float) Constants.getFpsDelaySeconds()));
+                        Constants.setRealFreshRate(frames / Constants.getFpsDelaySeconds());
+//                        log.info("{} frames in {} seconds = {} fps", frames, Constants.getFpsDelaySeconds(), Constants.getRealFreshRate());
                         frames = 0;
                     }
-                    drawFps();
                 }
 
                 // poll & wait:
@@ -210,7 +177,7 @@ public class WindowManager {
         // end of work:
         if (gameController.isGlWindowBreaked()) {
             try {
-                closeAll();
+                close(currentWindow);
             } catch (Throwable e) {
                 log.warn("Non-critical exception: {}", e.getMessage());
             } finally {
@@ -227,12 +194,12 @@ public class WindowManager {
         // textRenderer.beginRendering((int) canvasWidth, (int) canvasHeight);
 
         // glBegin(GL_QUADS);
-        //
+
         // glTexCoord2f(-0.9f, 0.75f);
         // glTexCoord2f(-0.8f, 0.75f);
         // glTexCoord2f(-0.8f, 0.9f);
         // glTexCoord2f(-0.9f, 0.9f);
-        //
+
         // glEnd();
         // glDisable(GL_BLEND);
 
@@ -243,17 +210,16 @@ public class WindowManager {
         // textRenderer.flush();
     }
 
-    private void closeAll() {
-        if (menu != null && menu.isActiveWindow()) {
-            menu.setActiveWindow(false, ScreenType.MENU_SCREEN);
-        }
-        if (game != null && game.isActiveWindow()) {
-            game.setActiveWindow(false, ScreenType.MENU_SCREEN);
+    private void close(FoxWindow window) {
+        if (window != null && window.isWindowActive()) {
+            window.destroyWindowContext(window.getType());
         }
     }
 
     private void exit() {
         Media.playSound("jump");
+
+        GL.setCapabilities(null);
 
         // Terminate GLFW and free the error callback
         if (!currentWindow.isDestroyed()) {
@@ -267,7 +233,10 @@ public class WindowManager {
             gameController.exitTheGame(null);
         });
 
-        // Objects.requireNonNull(glfwSetErrorCallback(null)).free();
+        GLFWErrorCallback res = glfwSetErrorCallback(null);
+        if (res != null) {
+            res.free();
+        }
     }
 
     /*
