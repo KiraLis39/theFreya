@@ -110,6 +110,12 @@ public class GameController extends GameControllerBase {
 
     private final Server server;
 
+    private final float camZspeed = 0f;
+
+    private final float pitchSpeed = 0.15f;
+
+    private final float yawSpeed = 0.33f;
+
     @Getter
     private LocalSocketConnection localSocketConnection;
 
@@ -132,7 +138,15 @@ public class GameController extends GameControllerBase {
     @Getter
     private float velocity = 0;
 
-    private static void loadAudio() {
+    @Getter
+    private float cameraPitch = 30;
+
+    @Getter
+    private float cameraYaw = 0;
+
+    private Thread sneakThread;
+
+    private void loadAudio() {
         // TinySound:
         try {
             Media.add("jump", new File(Objects.requireNonNull(GameController.class.getResource("/audio/sounds/jump.wav")).getFile()));
@@ -165,6 +179,30 @@ public class GameController extends GameControllerBase {
 //        soundPlayer.mute(userConf.isSoundMuted());
 //        soundPlayer.setVolume(userConf.getSoundVolume());
 ////        soundPlayer.setAudioBufDim(8192); // 8192
+    }
+
+    public void setCameraYaw(double yaw) {
+        if (yaw != 0) {
+            cameraYaw += yaw * yawSpeed;
+            if (cameraYaw > 360) {
+                cameraYaw = 0;
+            }
+            if (cameraYaw < 0) {
+                cameraYaw = 360;
+            }
+        }
+    }
+
+    public void setCameraPitch(double pitch) {
+        if (pitch != 0) {
+            cameraPitch += pitch * pitchSpeed;
+            if (cameraPitch < 0) {
+                cameraPitch = 0;
+            }
+            if (cameraPitch > 180) {
+                cameraPitch = 180;
+            }
+        }
     }
 
     @PostConstruct
@@ -251,6 +289,10 @@ public class GameController extends GameControllerBase {
     }
 
     public void loadMenuTextures() {
+        if (!Constants.getGameConfig().isUseTextures()) {
+            return;
+        }
+
         clearTextures();
 
         URL imgsResource = getClass().getResource("/images");
@@ -275,6 +317,10 @@ public class GameController extends GameControllerBase {
     }
 
     public void loadGameTextures() {
+        if (!Constants.getGameConfig().isUseTextures()) {
+            return;
+        }
+
         clearTextures();
 
         URL imgsResource = getClass().getResource("/images");
@@ -1328,18 +1374,38 @@ public class GameController extends GameControllerBase {
 
     public void setSneak(boolean b) {
         this.isSneaked = b;
+        if (sneakThread != null && sneakThread.isAlive()) {
+            sneakThread.interrupt();
+        }
+
+        if (this.isSneaked) {
+            sneakThread = new Thread(() -> {
+                while (getHeroHeight() < -4 && !Thread.currentThread().isInterrupted()) {
+                    try {
+                        setHeroHeight(getHeroHeight() + 0.1f);
+                        Thread.sleep(18);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            });
+        } else {
+            sneakThread = new Thread(() -> {
+                while (getHeroHeight() > -6 && !Thread.currentThread().isInterrupted()) {
+                    try {
+                        setHeroHeight(getHeroHeight() - 0.1f);
+                        Thread.sleep(18);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            });
+        }
+        sneakThread.start();
     }
 
     public void setZoom(boolean b) {
         this.isZoomed = b;
-    }
-
-    public void setCameraPitch(float v) {
-
-    }
-
-    public void setCameraYaw(float curYaw) {
-
     }
 
     public void setVelocity(float v) {

@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
@@ -57,8 +56,6 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.glfw.GLFW.glfwCreateStandardCursor;
-import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
-import static org.lwjgl.glfw.GLFW.glfwPostEmptyEvent;
 import static org.lwjgl.glfw.GLFW.glfwSetCursor;
 import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
@@ -67,8 +64,6 @@ import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowFocusCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.opengl.GL11.GL_ALPHA_TEST;
 import static org.lwjgl.opengl.GL11.GL_BACK;
 import static org.lwjgl.opengl.GL11.GL_BLEND;
@@ -947,140 +942,11 @@ public class FoxWindow extends Window {
     }
 
     private void setInAc() {
-        // когда физическая клавиша нажата или отпущена или когда она повторяется:
-        glfwSetKeyCallback(getWindow(), (win, key, scancode, action, mods) -> {
-            // Переключение в полноэкранный режим или в оконный:
-            if (key == UserConfig.DefaultHotKeys.FULLSCREEN.getGlEvent() && action == GLFW_RELEASE) {
-                Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-                windowManager.loadScreen(null);
-            }
-
-            if (windowManager.isMenuScreen() && key == UserConfig.DefaultHotKeys.PAUSE.getGlEvent() && action == GLFW_RELEASE) {
-                windowManager.showConfirmExitRequest();
-            }
-
-            // временная заглушка для теста смены сцен:
-            if (key == GLFW_KEY_F1 && action == GLFW_RELEASE) {
-                if (windowManager.isMenuScreen()) {
-                    windowManager.loadScreen(ScreenType.GAME_SCREEN);
-                } else if (windowManager.isGameScreen()) {
-                    windowManager.loadScreen(ScreenType.MENU_SCREEN);
-                }
-            }
-
-            // просто жмём энтер для быстрого запуска последней игры:
-            if (windowManager.isMenuScreen() && key == GLFW_KEY_ENTER && action == GLFW_RELEASE) {
-                if (getHeroesListPane().isVisible()) {
-                    gameController.playWithThisHero(gameController.getMyCurrentWorldHeroes().get(0));
-                    getHeroesListPane().setVisible(false);
-                } else if (getWorldsListPane().isVisible()) {
-                    UUID lastWorldUid = gameController.getCurrentPlayerLastPlayedWorldUid();
-                    if (gameController.isWorldExist(lastWorldUid)) {
-                        gameController.chooseOrCreateHeroForWorld(lastWorldUid);
-                    } else {
-                        gameController.chooseOrCreateHeroForWorld(gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
-                    }
-                } else {
-                    getWorldsListPane().setVisible(true);
-                }
-            }
-
-            // установка курсора:
-            if (windowManager.isGameScreen()) {
-                // Если реализовать управление камерой на основе движения мыши, установите на GLFW_CURSOR_DISABLED.
-                if (key == GLFW_KEY_F2 && action == GLFW_PRESS) {
-                    glfwSetInputMode(getWindow(), GLFW.GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                    glfwSetCursor(getWindow(), glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR));
-                }
-                if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS) {
-                    Constants.setAltControlMode(true, win);
-                }
-                if (key == GLFW_KEY_LEFT_ALT && action == GLFW_RELEASE) {
-                    Constants.setAltControlMode(false, win);
-                }
-            }
-
-            if (windowManager.isGameScreen()) {
-                // Кнопки влево-вправо, вверх-вниз (камера):
-                if (key == UserConfig.DefaultHotKeys.CAM_FORWARD.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_FORWARD.getGlEvent()) {
-                    setCameraMovingForward(action != GLFW_RELEASE);
-                } else if (key == UserConfig.DefaultHotKeys.CAM_BACK.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_BACK.getGlEvent()) {
-                    setCameraMovingBack(action != GLFW_RELEASE);
-                }
-                if (key == UserConfig.DefaultHotKeys.CAM_LEFT.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_LEFT.getGlEvent()) {
-                    setCameraMovingLeft(action != GLFW_RELEASE);
-                } else if (key == UserConfig.DefaultHotKeys.CAM_RIGHT.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_RIGHT.getGlEvent()) {
-                    setCameraMovingRight(action != GLFW_RELEASE);
-                }
-                if (key == UserConfig.DefaultHotKeys.CAM_LEFT.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_LEFT.getGlEvent()) {
-                    setCameraMovingLeft(action != GLFW_RELEASE);
-                } else if (key == UserConfig.DefaultHotKeys.CAM_RIGHT.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_RIGHT.getGlEvent()) {
-                    setCameraMovingRight(action != GLFW_RELEASE);
-                }
-
-                // бег\ускорение:
-                if (key == UserConfig.DefaultHotKeys.ACCELERATION.getGlEvent()) {
-                    gameController.setAcceleration(action != GLFW_RELEASE);
-                }
-
-                // приседание:
-                if (key == UserConfig.DefaultHotKeys.SNEAK.getGlEvent()) {
-                    gameController.setSneak(action != GLFW_RELEASE);
-                }
-
-                // зум:
-                if (key == UserConfig.DefaultHotKeys.ZOOM.getGlEvent()) {
-                    gameController.setZoom(action != GLFW_RELEASE);
-                }
-            }
-        });
-
-        glfwSetMouseButtonCallback(getWindow(), (long win, int button, int isPressed, int mod) -> {
-//            log.info("win: {}, button: {}, isPressed: {}, mod: {}", win, button, isPressed, mod);
-        });
-
-        // уведомление, когда курсор перемещается по окну:
-        glfwSetCursorPosCallback(getWindow(), (cursor, yaw, pitch) -> {
-            if (Constants.isAltControlMode()) {
-                return;
-            }
-
-            if (windowManager.isGameScreen()) {
-                // преобразуем координаты курсора в изменение от предыдущего значения:
-                float curPitch = (float) (pitch - oldPitch);
-                gameController.setCameraPitch(-curPitch);
-                oldPitch = pitch;
-
-                float curYaw = (float) (yaw - oldYaw);
-                gameController.setCameraYaw(curYaw);
-                oldYaw = yaw;
-            }
-        });
-
-        // уведомления, когда пользователь прокручивает страницу, используя колесо мыши:
-        glfwSetScrollCallback(getWindow(), (long win, double unknown, double direction) -> {
-//            log.info("unknown: {}, direction: {}", unknown, direction);
-        });
-
-        // при закрытии окна игры:
-        glfwSetWindowCloseCallback(getWindow(), (long win) -> {
-            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол без сохранения?",
-                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
-                windowManager.setGlWindowBreaked(true);
-                if (!glfwWindowShouldClose(getWindow())) {
-                    glfwPostEmptyEvent();
-                    glfwSetWindowShouldClose(getWindow(), true); // Закрывает окно
-
-                    // Free the window callbacks and destroy the window
-                    glfwFreeCallbacks(getWindow());
-                    glfwDestroyWindow(getWindow());
-                }
-            } else {
-                glfwSetWindowShouldClose(getWindow(), false); // Не закрывает окно :)
-            }
-        });
-
-        // при сворачивании:
+        glfwSetKeyCallback(getWindow(), (win, key, scancode, action, mods) -> onKeyAction(key, scancode, action, mods));
+        glfwSetMouseButtonCallback(getWindow(), (long win, int button, int isPressed, int mod) -> onMouseAction(button, isPressed, mod));
+        glfwSetCursorPosCallback(getWindow(), (cursor, yaw, pitch) -> onMouseMoving(yaw, pitch));
+        glfwSetScrollCallback(getWindow(), (long win, double unknown, double direction) -> onWheelScrolling(direction));
+        glfwSetWindowCloseCallback(getWindow(), (long win) -> onWindowsClosing());
 //        glfwSetWindowIconifyCallback(getWindow(), (long win, boolean isIconify) -> {
 //            if (isIconify) {
 //                onGameHide();
@@ -1088,14 +954,12 @@ public class FoxWindow extends Window {
 //                onGameRestore();
 //            }
 //        });
-
 //        glfwSetWindowSizeCallback(getWindow(), (long win, int w, int h) -> {
 //            Media.playSound("landing");
 //            log.info("Размер окна был изменен на {}x{}", w, h);
 //
 //            onResize(currentScreen);
 //        });
-
 //        glfwSetWindowMaximizeCallback(getWindow(), (long win, boolean isMaximized) -> {
 //            Media.playSound("landing");
 //            log.info("Размер окна был {}", isMaximized ? "максимизирован." : "восстановлен.");
@@ -1112,6 +976,119 @@ public class FoxWindow extends Window {
 
         // получать пути к файлам и/или каталогам, помещенным в окно (Функция обратного вызова получает массив путей в кодировке UTF-8):
         // glfwSetDropCallback(окно, drop_callback);
+    }
+
+    private void onWindowsClosing() {
+        windowManager.exit();
+    }
+
+    private void onWheelScrolling(double direction) {
+
+    }
+
+    private void onMouseMoving(double yaw, double pitch) {
+        if (Constants.isAltControlMode()) {
+            return;
+        }
+
+        if (windowManager.isGameScreen()) {
+            // преобразуем координаты курсора в изменение от предыдущего значения:
+            float curPitch = (float) (pitch - oldPitch);
+            gameController.setCameraPitch(-curPitch);
+            oldPitch = pitch;
+
+            float curYaw = (float) (yaw - oldYaw);
+            gameController.setCameraYaw(curYaw);
+            oldYaw = yaw;
+        }
+    }
+
+    private void onMouseAction(int button, int isPressed, int mod) {
+
+    }
+
+    private void onKeyAction(int key, int scanCode, int action, int mods) {
+        // Переключение в полноэкранный режим или в оконный:
+        if (key == UserConfig.DefaultHotKeys.FULLSCREEN.getGlEvent() && action == GLFW_RELEASE) {
+            Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
+            windowManager.loadScreen(null);
+        }
+
+        if (windowManager.isMenuScreen() && key == UserConfig.DefaultHotKeys.PAUSE.getGlEvent() && action == GLFW_RELEASE) {
+            windowManager.showConfirmExitRequest();
+        }
+
+        // временная заглушка для теста смены сцен:
+        if (key == GLFW_KEY_F1 && action == GLFW_RELEASE) {
+            if (windowManager.isMenuLoadingScreen()) {
+                windowManager.loadScreen(ScreenType.MENU_SCREEN);
+            } else if (windowManager.isMenuScreen()) {
+                windowManager.loadScreen(ScreenType.GAME_LOADING_SCREEN);
+            } else if (windowManager.isGameLoadingScreen()) {
+                windowManager.loadScreen(ScreenType.GAME_SCREEN);
+            } else if (windowManager.isGameScreen()) {
+                windowManager.loadScreen(ScreenType.MENU_LOADING_SCREEN);
+            }
+        }
+
+        // просто жмём энтер для быстрого запуска последней игры:
+        if (windowManager.isMenuScreen() && key == GLFW_KEY_ENTER && action == GLFW_RELEASE) {
+            if (getHeroesListPane().isVisible()) {
+                gameController.playWithThisHero(gameController.getMyCurrentWorldHeroes().get(0));
+                getHeroesListPane().setVisible(false);
+            } else if (getWorldsListPane().isVisible()) {
+                UUID lastWorldUid = gameController.getCurrentPlayerLastPlayedWorldUid();
+                if (gameController.isWorldExist(lastWorldUid)) {
+                    gameController.chooseOrCreateHeroForWorld(lastWorldUid);
+                } else {
+                    gameController.chooseOrCreateHeroForWorld(gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
+                }
+            } else {
+                getWorldsListPane().setVisible(true);
+            }
+        }
+
+        if (windowManager.isGameScreen()) {
+            // Если реализовать управление камерой на основе движения мыши, установите на GLFW_CURSOR_DISABLED.
+            if (key == GLFW_KEY_F2 && action == GLFW_PRESS) {
+                glfwSetInputMode(getWindow(), GLFW.GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                glfwSetCursor(getWindow(), glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR));
+            } else if (key == GLFW_KEY_LEFT_ALT) {
+                Constants.setAltControlMode(action != GLFW_RELEASE, getWindow());
+            }
+
+            // Кнопки влево-вправо, вверх-вниз (камера):
+            if (key == UserConfig.DefaultHotKeys.CAM_FORWARD.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_FORWARD.getGlEvent()) {
+                setCameraMovingForward(action != GLFW_RELEASE);
+            } else if (key == UserConfig.DefaultHotKeys.CAM_BACK.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_BACK.getGlEvent()) {
+                setCameraMovingBack(action != GLFW_RELEASE);
+            }
+            if (key == UserConfig.DefaultHotKeys.CAM_LEFT.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_LEFT.getGlEvent()) {
+                setCameraMovingLeft(action != GLFW_RELEASE);
+            } else if (key == UserConfig.DefaultHotKeys.CAM_RIGHT.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_RIGHT.getGlEvent()) {
+                setCameraMovingRight(action != GLFW_RELEASE);
+            }
+            if (key == UserConfig.DefaultHotKeys.CAM_LEFT.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_LEFT.getGlEvent()) {
+                setCameraMovingLeft(action != GLFW_RELEASE);
+            } else if (key == UserConfig.DefaultHotKeys.CAM_RIGHT.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_RIGHT.getGlEvent()) {
+                setCameraMovingRight(action != GLFW_RELEASE);
+            }
+
+            // бег\ускорение:
+            if (key == UserConfig.DefaultHotKeys.ACCELERATION.getGlEvent()) {
+                gameController.setAcceleration(action != GLFW_RELEASE);
+            }
+
+            // приседание:
+            if (key == UserConfig.DefaultHotKeys.SNEAK.getGlEvent()) {
+                gameController.setSneak(action != GLFW_RELEASE);
+            }
+
+            // зум:
+            if (key == UserConfig.DefaultHotKeys.ZOOM.getGlEvent()) {
+                gameController.setZoom(action != GLFW_RELEASE);
+            }
+        }
     }
 
     public void mouseReleased(MouseEvent e) {

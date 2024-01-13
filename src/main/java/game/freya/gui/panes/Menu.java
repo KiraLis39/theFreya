@@ -17,22 +17,19 @@ import static org.lwjgl.opengl.GL11.glColor4f;
 import static org.lwjgl.opengl.GL11.glEnd;
 import static org.lwjgl.opengl.GL11.glFrontFace;
 import static org.lwjgl.opengl.GL11.glNormal3f;
-import static org.lwjgl.opengl.GL11.glOrtho;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
-import static org.lwjgl.opengl.GL11.glRasterPos2i;
 import static org.lwjgl.opengl.GL11.glTexCoord2f;
 import static org.lwjgl.opengl.GL11.glVertex2d;
 import static org.lwjgl.opengl.GL11.glVertex3d;
-import static org.lwjgl.opengl.GL14.glWindowPos2d;
 
 @Slf4j
 public class Menu extends RenderScreen {
+    private static final ScreenType type = ScreenType.MENU_SCREEN;
+
     private final GameController gameController;
 
     private final WindowManager windowManager;
-
-    private static final ScreenType type = ScreenType.MENU_SCREEN;
 
     private double widthMemory = -1;
 
@@ -45,10 +42,9 @@ public class Menu extends RenderScreen {
 
     @Override
     public void render(double w, double h) {
-        glOrtho(0, windowManager.getWindow().getWidth(), windowManager.getWindow().getHeight(), 0, -1.0f, 1.0f);
+        glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
         glFrontFace(GL_CW);
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glPushMatrix();
 
         drawBackground(w, h);
@@ -56,15 +52,6 @@ public class Menu extends RenderScreen {
         drawMenu(w, h);
         drawGameInfo(w, h);
 //        drawDebug(w, h, null);
-
-        // text:
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glRasterPos2i(10, 10);
-        glWindowPos2d(20, 30);
-        //glut.glutBitmapString(GLUT.BITMAP_HELVETICA_12, "frame [ms]: " + 123 + " (max=" + 321 + ")");
-//        for (char c : "Respect mah authoritah!".toCharArray()) {
-//            glutBitmapCharacter(font, c);
-//        }
 
         glPopMatrix();
     }

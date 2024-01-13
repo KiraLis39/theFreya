@@ -1,7 +1,6 @@
 package game.freya.gui.panes;
 
 import game.freya.GameController;
-import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.ScreenType;
@@ -33,7 +32,6 @@ import static org.lwjgl.opengl.GL11.glColor4f;
 import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL11.glEnd;
-import static org.lwjgl.opengl.GL11.glFrustum;
 import static org.lwjgl.opengl.GL11.glLightfv;
 import static org.lwjgl.opengl.GL11.glLineStipple;
 import static org.lwjgl.opengl.GL11.glLineWidth;
@@ -52,12 +50,6 @@ import static org.lwjgl.opengl.GL11.glVertex3f;
 @Slf4j
 public class Game extends RenderScreen {
     private static final float accelerationMod = 2.0f;
-
-    private static final float camZspeed = 0f;
-
-    private static final float pitchSpeed = 0.15f;
-
-    private static final float yawSpeed = 0.33f;
 
     private static final int minimapDim = 2048;
 
@@ -81,10 +73,6 @@ public class Game extends RenderScreen {
 
     private static final ScreenType type = ScreenType.GAME_SCREEN;
 
-    private static float currentPitch = 30;
-
-    private static float currentYaw = 0;
-
     private static float heroXPos = 0, heroYPos = 0;
 
     private final GameController gameController;
@@ -94,8 +82,6 @@ public class Game extends RenderScreen {
     private final ByteBuffer temp = ByteBuffer.allocateDirect(16).order(ByteOrder.nativeOrder());
 
     private float theta = 0.5f;
-
-    private Thread sneakThread;
 
     public Game(WindowManager windowManager, GameController gameController) {
         // mock start:
@@ -159,18 +145,13 @@ public class Game extends RenderScreen {
     @Override
     public void render(double w, double h) {
         if (gameController.isGameActive()) {
-            double frHeight = Math.tan((Constants.getUserConfig().getFov() / 360) * Math.PI) * Constants.getUserConfig().getZNear();
-            double frWidth = frHeight * windowManager.getWindowAspect();
-            glFrustum(-frWidth, frWidth, -frHeight, frHeight, Constants.getUserConfig().getZNear(), Constants.getUserConfig().getZFar());
-
             glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
-            glPushMatrix();
 
+            glPushMatrix();
             moveHero();
 
             drawFloor();
             drawPyramid();
-
             glPopMatrix();
 
             glLightfv(GL_LIGHT0, GL_POSITION, temp.asFloatBuffer().put(new float[]{0.0f, -1.5f, 1.0f, 1.0f}).flip());
@@ -331,10 +312,10 @@ public class Game extends RenderScreen {
     }
 
     public void moveHero() {
-        glRotatef(-currentPitch, 1, 0, 0);
-        glRotatef(currentYaw, 0, 0, 1);
+        glRotatef(-gameController.getCameraPitch(), 1, 0, 0);
+        glRotatef(gameController.getCameraYaw(), 0, 0, 1);
 
-        float ugol = (float) (currentYaw / 180f * Math.PI);
+        float ugol = (float) (gameController.getCameraYaw() / 180f * Math.PI);
         gameController.setVelocity(windowManager.isCameraMovingForward()
                 ? getHeroSpeed() : windowManager.isCameraMovingBack() ? -getHeroSpeed() : 0);
         if (windowManager.isCameraMovingLeft()) {
@@ -355,66 +336,11 @@ public class Game extends RenderScreen {
         glTranslated(-heroXPos, -heroYPos, gameController.getHeroHeight());
     }
 
-    public void setSneak(boolean b) {
-        gameController.setSneak(b);
-        if (sneakThread != null && sneakThread.isAlive()) {
-            sneakThread.interrupt();
-        }
-        if (gameController.isSneaked()) {
-            sneakThread = new Thread(() -> {
-                while (gameController.getHeroHeight() < -4 && !Thread.currentThread().isInterrupted()) {
-                    try {
-                        gameController.setHeroHeight(gameController.getHeroHeight() + 0.1f);
-                        Thread.sleep(18);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            });
-        } else {
-            sneakThread = new Thread(() -> {
-                while (gameController.getHeroHeight() > -6 && !Thread.currentThread().isInterrupted()) {
-                    try {
-                        gameController.setHeroHeight(gameController.getHeroHeight() - 0.1f);
-                        Thread.sleep(18);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            });
-        }
-        sneakThread.start();
-    }
-
     // здесь вычисляется скорость передвижения героя по миру:
     protected float getHeroSpeed() {
         float heroSpeed = 0.085f;
 //        heroSpeed = gameController.getCurrentHeroSpeed();
         return gameController.isAccelerated() ? heroSpeed * accelerationMod : gameController.isSneaked() ? heroSpeed * 0.5f : heroSpeed;
-    }
-
-    public void setCameraYaw(double yaw) {
-        if (yaw != 0) {
-            currentYaw += (float) (yaw * yawSpeed);
-            if (currentYaw > 360) {
-                currentYaw = 0;
-            }
-            if (currentYaw < 0) {
-                currentYaw = 360;
-            }
-        }
-    }
-
-    public void setCameraPitch(double pitch) {
-        if (pitch != 0) {
-            currentPitch += (float) (pitch * pitchSpeed);
-            if (currentPitch < 0) {
-                currentPitch = 0;
-            }
-            if (currentPitch > 180) {
-                currentPitch = 180;
-            }
-        }
     }
 
     public void moveCameraToHero() {
@@ -455,9 +381,10 @@ public class Game extends RenderScreen {
 
         // отображаем других игроков на миникарте:
         for (HeroDTO connectedHero : gameController.getConnectedHeroes()) {
-            if (gameController.getCurrentHeroUid().equals(connectedHero.getCharacterUid())) {
-                continue;
-            }
+//            if (gameController.getCurrentHeroUid().equals(connectedHero.getCharacterUid())) {
+//                continue;
+//            }
+
 //            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
 //            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getLocation().y));
 //            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);

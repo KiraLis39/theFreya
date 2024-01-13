@@ -18,6 +18,7 @@ import org.lwjgl.system.Configuration;
 import org.springframework.stereotype.Component;
 
 import javax.swing.SwingUtilities;
+import javax.validation.constraints.NotNull;
 import java.awt.Point;
 import java.awt.Rectangle;
 
@@ -49,6 +50,9 @@ import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.glClear;
+import static org.lwjgl.opengl.GL11.glFrustum;
+import static org.lwjgl.opengl.GL11.glLoadIdentity;
+import static org.lwjgl.opengl.GL11.glOrtho;
 
 @Slf4j
 @Component
@@ -77,17 +81,7 @@ public class WindowManager implements Runnable {
             throw new IllegalStateException("Unable to initialize GLFW");
         }
 
-        if (Constants.getGameConfig().isGlDebugMode()) {
-            // When we are in debug mode, enable all LWJGL debug flags
-            Configuration.DEBUG.set(true);
-            Configuration.DEBUG_FUNCTIONS.set(true);
-            Configuration.DEBUG_LOADER.set(true);
-            Configuration.DEBUG_MEMORY_ALLOCATOR.set(true);
-            // Configuration.DEBUG_MEMORY_ALLOCATOR_FAST.set(true);
-            Configuration.DEBUG_STACK.set(true);
-        } else {
-            Configuration.DISABLE_CHECKS.set(true);
-        }
+        configureGlDebug();
 
         // Configure GLFW Hints:
         doHintsPreset();
@@ -97,11 +91,6 @@ public class WindowManager implements Runnable {
 
         // Create a Window:
         window = new FoxWindow(this, gameController);
-
-//        if (Constants.getGlut() == null) {
-//            log.info("Создание GLUT в потоке {}...", Thread.currentThread().getName());
-//            Constants.setGlut(new GLUT());
-//        }
 
         // Load the screen into window:
         loadScreen(ScreenType.MENU_LOADING_SCREEN);
@@ -126,44 +115,44 @@ public class WindowManager implements Runnable {
         glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_FALSE); // Если включен, ситуации, которые могли бы вызвать ошибки, вызывают неопределенное поведение
     }
 
-    public void loadScreen(ScreenType type) {
-        if (type != null) {
-            switch (type) {
-                case MENU_LOADING_SCREEN -> {
-                    // load textures:
-                    if (Constants.getGameConfig().isUseTextures()) {
-                        gameController.loadMenuTextures();
-                    }
+    public void loadScreen(@NotNull ScreenType type) {
+        // перевод курсора в режим меню (по-умолчанию):
+        Constants.setAltControlMode(true, window.getWindow());
 
-                    // ждём пока кончится показ лого:
-                    logoEndsAwait();
-                }
-                case MENU_SCREEN -> {
-                    // перевод курсора в режим меню:
-                    Constants.setAltControlMode(true, window.getWindow());
-                }
-                case GAME_LOADING_SCREEN -> {
-                    // load textures:
-                    if (Constants.getGameConfig().isUseTextures()) {
-                        gameController.loadGameTextures();
-                    }
-                }
-                case GAME_SCREEN -> {
-                    // перевод по-умолчанию в режим мыши:
-                    Constants.setAltControlMode(false, window.getWindow());
-                    glfwSetInputMode(window.getWindow(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-                    glfwSetCursor(window.getWindow(), glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR));
+        switch (type) {
+            case MENU_LOADING_SCREEN -> {
+                // load textures:
+                gameController.loadMenuTextures();
 
-                    gameController.setGameActive(true);
-                    Constants.setGameStartedIn(System.currentTimeMillis());
-                    Constants.setPaused(false);
-                }
+                // ждём пока кончится показ лого:
+                logoEndsAwait();
+
+                glLoadIdentity();
+                glOrtho(0, window.getWidth(), window.getHeight(), 0, -1.0f, 1.0f);
             }
+            case MENU_SCREEN -> {
+            }
+            case GAME_LOADING_SCREEN -> gameController.loadGameTextures();
+            case GAME_SCREEN -> {
+                // перевод в игровой режим мыши:
+                Constants.setAltControlMode(false, window.getWindow());
+                glfwSetInputMode(window.getWindow(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+                glfwSetCursor(window.getWindow(), glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR));
 
-            this.currentScreen = type.getScreen(this, gameController);
-            window.setVisible(true);
-            draw(); // блокируется до закрытия окна.
+                gameController.setGameActive(true);
+                Constants.setGameStartedIn(System.currentTimeMillis());
+                Constants.setPaused(false);
+
+                glLoadIdentity();
+                double frHeight = Math.tan((Constants.getUserConfig().getFov() / 360) * Math.PI) * Constants.getUserConfig().getZNear();
+                double frWidth = frHeight * getAspect();
+                glFrustum(-frWidth, frWidth, -frHeight, frHeight, Constants.getUserConfig().getZNear(), Constants.getUserConfig().getZFar());
+            }
         }
+
+        this.currentScreen = type.getScreen(this, gameController);
+        window.setVisible(true);
+        draw(); // блокируется до закрытия окна.
     }
 
     private void draw() {
@@ -254,16 +243,7 @@ public class WindowManager implements Runnable {
 
     public void showConfirmExitRequest() {
         if (isMenuScreen()) {
-            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
-                    "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-            ) {
-                isGlWindowBreaked = true;
-                if (!glfwWindowShouldClose(window.getWindow())) {
-                    destroy();
-                }
-            } else {
-                glfwSetWindowShouldClose(window.getWindow(), false); // Не закрывает окно :)
-            }
+            exit();
         } else if (isGameScreen()) {
 //            game.onExitBack();
         } else {
@@ -313,29 +293,36 @@ public class WindowManager implements Runnable {
         }
     }
 
-    public void destroy() {
-        window.destroy();
-        exit();
-    }
+    public void exit() {
+        if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол без сохранения?",
+                FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+        ) {
+            isGlWindowBreaked = true;
+            Media.playSound("jump");
 
-    private void exit() {
-        Media.playSound("jump");
+            if (!glfwWindowShouldClose(window.getWindow())) {
+                glfwSetWindowShouldClose(window.getWindow(), true);
+                window.destroy();
+            }
 
-        GL.setCapabilities(null);
+            GL.setCapabilities(null);
 
-        // Terminate GLFW and free the error callback
-        glfwFreeCallbacks(window.getWindow());
-        //glfwDestroyWindow(window.getWindow());
-        glfwTerminate();
+            // Terminate GLFW and free the error callback
+            glfwFreeCallbacks(window.getWindow());
+            //glfwDestroyWindow(window.getWindow());
+            glfwTerminate();
 
-        SwingUtilities.invokeLater(() -> {
-            gameController.saveCurrentWorld();
-            gameController.exitTheGame(null);
-        });
+            SwingUtilities.invokeLater(() -> {
+                gameController.saveCurrentWorld();
+                gameController.exitTheGame(null);
+            });
 
-        GLFWErrorCallback res = glfwSetErrorCallback(null);
-        if (res != null) {
-            res.free();
+            GLFWErrorCallback res = glfwSetErrorCallback(null);
+            if (res != null) {
+                res.free();
+            }
+        } else {
+            glfwSetWindowShouldClose(window.getWindow(), false); // Не закрывает окно :)
         }
     }
 
@@ -367,10 +354,6 @@ public class WindowManager implements Runnable {
 
     public boolean isGameScreen() {
         return currentScreen.getType().equals(ScreenType.GAME_SCREEN);
-    }
-
-    public double getWindowAspect() {
-        return window.getAspect();
     }
 
     public boolean isCameraMovingForward() {
@@ -417,8 +400,22 @@ public class WindowManager implements Runnable {
         window.setPingAwait(b);
     }
 
-    public void setGlWindowBreaked(boolean b) {
-        isGlWindowBreaked = b;
+    private void configureGlDebug() {
+        if (Constants.getGameConfig().isGlDebugMode()) {
+            // When we are in debug mode, enable all LWJGL debug flags
+            Configuration.DEBUG.set(true);
+            Configuration.DEBUG_FUNCTIONS.set(true);
+            Configuration.DEBUG_LOADER.set(true);
+            Configuration.DEBUG_MEMORY_ALLOCATOR.set(true);
+            // Configuration.DEBUG_MEMORY_ALLOCATOR_FAST.set(true);
+            Configuration.DEBUG_STACK.set(true);
+        } else {
+            Configuration.DISABLE_CHECKS.set(true);
+        }
+    }
+
+    public double getAspect() {
+        return window.getAspect();
     }
 
     public FoxWindow getWindow() {

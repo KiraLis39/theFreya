@@ -20,21 +20,21 @@ import static org.lwjgl.opengl.GL11.glTexCoord2f;
 import static org.lwjgl.opengl.GL11.glVertex2d;
 
 @Slf4j
-public class LoadMenu extends RenderScreen {
-    private static final ScreenType type = ScreenType.MENU_LOADING_SCREEN;
+public class LoadGame extends RenderScreen {
+    private static final ScreenType type = ScreenType.GAME_LOADING_SCREEN;
 
     private final GameController gameController;
 
     private final WindowManager windowManager;
 
-    public LoadMenu(WindowManager windowManager, GameController gameController) {
+    public LoadGame(WindowManager windowManager, GameController gameController) {
         this.gameController = gameController;
         this.windowManager = windowManager;
     }
 
     @Override
     public void render(double w, double h) {
-        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
         glFrontFace(GL_CW);
 
         glPushMatrix();
@@ -51,8 +51,8 @@ public class LoadMenu extends RenderScreen {
     }
 
     private void drawBackground(double w, double h) {
-        if (gameController.isTextureExist("menu")) {
-            gameController.bindTexture("menu");
+        if (gameController.isTextureExist("menu_shadowed")) {
+            gameController.bindTexture("menu_shadowed");
         }
 
         glBegin(GL_QUADS);
@@ -74,7 +74,7 @@ public class LoadMenu extends RenderScreen {
 
         glEnd();
 
-        gameController.unbindTexture("menu");
+        gameController.unbindTexture("menu_shadowed");
     }
 
     private void drawGameInfo(double w, double h) {

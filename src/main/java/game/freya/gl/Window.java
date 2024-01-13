@@ -149,9 +149,15 @@ public abstract class Window {
 //            glfwSetFramebufferSizeCallback(getWindow(), null).free();
             glfwFreeCallbacks(window);
 
-            iconBuffer.free();
-            iconImage.free();
-            curImage.free();
+            if (iconBuffer != null) {
+                iconBuffer.free();
+            }
+            if (iconImage != null) {
+                iconImage.free();
+            }
+            if (curImage != null) {
+                curImage.free();
+            }
 
             // glfwPostEmptyEvent();
             glfwDestroyWindow(window);
