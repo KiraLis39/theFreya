@@ -4,7 +4,7 @@ import fox.components.tools.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.WindowManager;
 import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
@@ -58,13 +58,13 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
 
     private SubPane netPassPane;
 
-    public WorldCreatingPane(FoxWindow canvas) {
+    public WorldCreatingPane(WindowManager windowManager) {
         setName("World creating pane");
         setVisible(false);
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        recalculate(canvas);
+        recalculate(windowManager.getWindow());
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
 
         add(new SubPane("Создание игрового мира") {{
@@ -141,17 +141,17 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            if (canvas instanceof MenuWindow mCanvas) {
+                            if (windowManager.isMenuScreen()) {
                                 WorldDTO aNewWorld = WorldDTO.builder()
                                         .uid(UUID.randomUUID())
-                                        .author(canvas.getGameController().getCurrentPlayerUid())
+                                        .author(windowManager.getWindow().getGameController().getCurrentPlayerUid())
                                         .createDate(LocalDateTime.now())
                                         .title(getWorldName())
                                         .level(getHardnessLevel())
                                         .isNetAvailable(false)
                                         .isLocalWorld(true)
                                         .build();
-                                mCanvas.saveNewLocalWorldAndCreateHero(aNewWorld);
+                                windowManager.getWindow().getGameController().saveNewLocalWorldAndCreateHero(aNewWorld);
                             }
                         }
                     });

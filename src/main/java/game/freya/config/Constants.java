@@ -31,6 +31,7 @@ import java.awt.GraphicsConfiguration;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
@@ -138,7 +139,9 @@ public final class Constants {
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
 
-    private static final int FPS_UPDATE_DELAY_SECONDS = 3;
+    private static final int FPS_UPDATE_DELAY_SECONDS = 2;
+
+    public static String gameIconPath = "/images/icons/0.png";
 
     @Getter
     private static volatile boolean altControlMode = false;
@@ -200,6 +203,10 @@ public final class Constants {
     private static long timePerFrame = -1;
 
     private static long fpsLimitMem = -1;
+
+    @Getter
+    @Setter
+    private static Duration duration;
 
     static {
         try (InputStream is = Constants.class.getResourceAsStream("/cursors/default.png")) {

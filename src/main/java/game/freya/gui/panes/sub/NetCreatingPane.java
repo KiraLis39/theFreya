@@ -1,10 +1,10 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.tools.VerticalFlowLayout;
+import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.MenuWindow;
 import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
@@ -47,6 +47,8 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
 
     private transient BufferedImage snap;
 
+    private final transient GameController gameController;
+
     @Getter
     private String worldName;
 
@@ -61,7 +63,9 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
     @Getter
     private int netPasswordHash;
 
-    public NetCreatingPane(FoxWindow canvas) {
+    public NetCreatingPane(FoxWindow canvas, GameController gameController) {
+        this.gameController = gameController;
+
         setName("Net creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -161,7 +165,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
                                     .passwordHash(getNetPasswordHash())
                                     .networkAddress(addresses.get(0))
                                     .build();
-                            ((MenuWindow) canvas).serverUp(aNewWorld);
+                            gameController.serverUp(aNewWorld);
                         }
                     });
                 }});

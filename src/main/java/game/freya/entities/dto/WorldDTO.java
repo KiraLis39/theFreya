@@ -1,10 +1,8 @@
 package game.freya.entities.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.GameWindow;
 import game.freya.interfaces.iWorld;
 import game.freya.items.MockEnvironmentWithStorage;
 import game.freya.items.prototypes.Environment;
@@ -90,27 +88,12 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     @Setter
     private String networkAddress;
 
-    // custom fields:
-    @JsonIgnore
-    private GameWindow canvas;
-
     @Getter
     @JsonIgnore
     private VolatileImage gameMap;
 
     @JsonIgnore
     private Image icon;
-
-    @JsonIgnore
-    private GameController gameController;
-
-    @Override
-    public void init(GameWindow canvas, GameController controller) {
-        this.canvas = canvas;
-        this.gameController = controller;
-
-        log.info("World {} initialized successfully", getTitle());
-    }
 
     /**
      * Основной метод рисования карты игры.

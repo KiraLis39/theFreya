@@ -22,10 +22,9 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gl.Collider3D;
 import game.freya.gl.Texture;
-import game.freya.gui.Window;
 import game.freya.gui.WindowManager;
-import game.freya.gui.panes.GameWindow;
-import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.panes.Game;
+import game.freya.gui.panes.sub.HeroCreatingPane;
 import game.freya.interfaces.iEnvironment;
 import game.freya.items.prototypes.Environment;
 import game.freya.mappers.WorldMapper;
@@ -34,6 +33,7 @@ import game.freya.net.LocalSocketConnection;
 import game.freya.net.PlayedHeroesService;
 import game.freya.net.Server;
 import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.NetConnectTemplate;
 import game.freya.net.data.events.EventHeroMoving;
 import game.freya.net.data.events.EventHeroOffline;
 import game.freya.net.data.events.EventHeroRegister;
@@ -86,9 +86,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -107,13 +104,11 @@ public class GameController extends GameControllerBase {
 
     private final WorldMapper worldMapper;
 
-    private final WindowManager gameFrame;
+    private final WindowManager windowManager;
 
     private final PlayedHeroesService playedHeroesService;
 
     private final Server server;
-
-    private volatile boolean isGlWindowBreaked = false;
 
     @Getter
     private LocalSocketConnection localSocketConnection;
@@ -126,6 +121,16 @@ public class GameController extends GameControllerBase {
 
     @Getter
     private volatile boolean isRemoteHeroRequestSent = false;
+
+    @Getter
+    private boolean isAccelerated = false, isSneaked = false, isZoomed = false;
+
+    @Getter
+    @Setter
+    private float heroHeight = -6;
+
+    @Getter
+    private float velocity = 0;
 
     private static void loadAudio() {
         // TinySound:
@@ -242,7 +247,7 @@ public class GameController extends GameControllerBase {
         loadAudio();
 
         log.info("The game is started!");
-        this.gameFrame.appStart(this);
+        windowManager.appStart(this);
     }
 
     public void loadMenuTextures() {
@@ -389,7 +394,7 @@ public class GameController extends GameControllerBase {
 
     public void loadScreen(ScreenType screenType) {
         log.info("Try to load screen {}...", screenType.name());
-        gameFrame.loadScreen(screenType);
+        windowManager.loadScreen(screenType);
     }
 
     public void startClientBroadcast() {
@@ -504,23 +509,24 @@ public class GameController extends GameControllerBase {
      * @param v2D    хост для отрисовки.
      * @param canvas класс холста.
      */
-    public void drawHeroes(Graphics2D v2D, GameWindow canvas) {
+    public void drawHeroes(Graphics2D v2D, Game canvas) {
         if (isCurrentWorldIsNetwork()) { // если игра по сети:
             for (HeroDTO hero : getConnectedHeroes()) {
                 if (playedHeroesService.isCurrentHero(hero)) {
                     // если это текущий герой:
                     if (!Constants.isPaused()) {
-                        moveHeroIfAvailable(canvas); // узкое место!
+                        moveHeroIfAvailable(); // узкое место!
                     }
                     hero.draw(v2D);
-                } else if (canvas.getViewPort().getBounds().contains(hero.getLocation())) {
-                    // если чужой герой в пределах видимости:
-                    hero.draw(v2D);
                 }
+//                else if (canvas.getViewPort().getBounds().contains(hero.getLocation())) {
+//                    // если чужой герой в пределах видимости:
+//                    hero.draw(v2D);
+//                }
             }
         } else { // если не-сетевая игра:
             if (!Constants.isPaused()) {
-                moveHeroIfAvailable(canvas); // узкое место!
+                moveHeroIfAvailable(); // узкое место!
             }
 
             if (!playedHeroesService.isCurrentHeroNotNull()) {
@@ -535,9 +541,9 @@ public class GameController extends GameControllerBase {
         return visibleRect.contains(hero.getLocation()) && hero.isOnline();
     }
 
-    private void moveHeroIfAvailable(GameWindow canvas) {
+    private void moveHeroIfAvailable() {
         if (isPlayerMoving()) {
-            Rectangle visibleRect = canvas.getViewPort().getBounds();
+            Rectangle visibleRect = windowManager.getViewPortBounds();
             MovingVector vector = playedHeroesService.getCurrentHeroVector();
             Point2D.Double plPos = playedHeroesService.getCurrentHeroPosition();
 
@@ -579,54 +585,54 @@ public class GameController extends GameControllerBase {
             switch (vector) {
                 case UP -> {
                     if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
+                        windowManager.dragDown(getCurrentHeroSpeed());
                     }
                 }
                 case UP_RIGHT -> {
                     if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
+                        windowManager.dragDown(getCurrentHeroSpeed());
                     }
                     if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
+                        windowManager.dragLeft(getCurrentHeroSpeed());
                     }
                 }
                 case RIGHT -> {
                     if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
+                        windowManager.dragLeft(getCurrentHeroSpeed());
                     }
                 }
                 case RIGHT_DOWN -> {
                     if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
+                        windowManager.dragLeft(getCurrentHeroSpeed());
                     }
                     if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
+                        windowManager.dragUp(getCurrentHeroSpeed());
                     }
                 }
                 case DOWN -> {
                     if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
+                        windowManager.dragUp(getCurrentHeroSpeed());
                     }
                 }
                 case DOWN_LEFT -> {
                     if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
+                        windowManager.dragUp(getCurrentHeroSpeed());
                     }
                     if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
+                        windowManager.dragRight(getCurrentHeroSpeed());
                     }
                 }
                 case LEFT -> {
                     if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
+                        windowManager.dragRight(getCurrentHeroSpeed());
                     }
                 }
                 case LEFT_UP -> {
                     if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
+                        windowManager.dragRight(getCurrentHeroSpeed());
                     }
                     if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
+                        windowManager.dragDown(getCurrentHeroSpeed());
                     }
                 }
                 default -> log.info("Обнаружено несанкционированное направление {}", vector);
@@ -764,10 +770,6 @@ public class GameController extends GameControllerBase {
         worldService.saveCurrentWorld();
     }
 
-    public void initCurrentWorld(GameWindow gameCanvas) {
-        worldService.getCurrentWorld().init(gameCanvas, this);
-    }
-
     public long getCurrentHeroInGameTime() {
         if (playedHeroesService.getCurrentHero() != null) {
             return playedHeroesService.getCurrentHeroInGameTime();
@@ -830,6 +832,48 @@ public class GameController extends GameControllerBase {
         return playedHeroesService.getCurrentHeroVector();
     }
 
+    public void connectToServer(NetConnectTemplate connectionTemplate) {
+//        getHeroesListPane().setVisible(false);
+
+        windowManager.setConnectionAwait(true);
+//        getNetworkListPane().repaint(); // костыль для отображения анимации
+
+        if (connectionTemplate.address().isBlank()) {
+            new FOptionPane().buildFOptionPane("Ошибка адреса:", "Адрес сервера не может быть пустым.", 10, true);
+        }
+
+        // 1) приходим сюда с host:port для подключения
+        String address = connectionTemplate.address().trim();
+        String h = address.contains(":") ? address.split(":")[0].trim() : address;
+        Integer p = address.contains(":") ? Integer.parseInt(address.split(":")[1].trim()) : null;
+//        getNetworkListPane().repaint(); // костыль для отображения анимации
+        try {
+            // 2) подключаемся к серверу, авторизуемся там и получаем мир для сохранения локально
+            if (connectToServer(h.trim(), p, connectionTemplate.passwordHash())) {
+                // 3) проверка героя в этом мире:
+                chooseOrCreateHeroForWorld(getCurrentWorldUid());
+            } else {
+                new FOptionPane().buildFOptionPane("Отказ:", "Сервер отклонил подключение!", 5, true);
+                throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, getLocalSocketConnection().getLastExplanation());
+            }
+        } catch (GlobalServiceException gse) {
+            log.warn("GSE here: {}", gse.getMessage());
+            if (gse.getErrorCode().equals("ER07")) {
+                new FOptionPane().buildFOptionPane("Не доступно:", gse.getMessage(), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            }
+        } catch (IllegalThreadStateException tse) {
+            log.error("Connection Thread state exception: {}", ExceptionUtils.getFullExceptionMessage(tse));
+        } catch (Exception e) {
+            new FOptionPane().buildFOptionPane("Ошибка данных:", ("Ошибка подключения '%s'.\n"
+                    + "Верно: <host_ip> или <host_ip>:<port> (192.168.0.10/13:13958)")
+                    .formatted(ExceptionUtils.getFullExceptionMessage(e)), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+            log.error("Server aim address to connect error: {}", ExceptionUtils.getFullExceptionMessage(e));
+        } finally {
+            //gameController.closeSocket();
+            windowManager.setConnectionAwait(false);
+        }
+    }
+
     public boolean connectToServer(String host, Integer port, int passwordHash) {
         this.localSocketConnection = new LocalSocketConnection();
 
@@ -877,6 +921,26 @@ public class GameController extends GameControllerBase {
             authThread.interrupt();
             localSocketConnection.killSelf();
             return false;
+        }
+    }
+
+    /**
+     * После выбора мира - приходим сюда для создания нового героя или
+     * выбора существующего, для игры в данном мире.
+     *
+     * @param worldUid uuid выбранного для игры мира.
+     */
+    public void chooseOrCreateHeroForWorld(UUID worldUid) {
+//        getWorldsListPane().setVisible(false);
+//        getWorldCreatingPane().setVisible(false);
+//        getNetworkListPane().setVisible(false);
+//        getNetworkCreatingPane().setVisible(false);
+
+        setCurrentWorld(worldUid);
+        if (getMyCurrentWorldHeroes().isEmpty()) {
+//            getHeroCreatingPane().setVisible(true);
+        } else {
+//            getHeroesListPane().setVisible(true);
         }
     }
 
@@ -1188,30 +1252,155 @@ public class GameController extends GameControllerBase {
         return worldService.findAnyWorld();
     }
 
-    public void showConfirmExitRequest(Window window) {
-        if (window instanceof MenuWindow bf) {
-            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
-                    "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-            ) {
-                isGlWindowBreaked = true;
-                if (!glfwWindowShouldClose(window.getWindow())) {
-                    bf.destroyWindowContext(ScreenType.MENU_SCREEN);
-                }
+    public void justSave() {
+        justSaveOnlineHero(Constants.getDuration());
+        saveCurrentWorld();
+    }
+
+    /**
+     * Приходим сюда для создания нового героя для мира.
+     *
+     * @param newHeroTemplate модель нового героя для игры в новом мире.
+     */
+    public void saveNewHeroAndPlay(HeroCreatingPane newHeroTemplate) {
+        // сохраняем нового героя и проставляем как текущего:
+        HeroDTO aNewToSave = new HeroDTO();
+
+        aNewToSave.setBaseColor(newHeroTemplate.getBaseColor());
+        aNewToSave.setSecondColor(newHeroTemplate.getSecondColor());
+
+        aNewToSave.setCorpusType(newHeroTemplate.getChosenCorpusType());
+        aNewToSave.setPeriferiaType(newHeroTemplate.getChosenPeriferiaType());
+        aNewToSave.setPeriferiaSize(newHeroTemplate.getPeriferiaSize());
+
+        aNewToSave.setWorldUid(newHeroTemplate.getWorldUid());
+        aNewToSave.setCharacterUid(UUID.randomUUID());
+        aNewToSave.setCharacterName(newHeroTemplate.getHeroName());
+        aNewToSave.setOwnerUid(getCurrentPlayerUid());
+        aNewToSave.setCreateDate(LocalDateTime.now());
+
+        saveNewHero(aNewToSave, true);
+
+        // если подключение к Серверу уже закрылось пока мы собирались:
+        if (isCurrentWorldIsNetwork() && !isServerIsOpen()) {
+            log.warn("Сервер уже закрыт. Требуется повторное подключение.");
+//            getHeroCreatingPane().setVisible(false);
+//            getHeroesListPane().setVisible(false);
+//            getNetworkListPane().setVisible(true);
+            return;
+        }
+
+        playWithThisHero(getCurrentHero());
+    }
+
+    /**
+     * После выбора или создания мира (и указания его как текущего в контроллере) и выбора или создания героя, которым
+     * будем играть в выбранном мире - попадаем сюда для последних приготовлений и
+     * загрузки холста мира (собственно, начала игры).
+     *
+     * @param hero выбранный герой для игры в выбранном ранее мире.
+     */
+    public void playWithThisHero(HeroDTO hero) {
+        setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());
+        setCurrentHero(hero);
+
+        // если этот мир по сети:
+        if (isCurrentWorldIsNetwork()) {
+            // шлем на Сервер своего выбранного Героя:
+            if (registerCurrentHeroOnServer()) {
+                getPlayedHeroesService().addHero(getCurrentHero());
+//                startGame();
             } else {
-                glfwSetWindowShouldClose(window.getWindow(), false); // Не закрывает окно :)
+                log.error("Сервер не принял нашего Героя: {}", getLocalSocketConnection().getLastExplanation());
+                setCurrentHeroOfflineAndSave(null);
+//                getHeroCreatingPane().repaint();
+//                getHeroesListPane().repaint();
             }
-        } else if (window instanceof GameWindow fg) {
-            fg.onExitBack();
         } else {
-            log.error("WTF: {}", window.getWindow());
+            // иначе просто запускаем мир и играем локально:
+//            startGame();
         }
     }
 
-    public boolean isGlWindowBreaked() {
-        return isGlWindowBreaked;
+    public void setAcceleration(boolean b) {
+        this.isAccelerated = b;
     }
 
-    public void setGlWindowBreaked(boolean b) {
-        isGlWindowBreaked = b;
+    public void setSneak(boolean b) {
+        this.isSneaked = b;
+    }
+
+    public void setZoom(boolean b) {
+        this.isZoomed = b;
+    }
+
+    public void setCameraPitch(float v) {
+
+    }
+
+    public void setCameraYaw(float curYaw) {
+
+    }
+
+    public void setVelocity(float v) {
+        this.velocity = v;
+    }
+
+    public void deleteExistsWorldAndCloseThatPanel(UUID worldUid) {
+        log.info("Удаление мира {}...", worldUid);
+        deleteWorld(worldUid);
+    }
+
+    public void deleteExistsPlayerHero(UUID heroUid) {
+        deleteHero(heroUid);
+    }
+
+    /**
+     * Когда создаём локальный, несетевой мир - идём сюда, для его сохранения и указания как текущий мир в контроллере.
+     *
+     * @param newWorld модель нового мира для сохранения.
+     */
+    public void saveNewLocalWorldAndCreateHero(WorldDTO newWorld) {
+        setCurrentWorld(saveNewWorld(newWorld));
+        chooseOrCreateHeroForWorld(getCurrentWorldUid());
+    }
+
+    // NETWORK game methods:
+    public void serverUp(WorldDTO aNetworkWorld) {
+//        getNetworkListPane().repaint(); // костыль для отображения анимации
+
+        // Если игра по сети, но Сервер - мы, и ещё не запускался:
+        setCurrentWorld(saveNewWorld(aNetworkWorld));
+
+        // Открываем локальный Сервер:
+        if (isCurrentWorldIsLocal() && isCurrentWorldIsNetwork() && !isServerIsOpen()) {
+            if (openServer()) {
+                log.info("Сервер сетевой игры успешно активирован на {}", getServerAddress());
+            } else {
+                log.warn("Что-то пошло не так при активации Сервера.");
+                new FOptionPane().buildFOptionPane("Server error:", "Что-то пошло не так при активации Сервера.", 60, true);
+                return;
+            }
+        }
+
+        if (isSocketIsOpen()) {
+            log.error("Socket should was closed here! Closing...");
+            closeSocket();
+        }
+
+        // Подключаемся к локальному Серверу как новый Клиент:
+        connectToServer(NetConnectTemplate.builder()
+                .address(aNetworkWorld.getNetworkAddress())
+                .passwordHash(aNetworkWorld.getPasswordHash())
+                .worldUid(aNetworkWorld.getUid())
+                .build());
+    }
+
+    public void openCreatingNewHeroPane(HeroDTO template) {
+//        getHeroesListPane().setVisible(false);
+//        getHeroCreatingPane().setVisible(true);
+        if (template != null) {
+//            ((HeroCreatingPane) getHeroCreatingPane()).load(template);
+        }
     }
 }

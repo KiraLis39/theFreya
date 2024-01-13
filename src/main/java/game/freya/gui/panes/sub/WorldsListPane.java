@@ -6,7 +6,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.panes.Menu;
 import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
@@ -243,7 +243,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                     if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                                             "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                            && canvas instanceof MenuWindow mCanvas
+                                            && canvas instanceof Menu mCanvas
                                     ) {
                                         mCanvas.deleteExistsWorldAndCloseThatPanel(world.getUid());
                                         reloadWorlds(canvas);

@@ -4,7 +4,6 @@ import fox.components.FOptionPane;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
-import game.freya.gui.panes.MenuWindow;
 import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
@@ -126,7 +125,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                                 "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                         ) {
-                                            ((MenuWindow) canvas).deleteExistsPlayerHero(hero.getCharacterUid());
+                                            gameController.deleteExistsPlayerHero(hero.getCharacterUid());
                                             reloadHeroes(canvas);
                                         }
                                     }
@@ -161,7 +160,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                 addActionListener(new AbstractAction() {
                                     @Override
                                     public void actionPerformed(ActionEvent e) {
-                                        ((MenuWindow) canvas).openCreatingNewHeroPane(hero);
+                                        gameController.openCreatingNewHeroPane(hero);
                                     }
                                 });
                             }
@@ -182,13 +181,13 @@ public class HeroesListPane extends JPanel implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 if (gameController.isCurrentWorldIsNetwork() && !gameController.isSocketIsOpen()) {
-                                    ((MenuWindow) canvas).connectToServer(NetConnectTemplate.builder()
+                                    gameController.connectToServer(NetConnectTemplate.builder()
                                             .address(gameController.getCurrentWorldAddress())
                                             .worldUid(gameController.getCurrentWorldUid())
                                             .passwordHash(gameController.getCurrentWorldPassword())
                                             .build());
                                 } else {
-                                    canvas.playWithThisHero(hero);
+                                    gameController.playWithThisHero(hero);
                                 }
                             }
                         });

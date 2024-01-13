@@ -2,7 +2,7 @@ package game.freya.gui.panes.handlers;
 
 import fox.FoxRender;
 import game.freya.config.Constants;
-import game.freya.gui.panes.MenuWindow;
+import game.freya.gui.WindowManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,16 +34,12 @@ public final class UIHandler {
         repingButtonText = "Обновить";
     }
 
-    public void drawUI(Graphics2D v2D, FoxWindow canvas) {
-//        if (heightMemory != canvas.getBounds().getHeight()) {
-//            recreateRectangles(canvas);
-//        }
-
-        if (canvas instanceof MenuWindow menuCanvas) {
-            drawMainMenu(v2D, menuCanvas);
-            drawCreatorInfo(v2D, menuCanvas);
-        } else if (canvas.isOptionsMenuSetVisible()) {
-            canvas.showOptions(v2D);
+    public void drawUI(Graphics2D v2D, WindowManager windowManager) {
+        if (windowManager.isMenuScreen()) {
+            drawMainMenu(v2D, windowManager.getWindow());
+            drawCreatorInfo(v2D, windowManager.getWindow());
+        } else if (windowManager.getWindow().isOptionsMenuSetVisible()) {
+            windowManager.getWindow().showOptions(v2D);
         } else {
             // up left pane:
             v2D.setStroke(new BasicStroke(2f));
@@ -79,9 +75,9 @@ public final class UIHandler {
             }
 
             // draw chat:
-            if (canvas.getGameController().isCurrentWorldIsNetwork() && canvas.getChat() != null) {
+            if (windowManager.getWindow().getGameController().isCurrentWorldIsNetwork() && windowManager.getWindow().getChat() != null) {
                 Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
-                canvas.getChat().draw(v2D);
+                windowManager.getWindow().getChat().draw(v2D);
             }
         }
     }

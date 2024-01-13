@@ -6,7 +6,6 @@ import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.other.HeroCorpusType;
 import game.freya.enums.other.HeroPeriferiaType;
-import game.freya.gui.panes.MenuWindow;
 import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
@@ -90,16 +89,16 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
 
     private transient HeroDTO editableHero;
 
-    public HeroCreatingPane(FoxWindow canvas, GameController gameController) {
+    public HeroCreatingPane(FoxWindow window, GameController gameController) {
         setName("Hero creating pane");
         setVisible(false);
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        recalculate(canvas);
+        recalculate(window);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
-        add(Box.createHorizontalStrut(canvas.getWidth() / 3));
+        add(Box.createHorizontalStrut(window.getWidth() / 3));
         add(new JSeparator(SwingConstants.VERTICAL));
 //        add(Box.createHorizontalStrut(9));
         add(new SubPane("Test hero panel") {{
@@ -208,7 +207,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                 }});
             }});
 
-            add(Box.createVerticalStrut(canvas.getHeight() / 3));
+            add(Box.createVerticalStrut(window.getHeight() / 3));
             add(new JSeparator(SwingConstants.HORIZONTAL));
             add(Box.createVerticalStrut(6));
 
@@ -230,7 +229,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                                 if (existsHero != null) {
                                     new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
                                 } else {
-                                    ((MenuWindow) canvas).saveNewHeroAndPlay(HeroCreatingPane.this);
+                                    gameController.saveNewHeroAndPlay(HeroCreatingPane.this);
                                 }
                             } else {
                                 editableHero.setBaseColor(baseColor);
@@ -242,7 +241,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                                 gameController.justSaveAnyHero(editableHero);
 
                                 HeroCreatingPane.this.setVisible(false);
-                                canvas.getHeroesListPane().setVisible(true);
+                                window.getHeroesListPane().setVisible(true);
                             }
                         }
                     });
@@ -362,8 +361,8 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxWindow canvas) {
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+    public void recalculate(FoxWindow window) {
+        setLocation((int) (window.getWidth() * 0.34d), 2);
+        setSize(new Dimension((int) (window.getWidth() * 0.66d), window.getHeight() - 4));
     }
 }

@@ -4,5 +4,5 @@ import game.freya.gui.panes.handlers.FoxWindow;
 
 public interface iSubPane {
 
-    void recalculate(FoxWindow canvas);
+    void recalculate(FoxWindow window);
 }

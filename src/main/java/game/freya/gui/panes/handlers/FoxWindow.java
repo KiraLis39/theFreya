@@ -10,7 +10,7 @@ import game.freya.enums.other.MovingVector;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.gui.Window;
+import game.freya.gl.Window;
 import game.freya.gui.WindowManager;
 import game.freya.gui.panes.sub.AudioSettingsPane;
 import game.freya.gui.panes.sub.GameplaySettingsPane;
@@ -29,9 +29,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.lwjgl.glfw.GLFW;
 
-import javax.swing.JFrame;
 import javax.swing.JPanel;
-import java.awt.AWTException;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -41,7 +39,7 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
-import java.awt.geom.Point2D;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.time.Duration;
@@ -49,23 +47,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static game.freya.config.Constants.FFB;
-import static javax.swing.JLayeredPane.PALETTE_LAYER;
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL;
-import static org.lwjgl.glfw.GLFW.GLFW_FOCUSED;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F2;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
-import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.glfwCreateStandardCursor;
 import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
-import static org.lwjgl.glfw.GLFW.glfwHideWindow;
 import static org.lwjgl.glfw.GLFW.glfwPostEmptyEvent;
 import static org.lwjgl.glfw.GLFW.glfwSetCursor;
 import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
@@ -76,18 +68,14 @@ import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowFocusCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.opengl.GL11.GL_ALPHA_TEST;
-import static org.lwjgl.opengl.GL11.GL_AMBIENT;
 import static org.lwjgl.opengl.GL11.GL_BACK;
 import static org.lwjgl.opengl.GL11.GL_BLEND;
 import static org.lwjgl.opengl.GL11.GL_CCW;
 import static org.lwjgl.opengl.GL11.GL_COLOR_MATERIAL;
 import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
-import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
 import static org.lwjgl.opengl.GL11.GL_FLAT;
 import static org.lwjgl.opengl.GL11.GL_FOG;
 import static org.lwjgl.opengl.GL11.GL_FOG_COLOR;
@@ -110,9 +98,7 @@ import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH_HINT;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_OFFSET_FILL;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH_HINT;
-import static org.lwjgl.opengl.GL11.GL_POSITION;
 import static org.lwjgl.opengl.GL11.GL_SMOOTH;
-import static org.lwjgl.opengl.GL11.GL_SPECULAR;
 import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glAlphaFunc;
@@ -132,13 +118,10 @@ import static org.lwjgl.opengl.GL11.glFogfv;
 import static org.lwjgl.opengl.GL11.glFrontFace;
 import static org.lwjgl.opengl.GL11.glHint;
 import static org.lwjgl.opengl.GL11.glIsEnabled;
-import static org.lwjgl.opengl.GL11.glLightfv;
 import static org.lwjgl.opengl.GL11.glLineWidth;
 import static org.lwjgl.opengl.GL11.glPolygonMode;
 import static org.lwjgl.opengl.GL11.glPolygonOffset;
-import static org.lwjgl.opengl.GL11.glRotatef;
 import static org.lwjgl.opengl.GL11.glShadeModel;
-import static org.lwjgl.opengl.GL11.glTranslated;
 import static org.lwjgl.opengl.GL11.glVertex2d;
 import static org.lwjgl.opengl.GL12.GL_RESCALE_NORMAL;
 import static org.lwjgl.opengl.GL13.GL_MULTISAMPLE;
@@ -150,56 +133,7 @@ import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER_DERIVATIVE_HINT;
 @Getter
 @Setter
 @Slf4j
-public abstract class FoxWindow extends Window {
-    public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 250;
-
-    private static final AtomicInteger frames = new AtomicInteger(0);
-
-    private static final short rightShift = 21;
-
-    private static final double infoStrut = 58d, infoStrutHardness = 40d;
-
-    private static final int minimapDim = 2048;
-
-    private static final int halfDim = (int) (minimapDim / 2d);
-
-    private static final Color grayBackColor = new Color(0, 0, 0, 223);
-
-    private static final float[] ambientLight = {0.5f, 0.5f, 0.5f, 1.0f}; // 0.0f, 0.0f, 0.3f, 1.0f
-
-    private static final float[] ambientSpecular = {1.0f, 0.33f, 0.33f, 1.0f};
-
-    private static final float[] ambientPosition = {0.0f, 0.0f, -2.0f, 1.0f}; // 31.84215f, 36.019997f, 28.262873f, 1.0f
-
-    private static final float[] ambientDirection = {0.0f, -0.25f, -0.5f, 1.0f};
-
-    private static final float[] ambientAttenuation = {1.0f, 1.0f, 1.0f, 1.0f};
-
-    private static final float[] diffuseLight = {1.0f, 1.0f, 1.0f, 1.0f};
-
-    private static final float[] diffusePosition = {0.5f, 0.5f, -1.5f, 1.0f};
-
-    private static final float[] diffuseSpecular = {0.65f, 0.65f, 0.65f, 1.0f};
-
-    private static final float accelerationMod = 2.0f;
-
-    private static final float camZspeed = 0f;
-
-    private static final float pitchSpeed = 0.15f;
-
-    private static final float yawSpeed = 0.33f;
-
-    private static long timeStamp = System.currentTimeMillis();
-
-    private static double oldPitch = 0, oldYaw = 0;
-
-    private static float currentPitch = 30;
-
-    private static float currentYaw = 0;
-
-    private static float heroXPos = 0, heroYPos = 0;
-
-    private final String name;
+public class FoxWindow extends Window {
 
     private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
 
@@ -209,9 +143,9 @@ public abstract class FoxWindow extends Window {
 
     private final GameController gameController;
 
-    private final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
-
     private final AtomicBoolean isPingAwait = new AtomicBoolean(false);
+
+    private final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
 
     private Rectangle2D viewPort;
 
@@ -222,58 +156,30 @@ public abstract class FoxWindow extends Window {
 
     private BufferedImage pAvatar;
 
-//    private VolatileImage backImage, minimapImage;
-
-    private Polygon leftGrayMenuPoly;
-
     private Polygon headerPoly;
-
-    private Duration duration;
 
     private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane,
             heroesListPane, networkListPane, networkCreatingPane;
 
-    private float downShift = 0;
-
     private boolean firstButtonOver = false, firstButtonPressed = false, secondButtonOver = false, secondButtonPressed = false,
             thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
 
-    private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false;
+    private boolean isOptionsMenuSetVisible = false;
 
     @Setter
     @Getter
-    private volatile boolean cameraMovingLeft = false, cameraMovingRight = false, cameraMovingForward = false,
-            cameraMovingBack = false, cameraMovingUp = false, cameraMovingDown = false;
-
-    private Chat chat;
-
-    private JFrame parentFrame;
-
-    private byte creatingSubsRetry = 0;
-
-    private long lastTimestamp;
-
-    private int fps;
-
-    private boolean isAccelerated = false, isSneaked = false, isZoomEnabled = false;
-
-    private Thread sneakThread;
-
-    private float heroHeight = -6;
-
-    private float velocity = 0;
+    private volatile boolean isCameraMovingLeft = false, isCameraMovingRight = false, isCameraMovingForward = false,
+            isCameraMovingBack = false, isCameraMovingUp = false, isCameraMovingDown = false;
 
     private WindowManager windowManager;
 
-    private ScreenType type;
+    private double oldPitch = 0, oldYaw = 0;
 
-    private boolean isVisible = false;
+    private Chat chat;
 
-    protected FoxWindow(ScreenType type, String name, WindowManager windowManager, GameController controller) {
-        super(controller);
+    public FoxWindow(WindowManager windowManager, GameController controller) {
+        super();
 
-        this.name = name;
-        this.type = type;
         this.gameController = controller;
         this.windowManager = windowManager;
 
@@ -293,238 +199,46 @@ public abstract class FoxWindow extends Window {
 
         this.pausedString = "- PAUSED -";
 
-//        setForeground(Color.BLACK);
-
         setInAc();
-    }
-
-    protected void drawBackground(Graphics2D bufGraphics2D) throws AWTException {
-//        Graphics2D v2D = getValidVolatileGraphic();
-//        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
-//                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-
-//        if (getName().equals("GameCanvas")) {
-//            repaintGame(v2D);
-//        } else {
-//            repaintMenu(v2D);
-//        }
-
-//        Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
-//                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-//        drawUI(v2D, getName());
-
-//        Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
-//                Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-//        drawDebugInfo(v2D, gameController.getCurrentWorldTitle());
-
-//        if (Constants.isFpsInfoVisible()) {
-//            drawFps(v2D);
-//        }
-
-//        v2D.dispose();
-
-        // draw accomplished volatile image:
-//        bufGraphics2D.drawImage(this.backImage, 0, 0, this);
-    }
-
-    protected void drawPauseMode(Graphics2D g2D) {
-        g2D.setFont(Constants.GAME_FONT_03);
-        g2D.setColor(new Color(0, 0, 0, 63));
-        g2D.drawString(getPausedString(),
-                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2 + 3);
-
-        g2D.setFont(Constants.GAME_FONT_02);
-        g2D.setColor(Color.GRAY);
-        g2D.drawString(getPausedString(),
-                (int) (getWidth() / 2D - FFB.getHalfWidthOfString(g2D, getPausedString())), getHeight() / 2);
-
-        // fill left gray menu polygon:
-        drawLeftGrayPoly(g2D);
-
-        drawEscMenu(g2D);
-    }
-
-    @Override
-    protected boolean isVisible() {
-        return isVisible;
-    }
-
-    @Override
-    public void setVisible(boolean isVisible) {
-        this.isVisible = isVisible;
-        if (isVisible) {
-            render(); // одна прокрутка рендера что б не появлялось сначала пустое окно.
-            glfwShowWindow(getWindow());
-            glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-        } else {
-            glfwHideWindow(getWindow());
-        }
-    }
-
-//    private void drawFps(double width, double height) {
-
-    // FPS check:
-//        incrementFramesCounter();
-//        if (System.currentTimeMillis() >= timeStamp + 1000L) {
-//            Constants.setRealFreshRate(frames.get());
-//            frames.set(0);
-//            timeStamp = System.currentTimeMillis();
-//        }
-
-//        v2D.setFont(Constants.DEBUG_FONT);
-//        v2D.setColor(Color.BLACK);
-//        if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-//            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 25);
-//        }
-//        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-//                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
-//                        Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
-
-//        v2D.setColor(Color.GRAY);
-//        if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-//            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 24);
-//        }
-//        v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-//                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
-//                        Constants.getRealFreshRate()), rightShift, downShift);
-//    }
-
-    private void drawEscMenu(Graphics2D g2D) {
-        // buttons text:
-        g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getBackToGameButtonText(), getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-        g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getBackToGameButtonText(), getFirstButtonRect().x, getFirstButtonRect().y + 18);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getOptionsButtonText(), getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
-        g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getOptionsButtonText(), getSecondButtonRect().x, getSecondButtonRect().y + 18);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getSaveButtonText(), getThirdButtonRect().x - 1, getThirdButtonRect().y + 17);
-        g2D.setColor(isThirdButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getSaveButtonText(), getThirdButtonRect().x, getThirdButtonRect().y + 18);
-
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
-        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
     private void drawMinimap(Graphics2D v2D) {
         // down left minimap:
-        if (!Constants.isPaused()) {
-            Rectangle mapButRect;
-            if (Constants.isMinimapShowed()) {
-                mapButRect = getMinimapShowRect();
+        Rectangle mapButRect;
+        if (Constants.isMinimapShowed()) {
+            mapButRect = getMinimapShowRect();
 
-                updateMiniMap();
+//            updateMiniMap();
 
-                if (getMinimapRect() != null) {
-                    // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2));
-                    Composite cw = v2D.getComposite();
-                    v2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
+            if (getMinimapRect() != null) {
+                // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2));
+                Composite cw = v2D.getComposite();
+                v2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
 //                    v2D.drawImage(this.minimapImage, getMinimapRect().x, getMinimapRect().y,
 //                            getMinimapRect().width, getMinimapRect().height, this);
-                    v2D.setComposite(cw);
+                v2D.setComposite(cw);
 
-                    if (Constants.isDebugInfoVisible()) {
-                        v2D.setColor(Color.CYAN);
-                        v2D.draw(getMinimapRect());
-                    }
+                if (Constants.isDebugInfoVisible()) {
+                    v2D.setColor(Color.CYAN);
+                    v2D.draw(getMinimapRect());
                 }
-            } else {
-                mapButRect = getMinimapHideRect();
-            }
-
-            if (mapButRect != null) {
-                // draw minimap button:
-                v2D.setColor(Color.YELLOW);
-                v2D.fillRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
-                v2D.setColor(Color.GRAY);
-                v2D.drawRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
-
-                v2D.setColor(Color.BLACK);
-                v2D.setStroke(new BasicStroke(2f));
-                v2D.drawPolyline(new int[]{mapButRect.x + 3, mapButRect.x + mapButRect.width / 2, mapButRect.x + mapButRect.width - 3},
-                        new int[]{mapButRect.y + 3, mapButRect.y + mapButRect.height - 3, mapButRect.y + 3}, 3);
             }
         } else {
-            drawPauseMode(v2D);
-        }
-    }
-
-    private void updateMiniMap() {
-        Point2D.Double myPos = gameController.getCurrentHeroPosition();
-        MovingVector cVector = gameController.getCurrentHeroVector();
-        int srcX = (int) (myPos.x - halfDim);
-        int srcY = (int) (myPos.y - halfDim);
-
-//        Graphics2D m2D;
-//        if (minimapImage == null || minimapImage.validate(Constants.getGraphicsConfiguration()) == VolatileImage.IMAGE_INCOMPATIBLE) {
-//            log.info("Recreating new minimap volatile image by incompatible...");
-////            minimapImage = createVolatileImage(minimapDim, minimapDim, new ImageCapabilities(true));
-//        }
-//        if (minimapImage.validate(Constants.getGraphicsConfiguration()) == VolatileImage.IMAGE_RESTORED) {
-//            log.info("Awaits while minimap volatile image is restored...");
-//            m2D = this.minimapImage.createGraphics();
-//        } else {
-//            m2D = (Graphics2D) this.minimapImage.getGraphics();
-//            m2D.clearRect(0, 0, minimapImage.getWidth(), minimapImage.getHeight());
-//        }
-
-        // draw minimap:
-//        Constants.RENDER.setRender(m2D, FoxRender.RENDER.OFF);
-
-//        v2D.setColor(backColor);
-//        v2D.fillRect(0, 0, camera.width, camera.height);
-
-        // отображаем себя на миникарте:
-//        AffineTransform grTrMem = m2D.getTransform();
-//        m2D.rotate(ONE_TURN_PI * cVector.ordinal(), minimapImage.getWidth() / 2d, minimapImage.getHeight() / 2d); // Math.toRadians(90)
-//        m2D.drawImage((Image) Constants.CACHE.get("green_arrow"), halfDim - 64, halfDim - 64, 128, 128, null);
-//        m2D.setTransform(grTrMem);
-
-        // отображаем других игроков на миникарте:
-        for (HeroDTO connectedHero : gameController.getConnectedHeroes()) {
-            if (gameController.getCurrentHeroUid().equals(connectedHero.getCharacterUid())) {
-                continue;
-            }
-            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
-            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getLocation().y));
-//            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
-//            m2D.setColor(connectedHero.getBaseColor());
-//            m2D.fillRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
-//            m2D.setColor(connectedHero.getSecondColor());
-//            m2D.drawRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
+            mapButRect = getMinimapHideRect();
         }
 
-        if (gameController.getCurrentWorldMap() != null) {
-            // сканируем все сущности указанного квадранта:
-            Rectangle scanRect = new Rectangle(
-                    Math.min(Math.max(srcX, 0), gameController.getCurrentWorldMap().getWidth() - minimapDim),
-                    Math.min(Math.max(srcY, 0), gameController.getCurrentWorldMap().getHeight() - minimapDim),
-                    minimapDim, minimapDim);
+        if (mapButRect != null) {
+            // draw minimap button:
+            v2D.setColor(Color.YELLOW);
+            v2D.fillRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
+            v2D.setColor(Color.GRAY);
+            v2D.drawRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
 
-//            m2D.setColor(Color.CYAN);
-//            gameController.getWorldEnvironments(scanRect)
-//                    .forEach(entity -> {
-//                        int otherHeroPosX = (int) (halfDim - (myPos.x - entity.getCenterPoint().x));
-//                        int otherHeroPosY = (int) (halfDim - (myPos.y - entity.getCenterPoint().y));
-//                        m2D.fillRect(otherHeroPosX - 16, otherHeroPosY - 16, 32, 32);
-//                    });
+            v2D.setColor(Color.BLACK);
+            v2D.setStroke(new BasicStroke(2f));
+            v2D.drawPolyline(new int[]{mapButRect.x + 3, mapButRect.x + mapButRect.width / 2, mapButRect.x + mapButRect.width - 3},
+                    new int[]{mapButRect.y + 3, mapButRect.y + mapButRect.height - 3, mapButRect.y + 3}, 3);
         }
-
-//        m2D.setStroke(new BasicStroke(5f));
-//        m2D.setPaint(Color.WHITE);
-//        m2D.drawRect(3, 3, minimapDim - 7, minimapDim - 7);
-
-//        m2D.setStroke(new BasicStroke(7f));
-//        m2D.setPaint(Color.GRAY);
-//        m2D.drawRect(48, 48, minimapDim - 96, minimapDim - 96);
-//        m2D.dispose();
     }
 
     private void drawHeroesData(Graphics2D g2D) {
@@ -684,7 +398,8 @@ public abstract class FoxWindow extends Window {
     }
 
     protected void checkGameplayDuration(long inGamePlayed) {
-        this.duration = Duration.ofMillis(inGamePlayed + (System.currentTimeMillis() - Constants.getGameStartedIn()));
+        long fullGameTime = inGamePlayed + (System.currentTimeMillis() - Constants.getGameStartedIn());
+        Constants.setDuration(Duration.ofMillis(fullGameTime));
     }
 
     protected void drawHeader(Graphics2D g2D, String headerTitle) {
@@ -701,7 +416,7 @@ public abstract class FoxWindow extends Window {
     }
 
     protected void showOptions(Graphics2D g2D) {
-        drawLeftGrayPoly(g2D);
+//        drawLeftGrayPoly(g2D);
 
         // draw header:
         drawHeader(g2D, "Настройки игры");
@@ -737,12 +452,6 @@ public abstract class FoxWindow extends Window {
         g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(isOptionsMenuSetVisible()
                 ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
-    }
-
-    protected void drawLeftGrayPoly(Graphics2D g2D) {
-        // fill left gray polygon:
-        g2D.setColor(isOptionsMenuSetVisible() ? Constants.getMainMenuBackgroundColor2() : Constants.getMainMenuBackgroundColor());
-        g2D.fillPolygon(getLeftGrayMenuPoly());
     }
 
     public void onExitBack() {
@@ -801,16 +510,6 @@ public abstract class FoxWindow extends Window {
         }
     }
 
-    protected boolean isShadowBackNeeds() {
-        return isOptionsMenuSetVisible
-                || (heroCreatingPane != null && heroCreatingPane.isVisible())
-                || (worldCreatingPane != null && worldCreatingPane.isVisible())
-                || (worldsListPane != null && worldsListPane.isVisible())
-                || (heroesListPane != null && heroesListPane.isVisible())
-                || (networkListPane != null && networkListPane.isVisible())
-                || (networkCreatingPane != null && networkCreatingPane.isVisible());
-    }
-
     protected void drawAvatar(Graphics2D g2D) {
         if (pAvatar == null) {
             pAvatar = gameController.getCurrentPlayerAvatar();
@@ -830,43 +529,31 @@ public abstract class FoxWindow extends Window {
         setVideosPane(new VideoSettingsPane(this));
         setHotkeysPane(new HotkeysSettingsPane(this));
         setGameplayPane(new GameplaySettingsPane(this));
-        setWorldCreatingPane(new WorldCreatingPane(this));
+        setWorldCreatingPane(new WorldCreatingPane(windowManager));
         setHeroCreatingPane(new HeroCreatingPane(this, gameController));
         setWorldsListPane(new WorldsListPane(this, gameController));
         setHeroesListPane(new HeroesListPane(this, gameController));
-        setNetworkListPane(new NetworkListPane(this, gameController));
-        setNetworkCreatingPane(new NetCreatingPane(this));
+        setNetworkListPane(new NetworkListPane(windowManager, gameController));
+        setNetworkCreatingPane(new NetCreatingPane(this, gameController));
 
         // добавляем панели на слой:
         try {
             if (getAudiosPane() == null) {
                 Thread.sleep(100);
             }
-            parentFrame.getContentPane().add(getAudiosPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getVideosPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getGameplayPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getNetworkListPane(), PALETTE_LAYER, 0);
-            parentFrame.getContentPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getAudiosPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getVideosPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getGameplayPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getNetworkListPane(), PALETTE_LAYER, 0);
+//            parentFrame.getContentPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
-            creatingSubsRetry++;
-            if (creatingSubsRetry < 3) {
-                createSubPanes();
-            } else {
-                log.error("Слишком часто не удается создать панели. Обратить внимание!");
-                return;
-            }
         }
-        creatingSubsRetry = 0;
-    }
-
-    protected void createChat() {
-        this.chat = new Chat(new Point(getWidth() - getWidth() / 5 - 9, 64), new Dimension(getWidth() / 5, getHeight() / 4));
     }
 
     protected void setSecondThread(String threadName, Thread secondThread) {
@@ -879,71 +566,18 @@ public abstract class FoxWindow extends Window {
 //        this.secondThread.setDaemon(true);
     }
 
-    /**
-     * Проверка доступности удалённого сервера:
-     *
-     * @param host     адрес, куда стучимся для получения pong.
-     * @param port     адрес, куда стучимся для получения pong.
-     * @param worldUid uid мира, который пропинговывается.
-     * @return успешность получения pong от удалённого Сервера.
-     */
-    public boolean ping(String host, Integer port, UUID worldUid) {
-        return gameController.ping(host, port, worldUid);
-    }
-
-    public boolean isConnectionAwait() {
-        return isConnectionAwait.get();
-    }
-
-    public void setConnectionAwait(boolean b) {
-        isConnectionAwait.set(b);
-        if (!b) {
-            // очищаем от анимации панели:
-            getNetworkListPane().repaint();
-        }
-    }
-
-    public boolean isPingAwait() {
-        return isPingAwait.get();
-    }
-
-    public void setPingAwait(boolean b) {
-        isPingAwait.set(b);
-        if (!b) {
-            // очищаем от анимации панели:
-            getNetworkListPane().repaint();
-        }
-    }
-
-    protected void throwExceptionAndYield(Exception e) {
-//        if (drawErrors.getAndIncrement() >= 100) {
-        new FOptionPane().buildFOptionPane("Неизвестная ошибка:",
-                "Что-то не так с графической системой (%s). Передайте последний лог (error.*) разработчику для решения проблемы."
-                        .formatted(ExceptionUtils.getFullExceptionMessage(e)), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-        if (gameController.isGameActive()) {
-            throw new GlobalServiceException(ErrorMessages.DRAW_ERROR, ExceptionUtils.getFullExceptionMessage(e));
-        } else {
-            gameController.exitTheGame(null, 11);
-        }
-        Thread.yield();
-//        }
-    }
-
-
-    protected boolean canDragDown() {
-        return viewPort.getY() > 0;
-    }
-
-    protected boolean canDragUp() {
-        return viewPort.getHeight() < gameController.getCurrentWorldMap().getHeight();
-    }
-
-    protected boolean canDragLeft() {
-        return viewPort.getWidth() < gameController.getCurrentWorldMap().getWidth();
-    }
-
-    protected boolean canDragRight() {
-        return viewPort.getX() > 0;
+    protected boolean canDrag(MovingVector vector) {
+        return switch (vector) {
+            case UP -> viewPort.getHeight() < gameController.getCurrentWorldMap().getHeight();
+            case UP_RIGHT -> false;
+            case RIGHT -> viewPort.getX() > 0;
+            case RIGHT_DOWN -> false;
+            case DOWN -> viewPort.getY() > 0;
+            case DOWN_LEFT -> false;
+            case LEFT -> viewPort.getWidth() < gameController.getCurrentWorldMap().getWidth();
+            case LEFT_UP -> false;
+            case NONE -> false;
+        };
     }
 
     protected void checkOutOfFieldCorrection() {
@@ -965,7 +599,7 @@ public abstract class FoxWindow extends Window {
     }
 
     public void dragLeft(double pixels) {
-        if (canDragLeft()) {
+        if (canDrag(MovingVector.LEFT)) {
             log.debug("Drag left...");
             double mapWidth = gameController.getCurrentWorldMap().getWidth();
             double newWidth = Math.min(getViewPort().getWidth() + pixels, mapWidth);
@@ -976,7 +610,7 @@ public abstract class FoxWindow extends Window {
     }
 
     public void dragRight(double pixels) {
-        if (canDragRight()) {
+        if (canDrag(MovingVector.RIGHT)) {
             log.debug("Drag right...");
             double newX = getViewPort().getX() - pixels > 0 ? getViewPort().getX() - pixels : 0;
             getViewPort().setRect(newX, getViewPort().getY(),
@@ -985,7 +619,7 @@ public abstract class FoxWindow extends Window {
     }
 
     public void dragUp(double pixels) {
-        if (canDragUp()) {
+        if (canDrag(MovingVector.UP)) {
             log.debug("Drag up...");
             double mapHeight = gameController.getCurrentWorldMap().getHeight();
             double newHeight = Math.min(getViewPort().getHeight() + pixels, mapHeight);
@@ -996,7 +630,7 @@ public abstract class FoxWindow extends Window {
     }
 
     public void dragDown(double pixels) {
-        if (canDragDown()) {
+        if (canDrag(MovingVector.DOWN)) {
             log.debug("Drag down...");
             double newY = getViewPort().getY() - pixels > 0 ? getViewPort().getY() - pixels : 0;
             getViewPort().setRect(getViewPort().getX(), newY, getViewPort().getWidth(),
@@ -1004,22 +638,7 @@ public abstract class FoxWindow extends Window {
         }
     }
 
-    protected void delayDrawing(long delta) {
-        if (Constants.isFpsLimited() && Constants.getAimTimePerFrame() > delta) {
-            try {
-                long delay = Constants.getAimTimePerFrame() - delta - 12;
-                if (delay > 0) {
-                    Thread.sleep(delay);
-                } else {
-                    Thread.yield();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    protected void configureThis() {
+    public void configureThis() {
         // обрезка области рисования:
         // Запрещает отрисовку за пределами указанной квадратной зоны на экране. Естественно, основное применение этой фичи - GUI
         //  (например, довольно сложно реализовать скроллящуюся панель без этой возможности).
@@ -1039,13 +658,6 @@ public abstract class FoxWindow extends Window {
             glEnable(GL_TEXTURE_2D); // включаем отображение текстур.
             glHint(GL_SAMPLES, 4);
             glEnable(GL_MULTISAMPLE);
-
-            // подключаем текстуры, если требуется.
-            if (type.equals(ScreenType.MENU_SCREEN)) {
-                gameController.loadMenuTextures();
-            } else if (type.equals(ScreenType.GAME_SCREEN)) {
-                gameController.loadGameTextures();
-            }
 
             // Включает смещение данных из буфера глубины при отрисовке. Звучит немного непонятно, зато решает гораздо более понятную проблему.
             //  Если попробовать отрендерить что-то поверх уже отрисованной поверхности (пример из Майна -
@@ -1184,7 +796,7 @@ public abstract class FoxWindow extends Window {
             return;
         }
 
-        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+//        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
 //        glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
 //        glLightfv(GL_LIGHT0, GL_POSITION, ambientPosition);
 //        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, ambientDirection);
@@ -1196,9 +808,9 @@ public abstract class FoxWindow extends Window {
 //        glLighti(GL_LIGHT0, GL_SPOT_CUTOFF, 90); //range 0-90 and the special value 180
         glEnable(GL_LIGHT0);
 
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
-        glLightfv(GL_LIGHT1, GL_POSITION, diffusePosition);
-        glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseSpecular);
+//        glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
+//        glLightfv(GL_LIGHT1, GL_POSITION, diffusePosition);
+//        glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseSpecular);
         // glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, new float[] {0.25f, 0.25f, -0.75f, 0.5f});
         // glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.5f); // GL_LINEAR_ATTENUATION | GL_QUADRATIC_ATTENUATION | GL_CONSTANT_ATTENUATION
         // glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);
@@ -1346,52 +958,6 @@ public abstract class FoxWindow extends Window {
         glEnable(GL_ALPHA_TEST);
     }
 
-    public void setAcceleration(boolean b) {
-        this.isAccelerated = b;
-    }
-
-    public void setSneak(boolean b) {
-        this.isSneaked = b;
-        if (sneakThread != null && sneakThread.isAlive()) {
-            sneakThread.interrupt();
-        }
-        if (isSneaked) {
-            sneakThread = new Thread(() -> {
-                while (heroHeight < -4 && !Thread.currentThread().isInterrupted()) {
-                    try {
-                        heroHeight += 0.1f;
-                        Thread.sleep(18);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            });
-        } else {
-            sneakThread = new Thread(() -> {
-                while (heroHeight > -6 && !Thread.currentThread().isInterrupted()) {
-                    try {
-                        heroHeight -= 0.1f;
-                        Thread.sleep(18);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            });
-        }
-        sneakThread.start();
-    }
-
-    public void setZoom(boolean isZoomEnabled) {
-        this.isZoomEnabled = isZoomEnabled;
-    }
-
-    // здесь вычисляется скорость передвижения героя по миру:
-    protected float getHeroSpeed() {
-        float heroSpeed = 0.085f;
-//        heroSpeed = gameController.getCurrentHeroSpeed();
-        return isAccelerated ? heroSpeed * accelerationMod : isSneaked ? heroSpeed * 0.5f : heroSpeed;
-    }
-
     private void setInAc() {
         // когда физическая клавиша нажата или отпущена или когда она повторяется:
         glfwSetKeyCallback(getWindow(), (win, key, scancode, action, mods) -> {
@@ -1401,30 +967,30 @@ public abstract class FoxWindow extends Window {
                 windowManager.loadScreen(null);
             }
 
-            if (type.equals(ScreenType.MENU_SCREEN) && key == UserConfig.DefaultHotKeys.PAUSE.getGlEvent() && action == GLFW_RELEASE) {
-                gameController.showConfirmExitRequest(this);
+            if (windowManager.isMenuScreen() && key == UserConfig.DefaultHotKeys.PAUSE.getGlEvent() && action == GLFW_RELEASE) {
+                windowManager.showConfirmExitRequest();
             }
 
             // временная заглушка для теста смены сцен:
             if (key == GLFW_KEY_F1 && action == GLFW_RELEASE) {
-                if (type.equals(ScreenType.MENU_SCREEN)) {
+                if (windowManager.isMenuScreen()) {
                     windowManager.loadScreen(ScreenType.GAME_SCREEN);
-                } else if (type.equals(ScreenType.GAME_SCREEN)) {
+                } else if (windowManager.isGameScreen()) {
                     windowManager.loadScreen(ScreenType.MENU_SCREEN);
                 }
             }
 
             // просто жмём энтер для быстрого запуска последней игры:
-            if (type.equals(ScreenType.MENU_SCREEN) && key == GLFW_KEY_ENTER && action == GLFW_RELEASE) {
+            if (windowManager.isMenuScreen() && key == GLFW_KEY_ENTER && action == GLFW_RELEASE) {
                 if (getHeroesListPane().isVisible()) {
-                    playWithThisHero(gameController.getMyCurrentWorldHeroes().get(0));
+                    gameController.playWithThisHero(gameController.getMyCurrentWorldHeroes().get(0));
                     getHeroesListPane().setVisible(false);
                 } else if (getWorldsListPane().isVisible()) {
                     UUID lastWorldUid = gameController.getCurrentPlayerLastPlayedWorldUid();
                     if (gameController.isWorldExist(lastWorldUid)) {
-                        chooseOrCreateHeroForWorld(lastWorldUid);
+                        gameController.chooseOrCreateHeroForWorld(lastWorldUid);
                     } else {
-                        chooseOrCreateHeroForWorld(gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
+                        gameController.chooseOrCreateHeroForWorld(gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
                     }
                 } else {
                     getWorldsListPane().setVisible(true);
@@ -1432,7 +998,7 @@ public abstract class FoxWindow extends Window {
             }
 
             // установка курсора:
-            if (type.equals(ScreenType.GAME_SCREEN)) {
+            if (windowManager.isGameScreen()) {
                 // Если реализовать управление камерой на основе движения мыши, установите на GLFW_CURSOR_DISABLED.
                 if (key == GLFW_KEY_F2 && action == GLFW_PRESS) {
                     glfwSetInputMode(getWindow(), GLFW.GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -1446,7 +1012,7 @@ public abstract class FoxWindow extends Window {
                 }
             }
 
-            if (type.equals(ScreenType.GAME_SCREEN)) {
+            if (windowManager.isGameScreen()) {
                 // Кнопки влево-вправо, вверх-вниз (камера):
                 if (key == UserConfig.DefaultHotKeys.CAM_FORWARD.getGlEvent() || key == UserConfig.DefaultHotKeys.MOVE_FORWARD.getGlEvent()) {
                     setCameraMovingForward(action != GLFW_RELEASE);
@@ -1466,17 +1032,17 @@ public abstract class FoxWindow extends Window {
 
                 // бег\ускорение:
                 if (key == UserConfig.DefaultHotKeys.ACCELERATION.getGlEvent()) {
-                    setAcceleration(action != GLFW_RELEASE);
+                    gameController.setAcceleration(action != GLFW_RELEASE);
                 }
 
                 // приседание:
                 if (key == UserConfig.DefaultHotKeys.SNEAK.getGlEvent()) {
-                    setSneak(action != GLFW_RELEASE);
+                    gameController.setSneak(action != GLFW_RELEASE);
                 }
 
                 // зум:
                 if (key == UserConfig.DefaultHotKeys.ZOOM.getGlEvent()) {
-                    setZoom(action != GLFW_RELEASE);
+                    gameController.setZoom(action != GLFW_RELEASE);
                 }
             }
         });
@@ -1491,14 +1057,14 @@ public abstract class FoxWindow extends Window {
                 return;
             }
 
-            if (type.equals(ScreenType.GAME_SCREEN)) {
+            if (windowManager.isGameScreen()) {
                 // преобразуем координаты курсора в изменение от предыдущего значения:
                 float curPitch = (float) (pitch - oldPitch);
-                setCameraPitch(-curPitch);
+                gameController.setCameraPitch(-curPitch);
                 oldPitch = pitch;
 
                 float curYaw = (float) (yaw - oldYaw);
-                setCameraYaw(curYaw);
+                gameController.setCameraYaw(curYaw);
                 oldYaw = yaw;
             }
         });
@@ -1512,7 +1078,7 @@ public abstract class FoxWindow extends Window {
         glfwSetWindowCloseCallback(getWindow(), (long win) -> {
             if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол без сохранения?",
                     FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
-                gameController.setGlWindowBreaked(true);
+                windowManager.setGlWindowBreaked(true);
                 if (!glfwWindowShouldClose(getWindow())) {
                     glfwPostEmptyEvent();
                     glfwSetWindowShouldClose(getWindow(), true); // Закрывает окно
@@ -1560,52 +1126,70 @@ public abstract class FoxWindow extends Window {
         // glfwSetDropCallback(окно, drop_callback);
     }
 
-    /**
-     * После выбора мира - приходим сюда для создания нового героя или
-     * выбора существующего, для игры в данном мире.
-     *
-     * @param worldUid uuid выбранного для игры мира.
-     */
-    public void chooseOrCreateHeroForWorld(UUID worldUid) {
-        getWorldsListPane().setVisible(false);
-        getWorldCreatingPane().setVisible(false);
-        getNetworkListPane().setVisible(false);
-        getNetworkCreatingPane().setVisible(false);
+    public void mouseReleased(MouseEvent e) {
+        if (isFirstButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                getAudiosPane().setVisible(true);
+                getVideosPane().setVisible(false);
+                getHotkeysPane().setVisible(false);
+                getGameplayPane().setVisible(false);
 
-        gameController.setCurrentWorld(worldUid);
-        if (gameController.getMyCurrentWorldHeroes().isEmpty()) {
-            getHeroCreatingPane().setVisible(true);
-        } else {
-            getHeroesListPane().setVisible(true);
-        }
-    }
-
-    /**
-     * После выбора или создания мира (и указания его как текущего в контроллере) и выбора или создания героя, которым
-     * будем играть в выбранном мире - попадаем сюда для последних приготовлений и
-     * загрузки холста мира (собственно, начала игры).
-     *
-     * @param hero выбранный герой для игры в выбранном ранее мире.
-     */
-    public void playWithThisHero(HeroDTO hero) {
-        gameController.setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());
-        gameController.setCurrentHero(hero);
-
-        // если этот мир по сети:
-        if (gameController.isCurrentWorldIsNetwork()) {
-            // шлем на Сервер своего выбранного Героя:
-            if (gameController.registerCurrentHeroOnServer()) {
-                gameController.getPlayedHeroesService().addHero(gameController.getCurrentHero());
-                startGame();
             } else {
-                log.error("Сервер не принял нашего Героя: {}", gameController.getLocalSocketConnection().getLastExplanation());
-                gameController.setCurrentHeroOfflineAndSave(null);
-                getHeroCreatingPane().repaint();
-                getHeroesListPane().repaint();
+                Constants.setPaused(false);
+                setOptionsMenuSetVisible(false);
             }
-        } else {
-            // иначе просто запускаем мир и играем локально:
-            startGame();
+        }
+        if (isSecondButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                getVideosPane().setVisible(true);
+                getAudiosPane().setVisible(false);
+                getHotkeysPane().setVisible(false);
+                getGameplayPane().setVisible(false);
+            } else {
+                setOptionsMenuSetVisible(true);
+                getAudiosPane().setVisible(true);
+            }
+        }
+        if (isThirdButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                getHotkeysPane().setVisible(true);
+                getVideosPane().setVisible(false);
+                getAudiosPane().setVisible(false);
+                getGameplayPane().setVisible(false);
+            } else {
+                // нет нужды в паузе здесь, просто сохраняемся:
+                gameController.justSave();
+                Constants.setPaused(false);
+                new FOptionPane().buildFOptionPane("Успешно", "Игра сохранена!",
+                        FOptionPane.TYPE.INFO, null, Constants.getDefaultCursor(), 3, false);
+            }
+        }
+        if (isFourthButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                getGameplayPane().setVisible(true);
+                getHotkeysPane().setVisible(false);
+                getVideosPane().setVisible(false);
+                getAudiosPane().setVisible(false);
+            } else {
+                Constants.showNFP();
+            }
+        }
+        if (isExitButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                onExitBack();
+            } else if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти в главное меню?",
+                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
+                windowManager.stopGame();
+            }
+        }
+
+        if (gameController.isGameActive()) {
+            if (getMinimapShowRect().contains(e.getPoint())) {
+                Constants.setMinimapShowed(false);
+            }
+            if (getMinimapHideRect().contains(e.getPoint())) {
+                Constants.setMinimapShowed(true);
+            }
         }
     }
 
@@ -1614,61 +1198,146 @@ public abstract class FoxWindow extends Window {
         getHeroesListPane().setVisible(false);
 
         log.info("Подготовка к запуску игры должна была пройти успешно. Запуск игрового мира...");
-        gameController.loadScreen(ScreenType.GAME_SCREEN);
+        windowManager.loadScreen(ScreenType.GAME_SCREEN);
     }
 
-    public void setCameraYaw(double yaw) {
-        if (yaw != 0) {
-            currentYaw += (float) (yaw * yawSpeed);
-            if (currentYaw > 360) {
-                currentYaw = 0;
+    public void mouseReleased() {
+        if (isFirstButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                if (!getAudiosPane().isVisible()) {
+                    getAudiosPane().setVisible(true);
+                    getVideosPane().setVisible(false);
+                    getHotkeysPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else if (getWorldsListPane().isVisible()) {
+                getWorldsListPane().setVisible(false);
+                getWorldCreatingPane().setVisible(true);
+            } else if (getHeroesListPane().isVisible()) {
+                gameController.openCreatingNewHeroPane(null);
+            } else if (getNetworkListPane().isVisible()) {
+                getNetworkListPane().setVisible(false);
+                getNetworkCreatingPane().setVisible(true);
+            } else {
+                if (gameController.findAllWorldsByNetworkAvailable(false).isEmpty()) {
+                    getWorldCreatingPane().setVisible(true);
+                } else {
+                    getWorldsListPane().setVisible(true);
+                }
             }
-            if (currentYaw < 0) {
-                currentYaw = 360;
+        }
+
+        if (isSecondButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                // нажато Настройки графики:
+                if (!getVideosPane().isVisible()) {
+                    getVideosPane().setVisible(true);
+                    getAudiosPane().setVisible(false);
+                    getHotkeysPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else if (getNetworkListPane().isVisible()) {
+                ((NetworkListPane) getNetworkListPane()).reloadNet();
+            } else {
+                getNetworkListPane().setVisible(true);
             }
         }
-    }
 
-    public void setCameraPitch(double pitch) {
-        if (pitch != 0) {
-            currentPitch += (float) (pitch * pitchSpeed);
-            if (currentPitch < 0) {
-                currentPitch = 0;
+        if (isThirdButtonOver()) {
+            if (!isOptionsMenuSetVisible() && !getHeroCreatingPane().isVisible() && !getWorldsListPane().isVisible()) {
+                setOptionsMenuSetVisible(true);
+                getAudiosPane().setVisible(true);
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else if (isOptionsMenuSetVisible()) {
+                if (!getHotkeysPane().isVisible()) {
+                    getHotkeysPane().setVisible(true);
+                    getVideosPane().setVisible(false);
+                    getAudiosPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else {
+                Constants.showNFP();
             }
-            if (currentPitch > 180) {
-                currentPitch = 180;
+        }
+
+        if (isFourthButtonOver()) {
+            if (isOptionsMenuSetVisible()) {
+                if (!getGameplayPane().isVisible()) {
+                    getGameplayPane().setVisible(true);
+                    getHotkeysPane().setVisible(false);
+                    getVideosPane().setVisible(false);
+                    getAudiosPane().setVisible(false);
+                }
+            } else {
+                Constants.showNFP();
             }
         }
+
+        if (isExitButtonOver()) {
+            onExitBack();
+        }
     }
 
-    public void moveCameraToHero() {
-//        glTranslated(gameController.getCurrentHeroPosition().x, gameController.getCurrentHeroPosition().y, gameController.getCurrentHeroCorpusHeight());
-        glTranslated(heroXPos, heroYPos, -6);
+    @Override
+    public void setVisible(boolean isVisible) {
+        if (isVisible) {
+            render(); // одна прокрутка рендера что б не появлялось сначала пустое окно.
+        }
+        super.setVisible(isVisible);
     }
 
-    public void moveHero() {
-        glRotatef(-currentPitch, 1, 0, 0);
-        glRotatef(currentYaw, 0, 0, 1);
-
-        float ugol = (float) (currentYaw / 180f * Math.PI);
-        setVelocity(isCameraMovingForward() ? getHeroSpeed() : isCameraMovingBack() ? -getHeroSpeed() : 0);
-        if (isCameraMovingLeft()) {
-            setVelocity(getHeroSpeed());
-            ugol -= Math.PI * (isCameraMovingForward() ? 0.25 : isCameraMovingBack() ? 0.75 : 0.5);
-        }
-        if (isCameraMovingRight()) {
-            setVelocity(getHeroSpeed());
-            ugol += Math.PI * (isCameraMovingForward() ? 0.25 : isCameraMovingBack() ? 0.75 : 0.5);
+    @Override
+    protected void onGameRestore() {
+        if (gameController.isCurrentWorldIsNetwork()) {
+            return;
         }
 
-        if (getVelocity() != 0) {
-            heroXPos += Math.sin(ugol) * getVelocity();
-            heroYPos += Math.cos(ugol) * getVelocity();
+        if (Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
+            Constants.setPaused(false);
+            log.debug("Resume game...");
         }
-
-//        glTranslated(gameController.getCurrentHeroPosition().x, gameController.getCurrentHeroPosition().y, gameController.getCurrentHeroCorpusHeight());
-        glTranslated(-heroXPos, -heroYPos, getHeroHeight());
     }
 
-    public abstract void init();
+    @Override
+    protected void onGameHide() {
+        if (gameController.isCurrentWorldIsNetwork()) {
+            return;
+        }
+
+        log.debug("Hide or minimized");
+        if (!Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
+            Constants.setPaused(true);
+            log.debug("Paused...");
+        }
+    }
+
+    public Dimension getSize() {
+        return new Dimension(getWidth(), getHeight());
+    }
+
+    public boolean isConnectionAwait() {
+        return isConnectionAwait.get();
+    }
+
+    public void setConnectionAwait(boolean b) {
+        isConnectionAwait.set(b);
+    }
+
+    public boolean isPingAwait() {
+        return isPingAwait.get();
+    }
+
+    public void setPingAwait(boolean b) {
+        isPingAwait.set(b);
+    }
+
+    public void createChat() {
+        this.chat = new Chat(new Point(getWidth() - getWidth() / 5 - 9, 64),
+                new Dimension(getWidth() / 5, getHeight() / 4));
+    }
 }
