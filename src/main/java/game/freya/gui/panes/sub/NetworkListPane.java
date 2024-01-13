@@ -49,6 +49,10 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
     private final String[] dot = new String[]{".", "..", "..."};
 
+    private final int dots = 0;
+
+    private final long was = System.currentTimeMillis();
+
     private BufferedImage snap;
 
     @Getter
@@ -56,10 +60,6 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
     @Getter
     private String password = "";
-
-    private final int dots = 0;
-
-    private final long was = System.currentTimeMillis();
 
     private Thread pingActionThread;
 

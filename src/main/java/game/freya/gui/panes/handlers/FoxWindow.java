@@ -531,7 +531,7 @@ public class FoxWindow extends Window {
         setGameplayPane(new GameplaySettingsPane(this));
         setWorldCreatingPane(new WorldCreatingPane(windowManager));
         setHeroCreatingPane(new HeroCreatingPane(this, gameController));
-        setWorldsListPane(new WorldsListPane(this, gameController));
+        setWorldsListPane(new WorldsListPane(windowManager, gameController));
         setHeroesListPane(new HeroesListPane(this, gameController));
         setNetworkListPane(new NetworkListPane(windowManager, gameController));
         setNetworkCreatingPane(new NetCreatingPane(this, gameController));

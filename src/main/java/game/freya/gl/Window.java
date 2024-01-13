@@ -95,6 +95,8 @@ public abstract class Window {
     }
 
     protected void createWindow() {
+        recalculateWindowSize();
+
         byte share = 0;
         window = glfwCreateWindow(width, height, "na", Constants.getUserConfig().isFullscreen() ? glfwGetPrimaryMonitor() : 0, share);
         if (window == NULL) {
@@ -119,6 +121,8 @@ public abstract class Window {
         } else {
             glfwSwapInterval(0);
         }
+
+        glViewport(0, 0, width, height);
 
         // прозрачность окна:
 //        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
@@ -212,10 +216,9 @@ public abstract class Window {
         }
         glfwWindowHint(GLFW_REFRESH_RATE, videoMode.refreshRate()); // определяет частоту обновления для полноэкранных окон
 
-        if (isFullscreen) {
-            width = monitorSize.width;
-            height = monitorSize.height;
+        recalculateWindowSize();
 
+        if (isFullscreen) {
             glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
             if (Constants.getUserConfig().getFullscreenType().equals(UserConfig.FullscreenType.MAXIMIZE_WINDOW)) {
                 log.info("Работаем в псевдо-полноэкране...");
@@ -227,9 +230,6 @@ public abstract class Window {
                 glfwSetWindowSize(window, width, height);
             }
         } else {
-            width = windowedSize.width;
-            height = windowedSize.height;
-
             log.info("Работаем в оконном режиме экрана...");
             glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
             glfwSetWindowSize(window, width, height);
@@ -241,13 +241,21 @@ public abstract class Window {
             setWindowIcon();
         }
 
-        glViewport(0, 0, width, height);
-
         // корректирует масштабы OpenGL [-1, 1] на разрешение окна игры:
         if (width > height) {
             aspect = (float) width / height;
         } else if (width < height) {
             aspect = (float) height / width;
+        }
+    }
+
+    private void recalculateWindowSize() {
+        if (Constants.getUserConfig().isFullscreen()) {
+            width = monitorSize.width;
+            height = monitorSize.height;
+        } else {
+            width = windowedSize.width;
+            height = windowedSize.height;
         }
     }
 

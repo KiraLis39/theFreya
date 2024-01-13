@@ -6,7 +6,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.gui.panes.Menu;
+import game.freya.gui.WindowManager;
 import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
@@ -39,9 +39,9 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private static final int maxImageDim = 88;
 
-    private final transient FoxWindow canvas;
+    private final WindowManager windowManager;
 
-    private final transient GameController gameController;
+    private final GameController gameController;
 
     private final SubPane centerList;
 
@@ -51,8 +51,8 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private transient ZLabel zlabel;
 
-    public WorldsListPane(FoxWindow canvas, GameController controller) {
-        this.canvas = canvas;
+    public WorldsListPane(WindowManager windowManager, GameController controller) {
+        this.windowManager = windowManager;
         this.gameController = controller;
 
         setName("Worlds list pane");
@@ -60,7 +60,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        recalculate(canvas);
+        recalculate(windowManager.getWindow());
         setLayout(new BorderLayout(1, 1));
 
         centerList = new SubPane(null) {{
@@ -95,11 +95,11 @@ public class WorldsListPane extends JPanel implements iSubPane {
         }}, BorderLayout.CENTER);
 
         if (isVisible()) {
-            reloadWorlds(canvas);
+            reloadWorlds(windowManager.getWindow());
         }
     }
 
-    private void reloadWorlds(FoxWindow canvas) {
+    private void reloadWorlds(FoxWindow window) {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
@@ -243,10 +243,10 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                     if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                                             "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                            && canvas instanceof Menu mCanvas
+                                            && windowManager.isMenuScreen()
                                     ) {
-                                        mCanvas.deleteExistsWorldAndCloseThatPanel(world.getUid());
-                                        reloadWorlds(canvas);
+                                        gameController.deleteExistsWorldAndCloseThatPanel(world.getUid());
+                                        reloadWorlds(window);
                                         WorldsListPane.this.revalidate();
                                     }
                                 }
@@ -266,7 +266,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                canvas.chooseOrCreateHeroForWorld(world.getUid());
+                                gameController.chooseOrCreateHeroForWorld(world.getUid());
                             }
                         });
                     }}, BorderLayout.CENTER);
@@ -295,7 +295,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
         }
         super.setVisible(isVisible);
         if (isVisible()) {
-            reloadWorlds(canvas);
+            reloadWorlds(windowManager.getWindow());
         }
     }
 

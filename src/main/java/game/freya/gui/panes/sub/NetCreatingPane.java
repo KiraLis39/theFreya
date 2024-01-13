@@ -45,9 +45,9 @@ import java.util.Random;
 public class NetCreatingPane extends WorldCreator implements iSubPane {
     private static final Random r = new Random();
 
-    private transient BufferedImage snap;
-
     private final transient GameController gameController;
+
+    private transient BufferedImage snap;
 
     @Getter
     private String worldName;
