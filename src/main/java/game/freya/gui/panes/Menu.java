@@ -1,6 +1,7 @@
 package game.freya.gui.panes;
 
 import game.freya.GameController;
+import game.freya.enums.other.ScreenType;
 import game.freya.gl.RenderScreen;
 import game.freya.gui.WindowManager;
 import lombok.extern.slf4j.Slf4j;
@@ -19,15 +20,19 @@ import static org.lwjgl.opengl.GL11.glNormal3f;
 import static org.lwjgl.opengl.GL11.glOrtho;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
+import static org.lwjgl.opengl.GL11.glRasterPos2i;
 import static org.lwjgl.opengl.GL11.glTexCoord2f;
 import static org.lwjgl.opengl.GL11.glVertex2d;
 import static org.lwjgl.opengl.GL11.glVertex3d;
+import static org.lwjgl.opengl.GL14.glWindowPos2d;
 
 @Slf4j
 public class Menu extends RenderScreen {
     private final GameController gameController;
 
     private final WindowManager windowManager;
+
+    private static final ScreenType type = ScreenType.MENU_SCREEN;
 
     private double widthMemory = -1;
 
@@ -52,7 +57,21 @@ public class Menu extends RenderScreen {
         drawGameInfo(w, h);
 //        drawDebug(w, h, null);
 
+        // text:
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glRasterPos2i(10, 10);
+        glWindowPos2d(20, 30);
+        //glut.glutBitmapString(GLUT.BITMAP_HELVETICA_12, "frame [ms]: " + 123 + " (max=" + 321 + ")");
+//        for (char c : "Respect mah authoritah!".toCharArray()) {
+//            glutBitmapCharacter(font, c);
+//        }
+
         glPopMatrix();
+    }
+
+    @Override
+    public ScreenType getType() {
+        return type;
     }
 
     private void drawBackground(double w, double h) {

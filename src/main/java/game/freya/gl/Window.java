@@ -112,6 +112,7 @@ public abstract class Window {
         // Resize the window, calculate width, height and aspect:
         setFullscreen(Constants.getUserConfig().isFullscreen());
 
+        log.info("Привязка контекста GL к потоку {}", Thread.currentThread().getName());
         glfwMakeContextCurrent(window);
         GL.createCapabilities();
 
@@ -138,21 +139,29 @@ public abstract class Window {
         if (window != -1) {
             log.info("The window closing...");
             glfwSetWindowShouldClose(window, true);
+
+            // Free the callbacks
+//            glfwSetWindowPosCallback(getWindow(), null).free();
+//            glfwSetWindowSizeCallback(getWindow(), null).free();
+//            glfwSetWindowCloseCallback(getWindow(), null).free();
+//            glfwSetWindowFocusCallback(getWindow(), null).free();
+//            glfwSetWindowIconifyCallback(getWindow(), null).free();
+//            glfwSetFramebufferSizeCallback(getWindow(), null).free();
             glfwFreeCallbacks(window);
-            // glfwPostEmptyEvent();
 
             iconBuffer.free();
             iconImage.free();
             curImage.free();
 
+            // glfwPostEmptyEvent();
             glfwDestroyWindow(window);
         }
     }
 
     protected void setWindowIcon() {
-        try (InputStream winIconRes = getClass().getResourceAsStream(Constants.gameIconPath)) {
+        try (InputStream winIconRes = getClass().getResourceAsStream(Constants.getGameIconPath())) {
             if (winIconRes == null) {
-                log.error("Не удалось проставить иконку окна игры {}", Constants.gameIconPath);
+                log.error("Не удалось проставить иконку окна игры {}", Constants.getGameIconPath());
                 return;
             }
 
@@ -200,10 +209,13 @@ public abstract class Window {
         }
     }
 
-    public void render() {
+    public void render(RenderScreen screen) {
         glfwSetWindowTitle(window, Constants.getAppName()
                 .concat(" v.").concat(Constants.getAppVersion())
                 .concat(" (fps: ").concat(Constants.getRealFreshRate() + ")"));
+        if (screen != null) {
+            screen.render(width, height);
+        }
     }
 
     protected void setFullscreen(boolean isFullscreen) {

@@ -4,7 +4,6 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.entities.dto.WorldDTO;
-import game.freya.enums.other.MovingVector;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -12,8 +11,6 @@ import game.freya.gl.RenderScreen;
 import game.freya.gui.WindowManager;
 import lombok.extern.slf4j.Slf4j;
 
-import java.awt.Rectangle;
-import java.awt.geom.Point2D;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
@@ -81,6 +78,8 @@ public class Game extends RenderScreen {
     private static final float[] diffusePosition = {0.5f, 0.5f, -1.5f, 1.0f};
 
     private static final float[] diffuseSpecular = {0.65f, 0.65f, 0.65f, 1.0f};
+
+    private static final ScreenType type = ScreenType.GAME_SCREEN;
 
     private static float currentPitch = 30;
 
@@ -176,6 +175,11 @@ public class Game extends RenderScreen {
 
             glLightfv(GL_LIGHT0, GL_POSITION, temp.asFloatBuffer().put(new float[]{0.0f, -1.5f, 1.0f, 1.0f}).flip());
         }
+    }
+
+    @Override
+    public ScreenType getType() {
+        return type;
     }
 
     private void drawFloor() {
@@ -419,10 +423,10 @@ public class Game extends RenderScreen {
     }
 
     private void updateMiniMap() {
-        Point2D.Double myPos = gameController.getCurrentHeroPosition();
-        MovingVector cVector = gameController.getCurrentHeroVector();
-        int srcX = (int) (myPos.x - halfDim);
-        int srcY = (int) (myPos.y - halfDim);
+//        Point2D.Double myPos = gameController.getCurrentHeroPosition();
+//        MovingVector cVector = gameController.getCurrentHeroVector();
+//        int srcX = (int) (myPos.x - halfDim);
+//        int srcY = (int) (myPos.y - halfDim);
 
 //        Graphics2D m2D;
 //        if (minimapImage == null || minimapImage.validate(Constants.getGraphicsConfiguration()) == VolatileImage.IMAGE_INCOMPATIBLE) {
@@ -454,8 +458,8 @@ public class Game extends RenderScreen {
             if (gameController.getCurrentHeroUid().equals(connectedHero.getCharacterUid())) {
                 continue;
             }
-            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
-            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getLocation().y));
+//            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
+//            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getLocation().y));
 //            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
 //            m2D.setColor(connectedHero.getBaseColor());
 //            m2D.fillRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
@@ -465,10 +469,10 @@ public class Game extends RenderScreen {
 
         if (gameController.getCurrentWorldMap() != null) {
             // сканируем все сущности указанного квадранта:
-            Rectangle scanRect = new Rectangle(
-                    Math.min(Math.max(srcX, 0), gameController.getCurrentWorldMap().getWidth() - minimapDim),
-                    Math.min(Math.max(srcY, 0), gameController.getCurrentWorldMap().getHeight() - minimapDim),
-                    minimapDim, minimapDim);
+//            Rectangle scanRect = new Rectangle(
+//                    Math.min(Math.max(srcX, 0), gameController.getCurrentWorldMap().getWidth() - minimapDim),
+//                    Math.min(Math.max(srcY, 0), gameController.getCurrentWorldMap().getHeight() - minimapDim),
+//                    minimapDim, minimapDim);
 
 //            m2D.setColor(Color.CYAN);
 //            gameController.getWorldEnvironments(scanRect)

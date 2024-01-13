@@ -5,6 +5,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.Media;
 import game.freya.enums.other.ScreenType;
+import game.freya.gl.RenderScreen;
 import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,6 @@ import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.glfw.GLFW.glfwCreateStandardCursor;
 import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
-import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetCursor;
@@ -58,7 +58,7 @@ public class WindowManager implements Runnable {
 
     private FoxWindow window;
 
-    private ScreenType currentScreen;
+    private RenderScreen currentScreen;
 
     private volatile boolean isGlWindowBreaked = false;
 
@@ -66,7 +66,7 @@ public class WindowManager implements Runnable {
         this.gameController = gameController;
 
         Thread glThread = new Thread(this);
-        glThread.setName("GL thread");
+        glThread.setName("GLThread");
         glThread.start();
     }
 
@@ -98,12 +98,23 @@ public class WindowManager implements Runnable {
         // Create a Window:
         window = new FoxWindow(this, gameController);
 
+//        if (Constants.getGlut() == null) {
+//            log.info("Создание GLUT в потоке {}...", Thread.currentThread().getName());
+//            Constants.setGlut(new GLUT());
+//        }
+
         // Load the screen into window:
         loadScreen(ScreenType.MENU_LOADING_SCREEN);
     }
 
     private void doHintsPreset() {
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
+
+//        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+//        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+//        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+//        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
         // будет ли полноэкранное окно автоматически иконизироваться и восстанавливать предыдущий видеорежим при потере фокуса ввода
@@ -115,45 +126,44 @@ public class WindowManager implements Runnable {
         glfwWindowHint(GLFW_CONTEXT_NO_ERROR, GLFW_FALSE); // Если включен, ситуации, которые могли бы вызвать ошибки, вызывают неопределенное поведение
     }
 
-    public void loadScreen(ScreenType screen) {
-        if (screen != null) {
-            this.currentScreen = screen;
-        }
+    public void loadScreen(ScreenType type) {
+        if (type != null) {
+            switch (type) {
+                case MENU_LOADING_SCREEN -> {
+                    // load textures:
+                    if (Constants.getGameConfig().isUseTextures()) {
+                        gameController.loadMenuTextures();
+                    }
 
-        switch (currentScreen) {
-            case MENU_LOADING_SCREEN -> {
-                // load textures:
-                if (Constants.getGameConfig().isUseTextures()) {
-                    gameController.loadMenuTextures();
+                    // ждём пока кончится показ лого:
+                    logoEndsAwait();
                 }
+                case MENU_SCREEN -> {
+                    // перевод курсора в режим меню:
+                    Constants.setAltControlMode(true, window.getWindow());
+                }
+                case GAME_LOADING_SCREEN -> {
+                    // load textures:
+                    if (Constants.getGameConfig().isUseTextures()) {
+                        gameController.loadGameTextures();
+                    }
+                }
+                case GAME_SCREEN -> {
+                    // перевод по-умолчанию в режим мыши:
+                    Constants.setAltControlMode(false, window.getWindow());
+                    glfwSetInputMode(window.getWindow(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+                    glfwSetCursor(window.getWindow(), glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR));
 
-                // ждём пока кончится показ лого:
-                logoEndsAwait();
-            }
-            case MENU_SCREEN -> {
-                // перевод курсора в режим меню:
-                Constants.setAltControlMode(true, window.getWindow());
-            }
-            case GAME_LOADING_SCREEN -> {
-                // load textures:
-                if (Constants.getGameConfig().isUseTextures()) {
-                    gameController.loadGameTextures();
+                    gameController.setGameActive(true);
+                    Constants.setGameStartedIn(System.currentTimeMillis());
+                    Constants.setPaused(false);
                 }
             }
-            case GAME_SCREEN -> {
-                // перевод по-умолчанию в режим мыши:
-                Constants.setAltControlMode(false, window.getWindow());
-                glfwSetInputMode(window.getWindow(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-                glfwSetCursor(window.getWindow(), glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR));
 
-                gameController.setGameActive(true);
-                Constants.setGameStartedIn(System.currentTimeMillis());
-                Constants.setPaused(false);
-            }
+            this.currentScreen = type.getScreen(this, gameController);
+            window.setVisible(true);
+            draw(); // блокируется до закрытия окна.
         }
-
-        window.setVisible(true);
-        draw(); // блокируется до закрытия окна.
     }
 
     private void draw() {
@@ -167,7 +177,7 @@ public class WindowManager implements Runnable {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
                 window.configureThis();
-                window.render();
+                window.render(this.currentScreen);
 
                 // swap the color buffers
                 glfwSwapBuffers(window.getWindow());
@@ -202,6 +212,7 @@ public class WindowManager implements Runnable {
                 throw ioub;
             } catch (Exception e) {
                 log.error("Some strange happened: {}", ExceptionUtils.getFullExceptionMessage(e));
+                isGlWindowBreaked = true;
             }
         }
 
@@ -209,7 +220,7 @@ public class WindowManager implements Runnable {
         if (isGlWindowBreaked) {
             try {
                 window.destroy();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 log.warn("Non-critical exception: {}", e.getMessage());
             } finally {
                 exit();
@@ -314,7 +325,7 @@ public class WindowManager implements Runnable {
 
         // Terminate GLFW and free the error callback
         glfwFreeCallbacks(window.getWindow());
-        glfwDestroyWindow(window.getWindow());
+        //glfwDestroyWindow(window.getWindow());
         glfwTerminate();
 
         SwingUtilities.invokeLater(() -> {
@@ -343,24 +354,20 @@ public class WindowManager implements Runnable {
     }
 
     public boolean isMenuLoadingScreen() {
-        return currentScreen.equals(ScreenType.MENU_LOADING_SCREEN);
+        return currentScreen.getType().equals(ScreenType.MENU_LOADING_SCREEN);
     }
 
     public boolean isMenuScreen() {
-        return currentScreen.equals(ScreenType.MENU_SCREEN);
+        return currentScreen.getType().equals(ScreenType.MENU_SCREEN);
     }
 
     public boolean isGameLoadingScreen() {
-        return currentScreen.equals(ScreenType.GAME_LOADING_SCREEN);
+        return currentScreen.getType().equals(ScreenType.GAME_LOADING_SCREEN);
     }
 
     public boolean isGameScreen() {
-        return currentScreen.equals(ScreenType.GAME_SCREEN);
+        return currentScreen.getType().equals(ScreenType.GAME_SCREEN);
     }
-
-//    public Dimension getWindowDim() {
-//        return window.getSize();
-//    }
 
     public double getWindowAspect() {
         return window.getAspect();

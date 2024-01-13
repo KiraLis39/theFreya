@@ -19,15 +19,11 @@ import org.apache.commons.lang3.SystemUtils;
 import org.lwjgl.glfw.GLFW;
 
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.DisplayMode;
 import java.awt.Font;
-import java.awt.Frame;
 import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -141,7 +137,8 @@ public final class Constants {
 
     private static final int FPS_UPDATE_DELAY_SECONDS = 2;
 
-    public static String gameIconPath = "/images/icons/0.png";
+    @Getter
+    private static final String gameIconPath = "/images/icons/0.png";
 
     @Getter
     private static volatile boolean altControlMode = false;
@@ -200,10 +197,6 @@ public final class Constants {
 
     private static long realFreshRate = 0;
 
-    private static long timePerFrame = -1;
-
-    private static long fpsLimitMem = -1;
-
     @Getter
     @Setter
     private static Duration duration;
@@ -237,10 +230,6 @@ public final class Constants {
     private Constants() {
     }
 
-    public static GraphicsConfiguration getGraphicsConfiguration() {
-        return MON.getConfiguration();
-    }
-
     public static void showNFP() {
         new FOptionPane().buildFOptionPane("Не реализовано:",
                 "Приносим свои извинения! Данный функционал ещё находится в разработке.",
@@ -256,56 +245,6 @@ public final class Constants {
         return gameConfig.getSocketConnectionAwaitTimeout() - gameConfig.getSocketPingAwaitTimeout();
     }
 
-    public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {
-        if (userConfig.getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
-            try {
-                if (userConfig.isFullscreen()) {
-                    MON.switchFullscreen(frame);
-                } else {
-                    MON.switchFullscreen(null);
-
-//                    frame.setExtendedState(Frame.NORMAL);
-
-//                    frame.setMinimumSize(normalSize);
-//                    frame.setMaximumSize(normalSize);
-
-                    frame.setSize(normalSize);
-                    frame.setLocationRelativeTo(null);
-                }
-            } catch (Exception e) {
-                log.warn("Проблема при смене режима экрана: {}", ExceptionUtils.getFullExceptionMessage(e));
-                restoreDisplayMode();
-            }
-        } else if (userConfig.getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
-            frame.dispose();
-            frame.setResizable(true);
-
-            if (userConfig.isFullscreen()) {
-                frame.setUndecorated(true);
-                frame.setExtendedState(frame.getExtendedState() | Frame.MAXIMIZED_BOTH);
-            } else {
-                frame.setExtendedState(Frame.NORMAL);
-                frame.setUndecorated(false);
-
-                frame.setMinimumSize(normalSize);
-                frame.setMaximumSize(normalSize);
-
-                frame.setSize(normalSize);
-                frame.setLocationRelativeTo(null);
-            }
-        }
-
-        frame.setResizable(false);
-        frame.setVisible(true);
-        frame.createBufferStrategy(getUserConfig().getBufferedDeep());
-    }
-
-    public static void restoreDisplayMode() {
-        if (defaultDisplayMode != null) {
-            MON.getDevice().setDisplayMode(defaultDisplayMode);
-        }
-    }
-
     public static boolean isFpsLimited() {
         return userConfig.getFpsLimit() > 0;
     }
@@ -316,15 +255,6 @@ public final class Constants {
 
     public static void setRealFreshRate(long fps) {
         realFreshRate = fps;
-    }
-
-    public static long getAimTimePerFrame() {
-        if (fpsLimitMem != userConfig.getFpsLimit()) {
-            timePerFrame = 1000 / userConfig.getFpsLimit();
-            fpsLimitMem = userConfig.getFpsLimit();
-            log.info("TPF now: {} to FPS limit {}", timePerFrame, fpsLimitMem);
-        }
-        return timePerFrame;
     }
 
     public static long getFpsDelaySeconds() {

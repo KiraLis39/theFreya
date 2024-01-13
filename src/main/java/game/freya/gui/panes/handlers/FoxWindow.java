@@ -649,7 +649,18 @@ public class FoxWindow extends Window {
 //         glEnable(GL_SCISSOR_TEST);
 //         glScissor(256, getHeight() - 256, 512, 128);
 
-        // текстуры:
+        setupTextures();
+        setupCullFace();
+        setupLights();
+        setupColorMaterial();
+        setupSmooth(); // интерполяция.
+        setupBlend();
+        setupDepth(); // буфер глубины (учёт расположения объектов в глубину псевдо-объема).
+        setupFog();
+        setupAlphaTest(); // учёт прозрачности.
+    }
+
+    private void setupTextures() {
         if (Constants.getGameConfig().isUseTextures()) {
             if (glIsEnabled(GL_TEXTURE_2D)) {
                 return;
@@ -693,91 +704,37 @@ public class FoxWindow extends Window {
             glDisable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(0f, 0f);
         }
+    }
 
-        // обрезание невидимых глазу частей:
-        if (Constants.getGameConfig().isCullFaceGlEnabled()) {
-            cullFace();
-        } else {
-            glDisable(GL_CULL_FACE);
-        }
-
-        // освещение:
-        if (Constants.getGameConfig().isLightsEnabled()) {
-            setLights();
-        } else {
-            // glDisable(GL_LIGHT1); // надо ли?
-            // glDisable(GL_LIGHT0); // надо ли?
-            glDisable(GL_LIGHTING);
-            glDisable(GL_NORMALIZE); // надо ли?
-        }
-
-        if (Constants.getGameConfig().isColorMaterialEnabled()) {
-            setColorMaterial();
-        } else {
-            glDisable(GL_COLOR_MATERIAL);
-        }
-
-        // интерполяция
+    private void setupSmooth() {
         if (Constants.getGameConfig().isSmoothEnabled()) {
-            setSmooth();
+            if (glIsEnabled(GL_SMOOTH)) {
+                return;
+            }
+
+            glDisable(GL_FLAT);
+
+            glEnable(GL_POINT_SMOOTH);
+            glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+
+            glEnable(GL_LINE_SMOOTH);
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+
+            glEnable(GL_POLYGON_SMOOTH);
+            glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+
+            glEnable(GL_SMOOTH);
+
+            // Задает простое или сглаженное освещение. GL_FLAT стоит использовать, если в качестве нормалей
+            //  вы используете перпендикуляр к полигону,
+            //  GL_SMOOTH - если средний вектор между перпендикулярами к нескольким полигонам.
+            glShadeModel(GL_SMOOTH);
         } else {
             setFlat();
         }
-
-        // ?..
-        if (Constants.getGameConfig().isBlendEnabled()) {
-            setBlend();
-        } else {
-            setDepth();
-        }
-
-        // буфер глубины (учёт расположения объектов в глубину псевдо-объема):
-        if (Constants.getGameConfig().isDepthEnabled()) {
-            setDepth();
-        } else {
-            glDisable(GL_DEPTH_TEST);
-        }
-
-        // туман:
-        if (Constants.getGameConfig().isUseFog()) {
-            setFog();
-        } else {
-            glDisable(GL_FOG);
-        }
-
-        // учёт прозрачности?..
-        if (Constants.getGameConfig().isUseAlphaTest()) {
-            setAlphaTest();
-        } else {
-            glDisable(GL_ALPHA_TEST);
-        }
     }
 
-    protected void setSmooth() {
-        if (glIsEnabled(GL_SMOOTH)) {
-            return;
-        }
-
-        glDisable(GL_FLAT);
-
-        glEnable(GL_POINT_SMOOTH);
-        glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-
-        glEnable(GL_POLYGON_SMOOTH);
-        glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-
-        glEnable(GL_SMOOTH);
-
-        // Задает простое или сглаженное освещение. GL_FLAT стоит использовать, если в качестве нормалей
-        //  вы используете перпендикуляр к полигону,
-        //  GL_SMOOTH - если средний вектор между перпендикулярами к нескольким полигонам.
-        glShadeModel(GL_SMOOTH);
-    }
-
-    protected void setFlat() {
+    private void setFlat() {
         glDisable(GL_SMOOTH);
         glDisable(GL_LINE_SMOOTH);
         glDisable(GL_POINT_SMOOTH);
@@ -791,171 +748,202 @@ public class FoxWindow extends Window {
         glShadeModel(GL_FLAT);
     }
 
-    protected void setLights() {
-        if (glIsEnabled(GL_LIGHTING) && glIsEnabled(GL_COLOR_MATERIAL)) {
-            return;
+    private void setupLights() {
+        if (Constants.getGameConfig().isLightsEnabled()) {
+            if (glIsEnabled(GL_LIGHTING) && glIsEnabled(GL_COLOR_MATERIAL)) {
+                return;
+            }
+
+            //        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+            //        glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
+            //        glLightfv(GL_LIGHT0, GL_POSITION, ambientPosition);
+            //        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, ambientDirection);
+            //        glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, ambientAttenuation);
+            //        glLightfv(GL_LIGHT0, GL_CONSTANT_ATTENUATION, ambientAttenuation);
+            //        glLightfv(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, ambientAttenuation);
+
+            //        glLighti(GL_LIGHT0, GL_SPOT_EXPONENT, 64); //range 0-128
+            //        glLighti(GL_LIGHT0, GL_SPOT_CUTOFF, 90); //range 0-90 and the special value 180
+            glEnable(GL_LIGHT0);
+
+            //        glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
+            //        glLightfv(GL_LIGHT1, GL_POSITION, diffusePosition);
+            //        glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseSpecular);
+            // glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, new float[] {0.25f, 0.25f, -0.75f, 0.5f});
+            // glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.5f); // GL_LINEAR_ATTENUATION | GL_QUADRATIC_ATTENUATION | GL_CONSTANT_ATTENUATION
+            // glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);
+            // glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 2.0f);
+            glEnable(GL_LIGHT1);
+
+            glEnable(GL_LIGHTING);
+            //glEnable(GL_NORMALIZE); // "Довольно затратно, на практике использовать не стоит"?..
+
+            // Упрощенный ускоренный вариант GL_NORMALIZE. Он подразумевает, что переданные в openGL нормали уже были нормализованы,
+            //  но вы масштабировали матрицу трансформации (использовали glScale()).
+            //  Работает верно только в тех случаях, когда матрица была масштабирована без искажений,
+            //  то есть x, y и z, которые вы передали в glScale(), были равны.
+            glEnable(GL_RESCALE_NORMAL);
+
+            setupColorMaterial();
+        } else {
+            // glDisable(GL_LIGHT1); // надо ли?
+            // glDisable(GL_LIGHT0); // надо ли?
+            glDisable(GL_LIGHTING);
+            glDisable(GL_NORMALIZE); // надо ли?
         }
-
-//        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
-//        glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
-//        glLightfv(GL_LIGHT0, GL_POSITION, ambientPosition);
-//        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, ambientDirection);
-//        glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, ambientAttenuation);
-//        glLightfv(GL_LIGHT0, GL_CONSTANT_ATTENUATION, ambientAttenuation);
-//        glLightfv(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, ambientAttenuation);
-
-//        glLighti(GL_LIGHT0, GL_SPOT_EXPONENT, 64); //range 0-128
-//        glLighti(GL_LIGHT0, GL_SPOT_CUTOFF, 90); //range 0-90 and the special value 180
-        glEnable(GL_LIGHT0);
-
-//        glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
-//        glLightfv(GL_LIGHT1, GL_POSITION, diffusePosition);
-//        glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseSpecular);
-        // glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, new float[] {0.25f, 0.25f, -0.75f, 0.5f});
-        // glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.5f); // GL_LINEAR_ATTENUATION | GL_QUADRATIC_ATTENUATION | GL_CONSTANT_ATTENUATION
-        // glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);
-        // glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 2.0f);
-        glEnable(GL_LIGHT1);
-
-        glEnable(GL_LIGHTING);
-        //glEnable(GL_NORMALIZE); // "Довольно затратно, на практике использовать не стоит"?..
-
-        // Упрощенный ускоренный вариант GL_NORMALIZE. Он подразумевает, что переданные в openGL нормали уже были нормализованы,
-        //  но вы масштабировали матрицу трансформации (использовали glScale()).
-        //  Работает верно только в тех случаях, когда матрица была масштабирована без искажений,
-        //  то есть x, y и z, которые вы передали в glScale(), были равны.
-        glEnable(GL_RESCALE_NORMAL);
-
-        setColorMaterial();
     }
 
-    protected void setColorMaterial() {
-        /*
-            Локальная точка зрения имеет тенденцию давать более реалистичные результаты, но поскольку направление необходимо вычислять
-            для каждой вершины, при использовании локальной точки зрения общая производительность снижается. По умолчанию предполагается
-            бесконечная точка обзора. Вот как можно перейти на локальную точку обзора:
-        */
-        // glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE); // GL_FALSE
+    private void setupColorMaterial() {
+        if (Constants.getGameConfig().isColorMaterialEnabled()) {
+            /*
+                Локальная точка зрения имеет тенденцию давать более реалистичные результаты, но поскольку направление необходимо вычислять
+                для каждой вершины, при использовании локальной точки зрения общая производительность снижается. По умолчанию предполагается
+                бесконечная точка обзора. Вот как можно перейти на локальную точку обзора:
+            */
+            // glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE); // GL_FALSE
 
-        /*
-            Возможно, вам захочется, чтобы внутренняя поверхность была полностью освещена в соответствии с заданными условиями освещения;
-            вы также можете указать другое описание материала для задних сторон При включении двустороннего освещения с помощью
-        */
-        // glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE); // GL_FALSE
+            /*
+                Возможно, вам захочется, чтобы внутренняя поверхность была полностью освещена в соответствии с заданными условиями освещения;
+                вы также можете указать другое описание материала для задних сторон При включении двустороннего освещения с помощью
+            */
+            // glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE); // GL_FALSE
 
-        // glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientLight);
+            // glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientLight);
 
-        // glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, new float[] {0.5f, 0.6f, 0.4f, 0.75f});
-        // glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseLight);
-        // glMaterialfv(GL_FRONT, GL_SPECULAR, ambientSpecular);
-        // glMaterialfv(GL_FRONT, GL_SHININESS, new float[] {0.5f, 0.5f, 0.5f, 0.75f});
-        // glMaterialfv(GL_FRONT, GL_EMISSION, new float[] {0.1f, 0.1f, 0.1f, 1.0f});
+            // glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, new float[] {0.5f, 0.6f, 0.4f, 0.75f});
+            // glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseLight);
+            // glMaterialfv(GL_FRONT, GL_SPECULAR, ambientSpecular);
+            // glMaterialfv(GL_FRONT, GL_SHININESS, new float[] {0.5f, 0.5f, 0.5f, 0.75f});
+            // glMaterialfv(GL_FRONT, GL_EMISSION, new float[] {0.1f, 0.1f, 0.1f, 1.0f});
 
-        // glMaterialf(GL_FRONT, GL_SHININESS, 128);
-        // glMaterialf(GL_BACK, GL_SHININESS, 128);
+            // glMaterialf(GL_FRONT, GL_SHININESS, 128);
+            // glMaterialf(GL_BACK, GL_SHININESS, 128);
 
-        /*
-         * GL_AMBIENT рассеянный свет GL_DIFFUSE тоже рассеянный свет, пояснения смотри ниже GL_SPECULAR отраженный свет GL_EMISSION
-         * излучаемый свет GL_SHININESS степень отраженного света GL_AMBIENT_AND_DIFFUSE оба рассеянных света
-         */
-        // glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+            /*
+             * GL_AMBIENT рассеянный свет GL_DIFFUSE тоже рассеянный свет, пояснения смотри ниже GL_SPECULAR отраженный свет GL_EMISSION
+             * излучаемый свет GL_SHININESS степень отраженного света GL_AMBIENT_AND_DIFFUSE оба рассеянных света
+             */
+            // glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
-        glEnable(GL_COLOR_MATERIAL);
+            glEnable(GL_COLOR_MATERIAL);
+        } else {
+            glDisable(GL_COLOR_MATERIAL);
+        }
     }
 
-    protected void cullFace() {
-        if (glIsEnabled(GL_CULL_FACE)) {
-            return;
+    private void setupCullFace() {
+        if (Constants.getGameConfig().isCullFaceGlEnabled()) {
+            if (glIsEnabled(GL_CULL_FACE)) {
+                return;
+            }
+
+            // настройка отображения передней и задней частей полигонов:
+            // glPolygonMode(GL_FRONT, GL_FILL); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
+            glPolygonMode(GL_BACK, GL_LINE); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
+
+            // задаём ориентацию по часовой\против часовой:
+            glFrontFace(GL_CCW); // GL_CW | GL_CCW
+
+            // отсечение прямоугольников, обращенных от или скрытых от глаз:
+            glCullFace(GL_BACK); // GL_FRONT, GL_BACK, или GL_FRONT_AND_BACK
+            glEnable(GL_CULL_FACE);
+        } else {
+            glDisable(GL_CULL_FACE);
         }
-
-        // настройка отображения передней и задней частей полигонов:
-        // glPolygonMode(GL_FRONT, GL_FILL); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
-        glPolygonMode(GL_BACK, GL_LINE); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
-
-        // задаём ориентацию по часовой\против часовой:
-        glFrontFace(GL_CCW); // GL_CW | GL_CCW
-
-        // отсечение прямоугольников, обращенных от или скрытых от глаз:
-        glCullFace(GL_BACK); // GL_FRONT, GL_BACK, или GL_FRONT_AND_BACK
-        glEnable(GL_CULL_FACE);
     }
 
-    protected void setDepth() {
-        if (glIsEnabled(GL_DEPTH_TEST) && !glIsEnabled(GL_BLEND)) {
-            return;
-        }
+    private void setupDepth() {
+        if (Constants.getGameConfig().isDepthEnabled()) {
+            if (glIsEnabled(GL_DEPTH_TEST) && !glIsEnabled(GL_BLEND)) {
+                return;
+            }
 
-        if (glIsEnabled(GL_BLEND)) {
-            // glDisable(GL_BLEND); // не совсем ясно, надо или нет, но раскомментирование убивает прозрачность.
-        }
-        glDepthMask(true);
-        glClearDepth(Constants.getUserConfig().getClearDepth());
-        glDepthRange(Constants.getUserConfig().getZNear(), Constants.getUserConfig().getZFar());
+            if (glIsEnabled(GL_BLEND)) {
+                // glDisable(GL_BLEND); // не совсем ясно, надо или нет, но раскомментирование убивает прозрачность.
+            }
+            glDepthMask(true);
+            glClearDepth(Constants.getUserConfig().getClearDepth());
+            glDepthRange(Constants.getUserConfig().getZNear(), Constants.getUserConfig().getZFar());
 
-        // glDepthFunc(GL_LESS);
-        glDepthFunc(GL_LEQUAL);
-        // glDepthFunc(GL_EQUAL);
-        // glDepthFunc(GL_NOTEQUAL);
-        // glDepthFunc(GL_GEQUAL);
-        // glDepthFunc(GL_GREATER);
-        // glDepthFunc(GL_ALWAYS);
-        // glDepthFunc(GL_NEVER);
+            // glDepthFunc(GL_LESS);
+            glDepthFunc(GL_LEQUAL);
+            // glDepthFunc(GL_EQUAL);
+            // glDepthFunc(GL_NOTEQUAL);
+            // glDepthFunc(GL_GEQUAL);
+            // glDepthFunc(GL_GREATER);
+            // glDepthFunc(GL_ALWAYS);
+            // glDepthFunc(GL_NEVER);
 
-        // Буфер глубины или z-буфер используется для удаления невидимых линий и поверхностей:
-        glEnable(GL_DEPTH_TEST);
-    }
-
-    protected void setBlend() {
-        if (glIsEnabled(GL_BLEND)) {
-            return;
-        }
-
-//        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // "нормальное" смешивание. с сортировкой полигонов от ближнего к дальнему
-//        glBlendFunc(GL_ONE, GL_ONE); // аддиктивное смешивание, сложение нового и старого цвета. Полезно для "энергетических" эффектов вроде огня и электричества.
-//        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // то же самое, но с учетом прозрачности с текстуры. с сортировкой полигонов от ближнего к дальнему
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Включить альфа-смешение
-
-        // Буфер глубины или z-буфер используется для удаления невидимых линий и поверхностей:
-        if (glIsEnabled(GL_DEPTH_TEST)) {
-            glDepthMask(false);
+            // Буфер глубины или z-буфер используется для удаления невидимых линий и поверхностей:
+            glEnable(GL_DEPTH_TEST);
+        } else {
             glDisable(GL_DEPTH_TEST);
         }
-
-        // glEnable(GL_ALPHA_TEST); // нужно?..
-        glEnable(GL_BLEND);
     }
 
-    protected void setFog() {
-        if (glIsEnabled(GL_FOG)) {
-            return;
+    private void setupBlend() {
+        if (Constants.getGameConfig().isBlendEnabled()) {
+            if (glIsEnabled(GL_BLEND)) {
+                return;
+            }
+
+            //        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // "нормальное" смешивание. с сортировкой полигонов от ближнего к дальнему
+            //        glBlendFunc(GL_ONE, GL_ONE); // аддиктивное смешивание, сложение нового и старого цвета. Полезно для "энергетических" эффектов вроде огня и электричества.
+            //        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // то же самое, но с учетом прозрачности с текстуры. с сортировкой полигонов от ближнего к дальнему
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Включить альфа-смешение
+
+            // Буфер глубины или z-буфер используется для удаления невидимых линий и поверхностей:
+            if (glIsEnabled(GL_DEPTH_TEST)) {
+                glDepthMask(false);
+                glDisable(GL_DEPTH_TEST);
+            }
+
+            // glEnable(GL_ALPHA_TEST); // нужно?..
+            glEnable(GL_BLEND);
+        } else {
+            setupDepth();
         }
-
-        final float[] fogcolor = {0.2f, 0.2f, 0.2f, 1.00f}; // цвет тумана
-
-        glEnable(GL_FOG);
-        glFogfv(GL_FOG_COLOR, fogcolor); // устанавливаем цвет тумана
-        glFogf(GL_FOG_DENSITY, 0.75f);
-
-//	      glHint(GL_FOG_HINT, GL_FASTEST);
-//		  glHint(GL_FOG_HINT, GL_NICEST);
-//        glHint(GL_FOG_HINT, GL_DONT_CARE);
     }
 
-    protected void setAlphaTest() {
-        if (glIsEnabled(GL_ALPHA_TEST)) {
-            return;
+    private void setupFog() {
+        if (Constants.getGameConfig().isUseFog()) {
+            if (glIsEnabled(GL_FOG)) {
+                return;
+            }
+
+            final float[] fogcolor = {0.2f, 0.2f, 0.2f, 1.00f}; // цвет тумана
+
+            glEnable(GL_FOG);
+            glFogfv(GL_FOG_COLOR, fogcolor); // устанавливаем цвет тумана
+            glFogf(GL_FOG_DENSITY, 0.75f);
+
+            //	      glHint(GL_FOG_HINT, GL_FASTEST);
+            //		  glHint(GL_FOG_HINT, GL_NICEST);
+            //        glHint(GL_FOG_HINT, GL_DONT_CARE);
+        } else {
+            glDisable(GL_FOG);
         }
+    }
 
-//		  glAlphaFunc(GL_ALWAYS, 0.33f);
-//		  glAlphaFunc(GL_LESS, 0.50f);
-//		  glAlphaFunc(GL_EQUAL, 1.00f);
-//		  glAlphaFunc(GL_LEQUAL, 0.75f);
-//		  glAlphaFunc(GL_GREATER, 0.75f);
-//		  glAlphaFunc(GL_NOTEQUAL, 0.00f);
-        glAlphaFunc(GL_GEQUAL, 0.25f);
-//		  glAlphaFunc(GL_NEVER, 0.00f);
+    private void setupAlphaTest() {
+        if (Constants.getGameConfig().isUseAlphaTest()) {
+            if (glIsEnabled(GL_ALPHA_TEST)) {
+                return;
+            }
 
-        glEnable(GL_ALPHA_TEST);
+            //		  glAlphaFunc(GL_ALWAYS, 0.33f);
+            //		  glAlphaFunc(GL_LESS, 0.50f);
+            //		  glAlphaFunc(GL_EQUAL, 1.00f);
+            //		  glAlphaFunc(GL_LEQUAL, 0.75f);
+            //		  glAlphaFunc(GL_GREATER, 0.75f);
+            //		  glAlphaFunc(GL_NOTEQUAL, 0.00f);
+            glAlphaFunc(GL_GEQUAL, 0.25f);
+            //		  glAlphaFunc(GL_NEVER, 0.00f);
+
+            glEnable(GL_ALPHA_TEST);
+        } else {
+            glDisable(GL_ALPHA_TEST);
+        }
     }
 
     private void setInAc() {
@@ -1285,9 +1273,6 @@ public class FoxWindow extends Window {
 
     @Override
     public void setVisible(boolean isVisible) {
-        if (isVisible) {
-            render(); // одна прокрутка рендера что б не появлялось сначала пустое окно.
-        }
         super.setVisible(isVisible);
     }
 

@@ -137,12 +137,6 @@
 
         <!-- 3D -->
         <dependency>
-            <groupId>org.jogamp.jogl</groupId>
-            <artifactId>jogl</artifactId>
-            <version>2.3.2</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl</artifactId>
         </dependency>
@@ -537,6 +531,17 @@
             <version>${steamworks4j-server.version}</version>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <groupId>org.jogamp.jogl</groupId>-->
+<!--            <artifactId>jogl-all</artifactId>-->
+<!--            <version>2.3.2</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.jogamp.gluegen</groupId>-->
+<!--            <artifactId>gluegen-rt-main</artifactId>-->
+<!--            <version>2.3.2</version>-->
+<!--        </dependency>-->
+
         <!-- local -->
         <dependency>
             <groupId>FoxLib39</groupId>
@@ -575,6 +580,11 @@
             <version>1.0.1</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/TinySound.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>opengl</groupId>
+            <artifactId>jogl.all</artifactId>
+            <version>2.0-rc3</version>
         </dependency>
 
     </dependencies>
