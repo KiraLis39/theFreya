@@ -62,8 +62,8 @@ public class Menu extends RenderScreen {
     }
 
     private void drawBackground(double w, double h) {
-        if (gameController.isTextureExist("menu")) {
-            gameController.bindTexture("menu");
+        if (gameController.getTextureManager().isTextureExist("menu")) {
+            gameController.getTextureManager().bindTexture("menu");
         }
 
         glBegin(GL_QUADS);
@@ -85,7 +85,7 @@ public class Menu extends RenderScreen {
 
         glEnd();
 
-        gameController.unbindTexture("menu");
+        gameController.getTextureManager().unbindTexture("menu");
     }
 
     private void drawGrayCorner(double w, double h) {
@@ -116,8 +116,8 @@ public class Menu extends RenderScreen {
             widthMemory = w;
         }
 
-        if (gameController.isTextureExist("metallicBtnOFF")) {
-            gameController.bindTexture("metallicBtnOFF");
+        if (gameController.getTextureManager().isTextureExist("metallicBtnOFF")) {
+            gameController.getTextureManager().bindTexture("metallicBtnOFF");
         }
 
         glBegin(GL_QUADS);
@@ -141,7 +141,7 @@ public class Menu extends RenderScreen {
 
         glEnd();
 
-        gameController.unbindTexture("metallicBtnOFF");
+        gameController.getTextureManager().unbindTexture("metallicBtnOFF");
     }
 
     private void drawButton(String text, Rectangle2D btnRect) {

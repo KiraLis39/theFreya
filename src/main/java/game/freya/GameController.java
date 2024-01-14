@@ -21,7 +21,6 @@ import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gl.Collider3D;
-import game.freya.gl.Texture;
 import game.freya.gui.WindowManager;
 import game.freya.gui.panes.Game;
 import game.freya.gui.panes.sub.HeroCreatingPane;
@@ -41,6 +40,7 @@ import game.freya.net.data.events.EventPlayerAuth;
 import game.freya.services.EventService;
 import game.freya.services.HeroService;
 import game.freya.services.PlayerService;
+import game.freya.services.TextureService;
 import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
 import game.freya.utils.Screenshoter;
@@ -71,20 +71,17 @@ import java.awt.image.VolatileImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 @Slf4j
 @Component
@@ -92,9 +89,10 @@ import java.util.stream.Stream;
 public class GameController extends GameControllerBase {
     private final ArrayDeque<ClientDataDTO> deque = new ArrayDeque<>();
 
-    private final HashMap<String, Texture> textures = new HashMap<>();
-
     private final PlayerService playerService;
+
+    @Getter
+    private final TextureService textureManager;
 
     private final HeroService heroService;
 
@@ -286,82 +284,6 @@ public class GameController extends GameControllerBase {
 
         log.info("The game is started!");
         windowManager.appStart(this);
-    }
-
-    public void loadMenuTextures() {
-        if (!Constants.getGameConfig().isUseTextures()) {
-            return;
-        }
-
-        clearTextures();
-
-        URL imgsResource = getClass().getResource("/images");
-        if (imgsResource == null) {
-            log.error("Не обнаружен источник изображений меню!");
-            return;
-        }
-
-        log.info("Начата загрузка текстур меню...");
-        try (Stream<Path> images = Files.walk(Path.of(imgsResource.getPath().substring(1)))) {
-            images
-                    .filter(path -> !Files.isDirectory(path) && !path.getFileName().toString().endsWith(".ico"))
-                    .forEach(imagePath -> {
-                        String name = imagePath.getFileName().toString().split("\\.")[0];
-                        log.debug("Bind texture {}...", name);
-                        textures.put(name, new Texture(imagePath.toAbsolutePath().toString()));
-                    });
-            log.info("Загрузка текстур меню завершена.");
-        } catch (Exception e) {
-            log.error("Проблема возникла при обработке текстуры меню: {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
-    }
-
-    public void loadGameTextures() {
-        if (!Constants.getGameConfig().isUseTextures()) {
-            return;
-        }
-
-        clearTextures();
-
-        URL imgsResource = getClass().getResource("/images");
-        if (imgsResource == null) {
-            log.error("Не обнаружен источник изображений игры!");
-            return;
-        }
-
-        log.info("Начата загрузка текстур игры...");
-        try (Stream<Path> images = Files.walk(Path.of(imgsResource.getPath().substring(1)))) {
-            images
-                    .filter(path -> !Files.isDirectory(path) && !path.getFileName().toString().endsWith(".ico"))
-                    .forEach(imagePath -> {
-                        String name = imagePath.getFileName().toString().split("\\.")[0];
-                        log.debug("Bind texture {}...", name);
-                        textures.put(name, new Texture(imagePath.toAbsolutePath().toString()));
-                    });
-            log.info("Загрузка текстур игры завершена.");
-        } catch (Exception e) {
-            log.error("Проблема возникла при обработке текстуры игры: {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
-    }
-
-    private void clearTextures() {
-        log.info("Очистка текстур...");
-        textures.values().iterator().forEachRemaining(Texture::unbind);
-        textures.clear();
-    }
-
-    public boolean isTextureExist(String textureName) {
-        return textures.containsKey(textureName);
-    }
-
-    public void bindTexture(String textureName) {
-        textures.get(textureName).bind();
-    }
-
-    public void unbindTexture(String textureName) {
-        if (textures.containsKey(textureName)) {
-            textures.get(textureName).unbind();
-        }
     }
 
     public void exitTheGame(WorldDTO world) {

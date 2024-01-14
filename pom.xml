@@ -244,14 +244,14 @@
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-opengles</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-openvr</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-openxr</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.lwjgl</groupId>-->
+<!--            <artifactId>lwjgl-openvr</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.lwjgl</groupId>-->
+<!--            <artifactId>lwjgl-openxr</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-opus</artifactId>
@@ -304,10 +304,10 @@
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-vma</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-vulkan</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.lwjgl</groupId>-->
+<!--            <artifactId>lwjgl-vulkan</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-xxhash</artifactId>
@@ -385,11 +385,11 @@
             <artifactId>lwjgl-lz4</artifactId>
             <classifier>${lwjgl.natives}</classifier>
         </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-meow</artifactId>
-            <classifier>${lwjgl.natives}</classifier>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.lwjgl</groupId>-->
+<!--            <artifactId>lwjgl-meow</artifactId>-->
+<!--            <classifier>${lwjgl.natives}</classifier>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-meshoptimizer</artifactId>
@@ -425,16 +425,16 @@
             <artifactId>lwjgl-opengles</artifactId>
             <classifier>${lwjgl.natives}</classifier>
         </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-openvr</artifactId>
-            <classifier>${lwjgl.natives}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl-openxr</artifactId>
-            <classifier>${lwjgl.natives}</classifier>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.lwjgl</groupId>-->
+<!--            <artifactId>lwjgl-openvr</artifactId>-->
+<!--            <classifier>${lwjgl.natives}</classifier>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.lwjgl</groupId>-->
+<!--            <artifactId>lwjgl-openxr</artifactId>-->
+<!--            <classifier>${lwjgl.natives}</classifier>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-opus</artifactId>
@@ -521,15 +521,31 @@
             <version>${lwjgl3-awt.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.code-disaster.steamworks4j</groupId>
-            <artifactId>steamworks4j</artifactId>
-            <version>${steamworks4j.version}</version>
+            <groupId>org.lwjgl.lwjgl</groupId>
+            <artifactId>lwjgl_util</artifactId>
+            <version>2.9.1</version>
         </dependency>
-        <dependency>
-            <groupId>com.code-disaster.steamworks4j</groupId>
-            <artifactId>steamworks4j-server</artifactId>
-            <version>${steamworks4j-server.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.newdawn.lwjgl</groupId>-->
+<!--            <artifactId>core</artifactId>-->
+<!--            <version>2.7.1</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.newdawn.lwjgl</groupId>-->
+<!--            <artifactId>util</artifactId>-->
+<!--            <version>2.7.1</version>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>com.code-disaster.steamworks4j</groupId>-->
+<!--            <artifactId>steamworks4j</artifactId>-->
+<!--            <version>${steamworks4j.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.code-disaster.steamworks4j</groupId>-->
+<!--            <artifactId>steamworks4j-server</artifactId>-->
+<!--            <version>${steamworks4j-server.version}</version>-->
+<!--        </dependency>-->
 
 <!--        <dependency>-->
 <!--            <groupId>org.jogamp.jogl</groupId>-->
@@ -580,11 +596,6 @@
             <version>1.0.1</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/TinySound.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>opengl</groupId>
-            <artifactId>jogl.all</artifactId>
-            <version>2.0-rc3</version>
         </dependency>
 
     </dependencies>

@@ -6,7 +6,9 @@ import game.freya.config.Constants;
 import game.freya.config.Media;
 import game.freya.enums.other.ScreenType;
 import game.freya.gl.RenderScreen;
+import game.freya.gl.font_mesh_creator.FontType;
 import game.freya.gui.panes.handlers.FoxWindow;
+import game.freya.services.TextureService;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,8 @@ import javax.swing.SwingUtilities;
 import javax.validation.constraints.NotNull;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.net.URL;
+import java.nio.file.Path;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_AUTO_ICONIFY;
@@ -58,6 +62,8 @@ import static org.lwjgl.opengl.GL11.glOrtho;
 @Component
 @RequiredArgsConstructor
 public class WindowManager implements Runnable {
+    private final TextureService textureService;
+
     private GameController gameController;
 
     private FoxWindow window;
@@ -81,19 +87,30 @@ public class WindowManager implements Runnable {
             throw new IllegalStateException("Unable to initialize GLFW");
         }
 
-        configureGlDebug();
-
-        // Configure GLFW Hints:
-        doHintsPreset();
-
         // Set errors callback:
-        GLFWErrorCallback.createPrint(System.err).set();
+        try (GLFWErrorCallback callback = GLFWErrorCallback.createPrint(System.err)) {
+            configureGlDebug();
 
-        // Create a Window:
-        window = new FoxWindow(this, gameController);
+            // Configure GLFW Hints:
+            doHintsPreset();
 
-        // Load the screen into window:
-        loadScreen(ScreenType.MENU_LOADING_SCREEN);
+            callback.set();
+
+            // Create a Window:
+            window = new FoxWindow(this, gameController);
+
+            // Loader loader = new Loader();
+            // TextMaster tm = new TextMaster(loader);
+            URL fontsResource = getClass().getResource("/fonts");
+            if (fontsResource != null) {
+                Path texPath = Path.of((fontsResource.getPath() + "/harrington.png").substring(1));
+                Path fntPath = Path.of((fontsResource.getPath() + "/harrington.fnt").substring(1));
+                FontType font = new FontType(textureService.loadTexture(texPath), fntPath.toFile(), window.getAspect());
+            }
+
+            // Load the screen into window:
+            loadScreen(ScreenType.MENU_LOADING_SCREEN);
+        }
     }
 
     private void doHintsPreset() {
@@ -122,7 +139,7 @@ public class WindowManager implements Runnable {
         switch (type) {
             case MENU_LOADING_SCREEN -> {
                 // load textures:
-                gameController.loadMenuTextures();
+                textureService.loadMenuTextures();
 
                 // ждём пока кончится показ лого:
                 logoEndsAwait();
@@ -132,7 +149,7 @@ public class WindowManager implements Runnable {
             }
             case MENU_SCREEN -> {
             }
-            case GAME_LOADING_SCREEN -> gameController.loadGameTextures();
+            case GAME_LOADING_SCREEN -> textureService.loadGameTextures();
             case GAME_SCREEN -> {
                 // перевод в игровой режим мыши:
                 Constants.setAltControlMode(false, window.getWindow());

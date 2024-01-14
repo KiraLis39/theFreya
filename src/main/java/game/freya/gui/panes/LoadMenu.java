@@ -3,7 +3,6 @@ package game.freya.gui.panes;
 import game.freya.GameController;
 import game.freya.enums.other.ScreenType;
 import game.freya.gl.RenderScreen;
-import game.freya.gui.WindowManager;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.lwjgl.opengl.GL11.GL_CW;
@@ -25,11 +24,8 @@ public class LoadMenu extends RenderScreen {
 
     private final GameController gameController;
 
-    private final WindowManager windowManager;
-
-    public LoadMenu(WindowManager windowManager, GameController gameController) {
+    public LoadMenu(GameController gameController) {
         this.gameController = gameController;
-        this.windowManager = windowManager;
     }
 
     @Override
@@ -51,8 +47,8 @@ public class LoadMenu extends RenderScreen {
     }
 
     private void drawBackground(double w, double h) {
-        if (gameController.isTextureExist("menu")) {
-            gameController.bindTexture("menu");
+        if (gameController.getTextureManager().isTextureExist("menu")) {
+            gameController.getTextureManager().bindTexture("menu");
         }
 
         glBegin(GL_QUADS);
@@ -74,7 +70,7 @@ public class LoadMenu extends RenderScreen {
 
         glEnd();
 
-        gameController.unbindTexture("menu");
+        gameController.getTextureManager().unbindTexture("menu");
     }
 
     private void drawGameInfo(double w, double h) {

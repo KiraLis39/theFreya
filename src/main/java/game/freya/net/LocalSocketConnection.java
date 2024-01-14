@@ -39,8 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @RequiredArgsConstructor
 public final class LocalSocketConnection implements Runnable, AutoCloseable {
-    private static GameController gameController;
-
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
 
     private final AtomicBoolean isAccepted = new AtomicBoolean(false);
@@ -48,6 +46,8 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
     private final AtomicBoolean isPongReceived = new AtomicBoolean(false);
 
     private final AtomicBoolean isPing = new AtomicBoolean(false);
+
+    private GameController gameController;
 
     private ObjectOutputStream oos;
 

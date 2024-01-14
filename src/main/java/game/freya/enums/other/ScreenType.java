@@ -12,7 +12,7 @@ public enum ScreenType {
     MENU_LOADING_SCREEN(0, "Экран загрузки приложения") {
         @Override
         public RenderScreen getScreen(WindowManager windowManager, GameController gameController) {
-            return new LoadMenu(windowManager, gameController);
+            return new LoadMenu(gameController);
         }
     },
     MENU_SCREEN(1, "Экран меню") {
@@ -24,7 +24,7 @@ public enum ScreenType {
     GAME_LOADING_SCREEN(2, "Экран загрузки игры") {
         @Override
         public RenderScreen getScreen(WindowManager windowManager, GameController gameController) {
-            return new LoadGame(windowManager, gameController);
+            return new LoadGame(gameController);
         }
     },
     GAME_SCREEN(3, "Экран игрового геймплея") {

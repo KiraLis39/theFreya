@@ -91,6 +91,10 @@ public final class Constants {
 
     public static final Font PROPAGANDA_BIG_FONT;
 
+    public static final String FONT_VERTEX_FILE = "./shaders/fontVertex.txt";
+
+    public static final String FONT_FRAGMENT_FILE = "./shaders/fontFragment.txt";
+
     @Getter
     private static final String appVersion = "0.2.1";
 
