@@ -9,13 +9,13 @@
   "glDebugMode": true,
   "useVSync": true,
 
-  "cullFaceGlEnabled": false,
+  "cullFaceGlEnabled": true,
   "smoothEnabled": true,
   "lightsEnabled": false,
-  "colorMaterialEnabled": true,
+  "materialEnabled": false,
   "depthEnabled": true,
-  "useAlphaTest": false,
-  "blendEnabled": false,
+  "useAlphaTest": true,
+  "blendEnabled": true,
   "useTextures": true,
   "useFog": false
 }

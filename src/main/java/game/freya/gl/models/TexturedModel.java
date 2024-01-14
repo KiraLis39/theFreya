@@ -1,25 +1,9 @@
 package game.freya.gl.models;
 
 import game.freya.gl.textures.ModelTexture;
+import lombok.Builder;
+import lombok.Getter;
 
-public class TexturedModel {
-
-    private final RawModel rawModel;
-
-    private final ModelTexture texture;
-
-
-    public TexturedModel(RawModel model, ModelTexture texture) {
-        this.rawModel = model;
-        this.texture = texture;
-    }
-
-    public RawModel getRawModel() {
-        return rawModel;
-    }
-
-    public ModelTexture getTexture() {
-        return texture;
-    }
-
+@Builder
+public record TexturedModel(@Getter RawModel rawModel, @Getter ModelTexture texture) {
 }

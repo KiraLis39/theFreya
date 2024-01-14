@@ -789,7 +789,7 @@ public class FoxWindow extends Window {
     }
 
     private void setupColorMaterial() {
-        if (Constants.getGameConfig().isColorMaterialEnabled()) {
+        if (Constants.getGameConfig().isMaterialEnabled()) {
             /*
                 Локальная точка зрения имеет тенденцию давать более реалистичные результаты, но поскольку направление необходимо вычислять
                 для каждой вершины, при использовании локальной точки зрения общая производительность снижается. По умолчанию предполагается

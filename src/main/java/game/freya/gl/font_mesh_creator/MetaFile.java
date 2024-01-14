@@ -57,12 +57,14 @@ public class MetaFile {
      * @param file - the font file.
      */
     protected MetaFile(File file, double aspect) {
-//        this.aspect = (double) Display.getWidth() / (double) Display.getHeight();
         openFile(file);
+
         loadPaddingData();
         loadLineSizes(aspect);
+
         int imageWidth = getValueOfVariable("scaleW");
         loadCharacterData(imageWidth);
+
         close();
     }
 
@@ -117,7 +119,7 @@ public class MetaFile {
     private int[] getValuesOfVariable(String variable) {
         String found = values.get(variable);
         if (found == null) {
-            log.error("Variable string 'found' is null: {}", variable);
+            log.error("Variable '{}' as found-string is null!", variable);
             return new int[0];
         }
 
@@ -135,8 +137,8 @@ public class MetaFile {
     private void close() {
         try {
             reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            log.warn("Reader closing exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 
@@ -149,8 +151,7 @@ public class MetaFile {
         try {
             reader = new BufferedReader(new FileReader(file));
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Couldn't read font meta file!");
+            log.error("File read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 
@@ -210,6 +211,7 @@ public class MetaFile {
             this.spaceWidth = (getValueOfVariable("xadvance") - paddingWidth) * horizontalPerPixelSize;
             return null;
         }
+
         double xTex = ((double) getValueOfVariable("x") + (padding[PAD_LEFT] - DESIRED_PADDING)) / imageSize;
         double yTex = ((double) getValueOfVariable("y") + (padding[PAD_TOP] - DESIRED_PADDING)) / imageSize;
         int width = getValueOfVariable("width") - (paddingWidth - (2 * DESIRED_PADDING));
@@ -221,6 +223,7 @@ public class MetaFile {
         double xOff = (getValueOfVariable("xoffset") + padding[PAD_LEFT] - DESIRED_PADDING) * horizontalPerPixelSize;
         double yOff = (getValueOfVariable("yoffset") + (padding[PAD_TOP] - DESIRED_PADDING)) * verticalPerPixelSize;
         double xAdvance = (getValueOfVariable("xadvance") - paddingWidth) * horizontalPerPixelSize;
+
         return new Character(id, xTex, yTex, xTexSize, yTexSize, xOff, yOff, quadWidth, quadHeight, xAdvance);
     }
 }

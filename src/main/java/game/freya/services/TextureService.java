@@ -46,7 +46,9 @@ public class TextureService {
         clearTextures();
         try (Stream<Path> images = Files.walk(Path.of(imgPath))) {
             images
-                    .filter(path -> !Files.isDirectory(path) && !path.getFileName().toString().endsWith(".ico"))
+                    .filter(path -> !Files.isDirectory(path)
+                            && !path.getFileName().toString().endsWith(".ico")
+                            && !path.getFileName().toString().endsWith(".txt"))
                     .forEach(this::loadTexture);
             log.info("Загрузка текстур завершена.");
         } catch (Exception e) {

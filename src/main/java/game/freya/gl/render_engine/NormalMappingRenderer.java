@@ -1,30 +1,37 @@
-package game.freya.gl.normal_mapping_renderer;
-
+package game.freya.gl.render_engine;
 
 import game.freya.gl.entities.Camera;
 import game.freya.gl.entities.Entity;
 import game.freya.gl.entities.Light;
 import game.freya.gl.models.RawModel;
 import game.freya.gl.models.TexturedModel;
-import game.freya.gl.render_engine.MasterRenderer;
+import game.freya.gl.shaders.NormalMappingShader;
 import game.freya.gl.textures.ModelTexture;
 import game.freya.utils.Maths;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector4f;
 
 import java.util.List;
 import java.util.Map;
 
-public class NormalMappingRenderer {
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glDrawElements;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE1;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
+public class NormalMappingRenderer {
     private final NormalMappingShader shader;
 
     public NormalMappingRenderer(Matrix4f projectionMatrix) {
         this.shader = new NormalMappingShader();
+
         shader.start();
         shader.loadProjectionMatrix(projectionMatrix);
         shader.connectTextureUnits();
@@ -33,40 +40,38 @@ public class NormalMappingRenderer {
 
     public void render(Map<TexturedModel, List<Entity>> entities, Vector4f clipPlane, List<Light> lights, Camera camera) {
         shader.start();
+
         prepare(clipPlane, lights, camera);
         for (TexturedModel model : entities.keySet()) {
             prepareTexturedModel(model);
             List<Entity> batch = entities.get(model);
             for (Entity entity : batch) {
                 prepareInstance(entity);
-                GL11.glDrawElements(GL11.GL_TRIANGLES, model.getRawModel().getVertexCount(), GL11.GL_UNSIGNED_INT, 0);
+                glDrawElements(GL_TRIANGLES, model.getRawModel().getVertexCount(), GL_UNSIGNED_INT, 0);
             }
             unbindTexturedModel();
         }
-        shader.stop();
-    }
 
-    public void close() {
-        shader.close();
+        shader.stop();
     }
 
     private void prepareTexturedModel(TexturedModel model) {
         RawModel rawModel = model.getRawModel();
-        GL30.glBindVertexArray(rawModel.getVaoID());
-        GL20.glEnableVertexAttribArray(0);
-        GL20.glEnableVertexAttribArray(1);
-        GL20.glEnableVertexAttribArray(2);
-        GL20.glEnableVertexAttribArray(3);
+        glBindVertexArray(rawModel.getId());
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        glEnableVertexAttribArray(3);
         ModelTexture texture = model.getTexture();
         shader.loadNumberOfRows(texture.getNumberOfRows());
         if (texture.isHasTransparency()) {
             MasterRenderer.disableCulling();
         }
         shader.loadShineVariables(texture.getShineDamper(), texture.getReflectivity());
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getTexture().getId());
-        GL13.glActiveTexture(GL13.GL_TEXTURE1);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getTexture().getNormalMap());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, model.getTexture().getId());
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, model.getTexture().getNormalMap());
     }
 
     private void unbindTexturedModel() {
@@ -75,7 +80,7 @@ public class NormalMappingRenderer {
         GL20.glDisableVertexAttribArray(1);
         GL20.glDisableVertexAttribArray(2);
         GL20.glDisableVertexAttribArray(3);
-        GL30.glBindVertexArray(0);
+        glBindVertexArray(0);
     }
 
     private void prepareInstance(Entity entity) {
@@ -95,4 +100,7 @@ public class NormalMappingRenderer {
         shader.loadViewMatrix(viewMatrix);
     }
 
+    public void close() {
+        shader.close();
+    }
 }

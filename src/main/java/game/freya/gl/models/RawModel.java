@@ -1,23 +1,8 @@
 package game.freya.gl.models;
 
-public class RawModel {
+import lombok.Builder;
+import lombok.Getter;
 
-    private final int vaoID;
-
-    private final int vertexCount;
-
-    public RawModel(int vaoID, int vertexCount) {
-        this.vaoID = vaoID;
-        this.vertexCount = vertexCount;
-    }
-
-    public int getVaoID() {
-        return vaoID;
-    }
-
-    public int getVertexCount() {
-        return vertexCount;
-    }
-
-
+@Builder
+public record RawModel(@Getter int id, @Getter int vertexCount) {
 }

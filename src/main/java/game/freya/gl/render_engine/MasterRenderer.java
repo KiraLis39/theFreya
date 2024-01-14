@@ -4,7 +4,6 @@ import game.freya.gl.entities.Camera;
 import game.freya.gl.entities.Entity;
 import game.freya.gl.entities.Light;
 import game.freya.gl.models.TexturedModel;
-import game.freya.gl.normal_mapping_renderer.NormalMappingRenderer;
 import game.freya.gl.shaders.StaticShader;
 import game.freya.gl.shaders.TerrainShader;
 import game.freya.gl.terrains.Terrain;

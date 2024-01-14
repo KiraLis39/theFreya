@@ -4,13 +4,17 @@ import game.freya.gl.entities.Camera;
 import game.freya.gl.models.RawModel;
 import game.freya.gl.shaders.SkyboxShader;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.util.vector.Matrix4f;
 
-public class SkyboxRenderer {
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE1;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE_CUBE_MAP;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
 
+public class SkyboxRenderer {
     private static final float SIZE = 500f;
 
     private static final float[] VERTICES = {
@@ -75,6 +79,7 @@ public class SkyboxRenderer {
         cube = loader.loadToVAO(VERTICES, 3);
         texture = loader.loadCubeMap(TEXTURE_FILES);
         nightTexture = loader.loadCubeMap(NIGHT_TEXTURE_FILES);
+
         shader = new SkyboxShader();
         shader.start();
         shader.connectTextureUnits();
@@ -86,10 +91,12 @@ public class SkyboxRenderer {
         shader.start();
         shader.loadViewMatrix(camera);
         shader.loadFogColor(r, g, b);
-        GL30.glBindVertexArray(cube.getVaoID());
+
+        GL30.glBindVertexArray(cube.getId());
         GL20.glEnableVertexAttribArray(0);
         bindTextures();
         GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, cube.getVertexCount());
+
         GL20.glDisableVertexAttribArray(0);
         GL30.glBindVertexArray(0);
         shader.stop();
@@ -98,6 +105,7 @@ public class SkyboxRenderer {
     private void bindTextures() {
         time += DisplayManager.getFrameTimeSeconds() * 1000;
         time %= 24000;
+
         int texture1;
         int texture2;
         float blendFactor;
@@ -119,12 +127,11 @@ public class SkyboxRenderer {
             blendFactor = (time - 21000) / (24000 - 21000);
         }
 
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL13.GL_TEXTURE_CUBE_MAP, texture1);
-        GL13.glActiveTexture(GL13.GL_TEXTURE1);
-        GL11.glBindTexture(GL13.GL_TEXTURE_CUBE_MAP, texture2);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, texture1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, texture2);
+
         shader.loadBlendFactor(blendFactor);
     }
-
-
 }

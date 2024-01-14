@@ -1,5 +1,7 @@
 package game.freya.gl.shaders;
 
+import game.freya.utils.ExceptionUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector2f;
@@ -8,7 +10,6 @@ import org.lwjgl.util.vector.Vector4f;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.io.IOException;
 import java.nio.FloatBuffer;
 
 import static org.lwjgl.opengl.GL11.GL_FALSE;
@@ -37,10 +38,11 @@ import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
 import static org.lwjgl.opengl.GL20.glUseProgram;
 import static org.lwjgl.opengl.GL20.glValidateProgram;
 
+@Slf4j
 public abstract class ShaderProgram implements AutoCloseable {
     private static final FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
 
-    private final int programID;
+    private final int id;
 
     private final int vertexShaderID;
 
@@ -49,26 +51,28 @@ public abstract class ShaderProgram implements AutoCloseable {
     protected ShaderProgram(String vertexFile, String fragmentFile) {
         vertexShaderID = loadShader(vertexFile, GL_VERTEX_SHADER);
         fragmentShaderID = loadShader(fragmentFile, GL_FRAGMENT_SHADER);
-        programID = glCreateProgram();
-        glAttachShader(programID, vertexShaderID);
-        glAttachShader(programID, fragmentShaderID);
+
+        id = glCreateProgram();
+        glAttachShader(id, vertexShaderID);
+        glAttachShader(id, fragmentShaderID);
+
         bindAttributes();
 
-        glLinkProgram(programID);
-        glValidateProgram(programID);
+        glLinkProgram(id);
+        glValidateProgram(id);
 
         getAllUniformLocations();
     }
 
     private static int loadShader(String file, int type) {
-        StringBuilder shaderSource = new StringBuilder();
+        final StringBuilder shaderSource = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 shaderSource.append(line).append("//\n");
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            log.error("Shader loading exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
 
         int shaderID = glCreateShader(type);
@@ -84,11 +88,11 @@ public abstract class ShaderProgram implements AutoCloseable {
     protected abstract void getAllUniformLocations();
 
     protected int getUniformLocation(String uniformName) {
-        return glGetUniformLocation(programID, uniformName);
+        return glGetUniformLocation(id, uniformName);
     }
 
     public void start() {
-        glUseProgram(programID);
+        glUseProgram(id);
     }
 
     public void stop() {
@@ -98,19 +102,19 @@ public abstract class ShaderProgram implements AutoCloseable {
     public void close() {
         stop();
 
-        glDetachShader(programID, vertexShaderID);
-        glDetachShader(programID, fragmentShaderID);
+        glDetachShader(id, vertexShaderID);
+        glDetachShader(id, fragmentShaderID);
 
         glDeleteShader(vertexShaderID);
         glDeleteShader(fragmentShaderID);
 
-        glDeleteProgram(programID);
+        glDeleteProgram(id);
     }
 
     protected abstract void bindAttributes();
 
     protected void bindAttribute(int attribute, String variableName) {
-        glBindAttribLocation(programID, attribute, variableName);
+        glBindAttribLocation(id, attribute, variableName);
     }
 
     protected void loadFloat(int location, float value) {
@@ -144,7 +148,7 @@ public abstract class ShaderProgram implements AutoCloseable {
     protected void loadMatrix(int location, Matrix4f matrix) {
         matrix.store(matrixBuffer);
         matrixBuffer.flip();
+
         glUniformMatrix4fv(location, false, matrixBuffer);
     }
-
 }

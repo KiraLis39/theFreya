@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
 import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glDrawElements;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
@@ -37,8 +39,7 @@ public class EntityRenderer {
             List<Entity> batch = entities.get(model);
             for (Entity entity : batch) {
                 prepareInstance(entity);
-                GL11.glDrawElements(GL11.GL_TRIANGLES, model.getRawModel().getVertexCount(),
-                        GL11.GL_UNSIGNED_INT, 0);
+                glDrawElements(GL11.GL_TRIANGLES, model.getRawModel().getVertexCount(), GL_UNSIGNED_INT, 0);
             }
             unbindTexturedModel();
         }
@@ -46,7 +47,7 @@ public class EntityRenderer {
 
     private void prepareTexturedModel(TexturedModel model) {
         RawModel rawModel = model.getRawModel();
-        glBindVertexArray(rawModel.getVaoID());
+        glBindVertexArray(rawModel.getId());
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);

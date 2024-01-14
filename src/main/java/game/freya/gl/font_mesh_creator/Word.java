@@ -1,5 +1,8 @@
 package game.freya.gl.font_mesh_creator;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,12 +11,14 @@ import java.util.List;
  *
  * @author Karl
  */
+@Slf4j
 public class Word {
-
-    private final List<Character> characters = new ArrayList<Character>();
+    @Getter
+    private final List<Character> characters = new ArrayList<>();
 
     private final double fontSize;
 
+    @Getter
     private double width = 0;
 
     /**
@@ -31,22 +36,12 @@ public class Word {
      * @param character - the character to be added.
      */
     protected void addCharacter(Character character) {
+        if (character == null) {
+            log.error("Character can not be NULL: {}", character);
+            return;
+        }
+
         characters.add(character);
         width += character.getxAdvance() * fontSize;
     }
-
-    /**
-     * @return The list of characters in the word.
-     */
-    protected List<Character> getCharacters() {
-        return characters;
-    }
-
-    /**
-     * @return The width of the word in terms of screen size.
-     */
-    protected double getWordWidth() {
-        return width;
-    }
-
 }

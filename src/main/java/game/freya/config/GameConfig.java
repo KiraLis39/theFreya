@@ -49,7 +49,7 @@ public class GameConfig {
     private boolean isLightsEnabled = true;
 
     @Builder.Default
-    private boolean isColorMaterialEnabled = true;
+    private boolean isMaterialEnabled = true;
 
     @Builder.Default
     private boolean isSmoothEnabled = true;

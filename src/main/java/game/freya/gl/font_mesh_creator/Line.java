@@ -1,5 +1,7 @@
 package game.freya.gl.font_mesh_creator;
 
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,14 +11,17 @@ import java.util.List;
  * @author Karl
  */
 public class Line {
-
+    @Getter
     private final double maxLength;
 
+    @Getter
     private final double spaceSize;
 
+    @Getter
     private final List<Word> words = new ArrayList<>();
 
-    private double currentLineLength = 0;
+    @Getter
+    private double currentLength = 0;
 
     /**
      * Creates an empty line.
@@ -32,43 +37,20 @@ public class Line {
 
     /**
      * Attempt to add a word to the line. If the line can fit the word in
-     * without reaching the maximum line length then the word is added and the
-     * line length increased.
+     * without reaching the maximum line length then the word is added and the line length increased.
      *
      * @param word - the word to try to add.
      * @return {@code true} if the word has successfully been added to the line.
      */
     protected boolean attemptToAddWord(Word word) {
-        double additionalLength = word.getWordWidth();
+        double additionalLength = word.getWidth();
         additionalLength += !words.isEmpty() ? spaceSize : 0;
-        if (currentLineLength + additionalLength <= maxLength) {
+        if (currentLength + additionalLength <= maxLength) {
             words.add(word);
-            currentLineLength += additionalLength;
+            currentLength += additionalLength;
             return true;
         } else {
             return false;
         }
     }
-
-    /**
-     * @return The max length of the line.
-     */
-    protected double getMaxLength() {
-        return maxLength;
-    }
-
-    /**
-     * @return The current screen-space length of the line.
-     */
-    protected double getLineLength() {
-        return currentLineLength;
-    }
-
-    /**
-     * @return The list of words in the line.
-     */
-    protected List<Word> getWords() {
-        return words;
-    }
-
 }

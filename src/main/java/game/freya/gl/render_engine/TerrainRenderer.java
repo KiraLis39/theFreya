@@ -47,10 +47,11 @@ public class TerrainRenderer {
 
     private void prepareTerrain(Terrain terrain) {
         RawModel rawModel = terrain.getModel();
-        glBindVertexArray(rawModel.getVaoID());
+        glBindVertexArray(rawModel.getId());
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
+
         bindTextures(terrain);
         shader.loadShineVariables(1, 0);
     }

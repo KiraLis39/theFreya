@@ -7,6 +7,9 @@ import game.freya.config.Media;
 import game.freya.enums.other.ScreenType;
 import game.freya.gl.RenderScreen;
 import game.freya.gl.font_mesh_creator.FontType;
+import game.freya.gl.font_mesh_creator.GUIText;
+import game.freya.gl.font_mesh_creator.TextMaster;
+import game.freya.gl.render_engine.Loader;
 import game.freya.gui.panes.handlers.FoxWindow;
 import game.freya.services.TextureService;
 import game.freya.utils.ExceptionUtils;
@@ -17,10 +20,12 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
+import org.lwjgl.util.vector.Vector2f;
 import org.springframework.stereotype.Component;
 
 import javax.swing.SwingUtilities;
 import javax.validation.constraints.NotNull;
+import java.awt.Color;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.net.URL;
@@ -72,6 +77,8 @@ public class WindowManager implements Runnable {
 
     private volatile boolean isGlWindowBreaked = false;
 
+    private TextMaster textMaster;
+
     public void appStart(GameController gameController) {
         this.gameController = gameController;
 
@@ -89,24 +96,15 @@ public class WindowManager implements Runnable {
 
         // Set errors callback:
         try (GLFWErrorCallback callback = GLFWErrorCallback.createPrint(System.err)) {
+            callback.set();
+
             configureGlDebug();
 
             // Configure GLFW Hints:
             doHintsPreset();
 
-            callback.set();
-
             // Create a Window:
             window = new FoxWindow(this, gameController);
-
-            // Loader loader = new Loader();
-            // TextMaster tm = new TextMaster(loader);
-            URL fontsResource = getClass().getResource("/fonts");
-            if (fontsResource != null) {
-                Path texPath = Path.of((fontsResource.getPath() + "/harrington.png").substring(1));
-                Path fntPath = Path.of((fontsResource.getPath() + "/harrington.fnt").substring(1));
-                FontType font = new FontType(textureService.loadTexture(texPath), fntPath.toFile(), window.getAspect());
-            }
 
             // Load the screen into window:
             loadScreen(ScreenType.MENU_LOADING_SCREEN);
@@ -167,6 +165,19 @@ public class WindowManager implements Runnable {
             }
         }
 
+        // texts:
+        textMaster = new TextMaster(new Loader());
+        URL fontsResource = getClass().getResource("/fonts");
+        if (fontsResource != null) {
+            Path texPath = Path.of((fontsResource.getPath() + "/segoeUI.png").substring(1));
+            Path fntPath = Path.of((fontsResource.getPath() + "/segoeUI.fnt").substring(1));
+
+            FontType font = new FontType(textureService.loadTexture(texPath), fntPath.toFile(), window.getAspect());
+            GUIText text = new GUIText(textMaster, "!!!Yatta!!! 1234567890",
+                    3f, font, new Vector2f(0.0f, 0.4f), 1.0f, true);
+            text.setColor(Color.GREEN);
+        }
+
         this.currentScreen = type.getScreen(this, gameController);
         window.setVisible(true);
         draw(); // блокируется до закрытия окна.
@@ -183,7 +194,8 @@ public class WindowManager implements Runnable {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
                 window.configureThis();
-                window.render(this.currentScreen);
+//                window.render(this.currentScreen);
+                textMaster.render();
 
                 // swap the color buffers
                 glfwSwapBuffers(window.getWindow());
@@ -316,6 +328,8 @@ public class WindowManager implements Runnable {
         ) {
             isGlWindowBreaked = true;
             Media.playSound("jump");
+
+            textMaster.close();
 
             if (!glfwWindowShouldClose(window.getWindow())) {
                 glfwSetWindowShouldClose(window.getWindow(), true);
