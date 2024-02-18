@@ -21,8 +21,17 @@ public class Character {
 
     private final double xAdvance;
 
-    protected Character(int id, double xTextureCoord, double yTextureCoord, double xTexSize, double yTexSize,
-                        double xOffset, double yOffset, double sizeX, double sizeY, double xAdvance
+    protected Character(
+            int id,
+            double xTextureCoord,
+            double yTextureCoord,
+            double xTexSize,
+            double yTexSize,
+            double xOffset,
+            double yOffset,
+            double sizeX,
+            double sizeY,
+            double xAdvance
     ) {
         this.id = id;
         this.xTextureCoord = xTextureCoord;
