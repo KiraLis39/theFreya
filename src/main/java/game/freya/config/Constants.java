@@ -96,16 +96,20 @@ public final class Constants {
     public static final String FONT_FRAGMENT_FILE = "./shaders/fontFragment.txt";
 
     @Getter
-    private static final String appVersion = "0.2.1";
+    @Setter
+    private static String appVersion;
 
     @Getter
-    private static final String appName = "Freya the Game";
+    @Setter
+    private static String appName;
 
     @Getter
-    private static final String authorName = "KiraLis39";
+    @Setter
+    private static String authorName;
 
     @Getter
-    private static final String appCompany = "Multiverse-39 Group, 2023";
+    @Setter
+    private static String appCompany;
 
     @Getter
     private static final double dragSpeed = 12D;

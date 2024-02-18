@@ -50,6 +50,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -87,6 +88,16 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class GameController extends GameControllerBase {
+
+    @Value("${app.appName}")
+    private String appName;
+
+    @Value("${app.appVersion}")
+    private String appVersion;
+
+    @Value("${app.appCompany}")
+    private String appCompany;
+
     private final ArrayDeque<ClientDataDTO> deque = new ArrayDeque<>();
 
     private final PlayerService playerService;
@@ -205,6 +216,10 @@ public class GameController extends GameControllerBase {
 
     @PostConstruct
     public void init() throws IOException {
+        Constants.setAppName(appName);
+        Constants.setAppCompany(appCompany);
+        Constants.setAppVersion(appVersion);
+
         try {
             UIManager.setLookAndFeel(new NimbusLookAndFeel());
 
@@ -242,7 +257,7 @@ public class GameController extends GameControllerBase {
             ) {
                 if (is != null && is2 != null) {
                     Constants.setLogo(new FoxLogo());
-                    Constants.getLogo().start(Constants.getAppVersion(),
+                    Constants.getLogo().start(appVersion,
                             Constants.getUserConfig().isFullscreen() ? FoxLogo.IMAGE_STYLE.FILL : FoxLogo.IMAGE_STYLE.DEFAULT,
                             FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is), ImageIO.read(is2));
                 }

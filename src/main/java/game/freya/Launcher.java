@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.util.TimeZone;
 //@EnableAsync
 @SpringBootApplication
 //@EnableConfigurationProperties({GameConfig.class})
+@PropertySource("classpath:application.yml")
 public class Launcher {
     public static void main(String[] args) {
         log.info("Setting up the system properties...");

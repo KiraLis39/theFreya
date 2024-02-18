@@ -117,3 +117,9 @@ springdoc:
 #    health:
 #      probes:
 #        enabled: true
+
+app:
+  appVersion: 0.2.1
+  appName: "Freya the Game"
+  authorName: KiraLis39
+  appCompany: "Multiverse-39 Group, 2023"
