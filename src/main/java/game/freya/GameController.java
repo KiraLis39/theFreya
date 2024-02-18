@@ -88,6 +88,8 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class GameController extends GameControllerBase {
+    @Value("${app.authorName}")
+    private String authorName;
 
     @Value("${app.appName}")
     private String appName;
@@ -219,6 +221,7 @@ public class GameController extends GameControllerBase {
         Constants.setAppName(appName);
         Constants.setAppCompany(appCompany);
         Constants.setAppVersion(appVersion);
+        Constants.setAuthorName(authorName);
 
         try {
             UIManager.setLookAndFeel(new NimbusLookAndFeel());
