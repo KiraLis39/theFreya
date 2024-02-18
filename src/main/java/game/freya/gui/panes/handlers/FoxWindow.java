@@ -65,12 +65,15 @@ import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowFocusCallback;
 import static org.lwjgl.opengl.GL11.GL_ALPHA_TEST;
+import static org.lwjgl.opengl.GL11.GL_AMBIENT;
 import static org.lwjgl.opengl.GL11.GL_BACK;
 import static org.lwjgl.opengl.GL11.GL_BLEND;
 import static org.lwjgl.opengl.GL11.GL_CCW;
 import static org.lwjgl.opengl.GL11.GL_COLOR_MATERIAL;
 import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
+import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
+import static org.lwjgl.opengl.GL11.GL_FILL;
 import static org.lwjgl.opengl.GL11.GL_FLAT;
 import static org.lwjgl.opengl.GL11.GL_FOG;
 import static org.lwjgl.opengl.GL11.GL_FOG_COLOR;
@@ -80,7 +83,6 @@ import static org.lwjgl.opengl.GL11.GL_LEQUAL;
 import static org.lwjgl.opengl.GL11.GL_LIGHT0;
 import static org.lwjgl.opengl.GL11.GL_LIGHT1;
 import static org.lwjgl.opengl.GL11.GL_LIGHTING;
-import static org.lwjgl.opengl.GL11.GL_LINE;
 import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;
 import static org.lwjgl.opengl.GL11.GL_LINE_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_LINE_SMOOTH_HINT;
@@ -93,7 +95,9 @@ import static org.lwjgl.opengl.GL11.GL_POINT_SMOOTH_HINT;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_OFFSET_FILL;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH;
 import static org.lwjgl.opengl.GL11.GL_POLYGON_SMOOTH_HINT;
+import static org.lwjgl.opengl.GL11.GL_POSITION;
 import static org.lwjgl.opengl.GL11.GL_SMOOTH;
+import static org.lwjgl.opengl.GL11.GL_SPECULAR;
 import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL11.glAlphaFunc;
@@ -113,6 +117,7 @@ import static org.lwjgl.opengl.GL11.glFogfv;
 import static org.lwjgl.opengl.GL11.glFrontFace;
 import static org.lwjgl.opengl.GL11.glHint;
 import static org.lwjgl.opengl.GL11.glIsEnabled;
+import static org.lwjgl.opengl.GL11.glLightfv;
 import static org.lwjgl.opengl.GL11.glLineWidth;
 import static org.lwjgl.opengl.GL11.glPolygonMode;
 import static org.lwjgl.opengl.GL11.glPolygonOffset;
@@ -743,14 +748,30 @@ public class FoxWindow extends Window {
         glShadeModel(GL_FLAT);
     }
 
+    private static final float[] ambientLight = {0.5f, 0.5f, 0.5f, 1.0f}; // 0.0f, 0.0f, 0.3f, 1.0f
+
+    private static final float[] ambientSpecular = {0.75f, 0.75f, 0.75f, 1.0f};
+
+    private static final float[] ambientPosition = {0.0f, 0.5f, -2.0f, 1.0f}; // 31.84215f, 36.019997f, 28.262873f, 1.0f
+
+    private static final float[] ambientDirection = {0.0f, 0.0f, 0.5f, 1.0f};
+
+    private static final float[] ambientAttenuation = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    private static final float[] diffuseLight = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    private static final float[] diffusePosition = {0.5f, 0.5f, -1.5f, 1.0f};
+
+    private static final float[] diffuseSpecular = {0.65f, 0.65f, 0.65f, 1.0f};
+
     private void setupLights() {
         if (Constants.getGameConfig().isLightsEnabled()) {
             if (glIsEnabled(GL_LIGHTING) && glIsEnabled(GL_COLOR_MATERIAL)) {
                 return;
             }
 
-            //        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
-            //        glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
+            glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+            glLightfv(GL_LIGHT0, GL_SPECULAR, ambientSpecular);
             //        glLightfv(GL_LIGHT0, GL_POSITION, ambientPosition);
             //        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, ambientDirection);
             //        glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, ambientAttenuation);
@@ -761,9 +782,9 @@ public class FoxWindow extends Window {
             //        glLighti(GL_LIGHT0, GL_SPOT_CUTOFF, 90); //range 0-90 and the special value 180
             glEnable(GL_LIGHT0);
 
-            //        glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
-            //        glLightfv(GL_LIGHT1, GL_POSITION, diffusePosition);
-            //        glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseSpecular);
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
+            glLightfv(GL_LIGHT1, GL_POSITION, diffusePosition);
+            glLightfv(GL_LIGHT1, GL_SPECULAR, diffuseSpecular);
             // glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, new float[] {0.25f, 0.25f, -0.75f, 0.5f});
             // glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.5f); // GL_LINEAR_ATTENUATION | GL_QUADRATIC_ATTENUATION | GL_CONSTANT_ATTENUATION
             // glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);
@@ -834,7 +855,7 @@ public class FoxWindow extends Window {
 
             // настройка отображения передней и задней частей полигонов:
             // glPolygonMode(GL_FRONT, GL_FILL); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
-            glPolygonMode(GL_BACK, GL_LINE); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
+            glPolygonMode(GL_BACK, GL_FILL); // 0) GL_FRONT_AND_BACK | GL_FRONT | GL_BACK // 1) GL_POINT | GL_LINE | GL_FILL
 
             // задаём ориентацию по часовой\против часовой:
             glFrontFace(GL_CCW); // GL_CW | GL_CCW

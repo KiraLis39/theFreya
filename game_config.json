@@ -6,13 +6,13 @@
   "socketConnectionAwaitTimeout": 180000,
   "databaseRootDirUrl": "H:\\JavaProj\\Games\\FreyaTheGame3D\\.\\db\\freya.db",
 
-  "glDebugMode": true,
+  "glDebugMode": false,
   "useVSync": true,
 
   "cullFaceGlEnabled": true,
   "smoothEnabled": true,
-  "lightsEnabled": false,
-  "materialEnabled": false,
+  "lightsEnabled": true,
+  "materialEnabled": true,
   "depthEnabled": true,
   "useAlphaTest": true,
   "blendEnabled": true,

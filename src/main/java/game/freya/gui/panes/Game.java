@@ -14,6 +14,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
 
+import static org.lwjgl.opengl.GL11.GL_CCW;
+import static org.lwjgl.opengl.GL11.GL_CULL_FACE;
 import static org.lwjgl.opengl.GL11.GL_DIFFUSE;
 import static org.lwjgl.opengl.GL11.GL_FRONT;
 import static org.lwjgl.opengl.GL11.GL_LIGHT0;
@@ -32,6 +34,7 @@ import static org.lwjgl.opengl.GL11.glColor4f;
 import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL11.glEnd;
+import static org.lwjgl.opengl.GL11.glFrontFace;
 import static org.lwjgl.opengl.GL11.glLightfv;
 import static org.lwjgl.opengl.GL11.glLineStipple;
 import static org.lwjgl.opengl.GL11.glLineWidth;
@@ -54,22 +57,6 @@ public class Game extends RenderScreen {
     private static final int minimapDim = 2048;
 
     private static final int halfDim = (int) (minimapDim / 2d);
-
-    private static final float[] ambientLight = {0.5f, 0.5f, 0.5f, 1.0f}; // 0.0f, 0.0f, 0.3f, 1.0f
-
-    private static final float[] ambientSpecular = {1.0f, 0.33f, 0.33f, 1.0f};
-
-    private static final float[] ambientPosition = {0.0f, 0.0f, -2.0f, 1.0f}; // 31.84215f, 36.019997f, 28.262873f, 1.0f
-
-    private static final float[] ambientDirection = {0.0f, -0.25f, -0.5f, 1.0f};
-
-    private static final float[] ambientAttenuation = {1.0f, 1.0f, 1.0f, 1.0f};
-
-    private static final float[] diffuseLight = {1.0f, 1.0f, 1.0f, 1.0f};
-
-    private static final float[] diffusePosition = {0.5f, 0.5f, -1.5f, 1.0f};
-
-    private static final float[] diffuseSpecular = {0.65f, 0.65f, 0.65f, 1.0f};
 
     private static final ScreenType type = ScreenType.GAME_SCREEN;
 
@@ -145,13 +132,18 @@ public class Game extends RenderScreen {
     @Override
     public void render(double w, double h) {
         if (gameController.isGameActive()) {
+            glFrontFace(GL_CCW);
             glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
 
             glPushMatrix();
             moveHero();
 
             drawFloor();
+
+            glDisable(GL_CULL_FACE);
             drawPyramid();
+            glEnable(GL_CULL_FACE);
+
             glPopMatrix();
 
             glLightfv(GL_LIGHT0, GL_POSITION, temp.asFloatBuffer().put(new float[]{0.0f, -1.5f, 1.0f, 1.0f}).flip());
@@ -235,21 +227,21 @@ public class Game extends RenderScreen {
         glVertex3f(mod, -mod, mod);
         glVertex3f(0.0f, mod, 0.0f);
 
-        glColor4f(0.0f, 0.85f, 0.0f, 0.5f);
-        // glTexCoord2f(0.0f, 0.0f);
-        glNormal3f(0.0f, 0.5f, 0.0f);
-        glVertex3f(mod, -mod, mod);
-        glVertex3f(mod, -mod, -mod);
-        glVertex3f(0.0f, mod, 0.0f);
-
-        glColor4f(0.25f, 0.33f, 1.0f, 1.0f);
+        glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
         // glTexCoord2f(0.0f, 0.0f);
         glNormal3f(0.0f, 0.5f, -1.0f);
         glVertex3f(mod, -mod, -mod);
         glVertex3f(-mod, -mod, -mod);
         glVertex3f(0.0f, mod, 0.0f);
 
-        glColor4f(0.85f, 0.85f, 0.85f, 0.5f);
+        glColor4f(0.0f, 1.0f, 0.0f, 0.5f);
+        // glTexCoord2f(0.0f, 0.0f);
+        glNormal3f(0.0f, 0.5f, 0.0f);
+        glVertex3f(mod, -mod, mod);
+        glVertex3f(mod, -mod, -mod);
+        glVertex3f(0.0f, mod, 0.0f);
+
+        glColor4f(0.75f, 0.75f, 0.75f, 0.5f);
         // glTexCoord2f(0.0f, 0.0f);
         glNormal3f(-1.0f, 0.5f, 0.0f);
         glVertex3f(-mod, -mod, -mod);
