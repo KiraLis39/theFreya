@@ -1,7 +1,7 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
-import fox.components.tools.VerticalFlowLayout;
+import fox.components.layouts.VerticalFlowLayout;
 import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
@@ -16,17 +16,9 @@ import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JViewport;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -105,7 +97,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
         List<WorldDTO> worlds = gameController.findAllWorldsByNetworkAvailable(false);
         for (WorldDTO world : worlds) {
-            centerList.add(new SubPane("Мир: " + world.getTitle()) {{
+            centerList.add(new SubPane("Мир: ".concat(world.getTitle())) {{
                 setWorld(world);
                 setPreferredSize(new Dimension(
                         Constants.getUserConfig().isFullscreen()
@@ -281,7 +273,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Worlds list snap...");
-            BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
+            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

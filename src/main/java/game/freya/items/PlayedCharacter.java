@@ -4,84 +4,108 @@ import game.freya.enums.other.HurtLevel;
 import game.freya.enums.other.MovingVector;
 import game.freya.interfaces.iEntity;
 import game.freya.items.prototypes.GameCharacter;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.validation.constraints.NotNull;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Slf4j
-@RequiredArgsConstructor
-@AllArgsConstructor
+@Setter
+@Getter
+@SuperBuilder
+@NoArgsConstructor
+@Entity
+@DiscriminatorValue("played")
 public abstract class PlayedCharacter extends GameCharacter {
+    @NotNull
+    private UUID createdBy;
+
     @NotNull
     @Setter
     @Getter
-    public UUID heroUid;
+    private UUID heroUid;
 
+    @Setter
     @Getter
     @NotNull
     private String heroName;
 
     @Getter
     @Setter
+    @Builder.Default
     private short level = 1;
 
+    @Builder.Default
     private int health = 100;
 
     @Setter
+    @Builder.Default
     private int oil = 100;
 
     @Getter
     @Setter
+    @Builder.Default
     private int maxHealth = 100;
 
     @Getter
     @Setter
+    @Builder.Default
     private int maxOil = 100;
 
     @Getter
     @Setter
+    @Builder.Default
     private float power = 1.0f;
 
     @Getter
+    @Builder.Default
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
     @Getter
     @Setter
+    @Builder.Default
     private byte speed = 6;
 
     @Getter
+    @Builder.Default
     private MovingVector vector = MovingVector.UP;
 
     @Getter
+    @Builder.Default
     private long experience = 0;
 
     @Setter
     private UUID ownerUid;
 
     @Setter
-    private String imageNameInCache;
+    private String cacheKey;
 
+    @Builder.Default
     private LocalDateTime createDate = LocalDateTime.now();
 
     @Getter
     @Setter
+    @Builder.Default
     private boolean isVisible = true;
-
-    public void setHeroName(String heroName) {
-        this.heroName = heroName;
-    }
 
     @Override
     public int getHealth() {
         return health;
+    }
+
+    public void setHealth(int health) {
+        this.health = health;
+        recheckHurtLevel();
     }
 
     @Override
@@ -95,7 +119,7 @@ public abstract class PlayedCharacter extends GameCharacter {
             log.warn("Can`t heal the dead corps of player {}!", heroName);
             return;
         }
-        this.health += healPoints;
+        this.health += (int) healPoints;
         if (getHealth() > maxHealth) {
             setHealth(maxHealth);
         }
@@ -103,7 +127,7 @@ public abstract class PlayedCharacter extends GameCharacter {
 
     @Override
     public void hurt(float hurtPoints) {
-        this.health -= hurtPoints;
+        this.health -= (int) hurtPoints;
         if (getHealth() < 0) {
             setHealth(0);
         }
@@ -112,11 +136,6 @@ public abstract class PlayedCharacter extends GameCharacter {
     @Override
     public boolean isDead() {
         return this.hurtLevel.equals(HurtLevel.DEAD);
-    }
-
-    public void setHealth(int health) {
-        this.health = health;
-        recheckHurtLevel();
     }
 
     private void recheckHurtLevel() {
@@ -168,8 +187,8 @@ public abstract class PlayedCharacter extends GameCharacter {
     }
 
     @Override
-    public String getImageNameInCache() {
-        return imageNameInCache;
+    public String getCacheKey() {
+        return cacheKey;
     }
 
     @Override
@@ -182,13 +201,13 @@ public abstract class PlayedCharacter extends GameCharacter {
         if (isDead()) {
             return;
         }
-        this.experience += increaseValue;
+        this.experience += (long) increaseValue;
         recheckPlayerLevel();
     }
 
     @Override
     public void decreaseExp(float decreaseValue) {
-        this.experience -= decreaseValue;
+        this.experience -= (long) decreaseValue;
         recheckPlayerLevel();
     }
 

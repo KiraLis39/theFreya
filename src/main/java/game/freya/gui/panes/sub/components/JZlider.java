@@ -2,9 +2,9 @@ package game.freya.gui.panes.sub.components;
 
 import game.freya.config.Constants;
 
-import javax.swing.JSlider;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.Color;
+import java.awt.*;
 
 public class JZlider extends JSlider {
 

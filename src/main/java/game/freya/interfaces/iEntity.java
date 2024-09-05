@@ -1,6 +1,6 @@
 package game.freya.interfaces;
 
-import java.awt.Rectangle;
+import java.awt.*;
 
 public interface iEntity {
     int getHealth();

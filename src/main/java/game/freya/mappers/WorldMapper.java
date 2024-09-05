@@ -5,7 +5,7 @@ import game.freya.entities.dto.WorldDTO;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.awt.Dimension;
+import java.awt.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;

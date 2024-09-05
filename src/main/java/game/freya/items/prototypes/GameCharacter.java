@@ -3,34 +3,55 @@ package game.freya.items.prototypes;
 import game.freya.interfaces.iEntity;
 import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iHero;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
-import java.awt.Dimension;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.geom.Point2D;
+import java.util.UUID;
 
+@Setter
+@Getter
+@SuperBuilder
+@NoArgsConstructor
+@Entity
+@Table(name = "characters")
 public abstract class GameCharacter implements iGameObject, iHero {
-    @Getter
-    @Setter
-    private Weapon weapon;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "uid", nullable = false)
+    private UUID uid;
 
-    @Getter
-    @Setter
+    @Column(name = "collider", nullable = false)
     private Rectangle collider;
 
-    @Getter
-    @Setter
+    @Column(name = "shape", nullable = false)
     private Rectangle shape;
 
-    @Setter
+    @Column(name = "size", nullable = false)
     private Dimension size;
 
+    @Column(name = "location", nullable = false)
     private Point2D.Double location;
+
+    // созданное игроком оружие в любом случае не удаляется, остаётся для лута или анализа
+    @OneToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH}, fetch = FetchType.EAGER)
+    private Weapon currentWeapon;
 
     @Override
     public void attack(iEntity entity) {
-        entity.hurt(weapon.getAttackPower());
+        entity.hurt(currentWeapon.getAttackPower());
     }
 
     protected void resetCollider(Point2D position) {

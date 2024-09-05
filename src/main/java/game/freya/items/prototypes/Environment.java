@@ -4,8 +4,7 @@ import game.freya.interfaces.iEnvironment;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.awt.Dimension;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.io.Serial;
 import java.util.Random;
@@ -62,6 +61,13 @@ public abstract class Environment implements iEnvironment {
         return this.size;
     }
 
+    protected void setSize(Dimension size) {
+        this.size = size;
+        if (this.location != null) {
+            resetCollider();
+        }
+    }
+
     @Override
     public Point2D.Double getLocation() {
         return this.location;
@@ -90,7 +96,7 @@ public abstract class Environment implements iEnvironment {
     }
 
     @Override
-    public String getImageNameInCache() {
+    public String getCacheKey() {
         return this.imageNameInCache;
     }
 
@@ -105,13 +111,6 @@ public abstract class Environment implements iEnvironment {
     @Override
     public boolean isInSector(Rectangle sector) {
         return sector.contains(getCenterPoint());
-    }
-
-    protected void setSize(Dimension size) {
-        this.size = size;
-        if (this.location != null) {
-            resetCollider();
-        }
     }
 
     public abstract void init();

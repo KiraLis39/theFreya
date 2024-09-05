@@ -2,15 +2,15 @@ package game.freya.enums.other;
 
 import lombok.Getter;
 
-public enum HeroPeriferiaType {
+@Getter
+public enum HeroPeripheralType {
     COMPACT("Компактный"),
     ADVANCED("Продвинутый"),
     HARD("Тяжёлый");
 
-    @Getter
     private final String description;
 
-    HeroPeriferiaType(String description) {
+    HeroPeripheralType(String description) {
         this.description = description;
     }
 }

@@ -5,9 +5,7 @@ import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.items.prototypes.Environment;
 
-import java.awt.AWTException;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;

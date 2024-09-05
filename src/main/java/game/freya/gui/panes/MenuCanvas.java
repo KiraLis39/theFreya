@@ -16,13 +16,8 @@ import game.freya.net.data.NetConnectTemplate;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.AbstractAction;
-import javax.swing.JComponent;
-import javax.swing.JFrame;
-import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
@@ -103,7 +98,7 @@ public class MenuCanvas extends FoxCanvas {
             }
             log.info("Завершена работа вспомогательного потока Меню.");
         }));
-        getSecondThread().setUncaughtExceptionHandler((t, e) ->
+        getSecondThread().setUncaughtExceptionHandler((_, e) ->
                 log.error("Ошибка вспомогательного потока главного меню: {}", ExceptionUtils.getFullExceptionMessage(e)));
         getSecondThread().start();
     }
@@ -126,7 +121,7 @@ public class MenuCanvas extends FoxCanvas {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         if (getHeroesListPane().isVisible()) {
-                            playWithThisHero(gameController.getMyCurrentWorldHeroes().get(0));
+                            playWithThisHero(gameController.getMyCurrentWorldHeroes().getFirst());
                             getHeroesListPane().setVisible(false);
                         } else if (getWorldsListPane().isVisible()) {
                             UUID lastWorldUid = gameController.getCurrentPlayerLastPlayedWorldUid();
@@ -134,7 +129,7 @@ public class MenuCanvas extends FoxCanvas {
                                 chooseOrCreateHeroForWorld(lastWorldUid);
                             } else {
                                 chooseOrCreateHeroForWorld(
-                                        gameController.findAllWorldsByNetworkAvailable(false).get(0).getUid());
+                                        gameController.findAllWorldsByNetworkAvailable(false).getFirst().getUid());
                             }
                         } else {
                             getWorldsListPane().setVisible(true);
@@ -562,8 +557,8 @@ public class MenuCanvas extends FoxCanvas {
                 .baseColor(newHeroTemplate.getBaseColor())
                 .secondColor(newHeroTemplate.getSecondColor())
                 .corpusType(newHeroTemplate.getChosenCorpusType())
-                .periferiaType(newHeroTemplate.getChosenPeriferiaType())
-                .periferiaSize(newHeroTemplate.getPeriferiaSize())
+                .peripheralType(newHeroTemplate.getChosenPeriferiaType())
+                .peripheralSize(newHeroTemplate.getPeriferiaSize())
                 .worldUid(newHeroTemplate.getWorldUid())
                 .build();
         aNewToSave.setHeroUid(UUID.randomUUID());

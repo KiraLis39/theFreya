@@ -2,8 +2,9 @@ package game.freya.enums.other;
 
 import lombok.Getter;
 
-import java.awt.Color;
+import java.awt.*;
 
+@Getter
 public enum RarityType {
     DECREPIT(Color.GRAY, "Ветх"),
     SIMPLE(Color.WHITE, "Прост"),
@@ -14,10 +15,8 @@ public enum RarityType {
     RARE(Color.ORANGE, "Редк"),
     LEGENDARY(Color.RED, "Легендарн");
 
-    @Getter
     private final Color rarityColor;
 
-    @Getter
     private final String description;
 
     RarityType(Color rarityColor, String description) {

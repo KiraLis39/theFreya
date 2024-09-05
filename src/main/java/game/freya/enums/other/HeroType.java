@@ -2,8 +2,9 @@ package game.freya.enums.other;
 
 import lombok.Getter;
 
-import java.awt.Color;
+import java.awt.*;
 
+@Getter
 public enum HeroType {
     SNIPER("Стрелок", new Color(240, 236, 34)), // пулеметчик, снайпер, страйдер
     TOWER("Башня", new Color(15, 41, 77)), // защитник, танк, турель
@@ -12,10 +13,8 @@ public enum HeroType {
     HACKER("Взломщик", new Color(34, 61, 240)), // взлом систем (врагов тоже)
     VOID("Без класса", new Color(84, 84, 84)); // -
 
-    @Getter
     private final String description;
 
-    @Getter
     private final Color color;
 
     HeroType(String description, Color color) {

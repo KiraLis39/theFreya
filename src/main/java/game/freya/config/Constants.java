@@ -18,16 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.DisplayMode;
-import java.awt.Font;
-import java.awt.Frame;
-import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystems;
@@ -184,6 +178,8 @@ public final class Constants {
     @Getter
     private static String worldsImagesDir = "./worlds/img/";
 
+    @Setter
+    @Getter
     private static int realFreshRate = 0;
 
     private static long timePerFrame = -1;
@@ -191,6 +187,12 @@ public final class Constants {
     private static long fpsLimitMem = -1;
 
     static {
+        try {
+            registerFonts();
+        } catch (Exception e) {
+            log.error("Fonts register error: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+
         try (InputStream is = Constants.class.getResourceAsStream("/cursors/default.png")) {
             if (is != null) {
                 BufferedImage curImage = ImageIO.read(is);
@@ -217,6 +219,12 @@ public final class Constants {
     }
 
     private Constants() {
+    }
+
+    private static void registerFonts() throws Exception {
+        try (InputStream stream = new FileInputStream("./fonts/Propaganda.ttf")) {
+            FFB.register(Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(48f), MON.getEnvironment());
+        }
     }
 
     public static GraphicsConfiguration getGraphicsConfiguration() {
@@ -290,14 +298,6 @@ public final class Constants {
 
     public static boolean isFpsLimited() {
         return userConfig.getFpsLimit() > 0;
-    }
-
-    public static int getRealFreshRate() {
-        return realFreshRate;
-    }
-
-    public static void setRealFreshRate(int fps) {
-        realFreshRate = fps;
     }
 
     public static long getAimTimePerFrame() {

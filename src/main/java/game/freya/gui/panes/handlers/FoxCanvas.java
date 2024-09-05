@@ -29,21 +29,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import java.awt.AWTException;
-import java.awt.AlphaComposite;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Composite;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.ImageCapabilities;
-import java.awt.Point;
-import java.awt.Polygon;
-import java.awt.Rectangle;
-import java.awt.Shape;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
@@ -259,7 +246,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
     }
 
     private void repaintMenu(Graphics2D v2D) {
-        v2D.drawImage((BufferedImage) (isShadowBackNeeds() ? Constants.CACHE.get("backMenuImageShadowed") : Constants.CACHE.get("backMenuImage")),
+        v2D.drawImage(isShadowBackNeeds() ? Constants.CACHE.getBufferedImage("backMenuImageShadowed") : Constants.CACHE.getBufferedImage("backMenuImage"),
                 0, 0, getWidth(), getHeight(), this);
 
         drawLeftGrayPoly(v2D);
@@ -360,7 +347,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         // отображаем себя на миникарте:
         AffineTransform grTrMem = m2D.getTransform();
         m2D.rotate(ONE_TURN_PI * cVector.ordinal(), minimapImage.getWidth() / 2d, minimapImage.getHeight() / 2d); // Math.toRadians(90)
-        m2D.drawImage((Image) Constants.CACHE.get("green_arrow"), halfDim - 64, halfDim - 64, 128, 128, null);
+        m2D.drawImage(Constants.CACHE.getBufferedImage("green_arrow"), halfDim - 64, halfDim - 64, 128, 128, null);
         m2D.setTransform(grTrMem);
 
         // отображаем других игроков на миникарте:

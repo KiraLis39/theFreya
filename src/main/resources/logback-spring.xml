@@ -3,35 +3,53 @@
 
 <configuration scan="true" scanPeriod="30 seconds" debug="false">
     <contextName>FreyaLogbackSystem</contextName>
+<!--    <include resource="/org/springframework/boot/logging/logback/base.xml"/>-->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
     <springProperty scope="context" name="app_name" source="spring.application.name"/>
     <springProperty scope="context" name="app_version" source="spring.application.version"/>
     <springProperty scope="context" name="exchange" source="spring.rabbitmq.template.exchange"/>
     <springProperty scope="context" name="exchangeType" source="spring.rabbitmq.template.exchangeType"/>
     <springProperty scope="context" name="routingKey" source="spring.rabbitmq.template.routing-key"/>
-
-    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+<!--    <springProperty scope="context" name="LOGSTASH_URL" source="spring.application.logstash.host"/>-->
+<!--    <springProperty scope="context" name="LOGSTASH_PORT" source="spring.application.logstash.port"/>-->
+    <springProperty scope="context" name="isLogstashEnabled" source="spring.application.logstash.enabled"/>
 
     <property name="log.path" value="log"/>
     <property name="log.maxHistory" value="3"/>
     <property name="log.maxFileSize" value="3MB"/>
     <property name="log.totalSizeCap" value="1GB"/>
-    <property name="log.oldPattern" value="[App: ${app_name}, v.${app_version}]"/>
+
+    <property name="log.example"
+              value="[App: ${app_name}, v.${app_version}] %magenta(%d{dd MMMM HH:mm:ss}) %highlight(%level) %yellow(%thread) %green(%logger{24}.%M%red(:%L)) %1() %msg %n"/>
+
     <property name="log.colorPattern"
-              value="%magenta(%d{dd.MM.yy HH:mm:ss.SSS}) %highlight([%level]) %red(th:%thread) %green(%logger{64})\\_%boldCyan(.%M\\(\\))\\_%(:%L) %1() %yellow(%msg%n)"/>
+              value="%magenta(%d{dd.MM.yy HH:mm:ss.SSS}) %highlight([%level]) %boldCyan(th:%thread) %green(%logger{64})\_%red(.%M\(\))\_%(:%L) %1() %yellow(%msg)\n"/>
+
     <property name="log.filePattern"
-              value="%d{dd MMMM HH:mm:ss.SSS} [%level] th:%thread %logger{16}.%M\\(\\)\\_%(:%L) %1() %msg%n"/>
+              value="%d{dd MMMM HH:mm:ss.SSS} [%level] th:%thread %logger{16}.%M\\(\\)\\_%red(:%L) %1() %msg%n"/>
 
     <!-- APPENDERS -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>utf-8</charset>
+            <pattern>${log.colorPattern}</pattern>
+        </encoder>
+    </appender>
+
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.path}/trace.%d{yyyy-MM-dd}.log</fileNamePattern>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/trace.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxHistory>${log.maxHistory}</maxHistory>
+            <maxFileSize>${log.maxFileSize}</maxFileSize>
+            <totalSizeCap>${log.totalSizeCap}</totalSizeCap>
         </rollingPolicy>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        <append>true</append>
         <layout>
             <pattern>${log.filePattern}</pattern>
         </layout>
-        <append>true</append>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
             <onMatch>DENY</onMatch>
@@ -57,51 +75,34 @@
         </filter>
     </appender>
 
-    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+    <if condition='${isLogstashEnabled} == true'>
+        <then>
+            <!-- Аппендер для вывода логов в Кибану: -->
+            <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+                <destination>${LOGSTASH_URL}:${LOGSTASH_PORT}</destination>
+                <reconnectionDelay>10 second</reconnectionDelay>
+                <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
+                    <customFields>{"logger_name": "ServicedeskApiLogbackSystem"}</customFields>
+                </encoder>
+            </appender>
+
+            <root>
+                <appender-ref ref="logstash" level="INFO"/>
+            </root>
+        </then>
+    </if>
+
+    <appender name="ASYNC_TO_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>64</queueSize>
         <maxFlushTime>10000</maxFlushTime>
         <appender-ref ref="FILE"/>
     </appender>
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <charset>utf-8</charset>
-            <pattern>${log.colorPattern}</pattern>
-        </encoder>
-    </appender>
-
-    <logger name="org.apache.catalina.startup.DigesterFactory" level="OFF"/>
-    <logger name="org.hibernate.ejb.HibernatePersistence" level="OFF"/>
-    <logger name="springfox.documentation.schema.property" level="ERROR"/>
-    <logger name="javax.activation" level="WARN"/>
-    <logger name="javax.management.remote" level="WARN"/>
-    <logger name="javax.xml.bind" level="WARN"/>
-    <logger name="com.sun" level="WARN"/>
-    <logger name="com.zaxxer" level="WARN"/>
-    <logger name="org.ehcache" level="WARN"/>
-    <logger name="org.apache" level="WARN"/>
-    <logger name="org.springframework" level="WARN"/>
-    <logger name="org.springframework.web" level="WARN"/>
-    <logger name="org.springframework.cache" level="WARN"/>
-    <logger name="org.xnio" level="WARN"/>
-    <logger name="sun.rmi" level="WARN"/>
-    <logger name="sun.rmi.transport" level="INFO"/>
-    <logger name="org.postgresql" level="INFO"/>
-    <logger name="springfox" level="INFO"/>
-    <logger name="io.swagger.v3" level="INFO"/>
-    <logger name="_org.springframework.web.servlet.HandlerMapping.Mappings" level="INFO"/>
-    <logger name="org.springframework.security" level="INFO"/>
-
-    <!-- HOOKS -->
     <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
-    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
-        <resetJUL>true</resetJUL>
-    </contextListener>
 
-    <!-- ROOT -->
     <root>
         <appender-ref ref="STDOUT" level="DEBUG"/>
-        <appender-ref ref="ASYNC" level="INFO"/>
         <appender-ref ref="ERRORS" level="ERROR"/>
+        <appender-ref ref="ASYNC_TO_FILE" level="INFO"/>
     </root>
 </configuration>

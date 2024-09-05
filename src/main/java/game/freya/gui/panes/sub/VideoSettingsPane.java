@@ -12,19 +12,9 @@ import game.freya.gui.panes.sub.components.ZLabel;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JComboBox;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.DisplayMode;
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -82,7 +72,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                     setMajorTickSpacing(5);
 
                     setValue(Constants.getUserConfig().getFpsLimit());
-                    addChangeListener(e -> {
+                    addChangeListener(_ -> {
                         if (cBox.isSelected()) {
                             Constants.getUserConfig().setFpsLimit(getValue());
                         }
@@ -136,7 +126,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                         setBackground(Color.DARK_GRAY);
                         setForeground(Color.WHITE);
 
-                        addChangeListener(e -> Constants.getUserConfig().setBufferedDeep(Integer.parseInt(getValue().toString())));
+                        addChangeListener(_ -> Constants.getUserConfig().setBufferedDeep(Integer.parseInt(getValue().toString())));
                     }}, BorderLayout.EAST);
                 }}, BorderLayout.SOUTH);
             }});
@@ -223,7 +213,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Reload gameplay snap...");
-            BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
+            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

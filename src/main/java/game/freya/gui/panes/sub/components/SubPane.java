@@ -2,16 +2,20 @@ package game.freya.gui.panes.sub.components;
 
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
+import lombok.Getter;
+import lombok.Setter;
 
-import javax.swing.BorderFactory;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
+import java.awt.*;
 
 public class SubPane extends JPanel {
+    @Setter
+    @Getter
     private ZLabel headerLabel;
 
+    @Setter
+    @Getter
     private FButton connButton;
 
     private transient WorldDTO worldDTO;
@@ -46,22 +50,6 @@ public class SubPane extends JPanel {
                 ));
             }
         }
-    }
-
-    public ZLabel getHeaderLabel() {
-        return headerLabel;
-    }
-
-    public void setHeaderLabel(ZLabel headerLabel) {
-        this.headerLabel = headerLabel;
-    }
-
-    public FButton getConnButton() {
-        return connButton;
-    }
-
-    public void setConnButton(FButton connButton) {
-        this.connButton = connButton;
     }
 
     public WorldDTO getWorld() {

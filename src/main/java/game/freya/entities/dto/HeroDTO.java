@@ -4,30 +4,28 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.config.Constants;
 import game.freya.entities.logic.Buff;
 import game.freya.enums.other.HeroCorpusType;
-import game.freya.enums.other.HeroPeriferiaType;
+import game.freya.enums.other.HeroPeripheralType;
 import game.freya.enums.other.HeroType;
 import game.freya.enums.other.HurtLevel;
 import game.freya.enums.other.MovingVector;
 import game.freya.items.PlayedCharacter;
 import game.freya.items.containers.Backpack;
-import game.freya.items.prototypes.Storage;
 import game.freya.utils.ExceptionUtils;
-import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Transient;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
-import javax.persistence.Transient;
-import javax.swing.Icon;
+import javax.swing.*;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.RGBImageFilter;
@@ -42,71 +40,133 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 
 @Slf4j
 @Getter
-@Builder
-@RequiredArgsConstructor
-@AllArgsConstructor
+@SuperBuilder
 public class HeroDTO extends PlayedCharacter {
+    @Schema(description = "UUID героя")
+    private UUID uid;
+
+    @NotNull
+    @Schema(description = "Имя героя")
+    private String heroName;
+
+    @Setter
+    @Builder.Default
+    @Schema(description = "Главный цвет раскраски корпуса героя")
+    private Color baseColor = Color.DARK_GRAY;
+
+    @Setter
+    @Builder.Default
+    @Schema(description = "Второстепенный цвет раскраски корпуса героя")
+    private Color secondColor = Color.ORANGE;
+
+    @Setter
     @NotNull
     @Builder.Default
-    private transient List<Buff> buffs = new ArrayList<>(9);
-
-    @Setter
-    private Color baseColor;
-
-    @Setter
-    private Color secondColor;
-
-    @Setter
-    @NotNull
-    @Builder.Default
+    @Schema(description = "Тип корпуса героя")
     private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
 
     @Setter
     @NotNull
     @Builder.Default
-    private HeroPeriferiaType periferiaType = HeroPeriferiaType.COMPACT;
+    @Schema(description = "Тип периферии героя")
+    private HeroPeripheralType peripheralType = HeroPeripheralType.COMPACT;
 
     @Setter
     @Builder.Default
-    private short periferiaSize = 50;
+    @Schema(description = "Размеры периферии героя")
+    private short peripheralSize = 50;
 
     @Builder.Default
+    @Schema(description = "Инвентарь героя")
+    private Backpack inventory = Backpack.builder().build();
+
+    @Builder.Default
+    @Schema(description = "Уровень героя")
+    private short level = 1;
+
+    @Builder.Default
+    @Schema(description = "Тип корпуса героя")
     private HeroType heroType = HeroType.VOID;
 
+    @Builder.Default
+    @Schema(description = "Мощность героя")
+    private float power = 1f;
+
+    @Builder.Default
+    @Schema(description = "Накопленный опыт героя")
+    private long experience = 0;
+
+    @Builder.Default
+    @Schema(description = "Текущее здоровье героя")
+    private int curHealth = 100;
+
+    @Builder.Default
+    @Schema(description = "Максимальное здоровье героя")
+    private int maxHealth = 100;
+
+    @Builder.Default
+    @Schema(description = "Текущий запас масла героя")
+    private int curOil = 100;
+
+    @Builder.Default
+    @Schema(description = "Максимальный запас масла героя")
+    private int maxOil = 100;
+
+    @Builder.Default
+    @Schema(description = "Скорость героя")
+    private byte speed = 6;
+
+    @NotNull
+    @NotEmpty
+    @Builder.Default
+    private List<Buff> buffs = new ArrayList<>(9);
+
+    @Schema(description = "Позиция героя на карте")
+    private Point2D.Double location;
+
     @Setter
+    @Builder.Default
+    @Schema(description = "Время, проведенное в игре")
+    private long inGameTime = 0;
+
+    @Setter
+    @Schema(description = "Мир героя")
     private UUID worldUid;
+
+    @Schema(description = "Создатель героя")
+    private UUID ownerUid;
+
+    @Builder.Default
+    @Schema(description = "Дата создания героя")
+    private LocalDateTime createDate = LocalDateTime.now();
 
     @Getter
     @Setter
     @Builder.Default
+    @Schema(description = "Дата последнего входа в игру")
     private LocalDateTime lastPlayDate = LocalDateTime.now();
 
-    private transient Storage inventory;
-
-    @Setter
     @Builder.Default
-    private long inGameTime = 0;
-
-    @Builder.Default
+    @Schema(description = "Is on-line now")
     private boolean isOnline = false;
+
+    @Builder.Default
+    @Schema(description = "The Player`s hurt level")
+    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
     @Transient
     @JsonIgnore
-    private transient Image heroViewImage;
-
-    @Builder
-    public HeroDTO(@NotNull UUID heroUid, @NotNull String heroName, short level, int curHealth, int curOil,
-                   int maxHealth, int maxOil, float power, HurtLevel hurtLevel, byte speed, MovingVector vector,
-                   long experience, UUID ownerUid, String imageNameInCache, LocalDateTime createDate, boolean isVisible
-    ) {
-        super(heroUid, heroName, level, curHealth, curOil, maxHealth, maxOil, power, hurtLevel, speed, vector,
-                experience, ownerUid, imageNameInCache, createDate, isVisible);
-        buffs = new ArrayList<>(9);
-    }
+    @Schema(description = "The Player`s avatar")
+    private Image heroViewImage;
 
     @Override
     public boolean hasCollision() {
         return true;
+    }
+
+    @Override
+    public String getCacheKey() {
+        return null;
     }
 
     @Override
@@ -172,7 +232,7 @@ public class HeroDTO extends PlayedCharacter {
         int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
                 baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
         heroViewImage = Toolkit.getDefaultToolkit().createImage(
-                new FilteredImageSource(((Image) Constants.CACHE.get("player")).getSource(), new RGBImageFilter() {
+                new FilteredImageSource(Constants.CACHE.getBufferedImage("player").getSource(), new RGBImageFilter() {
                     @Override
                     public int filterRGB(final int x, final int y, final int rgb) {
                         return rgb & hexColor;
@@ -198,10 +258,15 @@ public class HeroDTO extends PlayedCharacter {
         this.isOnline = b;
     }
 
-    public Storage getInventory() {
+    public Backpack getInventory() {
         if (this.inventory == null) {
-            this.inventory = new Backpack("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"),
-                    getHeroUid(), getLocation(), getSize(), "hero_backpack");
+            this.inventory = Backpack.builder()
+                    .name("The ".concat(Constants.getUserConfig().getUserName()).concat("`s backpack"))
+                    .createdBy(getHeroUid())
+                    .location(getLocation())
+                    .size(getSize())
+                    .cacheKey("hero_backpack")
+                    .build();
         }
         return this.inventory;
     }

@@ -2,19 +2,16 @@ package game.freya.gui.panes.sub.components;
 
 import game.freya.config.Constants;
 import lombok.Getter;
+import lombok.Setter;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.Point;
+import java.awt.*;
 import java.awt.geom.AffineTransform;
 
+@Setter
+@Getter
 public class Chat {
-    @Getter
     private Point location;
 
-    @Getter
     private Dimension size;
 
     public Chat(Point location, Dimension size) {
@@ -51,11 +48,4 @@ public class Chat {
         return getSize().getWidth();
     }
 
-    public void setLocation(Point location) {
-        this.location = location;
-    }
-
-    public void setSize(Dimension size) {
-        this.size = size;
-    }
 }

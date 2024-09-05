@@ -1,6 +1,6 @@
 package game.freya.gui.panes.sub;
 
-import fox.components.tools.VerticalFlowLayout;
+import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
@@ -9,16 +9,11 @@ import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.AbstractAction;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 
@@ -80,7 +75,7 @@ public class AudioSettingsPane extends JPanel implements ChangeListener, iSubPan
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Reload audio snap...");
-            BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
+            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

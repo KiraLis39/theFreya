@@ -4,10 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>groupId</groupId>
-    <artifactId>FreyaTheGame3D</artifactId>
-    <version>0.1.5</version>
-    <name>Freya the game 3D</name>
+    <groupId>fox</groupId>
+    <artifactId>FreyaTheGame2D</artifactId>
+    <version>0.1.6</version>
+    <name>Freya the game 2D</name>
+    <description>Freya the game</description>
+    <url>https://vk.com/neverendingsky</url>
     <developers>
         <developer>
             <name>KiraLis39</name>
@@ -20,11 +22,9 @@
             <url>https://vk.com/neverendingsky</url>
         </developer>
     </developers>
-    <description>Freya the game</description>
-    <url>https://vk.com/neverendingsky</url>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>22</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -40,7 +40,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.10</version>
+        <version>3.3.2</version>
         <relativePath/>
     </parent>
 
@@ -62,17 +62,17 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.16.0</version>
+            <version>2.16.2</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.16.0</version>
+            <version>2.16.2</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.16.0</version>
+            <version>2.16.2</version>
         </dependency>
 
         <!-- swagger -->
@@ -91,35 +91,45 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.36</version>
+            <version>2.0.16</version>
         </dependency>
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
-            <version>7.3</version>
+            <version>8.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
-            <version>1.18.30</version>
+            <version>1.18.34</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>3.1.12</version>
         </dependency>
 
         <!-- db -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.46.1.0</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.xerial</groupId>
-            <artifactId>sqlite-jdbc</artifactId>
-            <version>3.43.2.1</version>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>6.6.0.Final</version>
+            <type>pom</type>
         </dependency>
         <dependency>
-            <groupId>com.github.gwenn</groupId>
-            <artifactId>sqlite-dialect</artifactId>
-            <version>0.1.4</version>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-community-dialects</artifactId>
         </dependency>
 
         <!-- 3D -->
@@ -131,28 +141,26 @@
 
         <!-- local -->
         <dependency>
-            <groupId>FoxLib39</groupId>
+            <groupId>fox</groupId>
             <artifactId>fox-gui</artifactId>
-            <version>6.2.82</version>
+            <version>6.2.85</version>
             <!-- Run the 'install:install-file
             -Dfile=H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-gui\fox-gui-6.2.6.jar
             -DgroupId=FoxLib39 -DartifactId=fox-gui -Dversion=6.2.6 -Dpackaging=jar -DcreateChecksum=true' before -->
         </dependency>
         <dependency>
-            <groupId>FoxLib39</groupId>
+            <groupId>fox</groupId>
             <artifactId>fox-tools</artifactId>
-            <version>6.2.82</version>
+            <version>6.2.83</version>
             <!-- Run the 'install:install-file
             -Dfile=H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-tools\fox-tools-6.2.6.jar
             -DgroupId=FoxLib39 -DartifactId=fox-tools -Dversion=6.2.6 -Dpackaging=jar -DcreateChecksum=true' before -->
         </dependency>
-
     </dependencies>
 
     <build>
         <finalName>FreyaTheGame_${project.version}</finalName>
         <plugins>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -252,56 +260,6 @@
                     </dependency>
                 </dependencies>
             </plugin>
-
-<!--            <plugin>-->
-<!--                <artifactId>maven-assembly-plugin</artifactId>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals><goal>single</goal></goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <configuration>-->
-<!--                    <descriptorRefs>-->
-<!--                        <descriptorRef>jar-with-dependencies</descriptorRef>-->
-<!--                    </descriptorRefs>-->
-<!--                    <archive>-->
-<!--                        <manifest>-->
-<!--                            <mainClass>-->
-<!--                                game.freya.Launcher-->
-<!--                            </mainClass>-->
-<!--                        </manifest>-->
-<!--                    </archive>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
-
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-assembly-plugin</artifactId>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>create-my-bundle</id>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>single</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <appendAssemblyId>false</appendAssemblyId>-->
-<!--                            <descriptorRefs>-->
-<!--                                <descriptorRef>jar-with-dependencies</descriptorRef>-->
-<!--                            </descriptorRefs>-->
-<!--                            <archive>-->
-<!--                                <manifest>-->
-<!--                                    <mainClass>-->
-<!--                                        game.freya.Launcher-->
-<!--                                    </mainClass>-->
-<!--                                </manifest>-->
-<!--                            </archive>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
-
         </plugins>
 
         <resources>

@@ -12,7 +12,7 @@ import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.enums.other.HeroCorpusType;
-import game.freya.enums.other.HeroPeriferiaType;
+import game.freya.enums.other.HeroPeripheralType;
 import game.freya.enums.other.HeroType;
 import game.freya.enums.other.HurtLevel;
 import game.freya.enums.other.MovingVector;
@@ -39,6 +39,7 @@ import game.freya.services.PlayerService;
 import game.freya.services.WorldService;
 import game.freya.utils.ExceptionUtils;
 import game.freya.utils.Screenshoter;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -47,22 +48,15 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Shape;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -95,6 +89,7 @@ public class GameController extends GameControllerBase {
 
     private final GameFrame gameFrame;
 
+    @Getter
     private final PlayedHeroesService playedHeroesService;
 
     private final Server server;
@@ -159,32 +154,38 @@ public class GameController extends GameControllerBase {
         checkCurrentPlayerExists();
 
         try {
-            Constants.CACHE.addIfAbsent("backMenuImage",
-                    ImageIO.read(new File("./resources/images/menu.png")));
-            Constants.CACHE.addIfAbsent("backMenuImageShadowed",
-                    ImageIO.read(new File("./resources/images/menu_shadowed.png")));
-            Constants.CACHE.addIfAbsent("green_arrow",
-                    ImageIO.read(new File("./resources/images/green_arrow.png")));
+            try (InputStream netResource = getClass().getResourceAsStream("/images/menu.png")) {
+                assert netResource != null;
+                Constants.CACHE.addIfAbsent("backMenuImage", netResource.readAllBytes());
+            }
+            try (InputStream netResource = getClass().getResourceAsStream("/images/menu_shadowed.png")) {
+                assert netResource != null;
+                Constants.CACHE.addIfAbsent("backMenuImageShadowed", netResource.readAllBytes());
+            }
+            try (InputStream netResource = getClass().getResourceAsStream("/images/green_arrow.png")) {
+                assert netResource != null;
+                Constants.CACHE.addIfAbsent("green_arrow", netResource.readAllBytes());
+            }
 
             try (InputStream netResource = getClass().getResourceAsStream("/images/net.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("net", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("net", netResource.readAllBytes());
             }
             try (InputStream netResource = getClass().getResourceAsStream("/images/player.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("player", netResource.readAllBytes());
             }
             try (InputStream netResource = getClass().getResourceAsStream("/images/mock_01.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_01", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("mock_01", netResource.readAllBytes());
             }
             try (InputStream netResource = getClass().getResourceAsStream("/images/mock_02.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_02", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("mock_02", netResource.readAllBytes());
             }
             try (InputStream netResource = getClass().getResourceAsStream("/images/mock_03.png")) {
                 Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_03", ImageIO.read(netResource));
+                Constants.CACHE.addIfAbsent("mock_03", netResource.readAllBytes());
             }
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
@@ -900,7 +901,7 @@ public class GameController extends GameControllerBase {
         return playedHeroesService.getCurrentHeroPeriferiaSize();
     }
 
-    private HeroPeriferiaType getCurrentHeroPeriferiaType() {
+    private HeroPeripheralType getCurrentHeroPeriferiaType() {
         return playedHeroesService.getCurrentHeroPeriferiaType();
     }
 
@@ -1037,10 +1038,6 @@ public class GameController extends GameControllerBase {
 
     public boolean isWorldExist(UUID worldUid) {
         return worldService.isWorldExist(worldUid);
-    }
-
-    public PlayedHeroesService getPlayedHeroesService() {
-        return playedHeroesService;
     }
 
     public void clearConnectedHeroes() {

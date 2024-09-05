@@ -1,10 +1,13 @@
 package game.freya.enums.other;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 
 /**
  * X = EAST\WEST; Y = NORTH\SOUTH; Z = INTER\OUTER
  */
+@Getter
 public enum MovingVector {
     UP(-1, 0, 0),
     UP_RIGHT(-1, 1, 0),
@@ -16,24 +19,12 @@ public enum MovingVector {
     LEFT_UP(-1, -1, 0),
     NONE(0, 0, 0);
 
-    final int y, x, z;
+    private final int y, x, z;
 
     MovingVector(int y, int x, int z) {
         this.y = y;
         this.x = x;
         this.z = z;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getZ() {
-        return z;
     }
 
     public MovingVector reverse(MovingVector vector) {

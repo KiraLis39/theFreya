@@ -2,13 +2,13 @@ package game.freya.net.data.events;
 
 import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.enums.other.HeroCorpusType;
-import game.freya.enums.other.HeroPeriferiaType;
+import game.freya.enums.other.HeroPeripheralType;
 import game.freya.enums.other.HeroType;
 import game.freya.enums.other.MovingVector;
 import game.freya.net.data.iClientEventData;
 import lombok.Builder;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -21,7 +21,7 @@ public record EventHeroRegister(
         Color baseColor,
         Color secondColor,
         HeroCorpusType corpusType,
-        HeroPeriferiaType periferiaType,
+        HeroPeripheralType periferiaType,
         short periferiaSize,
         UUID heroUid,
         String heroName,

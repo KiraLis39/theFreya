@@ -13,16 +13,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.awt.AWTException;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.ImageCapabilities;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.event.ComponentAdapter;
-import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -251,7 +243,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
     public Image getIcon() {
         if (this.icon == null) {
             if (isNetAvailable) {
-                this.icon = (BufferedImage) Constants.CACHE.get("net");
+                this.icon = Constants.CACHE.getBufferedImage("net");
             } else {
                 log.debug(Constants.getNotRealizedString());
             }

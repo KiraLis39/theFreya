@@ -4,8 +4,7 @@ import game.freya.config.Constants;
 import game.freya.items.prototypes.Environment;
 import lombok.Setter;
 
-import java.awt.Dimension;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 
@@ -33,7 +32,7 @@ public class MockEnvironmentWithStorage extends Environment {
     @Override
     public void init() {
         spriteList = Constants.SPRITES_COMBINER
-                .getSprites(getImageNameInCache(), (BufferedImage) Constants.CACHE.get(getImageNameInCache()), 1, 1);
+                .getSprites(getCacheKey(), Constants.CACHE.getBufferedImage(getCacheKey()), 1, 1);
     }
 
     @Override

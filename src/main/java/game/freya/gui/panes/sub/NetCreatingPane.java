@@ -1,6 +1,6 @@
 package game.freya.gui.panes.sub;
 
-import fox.components.tools.VerticalFlowLayout;
+import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.entities.dto.WorldDTO;
 import game.freya.enums.other.HardnessLevel;
@@ -13,17 +13,9 @@ import game.freya.gui.panes.sub.templates.WorldCreator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JComboBox;
-import javax.swing.JSeparator;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -89,7 +81,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
             add(new SubPane("Уровень сложности:") {{
                 add(new JComboBox<>(Arrays.stream(HardnessLevel.values()).map(HardnessLevel::getDescription).toArray()) {{
                     setSelectedIndex(1);
-                    addActionListener(e -> hardnessLevel = Arrays.stream(HardnessLevel.values())
+                    addActionListener(_ -> hardnessLevel = Arrays.stream(HardnessLevel.values())
                             .filter(hl -> hl.getDescription().equals(getSelectedItem().toString())).findFirst().orElseThrow());
                 }});
             }});
@@ -148,7 +140,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
                                 addresses.add("localhost");
                             }
 
-                            log.warn("Найдено сетей для размещения Сервера: {}. Будет использован адрес {}", addresses.size(), addresses.get(0));
+                            log.warn("Найдено сетей для размещения Сервера: {}. Будет использован адрес {}", addresses.size(), addresses.getFirst());
                             WorldDTO aNewWorld = WorldDTO.builder()
                                     .author(canvas.getGameController().getCurrentPlayerUid())
                                     .createDate(LocalDateTime.now())
@@ -157,7 +149,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
                                     .isLocalWorld(true)
                                     .isNetAvailable(true)
                                     .passwordHash(getNetPasswordHash())
-                                    .networkAddress(addresses.get(0))
+                                    .networkAddress(addresses.getFirst())
                                     .build();
                             ((MenuCanvas) canvas).serverUp(aNewWorld);
                         }
@@ -171,7 +163,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Reload net creating snap...");
-            BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
+            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

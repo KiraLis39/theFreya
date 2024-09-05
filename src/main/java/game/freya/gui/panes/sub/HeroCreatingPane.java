@@ -5,7 +5,7 @@ import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.other.HeroCorpusType;
-import game.freya.enums.other.HeroPeriferiaType;
+import game.freya.enums.other.HeroPeripheralType;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
@@ -15,24 +15,9 @@ import game.freya.gui.panes.sub.components.SubPane;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JColorChooser;
-import javax.swing.JComboBox;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSeparator;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -69,7 +54,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
     private String heroName;
 
     @Getter
-    private HeroPeriferiaType chosenPeriferiaType = HeroPeriferiaType.COMPACT;
+    private HeroPeripheralType chosenPeriferiaType = HeroPeripheralType.COMPACT;
 
     @Getter
     private HeroCorpusType chosenCorpusType = HeroCorpusType.COMPACT;
@@ -77,7 +62,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
     @Getter
     private short periferiaSize = 50;
 
-    private JComboBox<HeroPeriferiaType> perChooser;
+    private JComboBox<HeroPeripheralType> perChooser;
 
     private JComboBox<HeroCorpusType> corpChooser;
 
@@ -137,12 +122,12 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                 }});
                 add(Box.createVerticalStrut(8));
                 add(new SubPane("Тип периферии") {{
-                    perChooser = new JComboBox<>(HeroPeriferiaType.values()) {{
+                    perChooser = new JComboBox<>(HeroPeripheralType.values()) {{
                         setSelectedItem(chosenPeriferiaType);
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                chosenPeriferiaType = (HeroPeriferiaType) perChooser.getSelectedItem();
+                                chosenPeriferiaType = (HeroPeripheralType) perChooser.getSelectedItem();
                             }
                         });
                     }};
@@ -160,7 +145,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                         setForeground(Color.WHITE);
                         setFont(Constants.GAME_FONT_01);
 
-                        addChangeListener(e -> periferiaSize = (short) getValue());
+                        addChangeListener(_ -> periferiaSize = (short) getValue());
                     }};
                     add(perSlider);
                 }});
@@ -236,8 +221,8 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                                 editableHero.setBaseColor(baseColor);
                                 editableHero.setSecondColor(secondColor);
                                 editableHero.setCorpusType(chosenCorpusType);
-                                editableHero.setPeriferiaType(chosenPeriferiaType);
-                                editableHero.setPeriferiaSize(periferiaSize);
+                                editableHero.setPeripheralType(chosenPeriferiaType);
+                                editableHero.setPeripheralSize(periferiaSize);
 
                                 gameController.justSaveAnyHero(editableHero);
 
@@ -257,7 +242,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
         int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
                 baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
         heroViewImage = Toolkit.getDefaultToolkit().createImage(
-                new FilteredImageSource(((Image) Constants.CACHE.get("player")).getSource(), new RGBImageFilter() {
+                new FilteredImageSource(Constants.CACHE.getBufferedImage("player").getSource(), new RGBImageFilter() {
                     @Override
                     public int filterRGB(final int x, final int y, final int rgb) {
                         return rgb & hexColor;
@@ -271,7 +256,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
 
         if (snap == null) {
             log.info("Reload hero creating snap...");
-            BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
+            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }
@@ -290,7 +275,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
 
         // герой:
         if (heroViewImage == null) {
-            heroViewImage = (BufferedImage) Constants.CACHE.get("player");
+            heroViewImage = Constants.CACHE.getBufferedImage("player");
         }
         g.drawImage(heroViewImage,
                 (heroRamka.x + heroRamka.width) / 2 - heroViewImage.getWidth(this) / 2, heroRamka.y + 32,
@@ -354,10 +339,10 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
         this.chosenCorpusType = template.getCorpusType();
         this.corpChooser.setSelectedItem(chosenCorpusType);
 
-        this.chosenPeriferiaType = template.getPeriferiaType();
+        this.chosenPeriferiaType = template.getPeripheralType();
         this.perChooser.setSelectedItem(chosenPeriferiaType);
 
-        this.periferiaSize = template.getPeriferiaSize();
+        this.periferiaSize = template.getPeripheralSize();
         this.perSlider.setValue(periferiaSize);
     }
 

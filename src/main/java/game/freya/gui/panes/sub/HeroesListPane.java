@@ -13,16 +13,9 @@ import game.freya.gui.panes.sub.components.ZLabel;
 import game.freya.net.data.NetConnectTemplate;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 
@@ -55,7 +48,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
         HeroesListPane.this.removeAll();
 
         for (HeroDTO hero : gameController.getMyCurrentWorldHeroes()) {
-            add(new SubPane("Герой: " + hero.getHeroName(), hero.getHeroType().getColor()) {{
+            add(new SubPane("Герой: ".concat(hero.getHeroName()), hero.getHeroType().getColor()) {{
                 setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {
                     @Override
@@ -78,7 +71,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                         + "<br>Корпус:<font color=#239BEE><b>    %s</b></font>"
                         + "<br>Периферия:<font color=#239BEE><b> %s (%d)</b></font>"
                         + "</pre></html>")
-                        .formatted(hero.getHeroType().getDescription(), hero.getCorpusType(), hero.getPeriferiaType(), hero.getPeriferiaSize()),
+                        .formatted(hero.getHeroType().getDescription(), hero.getCorpusType(), hero.getPeripheralType(), hero.getPeripheralSize()),
                         null) {{
                     setVerticalAlignment(TOP);
                     setAlignmentY(TOP_ALIGNMENT);
@@ -196,7 +189,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                 }}, BorderLayout.EAST);
 
                 // нижняя надпись Создано:
-                add(new ZLabel("Создан: " + hero.getCreateDate().format(Constants.DATE_FORMAT_3), hero.getIcon()) {{
+                add(new ZLabel("Создан: ".concat(hero.getCreateDate().format(Constants.DATE_FORMAT_3)), hero.getIcon()) {{
                     setFont(Constants.INFO_FONT);
                     setForeground(Color.GRAY);
                 }}, BorderLayout.SOUTH);
@@ -214,7 +207,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Heroes list snap...");
-            BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
+            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

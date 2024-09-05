@@ -15,27 +15,40 @@ logging:
 server:
   port: 8080
   shutdown: graceful
-  servlet:
-    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/freya}
   compression:
     enabled: true
+
+  servlet:
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/freya}
+    encoding:
+      charset: UTF-8
+      enabled: true
+
   error:
     whitelabel:
-      enabled: false
-    include-message: always
+      enabled: true
     path: /error
+    include-message: always
+    include-exception: true
+    include-binding-errors: on_param
+    include-stacktrace: on_param
 
 spring:
-  main:
-    allow-circular-references: false
-    lazy-initialization: false
-    allow-bean-definition-overriding: false
-
   application:
     name: Freya the Game
     version: 0.1.5
     author: KiraLis39
     company: Multiverse-39 Group, 2023
+    logstash:
+      enabled: false
+
+  main:
+    register-shutdown-hook: true
+    allow-circular-references: false
+    lazy-initialization: false
+    allow-bean-definition-overriding: false
+    log-startup-info: true
+    banner-mode: console
 
   profiles:
     group:
@@ -43,6 +56,20 @@ spring:
       prod: prod
     default: dev
     active: dev
+
+  jackson:
+    time-zone: UTC
+  #  default-property-inclusion: non_null
+  #  serialization:
+  #    write-dates-as-timestamps: true
+
+  data:
+    web:
+      pageable:
+        max-page-size: 100
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
 
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
@@ -52,7 +79,11 @@ spring:
     driver-class-name: org.sqlite.JDBC
     hikari:
       poolName: Hikari
-      auto-commit: true
+      driver-class-name: org.sqlite.JDBC
+      auto-commit: false
+      jdbc-url: jdbc:sqlite:./db/freya.db
+      username: ${DB_LOGIN:freya}
+      password: ${DB_PASSWORD:0358}
 
       # Максимальное количество миллисекунд, в течение которых клиент (то есть вы) будет ожидать соединения из пула.
       #   Если это время превышено, а соединение не становится доступным, будет выдано исключение SQLException.
@@ -83,18 +114,20 @@ spring:
       # Как часто HikariCP будет пытаться поддерживать соединение, чтобы предотвратить
       #   его тайм-аут из-за базы данных или сетевой инфраструктуры. Это значение должно быть меньше max-lifetime:
       keepalive-time: 180000
-
   # liquibase:
   #   change-log: classpath:db/changelog/changelog.xml
   #   # drop-first: true
-
   jpa:
-    hibernate:
-      ddl-auto: update
+#    database-platform: org.hibernate.community.dialect.SQLiteDialect
+#    database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
+#    database-platform: org.hibernate.dialect.SQLiteDialect
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
     open-in-view: false
-    show-sql: false
+    hibernate:
+      ddl-auto: create
     properties:
       hibernate:
+        format_sql: true
         check_nullability: true
         jdbc:
           # Hibernate прозрачно отключает пакетную вставку на уровне JDBC, если вы используете генератор IDENTITY
@@ -102,24 +135,38 @@ spring:
           batch_versioned_data: true
         order_updates: true
         connection:
-          autocommit: true
+          autocommit: false
           pool_size: 6
-        # dialect: org.hibernate.community.dialect.SQLiteDialect
-        dialect: org.sqlite.hibernate.dialect.SQLiteDialect
-    # database-platform: org.hibernate.community.dialect.SQLiteDialect
-    database-platform: org.sqlite.hibernate.dialect.SQLiteDialect
+#        dialect: org.hibernate.community.dialect.SQLiteDialect
+#        dialect: org.sqlite.hibernate.dialect.SQLiteDialect
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 20
+        queue-capacity: 50
 
 game:
   dataBaseRootDir: ${DB_ROOT_DIRECTORY:./db/}
-
 springdoc:
   api-docs:
     enabled: true
+    path: /api-docs
   swagger-ui:
     enabled: true
-    disable-swagger-default-url: true
+    filter: true
+    show-extensions: true
+    show-common-extensions: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+    doc-expansion: none
+    default-model-expand-depth: 0
+    default-models-expand-depth: 0
     config-url: "${API_DOCS_MAIN_URI:${server.servlet.context-path:}}/v3/api-docs/swagger-config"
     url: "${API_DOCS_MAIN_URI:${server.servlet.context-path:}}/v3/api-docs"
+    display-request-duration: true
 
 #management:
 #  endpoint:

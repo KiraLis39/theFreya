@@ -6,6 +6,7 @@ db/*
 saves/
 resources/
 worlds/
+log
 
 # Log file
 *.log

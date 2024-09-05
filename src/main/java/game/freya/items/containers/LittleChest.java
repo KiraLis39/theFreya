@@ -4,52 +4,18 @@ import game.freya.enums.other.CurrencyVault;
 import game.freya.interfaces.iStorage;
 import game.freya.items.prototypes.GameCharacter;
 import game.freya.items.prototypes.Storage;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import lombok.AllArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.geom.Point2D;
-import java.util.UUID;
+import java.awt.*;
 
+@SuperBuilder
+@AllArgsConstructor
+@Entity
+@DiscriminatorValue("chest_little")
 public class LittleChest extends Storage {
-    public LittleChest(String name, UUID author, Point2D.Double location, Dimension size, String imageNameInCache) {
-        super(name, author, location, size, imageNameInCache);
-    }
-
-    @Override
-    public UUID getUid() {
-        return null;
-    }
-
-    @Override
-    public String getName() {
-        return null;
-    }
-
-    @Override
-    public UUID getAuthor() {
-        return null;
-    }
-
-    @Override
-    public Dimension getSize() {
-        return null;
-    }
-
-    @Override
-    public Point2D.Double getLocation() {
-        return null;
-    }
-
-    @Override
-    public String getImageNameInCache() {
-        return null;
-    }
-
-    @Override
-    public boolean isVisible() {
-        return false;
-    }
-
     @Override
     public boolean hasCollision() {
         return false;
@@ -58,6 +24,11 @@ public class LittleChest extends Storage {
     @Override
     public void draw(Graphics2D g2D) {
 
+    }
+
+    @Override
+    public boolean isInSector(Rectangle sector) {
+        return false;
     }
 
     @Override

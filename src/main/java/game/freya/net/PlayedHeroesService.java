@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.other.HeroCorpusType;
-import game.freya.enums.other.HeroPeriferiaType;
+import game.freya.enums.other.HeroPeripheralType;
 import game.freya.enums.other.HeroType;
 import game.freya.enums.other.HurtLevel;
 import game.freya.enums.other.MovingVector;
@@ -17,8 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.awt.Color;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -256,14 +255,14 @@ public class PlayedHeroesService {
         return heroes.get(currentHeroUid).getCorpusType();
     }
 
-    public HeroPeriferiaType getCurrentHeroPeriferiaType() {
+    public HeroPeripheralType getCurrentHeroPeriferiaType() {
         checkCHE();
-        return heroes.get(currentHeroUid).getPeriferiaType();
+        return heroes.get(currentHeroUid).getPeripheralType();
     }
 
     public short getCurrentHeroPeriferiaSize() {
         checkCHE();
-        return heroes.get(currentHeroUid).getPeriferiaSize();
+        return heroes.get(currentHeroUid).getPeripheralSize();
     }
 
     public HeroDTO getHeroByOwnerUid(UUID ouid) {

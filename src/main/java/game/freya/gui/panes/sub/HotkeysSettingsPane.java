@@ -1,6 +1,6 @@
 package game.freya.gui.panes.sub;
 
-import fox.components.tools.VerticalFlowLayout;
+import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -9,15 +9,9 @@ import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.AbstractAction;
-import javax.swing.BorderFactory;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -84,7 +78,7 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPa
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Reload hotkeys snap...");
-            BufferedImage bim = ((BufferedImage) Constants.CACHE.get("backMenuImageShadowed"));
+            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
             setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));

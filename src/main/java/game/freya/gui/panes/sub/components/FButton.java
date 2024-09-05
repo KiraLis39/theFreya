@@ -3,9 +3,8 @@ package game.freya.gui.panes.sub.components;
 import fox.render.fox_lfui.MyButtonUI;
 import game.freya.config.Constants;
 
-import javax.swing.Icon;
-import javax.swing.JButton;
-import java.awt.Color;
+import javax.swing.*;
+import java.awt.*;
 
 public class FButton extends JButton {
 

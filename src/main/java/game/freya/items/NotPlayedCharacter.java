@@ -3,13 +3,22 @@ package game.freya.items;
 import game.freya.entities.logic.Buff;
 import game.freya.enums.other.MovingVector;
 import game.freya.items.prototypes.GameCharacter;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
+@SuperBuilder
+@NoArgsConstructor
+@Entity
+@DiscriminatorValue("npc")
 public class NotPlayedCharacter extends GameCharacter {
     @Override
     public int getHealth() {
@@ -67,7 +76,7 @@ public class NotPlayedCharacter extends GameCharacter {
     }
 
     @Override
-    public String getImageNameInCache() {
+    public String getCacheKey() {
         return null;
     }
 
@@ -79,16 +88,6 @@ public class NotPlayedCharacter extends GameCharacter {
     @Override
     public boolean isInSector(Rectangle sector) {
         return false;
-    }
-
-    @Override
-    public void setLocation(double x, double y) {
-
-    }
-
-    @Override
-    public Point2D.Double getLocation() {
-        return null;
     }
 
     @Override

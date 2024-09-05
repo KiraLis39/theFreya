@@ -1,8 +1,6 @@
 package game.freya.interfaces;
 
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.io.Serializable;
 import java.util.UUID;
@@ -27,7 +25,7 @@ public interface iGameObject extends Serializable {
 
     boolean hasCollision();
 
-    String getImageNameInCache();
+    String getCacheKey();
 
     void draw(Graphics2D g2D);
 
