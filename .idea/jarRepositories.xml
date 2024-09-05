@@ -12,16 +12,6 @@
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame3D\lib\" />
     </remote-repository>
     <remote-repository>
-      <option name="id" value="central" />
-      <option name="name" value="Central Repository" />
-      <option name="url" value="https://repo.maven.apache.org/maven2" />
-    </remote-repository>
-    <remote-repository>
-      <option name="id" value="localRepo" />
-      <option name="name" value="Local repository" />
-      <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame/lib/FoxLib39/" />
-    </remote-repository>
-    <remote-repository>
       <option name="id" value="local_repo" />
       <option name="name" value="Local_repository" />
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame\FreyaTheGame2D\lib\" />
@@ -35,11 +25,6 @@
       <option name="id" value="local_lib_store" />
       <option name="name" value="local_lib_store" />
       <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame\lib" />
-    </remote-repository>
-    <remote-repository>
-      <option name="id" value="central" />
-      <option name="name" value="Maven Central repository" />
-      <option name="url" value="https://repo1.maven.org/maven2" />
     </remote-repository>
     <remote-repository>
       <option name="id" value="localRepoFt" />
@@ -62,6 +47,36 @@
       <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame/lib/" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="localRepo" />
+      <option name="name" value="Local repository" />
+      <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame\\lib\\FoxLib39\\" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="local_lib_store" />
+      <option name="name" value="local_lib_store" />
+      <option name="url" value="file:////H:\JavaProj\Games\FreyaTheGame//lib" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jboss.community" />
+      <option name="name" value="JBoss Community repository" />
+      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Central Repository" />
+      <option name="url" value="https://repo.maven.apache.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="localRepo" />
+      <option name="name" value="Local repository" />
+      <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame/lib/FoxLib39/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Central repository" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="local_store" />
       <option name="name" value="local_store" />
       <option name="url" value="file:////H:\JavaProj\Games\FreyaTheGame/lib/" />
@@ -77,11 +92,6 @@
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame\lib\" />
     </remote-repository>
     <remote-repository>
-      <option name="id" value="localRepo" />
-      <option name="name" value="Local repository" />
-      <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame\\lib\\FoxLib39\\" />
-    </remote-repository>
-    <remote-repository>
       <option name="id" value="local_store" />
       <option name="name" value="local_store" />
       <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame\lib" />
@@ -92,19 +102,9 @@
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame\lib" />
     </remote-repository>
     <remote-repository>
-      <option name="id" value="local_lib_store" />
-      <option name="name" value="local_lib_store" />
-      <option name="url" value="file:////H:\JavaProj\Games\FreyaTheGame//lib" />
-    </remote-repository>
-    <remote-repository>
       <option name="id" value="localRepo" />
       <option name="name" value="Local repository" />
       <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\" />
-    </remote-repository>
-    <remote-repository>
-      <option name="id" value="jboss.community" />
-      <option name="name" value="JBoss Community repository" />
-      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
     </remote-repository>
     <remote-repository>
       <option name="id" value="local_lib_store" />
