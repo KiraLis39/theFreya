@@ -7,6 +7,11 @@
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame2D\lib\" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="local_repo" />
+      <option name="name" value="Local_repository" />
+      <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame3D\lib\" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="central" />
       <option name="name" value="Central Repository" />
       <option name="url" value="https://repo.maven.apache.org/maven2" />
