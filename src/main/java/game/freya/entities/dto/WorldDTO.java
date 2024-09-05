@@ -144,7 +144,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @Override
     public void generate() {
-        for (int i = 0; i < 32; ) {
+        for (int i = 0; i < 32;) {
             MockEnvironmentWithStorage nextMock = new MockEnvironmentWithStorage("mock_" + (i + 1),
                     dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM);
             boolean isBusy = false;
