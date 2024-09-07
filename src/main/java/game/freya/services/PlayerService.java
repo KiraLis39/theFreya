@@ -1,8 +1,8 @@
 package game.freya.services;
 
 import game.freya.config.Constants;
+import game.freya.dto.PlayerDTO;
 import game.freya.entities.Player;
-import game.freya.entities.dto.PlayerDTO;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.PlayerMapper;

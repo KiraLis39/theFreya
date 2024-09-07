@@ -8,8 +8,10 @@ public final class ExceptionUtils {
     }
 
     public static String getFullExceptionMessage(Throwable t) {
-        return t.getCause() == null
-                ? t.getMessage() : t.getCause().getCause() == null
-                ? t.getCause().getMessage() : t.getCause().getCause().getMessage();
+        return t == null ? "NA"
+                : t.getCause() == null ? t.getMessage()
+                : t.getCause().getCause() == null
+                ? t.getCause().getMessage()
+                : t.getCause().getCause().getMessage();
     }
 }

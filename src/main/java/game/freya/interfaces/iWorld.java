@@ -1,9 +1,9 @@
 package game.freya.interfaces;
 
-import game.freya.GameController;
+import game.freya.dto.roots.EnvironmentDto;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
-import game.freya.items.prototypes.Environment;
+import game.freya.services.GameControllerService;
 
 import java.awt.*;
 import java.time.LocalDateTime;
@@ -15,15 +15,15 @@ public interface iWorld {
 
     UUID getAuthor();
 
-    void init(GameCanvas canvas, GameController controller);
+    void init(GameCanvas canvas, GameControllerService controller);
 
     Dimension getDimension();
 
     void draw(Graphics2D g2D) throws AWTException;
 
-    void addEnvironment(Environment o);
+    void addEnvironment(EnvironmentDto o);
 
-    Set<Environment> getEnvironments();
+    Set<EnvironmentDto> getEnvironments();
 
     boolean isLocalWorld();
 

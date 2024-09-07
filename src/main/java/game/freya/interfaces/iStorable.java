@@ -4,7 +4,7 @@ package game.freya.interfaces;
  * Интерфейс складируемых айтемов
  */
 public interface iStorable extends iTradeable {
-    void drop(); // drop the item
+    void drop(); // drop this
 
-    void store(iStorage storage); // put item to storage
+    void store(iStorage inStorage); // put this to storage
 }

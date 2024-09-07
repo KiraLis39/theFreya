@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface iGameObject extends Serializable {
     UUID getUid();
 
-    UUID getAuthor();
+    UUID getCreatedBy();
 
     String getName();
 

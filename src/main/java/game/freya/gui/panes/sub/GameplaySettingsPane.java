@@ -1,6 +1,7 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
+import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -63,7 +64,7 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
                         public void actionPerformed(ActionEvent e) {
                             if (isSelected()) {
                                 int accept = 0;
-                                if (!Constants.MON.getDevice().isFullScreenSupported()) {
+                                if (!FoxVideoMonitorUtil.isFullScreenSupported()) {
                                     accept = (int) new FOptionPane().buildFOptionPane("Внимание!",
                                             "Кажется, ваш монитор не поддерживает данный режим. Уверены?",
                                             FOptionPane.TYPE.YES_NO_TYPE, null, 10, true).get();

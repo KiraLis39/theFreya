@@ -3,10 +3,10 @@ package game.freya.net;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fox.components.FOptionPane;
-import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.dto.PlayCharacterDto;
+import game.freya.dto.roots.CharacterDTO;
 import game.freya.entities.World;
-import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;
@@ -17,6 +17,7 @@ import game.freya.net.data.events.EventHeroRegister;
 import game.freya.net.data.events.EventPingPong;
 import game.freya.net.data.events.EventPlayerAuth;
 import game.freya.net.data.events.EventWorldData;
+import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +43,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private final ObjectMapper mapper;
 
-    private final GameController gameController;
+    private final GameControllerService gameController;
 
     private final PlayedHeroesService playedHeroesService;
 
@@ -66,7 +67,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private NetDataEvent lastEvent;
 
-    public ConnectedServerPlayer(Server server, Socket client, GameController gameController) throws SocketException {
+    public ConnectedServerPlayer(Server server, Socket client, GameControllerService gameController) throws SocketException {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule());
 
@@ -84,7 +85,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
 
         setDaemon(true);
-        setUncaughtExceptionHandler((t, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));
+        setUncaughtExceptionHandler((_, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));
         start();
     }
 
@@ -157,8 +158,8 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private void sendHeroDataByRequest(ClientDataDTO data) {
         EventHeroRegister heroNeed = (EventHeroRegister) data.content();
-        HeroDTO found = gameController.getConnectedHeroes().stream()
-                .filter(h -> h.getHeroUid().equals(heroNeed.heroUid())).findFirst().orElse(null);
+        CharacterDTO found = gameController.getConnectedHeroes().stream()
+                .filter(h -> h.getUid().equals(heroNeed.heroUid())).findFirst().orElse(null);
         if (found != null) {
             push(gameController.heroToCli(found, gameController.getCurrentPlayer()));
         } else {
@@ -190,7 +191,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private void doPlayerAuth(ClientDataDTO readed) throws IOException {
         EventPlayerAuth auth = (EventPlayerAuth) readed.content();
-        playerUid = auth.playerUid();
+        playerUid = auth.ownerUid();
         playerName = auth.playerName();
         if (gameController.getCurrentWorld() == null) {
             throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current world");
@@ -206,7 +207,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                     .dataType(NetDataType.AUTH_DENIED)
                     .content(EventDenied.builder().explanation("Не верный пароль").build()).build());
         } else {
-            log.info("Игрок {} ({}) успешно авторизован", auth.playerName(), auth.playerUid());
+            log.info("Игрок {} ({}) успешно авторизован", auth.playerName(), auth.ownerUid());
             // для создателя этот мир - Локальный,для удалённого игрока этот мир не может быть Локальным:
             cw.setLocalWorld(playerUid.equals(cw.getAuthor()));
             isAuthorized.set(true);
@@ -222,12 +223,12 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private void saveConnectedHero(ClientDataDTO readed) {
         EventHeroRegister connected = (EventHeroRegister) readed.content();
-        HeroDTO hero;
+        CharacterDTO hero;
         if (gameController.isHeroExist(connected.heroUid())) {
             hero = gameController.getHeroByUid(connected.heroUid());
             BeanUtils.copyProperties(readed, hero, "heroUid");
         } else {
-            hero = gameController.saveNewHero(gameController.cliToHero(readed), false);
+            hero = gameController.saveNewHero((PlayCharacterDto) gameController.cliToHero(readed), false);
         }
 
         this.isAccepted.set(true);

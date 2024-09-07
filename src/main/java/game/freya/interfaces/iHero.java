@@ -1,7 +1,7 @@
 package game.freya.interfaces;
 
-import game.freya.entities.logic.Buff;
-import game.freya.enums.other.MovingVector;
+import game.freya.dto.roots.BuffDto;
+import game.freya.enums.player.MovingVector;
 
 import java.time.LocalDateTime;
 
@@ -10,9 +10,9 @@ public interface iHero extends iEntity {
 
     void decreaseExp(float decreaseValue);
 
-    void addBuff(Buff buff);
+    void addBuff(BuffDto buff);
 
-    void removeBuff(Buff buff);
+    void removeBuff(BuffDto buff);
 
     short getLevel();
 

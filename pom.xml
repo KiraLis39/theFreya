@@ -7,6 +7,7 @@
     <groupId>fox</groupId>
     <artifactId>FreyaTheGame2D</artifactId>
     <version>0.1.6</version>
+    <packaging>jar</packaging>
     <name>Freya the game 2D</name>
     <description>Freya the game</description>
     <url>https://vk.com/neverendingsky</url>
@@ -131,6 +132,11 @@
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-community-dialects</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.1.0</version>
+        </dependency>
 
         <!-- 3D -->
         <dependency>
@@ -151,7 +157,7 @@
         <dependency>
             <groupId>fox</groupId>
             <artifactId>fox-tools</artifactId>
-            <version>6.2.83</version>
+            <version>6.2.84</version>
             <!-- Run the 'install:install-file
             -Dfile=H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-tools\fox-tools-6.2.6.jar
             -DgroupId=FoxLib39 -DartifactId=fox-tools -Dversion=6.2.6 -Dpackaging=jar -DcreateChecksum=true' before -->

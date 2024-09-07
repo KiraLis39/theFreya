@@ -1,12 +1,12 @@
 package game.freya.gui.panes.handlers;
 
-import fox.FoxPointConverter;
 import fox.FoxRender;
 import fox.components.FOptionPane;
-import game.freya.GameController;
+import fox.utils.FoxPointConverterUtil;
+import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
-import game.freya.entities.dto.HeroDTO;
-import game.freya.enums.other.MovingVector;
+import game.freya.dto.roots.CharacterDTO;
+import game.freya.enums.player.MovingVector;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GameCanvas;
@@ -24,6 +24,7 @@ import game.freya.gui.panes.sub.VideoSettingsPane;
 import game.freya.gui.panes.sub.WorldCreatingPane;
 import game.freya.gui.panes.sub.WorldsListPane;
 import game.freya.gui.panes.sub.components.Chat;
+import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -75,7 +76,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private final String pausedString, downInfoString1, downInfoString2;
 
-    private final transient GameController gameController;
+    private final transient GameControllerService gameController;
 
     private final transient UIHandler uiHandler;
 
@@ -121,7 +122,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private byte creatingSubsRetry = 0;
 
-    protected FoxCanvas(String name, GameController controller, JFrame parentFrame, UIHandler uiHandler) {
+    protected FoxCanvas(String name, GameControllerService controller, JFrame parentFrame, UIHandler uiHandler) {
         super(null, true);
 
         this.name = name;
@@ -351,8 +352,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         m2D.setTransform(grTrMem);
 
         // отображаем других игроков на миникарте:
-        for (HeroDTO connectedHero : gameController.getConnectedHeroes()) {
-            if (gameController.getCurrentHeroUid().equals(connectedHero.getHeroUid())) {
+        for (CharacterDTO connectedHero : gameController.getConnectedHeroes()) {
+            if (gameController.getCurrentHeroUid().equals(connectedHero.getUid())) {
                 continue;
             }
             int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
@@ -394,7 +395,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.setColor(Color.WHITE);
 
-        Collection<HeroDTO> heroes;
+        Collection<CharacterDTO> heroes;
         if (gameController.isCurrentHeroOnline()) {
             heroes = gameController.getConnectedHeroes();
         } else {
@@ -412,11 +413,11 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                 if (gameController.isHeroActive(hero, getViewPort().getBounds())) {
 
                     // Преобразуем координаты героя из карты мира в координаты текущего холста:
-                    Point2D relocatedPoint = FoxPointConverter.relocateOn(getViewPort(), getBounds(), hero.getLocation());
+                    Point2D relocatedPoint = FoxPointConverterUtil.relocateOn(getViewPort(), getBounds(), hero.getLocation()); // or relocateOnAlt(...) better?
 
                     // draw hero name:
-                    g2D.drawString(hero.getHeroName(),
-                            (int) (relocatedPoint.getX() - FFB.getHalfWidthOfString(g2D, hero.getHeroName())),
+                    g2D.drawString(hero.getName(),
+                            (int) (relocatedPoint.getX() - FFB.getHalfWidthOfString(g2D, hero.getName())),
                             (int) (relocatedPoint.getY() - strutMod));
 
                     strutMod += 24;
@@ -559,7 +560,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 25);
         }
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
+                .formatted(Constants.getUserConfig().getFpsLimit(), FoxVideoMonitorUtil.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
 
         v2D.setColor(Color.GRAY);
@@ -567,7 +568,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 24);
         }
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
-                .formatted(Constants.getUserConfig().getFpsLimit(), Constants.MON.getRefreshRate(),
+                .formatted(Constants.getUserConfig().getFpsLimit(), FoxVideoMonitorUtil.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift, downShift);
     }
 

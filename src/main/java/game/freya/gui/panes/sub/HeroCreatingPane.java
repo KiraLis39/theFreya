@@ -1,17 +1,17 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
-import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.entities.dto.HeroDTO;
-import game.freya.enums.other.HeroCorpusType;
-import game.freya.enums.other.HeroPeripheralType;
+import game.freya.dto.roots.CharacterDTO;
+import game.freya.enums.player.HeroCorpusType;
+import game.freya.enums.player.HeroPeripheralType;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.JZlider;
 import game.freya.gui.panes.sub.components.SubPane;
+import game.freya.services.GameControllerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,9 +73,9 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
     @Getter
     private Color baseColor = Color.GREEN, secondColor = Color.DARK_GRAY;
 
-    private transient HeroDTO editableHero;
+    private transient CharacterDTO editableHero;
 
-    public HeroCreatingPane(FoxCanvas canvas, GameController gameController) {
+    public HeroCreatingPane(FoxCanvas canvas, GameControllerService gameController) {
         setName("Hero creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -211,7 +211,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                         public void actionPerformed(ActionEvent e) {
                             if (!isEditMode) {
                                 worldUid = gameController.getCurrentWorldUid();
-                                HeroDTO existsHero = gameController.findHeroByNameAndWorld(getHeroName(), worldUid);
+                                CharacterDTO existsHero = gameController.findHeroByNameAndWorld(getHeroName(), worldUid);
                                 if (existsHero != null) {
                                     new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
                                 } else {
@@ -324,7 +324,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
         recolorHeroView();
     }
 
-    public void load(HeroDTO template) {
+    public void load(CharacterDTO template) {
         this.isEditMode = true;
         this.editableHero = template;
         this.ntf.setEditable(false);

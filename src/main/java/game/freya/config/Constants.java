@@ -4,11 +4,11 @@ import fox.FoxFontBuilder;
 import fox.FoxFontBuilder.FONT;
 import fox.FoxLogo;
 import fox.FoxRender;
-import fox.VideoMonitor;
 import fox.components.FOptionPane;
 import fox.images.FoxCursor;
 import fox.images.FoxSpritesCombiner;
 import fox.player.FoxPlayer;
+import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
 import game.freya.utils.ExceptionUtils;
@@ -24,7 +24,6 @@ import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -55,7 +54,6 @@ public final class Constants {
 
 
     // libraries objects:
-    public static final VideoMonitor MON = new VideoMonitor();
 
     public static final FoxFontBuilder FFB = new FoxFontBuilder();
 
@@ -75,15 +73,15 @@ public final class Constants {
     public static final DateTimeFormatter DATE_FORMAT_3 = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm", Locale.of("ru"));
 
     // fonts:
-    public static final Font DEBUG_FONT = FFB.setFoxFont(FONT.ARIAL, 16, true, MON.getEnvironment());
+    public static final Font DEBUG_FONT = FFB.setFoxFont(FONT.ARIAL, 16, true, FoxVideoMonitorUtil.getEnvironment());
 
-    public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 14, false, MON.getEnvironment());
+    public static final Font INFO_FONT = FFB.setFoxFont(FONT.ARIAL_NARROW, 14, false, FoxVideoMonitorUtil.getEnvironment());
 
-    public static final Font GAME_FONT_01 = FFB.setFoxFont(FONT.ARIAL_NARROW, 12, true, MON.getEnvironment());
+    public static final Font GAME_FONT_01 = FFB.setFoxFont(FONT.ARIAL_NARROW, 12, true, FoxVideoMonitorUtil.getEnvironment());
 
-    public static final Font GAME_FONT_02 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 26, true, MON.getEnvironment());
+    public static final Font GAME_FONT_02 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 26, true, FoxVideoMonitorUtil.getEnvironment());
 
-    public static final Font GAME_FONT_03 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 32, true, MON.getEnvironment());
+    public static final Font GAME_FONT_03 = FFB.setFoxFont(FONT.BAHNSCHRIFT, 32, true, FoxVideoMonitorUtil.getEnvironment());
 
     public static final Font MENU_BUTTONS_BIG_FONT;
 
@@ -94,14 +92,28 @@ public final class Constants {
     public static final Font PROPAGANDA_FONT;
 
     public static final Font PROPAGANDA_BIG_FONT;
-
+    @Getter
+    public static final String connectionUser = "freya";
+    @Getter
+    public static final String connectionPassword = "0358";
+    @Getter
+    public static final String cachePrepStmts = "true";
+    @Getter
+    public static final String prepStmtCacheSize = "250";
+    @Getter
+    public static final String prepStmtCacheSqlLimit = "2048";
+    @Getter
+    public static final boolean connectionAutoCommit = false;
     // project:
     @Getter
     private static final String gameAuthor = "KiraLis39";
-
     @Getter
-    private static final Path databaseRootDir = FileSystems.getDefault().getPath("./db/freya.db").toAbsolutePath();
-
+    private static final Path database = Path.of("C:\\Users\\"
+            .concat(System.getProperty("user.name"))
+            .concat("\\AppData\\Local\\Freya\\freya.db")).toAbsolutePath();
+    // db hikari:
+    @Getter
+    public static final String connectionUrl = "jdbc:sqlite:".concat(getDatabase().toString());
     @Getter
     private static final String imageExtension = ".png"; // .png
 
@@ -122,7 +134,10 @@ public final class Constants {
     private static final double scrollSpeed = 20D;
 
     @Getter
-    private static final String userSave = "./saves/".concat(SystemUtils.getUserName()).concat("/save.json");
+    private static final String userCountry = SystemUtils.USER_COUNTRY;
+
+    @Getter
+    private static final String userSave = "./saves/".concat(SystemUtils.USER_NAME).concat("/save.json");
 
     @Getter
     private static final String logoImageUrl = "./resources/images/logo.png";
@@ -209,13 +224,13 @@ public final class Constants {
         }
 
         int ruf = FFB.addNewFont("Lucida Sans Unicode");
-        LITTLE_UNICODE_FONT = FFB.setFoxFont(ruf, 18, false, MON.getEnvironment());
-        MENU_BUTTONS_FONT = FFB.setFoxFont(ruf, 20, true, MON.getEnvironment());
-        MENU_BUTTONS_BIG_FONT = FFB.setFoxFont(ruf, 28, true, MON.getEnvironment());
+        LITTLE_UNICODE_FONT = FFB.setFoxFont(ruf, 18, false, FoxVideoMonitorUtil.getEnvironment());
+        MENU_BUTTONS_FONT = FFB.setFoxFont(ruf, 20, true, FoxVideoMonitorUtil.getEnvironment());
+        MENU_BUTTONS_BIG_FONT = FFB.setFoxFont(ruf, 28, true, FoxVideoMonitorUtil.getEnvironment());
 
         ruf = FFB.addNewFont("Propaganda");
-        PROPAGANDA_FONT = FFB.setFoxFont(ruf, 26, true, MON.getEnvironment());
-        PROPAGANDA_BIG_FONT = FFB.setFoxFont(ruf, 30, true, MON.getEnvironment());
+        PROPAGANDA_FONT = FFB.setFoxFont(ruf, 26, true, FoxVideoMonitorUtil.getEnvironment());
+        PROPAGANDA_BIG_FONT = FFB.setFoxFont(ruf, 30, true, FoxVideoMonitorUtil.getEnvironment());
     }
 
     private Constants() {
@@ -223,12 +238,12 @@ public final class Constants {
 
     private static void registerFonts() throws Exception {
         try (InputStream stream = new FileInputStream("./fonts/Propaganda.ttf")) {
-            FFB.register(Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(48f), MON.getEnvironment());
+            FFB.register(Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(48f), FoxVideoMonitorUtil.getEnvironment());
         }
     }
 
     public static GraphicsConfiguration getGraphicsConfiguration() {
-        return MON.getConfiguration();
+        return FoxVideoMonitorUtil.getConfiguration();
     }
 
     public static void showNFP() {
@@ -250,9 +265,9 @@ public final class Constants {
         if (userConfig.getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
             try {
                 if (userConfig.isFullscreen()) {
-                    MON.switchFullscreen(frame);
+                    FoxVideoMonitorUtil.setFullscreen(frame);
                 } else {
-                    MON.switchFullscreen(null);
+                    FoxVideoMonitorUtil.setFullscreen(null);
 
 //                    frame.setExtendedState(Frame.NORMAL);
 
@@ -292,7 +307,7 @@ public final class Constants {
 
     public static void restoreDisplayMode() {
         if (defaultDisplayMode != null) {
-            MON.getDevice().setDisplayMode(defaultDisplayMode);
+            FoxVideoMonitorUtil.setDisplayMode(defaultDisplayMode);
         }
     }
 

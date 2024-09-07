@@ -21,9 +21,10 @@ public enum ErrorMessages {
     RESOURCE_READ_ERROR("ER12", "Ошибка чтения ресурса игры"),
     WRONG_STATE("ER13", "Не верный статус приложения"),
     HERO_NOT_FOUND("ER14", "Не обнаружен Герой"),
-    SOCKET_CLOSED("ER15", "Сокет закрыт и не может быть использован");
+    SOCKET_CLOSED("ER15", "Сокет закрыт и не может быть использован"),
+    OS_NOT_SUPPORTED("ER16", "Operation system is not supported");
 
-    private final String errorCode;
+    private final String code;
 
     private final String errorCause;
 }

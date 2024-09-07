@@ -2,16 +2,16 @@ package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
-import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.entities.dto.HeroDTO;
-import game.freya.entities.dto.WorldDTO;
+import game.freya.dto.WorldDTO;
+import game.freya.dto.roots.CharacterDTO;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
+import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,7 +33,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private final transient FoxCanvas canvas;
 
-    private final transient GameController gameController;
+    private final transient GameControllerService gameController;
 
     private final SubPane centerList;
 
@@ -43,7 +43,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private transient ZLabel zlabel;
 
-    public WorldsListPane(FoxCanvas canvas, GameController controller) {
+    public WorldsListPane(FoxCanvas canvas, GameControllerService controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -160,7 +160,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
                         add(zlabel, BorderLayout.WEST);
 
-                        List<HeroDTO> hers = gameController.findAllHeroesByWorldUid(world.getUid());
+                        List<CharacterDTO> hers = gameController.findAllHeroesByWorldUid(world.getUid());
                         if (hers.isEmpty()) {
                             zlabel.setText(zlabel.getText().replace("</pre>",
                                     "<br>Герои:<font color=#99c7b5><b>    (нет)</b></font></pre>"));
@@ -168,31 +168,26 @@ public class WorldsListPane extends JPanel implements iSubPane {
                             String lineEnd = "</b></font>";
                             StringBuilder heroes = new StringBuilder("<br>Герои:    ");
                             boolean isFirst = true;
-                            for (HeroDTO her : hers) {
+                            for (CharacterDTO her : hers) {
                                 if (!isFirst) {
                                     heroes.append("<font color=#000000> | </font>");
                                 }
-                                switch (her.getHeroType()) {
-                                    case SNIPER ->
-                                            heroes.append("<font color=#f0ec22><b>").append(her.getHeroName()).append(lineEnd);
-                                    case TOWER ->
-                                            heroes.append("<font color=#0f294d><b>").append(her.getHeroName()).append(lineEnd);
-                                    case FIXER ->
-                                            heroes.append("<font color=#bcd918><b>").append(her.getHeroName()).append(lineEnd);
-                                    case HUNTER ->
-                                            heroes.append("<font color=#d95818><b>").append(her.getHeroName()).append(lineEnd);
-                                    case HACKER ->
-                                            heroes.append("<font color=#223df0><b>").append(her.getHeroName()).append(lineEnd);
-                                    default ->
-                                            heroes.append("<font color=#545454><b>").append(her.getHeroName()).append(lineEnd);
-                                }
+                                String color = switch (her.getHeroType()) {
+                                    case SNIPER -> "<font color=#f0ec22><b>";
+                                    case TOWER -> "<font color=#0f294d><b>";
+                                    case FIXER -> "<font color=#bcd918><b>";
+                                    case HUNTER -> "<font color=#d95818><b>";
+                                    case HACKER -> "<font color=#223df0><b>";
+                                    default -> "<font color=#545454><b>";
+                                };
+                                heroes.append(color).append(her.getName()).append(lineEnd);
                                 isFirst = false;
                             }
                             zlabel.setText(zlabel.getText().replace("</pre>", "%s</pre>".formatted(heroes)));
                         }
                     }}, BorderLayout.CENTER);
 
-                    add(new ZLabel("Создан: " + world.getCreateDate().format(Constants.DATE_FORMAT_3), null) {{
+                    add(new ZLabel("Создан: ".concat(world.getCreateDate().format(Constants.DATE_FORMAT_3)), null) {{
                         setFont(Constants.INFO_FONT);
                         setForeground(Color.GRAY);
                     }}, BorderLayout.SOUTH);

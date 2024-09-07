@@ -1,15 +1,7 @@
 package game.freya.net;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import game.freya.entities.dto.HeroDTO;
-import game.freya.enums.other.HeroCorpusType;
-import game.freya.enums.other.HeroPeripheralType;
-import game.freya.enums.other.HeroType;
-import game.freya.enums.other.HurtLevel;
-import game.freya.enums.other.MovingVector;
-import game.freya.exceptions.ErrorMessages;
-import game.freya.exceptions.GlobalServiceException;
+import game.freya.dto.roots.CharacterDTO;
+import game.freya.enums.player.MovingVector;
 import game.freya.services.HeroService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
@@ -31,19 +23,17 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class PlayedHeroesService {
-    private static final Map<UUID, HeroDTO> heroes = new HashMap<>();
+    private static final Map<UUID, CharacterDTO> heroes = new HashMap<>();
 
     private final HeroService heroService;
-
-    private final ObjectMapper mapper;
 
     @Getter
     private volatile UUID currentHeroUid;
 
 
-    public HeroDTO getHero(UUID uid) {
+    public CharacterDTO getHero(UUID uid) {
         if (!heroes.containsKey(uid)) {
-            HeroDTO dto;
+            CharacterDTO dto;
             if (heroService.isHeroExist(uid)) {
                 dto = heroService.getByUid(uid);
             } else {
@@ -54,23 +44,23 @@ public class PlayedHeroesService {
         return heroes.get(uid);
     }
 
-    public void addHero(final HeroDTO heroDTO) {
-        if (heroDTO.getHeroUid() == null) {
+    public void addHero(final CharacterDTO heroDTO) {
+        if (heroDTO.getUid() == null) {
             log.warn("Нельзя работать c героем без heroUid. Нужно найти причину и устранить!");
         }
 
         heroDTO.setOnline(true);
 
-        if (heroes.containsKey(heroDTO.getHeroUid())) {
-            log.debug("Обновление данных героя {} игрока {}...", heroDTO.getHeroName(), heroDTO.getAuthor());
-            heroes.replace(heroDTO.getHeroUid(), heroDTO);
+        if (heroes.containsKey(heroDTO.getUid())) {
+            log.debug("Обновление данных героя {} игрока {}...", heroDTO.getName(), heroDTO.getOwnerUid());
+            heroes.replace(heroDTO.getUid(), heroDTO);
         } else {
-            log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getHeroName());
-            heroes.put(heroDTO.getHeroUid(), heroDTO);
+            log.info("Добавляется в карту текущих игроков игрок {}...", heroDTO.getName());
+            heroes.put(heroDTO.getUid(), heroDTO);
         }
     }
 
-    public Set<HeroDTO> getHeroes() {
+    public Set<CharacterDTO> getHeroes() {
         return new HashSet<>(heroes.values());
     }
 
@@ -79,24 +69,6 @@ public class PlayedHeroesService {
         currentHeroUid = null;
         heroes.clear();
         log.warn("Список активных игровых героев обнулён.");
-    }
-
-    public String getCurrentHeroInventoryJson() throws JsonProcessingException {
-        return mapper.writeValueAsString(heroes.get(currentHeroUid).getInventory());
-    }
-
-    public String getCurrentHeroBuffsJson() throws JsonProcessingException {
-        return mapper.writeValueAsString(heroes.get(currentHeroUid).getBuffs());
-    }
-
-    public int getCurrentHeroMaxOil() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getMaxOil();
-    }
-
-    public int getCurrentHeroCurOil() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getOil();
     }
 
     public void offlineSaveAndRemoveCurrentHero(Duration gameDuration) {
@@ -110,12 +82,12 @@ public class PlayedHeroesService {
     }
 
     public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID playerUid) {
-        HeroDTO otherHero = heroes.values().stream().filter(h -> h.getAuthor().equals(playerUid)).findFirst().orElse(null);
+        CharacterDTO otherHero = heroes.values().stream().filter(h -> h.getOwnerUid().equals(playerUid)).findFirst().orElse(null);
         if (otherHero != null) {
             try {
                 heroService.saveHero(otherHero);
-                heroes.remove(otherHero.getHeroUid());
-                log.info("Удалён из карты игровых героев Герой {} ({})", otherHero.getHeroName(), otherHero.getHeroUid());
+                heroes.remove(otherHero.getUid());
+                log.info("Удалён из карты игровых героев Герой {} ({})", otherHero.getName(), otherHero.getUid());
             } catch (Exception e) {
                 log.error("Что случилось? Выяснить: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
@@ -125,157 +97,69 @@ public class PlayedHeroesService {
     }
 
     private void saveCurrentHeroToDB() {
-        checkCHE();
         heroService.saveHero(heroes.get(currentHeroUid));
     }
 
-    public boolean isCurrentHero(HeroDTO hero) {
-        return hero.getHeroUid().equals(currentHeroUid);
+    public boolean isCurrentHero(CharacterDTO hero) {
+        return hero.getUid().equals(currentHeroUid);
     }
 
-    public HeroDTO getCurrentHero() {
-        checkCHE();
+    public CharacterDTO getCurrentHero() {
         return heroes.get(currentHeroUid);
     }
 
     public MovingVector getCurrentHeroVector() {
-        checkCHE();
         return heroes.get(currentHeroUid).getVector();
     }
 
     public void setCurrentHeroVector(MovingVector vector) {
-        checkCHE();
         heroes.get(currentHeroUid).setVector(vector);
     }
 
     public Point2D.Double getCurrentHeroPosition() {
-        checkCHE();
         return heroes.get(currentHeroUid).getLocation();
     }
 
     public long getCurrentHeroInGameTime() {
-        checkCHE();
         return heroes.get(currentHeroUid).getInGameTime();
     }
 
     public void setCurrentHeroInGameTime(long gameDuration) {
-        checkCHE();
         heroes.get(currentHeroUid).setInGameTime(gameDuration);
     }
 
     public byte getCurrentHeroSpeed() {
-        checkCHE();
         return heroes.get(currentHeroUid).getSpeed();
     }
 
-    public LocalDateTime getCurrentHeroCreateDate() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getCreateDate();
-    }
-
     public String getCurrentHeroName() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getHeroName();
-    }
-
-    public HeroType getCurrentHeroType() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getHeroType();
-    }
-
-    public short getCurrentHeroLevel() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getLevel();
-    }
-
-    public long getCurrentHeroExperience() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getExperience();
-    }
-
-    public int getCurrentHeroCurHealth() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getHealth();
-    }
-
-    public HurtLevel getCurrentHeroHurtLevel() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getHurtLevel();
+        return heroes.get(currentHeroUid).getName();
     }
 
     public boolean isCurrentHeroOnline() {
-        checkCHE();
         return heroes.get(currentHeroUid).isOnline();
     }
 
     public void setCurrentHeroOnline(boolean b) {
-        checkCHE();
         heroes.get(currentHeroUid).setOnline(b);
     }
 
-    private void checkCHE() {
-        if (heroes.get(currentHeroUid) == null) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "currentHeroUid: " + currentHeroUid + ". heroes: " + heroes.values());
-        }
-    }
-
-    public void addCurrentHero(HeroDTO hero) {
+    public void addCurrentHero(CharacterDTO hero) {
         hero.setOnline(true);
         hero.setLastPlayDate(LocalDateTime.now());
         addHero(hero);
-        currentHeroUid = hero.getHeroUid();
-    }
-
-    public float getCurrentHeroPower() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getPower();
-    }
-
-    public int getCurrentHeroMaxHealth() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getMaxHealth();
+        currentHeroUid = hero.getUid();
     }
 
     public boolean isCurrentHeroNotNull() {
         return currentHeroUid != null && !getHeroes().isEmpty();
     }
 
-    public Color getCurrentHeroBaseColor() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getBaseColor();
-    }
-
-    public Color getCurrentHeroSecondColor() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getSecondColor();
-    }
-
-    public HeroCorpusType getCurrentHeroCorpusType() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getCorpusType();
-    }
-
-    public HeroPeripheralType getCurrentHeroPeriferiaType() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getPeripheralType();
-    }
-
-    public short getCurrentHeroPeriferiaSize() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getPeripheralSize();
-    }
-
-    public HeroDTO getHeroByOwnerUid(UUID ouid) {
-        return heroes.values().stream().filter(h -> h.getAuthor().equals(ouid)).findAny().orElse(null);
+    public CharacterDTO getHeroByOwnerUid(UUID ouid) {
+        return heroes.values().stream().filter(h -> h.getOwnerUid().equals(ouid)).findAny().orElse(null);
     }
 
     public Rectangle getCurrentHeroCollider() {
-        checkCHE();
         return heroes.get(currentHeroUid).getCollider();
-    }
-
-    public Point2D getCurrentHeroCenterPoint() {
-        checkCHE();
-        return heroes.get(currentHeroUid).getCenterPoint();
     }
 }

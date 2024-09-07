@@ -1,9 +1,15 @@
 package game.freya.interfaces;
 
+import game.freya.dto.roots.CharacterDTO;
 import game.freya.enums.other.CurrencyVault;
-import game.freya.items.prototypes.GameCharacter;
 
-public interface iTradeable {
+import java.util.UUID;
+
+public interface iTradeable extends Comparable<iTradeable> {
+    UUID getUid();
+
+    String getName();
+
     CurrencyVault getCurrencyType();
 
     int getDefaultByeCost(); // стоимость по-умолчанию покупки у NPC
@@ -16,5 +22,21 @@ public interface iTradeable {
 
     void setCurrentSellCost(int cost);
 
-    void trade(GameCharacter owner, GameCharacter buyer, CurrencyVault vault, int value);
+    default boolean trade(CharacterDTO seller, iTradeable item, CharacterDTO buyer, CurrencyVault vaultType, int paySum) {
+        iTradeable itemToSell = seller.getInventory().removeItem(item);
+        if (itemToSell == null) {
+            return false;
+        }
+
+        if (buyer.getInventory().tryDecreaseBalance(paySum, vaultType)) {
+            // успешная торговля:
+            seller.getInventory().increaseBalance(paySum, vaultType);
+            buyer.getInventory().addItem(itemToSell);
+            return true;
+        } else {
+            // провал торговли:
+            seller.getInventory().addItem(itemToSell);
+            return false;
+        }
+    }
 }

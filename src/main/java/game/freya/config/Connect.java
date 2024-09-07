@@ -1,46 +1,56 @@
 package game.freya.config;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import game.freya.utils.ExceptionUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
-import org.sqlite.SQLiteConnection;
 
-import java.sql.DriverManager;
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.SQLException;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public final class Connect {
-    private final GameConfig config;
+    private HikariDataSource ds;
+    private Connection conn;
 
-    private SQLiteConnection conn;
-
-    @Bean(name = "SQLiteConnection")
-    public SQLiteConnection getConnection() {
-        if (conn == null) {
-            try {
-                this.conn = (SQLiteConnection) DriverManager.getConnection(config.getConnectionUrl());
-                this.conn.setAutoCommit(false);
-                log.info("Connection to SQLite has been established.");
-            } catch (SQLException e) {
-                log.error("Database connection fail: {}", ExceptionUtils.getFullExceptionMessage(e));
-            }
-        }
-        return conn;
+    private Connect() {
     }
 
-    @Bean(name = "ConnectionCloser", autowireCandidate = false)
-    public void closeConnection() {
-        if (conn != null) {
-            try {
-                this.conn.close();
-                log.info("Connection to SQLite was closed.");
-            } catch (SQLException e) {
-                log.error("Исключение при закрытии подключения к базе данных: {}", ExceptionUtils.getFullExceptionMessage(e));
-            }
+    @Bean
+    public DataSource dataSource() {
+        if (ds == null) {
+            buildConn();
         }
+        return ds;
+    }
+
+    private void buildConn() {
+        try {
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl(Constants.getConnectionUrl());
+            config.setUsername(Constants.getConnectionUser());
+            config.setPassword(Constants.getConnectionPassword());
+            config.addDataSourceProperty("cachePrepStmts", Constants.getCachePrepStmts());
+            config.addDataSourceProperty("prepStmtCacheSize", Constants.getPrepStmtCacheSize());
+            config.addDataSourceProperty("prepStmtCacheSqlLimit", Constants.getPrepStmtCacheSqlLimit());
+            config.setAutoCommit(Constants.isConnectionAutoCommit());
+            ds = new HikariDataSource(config);
+        } catch (Exception e) {
+            log.error("Database connection fail: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+    }
+
+    @Bean(destroyMethod = "close")
+    public Connection getConnection() throws SQLException {
+        if (conn == null) {
+            buildConn();
+            conn = ds.getConnection();
+            log.info("Connection to SQLite has been established.");
+        }
+        return conn;
     }
 }

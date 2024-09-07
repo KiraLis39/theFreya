@@ -1,7 +1,7 @@
 package game.freya.interfaces;
 
-import game.freya.entities.logic.Buff;
-import game.freya.enums.other.RarityType;
+import game.freya.entities.roots.Buff;
+import game.freya.enums.amunitions.RarityType;
 
 import java.util.Set;
 

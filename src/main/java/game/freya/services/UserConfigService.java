@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import fox.components.FOptionPane;
-import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.utils.ExceptionUtils;
@@ -26,10 +25,10 @@ import java.nio.file.Path;
 public class UserConfigService {
     private final ObjectMapper mapper;
 
-    private GameController gameController;
+    private GameControllerService gameController;
 
     @Autowired
-    public void setGameController(@Lazy GameController gameController) {
+    public void setGameController(@Lazy GameControllerService gameController) {
         this.gameController = gameController;
     }
 

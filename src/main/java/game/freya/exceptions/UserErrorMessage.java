@@ -1,18 +1,23 @@
 package game.freya.exceptions;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
+@RequiredArgsConstructor
 public class UserErrorMessage {
-    private Date timestamp;
+    @Builder.Default
+    private LocalDateTime timestamp = LocalDateTime.now();
 
-    private String errorCode;
+    private String code;
 
-    private String errorCause;
+    private String cause;
 }

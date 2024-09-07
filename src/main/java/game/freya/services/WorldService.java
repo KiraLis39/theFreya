@@ -1,12 +1,13 @@
 package game.freya.services;
 
+import game.freya.dto.WorldDTO;
 import game.freya.entities.World;
-import game.freya.entities.dto.WorldDTO;
 import game.freya.interfaces.iEnvironment;
 import game.freya.mappers.WorldMapper;
 import game.freya.repositories.WorldRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.jpa.repository.Modifying;
@@ -28,6 +29,7 @@ public class WorldService {
 
     private final WorldMapper worldMapper;
 
+    @Setter
     @Getter
     private WorldDTO currentWorld;
 
@@ -73,11 +75,6 @@ public class WorldService {
         return currentWorld.getEnvironments().stream()
                 .filter(e -> e.isInSector(rectangle))
                 .collect(Collectors.toSet());
-    }
-
-    public WorldDTO setCurrentWorld(WorldDTO currentWorld) {
-        this.currentWorld = currentWorld;
-        return this.currentWorld;
     }
 
     public boolean isWorldExist(UUID worldUid) {

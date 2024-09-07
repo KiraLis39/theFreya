@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Objects;
 import java.util.UUID;
 
 @Getter
@@ -26,7 +25,7 @@ public class Player {
     @Id
     @Builder.Default
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false, insertable = false, updatable = false, unique = true)
+    @Column(name = "id", nullable = false)
     private UUID uid = UUID.randomUUID();
 
     @Column(name = "nick_name", length = 16, unique = true)
@@ -40,22 +39,4 @@ public class Player {
 
     @Column(name = "last_played_world_uid")
     private UUID lastPlayedWorldUid;
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getUid(), getNickName(), getEmail());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Player player = (Player) o;
-        return Objects.equals(getUid(), player.getUid())
-                && Objects.equals(getNickName(), player.getNickName()) && Objects.equals(getEmail(), player.getEmail());
-    }
 }

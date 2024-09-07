@@ -1,7 +1,6 @@
 package game.freya.services;
 
-import game.freya.config.annotations.HeroDataBuilder;
-import game.freya.entities.dto.HeroDTO;
+import game.freya.dto.roots.CharacterDTO;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.net.data.ClientDataDTO;
@@ -12,23 +11,22 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@HeroDataBuilder
 @RequiredArgsConstructor
 public class EventService {
     private final PlayerService playerService;
 
-    public ClientDataDTO buildMove(HeroDTO dto) {
+    public ClientDataDTO buildMove(CharacterDTO dto) {
         return ClientDataDTO.builder()
                 .dataType(NetDataType.EVENT)
-//                .heroUid(dto.getHeroUid())
-//                .heroName(dto.getHeroName())
+                .heroUid(dto.getUid())
+                .heroName(dto.getName())
                 .dataEvent(NetDataEvent.HERO_MOVING)
                 .content(EventHeroMoving.builder()
-                        .playerUid(dto.getAuthor())
+                        .ownerUid(dto.getOwnerUid())
                         .playerName(playerService.getCurrentPlayer().getNickName())
 
-                        .heroUid(dto.getHeroUid())
-                        .heroName(dto.getHeroName())
+                        .heroUid(dto.getUid())
+                        .heroName(dto.getName())
                         .positionX(dto.getLocation().x)
                         .positionY(dto.getLocation().y)
                         .vector(dto.getVector())

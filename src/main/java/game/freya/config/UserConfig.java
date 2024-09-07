@@ -21,175 +21,141 @@ import java.util.UUID;
 public final class UserConfig {
 
     @Getter
-    @Setter
     @Builder.Default
     private float miniMapOpacity = 0.65f;
 
     // player:
     @Getter
-    @Setter
     @Builder.Default
     private UUID userId = UUID.randomUUID();
 
     @Getter
-    @Setter
     @Builder.Default
-    private String userName = SystemUtils.getUserName();
+    private String userName = SystemUtils.USER_NAME;
 
     @Getter
-    @Setter
     @Builder.Default
     private String userMail = "demo@test.ru";
 
     // audio:
     @Getter
-    @Setter
     @Builder.Default
     private boolean isSoundEnabled = true;
 
     @Getter
-    @Setter
     @Builder.Default
     private int soundVolumePercent = 75;
 
     @Getter
-    @Setter
     @Builder.Default
     private boolean isMusicEnabled = true;
 
     @Getter
-    @Setter
     @Builder.Default
     private int musicVolumePercent = 75;
 
     // hotkeys:
-    @Setter
     @Getter
     @Builder.Default
     private int keyLookUp = KeyEvent.VK_UP;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyLookLeft = KeyEvent.VK_LEFT;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyLookRight = KeyEvent.VK_RIGHT;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyLookDown = KeyEvent.VK_DOWN;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyMoveUp = KeyEvent.VK_W;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyMoveLeft = KeyEvent.VK_A;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyMoveRight = KeyEvent.VK_D;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyMoveDown = KeyEvent.VK_S;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyRotateClockwise = KeyEvent.VK_E;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyRotateCounter = KeyEvent.VK_Q;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyPause = KeyEvent.VK_ESCAPE;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyConsole = KeyEvent.VK_BACK_QUOTE;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyConsoleMod = InputEvent.SHIFT_DOWN_MASK;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyDebug = KeyEvent.VK_F10;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyFps = KeyEvent.VK_F9;
 
-    @Setter
     @Getter
     @Builder.Default
     private int keyFullscreen = KeyEvent.VK_F11;
 
     // gameplay:
     @Getter
-    @Setter
     @Builder.Default
     private boolean dragGameFieldOnFrameEdgeReached = true;
 
     @Getter
-    @Setter
     @Builder.Default
     private FullscreenType fullscreenType = FullscreenType.MAXIMIZE_WINDOW; // .EXCLUSIVE
 
     @Getter
-    @Setter
     @Builder.Default
     private boolean isFullscreen = false;
 
     @Getter
-    @Setter
     @Builder.Default
     private boolean isPauseOnHidden = true;
 
     // graphics:
     @Getter
-    @Setter
     @Builder.Default
     private boolean isUseSmoothing = true;
 
     @Getter
-    @Setter
     @Builder.Default
     private boolean isUseBicubic = false;
 
     @Getter
-    @Setter
     @Builder.Default
     private int fpsLimit = 60; // fps limit
 
     @Getter
-    @Setter
     @Builder.Default
     private boolean isMultiBufferEnabled = true;
 
-    @Setter
     @Builder.Default
     private int bufferedDeep = 2;
 
-    @Setter
     @Builder.Default
     private int maxBufferedDeep = 2;
 
@@ -218,6 +184,7 @@ public final class UserConfig {
         setKeyRotateCounter(KeyEvent.VK_Q);
     }
 
+    @Getter
     public enum HotKeys {
         CAM_UP("Камера вверх", Constants.getUserConfig().getKeyLookUp(), 0),
         CAM_LEFT("Камера влево", Constants.getUserConfig().getKeyLookLeft(), 0),
@@ -235,13 +202,10 @@ public final class UserConfig {
         FPS("FPS", Constants.getUserConfig().getKeyFps(), 0),
         FULLSCREEN("Переключение режима экрана", Constants.getUserConfig().getKeyFullscreen(), 0);
 
-        @Getter
         private final String description;
 
-        @Getter
         private final int event;
 
-        @Getter
         private final int mask;
 
         HotKeys(String description, int event, int mask) {

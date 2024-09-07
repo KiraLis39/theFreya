@@ -1,11 +1,11 @@
 package game.freya.services;
 
-import game.freya.entities.Hero;
-import game.freya.entities.dto.HeroDTO;
-import game.freya.entities.dto.PlayerDTO;
-import game.freya.mappers.HeroMapper;
+import game.freya.dto.PlayerDTO;
+import game.freya.dto.roots.CharacterDTO;
+import game.freya.entities.roots.Character;
+import game.freya.mappers.CharMapper;
 import game.freya.net.data.ClientDataDTO;
-import game.freya.repositories.HeroRepository;
+import game.freya.repositories.CharacterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -21,60 +21,60 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Service
 public class HeroService {
-    private final HeroRepository heroRepository;
+    private final CharacterRepository characterRepository;
 
-    private final HeroMapper heroMapper;
+    private final CharMapper heroMapper;
 
     @Modifying
     @Transactional
     public void deleteHeroByUuid(UUID heroUid) {
-        heroRepository.deleteByUid(heroUid);
+        characterRepository.deleteByUid(heroUid);
     }
 
     @Transactional(readOnly = true)
-    public List<HeroDTO> findAllByWorldUidAndOwnerUid(UUID uid, UUID ownerUid) {
-        return heroMapper.toDtos(heroRepository.findAllByWorldUidAndOwnerUid(uid, ownerUid));
+    public List<CharacterDTO> findAllByWorldUidAndOwnerUid(UUID uid, UUID ownerUid) {
+        return heroMapper.toDto(characterRepository.findAllByWorldUidAndOwnerUid(uid, ownerUid));
     }
 
     @Transactional(readOnly = true)
-    public List<HeroDTO> findAllByWorldUuid(UUID uid) {
-        return heroMapper.toDtos(heroRepository.findAllByWorldUid(uid));
+    public List<CharacterDTO> findAllByWorldUuid(UUID uid) {
+        return heroMapper.toDto(characterRepository.findAllByWorldUid(uid));
     }
 
     @Transactional
-    public HeroDTO saveHero(HeroDTO heroDto) {
-        HeroDTO aim;
-        Optional<Hero> old = heroRepository.findByUid(heroDto.getHeroUid());
+    public CharacterDTO saveHero(CharacterDTO heroDto) {
+        CharacterDTO aim;
+        Optional<Character> old = characterRepository.findByUid(heroDto.getUid());
         if (old.isPresent()) {
             aim = heroMapper.toDto(old.get());
             BeanUtils.copyProperties(heroDto, aim);
         } else {
             aim = heroDto;
         }
-        log.info("Сохранение в БД героя {} ({})", heroDto.getHeroUid(), heroDto.getHeroName());
-        return heroMapper.toDto(heroRepository.save(heroMapper.toEntity(aim)));
+        log.info("Сохранение в БД героя {} ({})", heroDto.getUid(), heroDto.getName());
+        return heroMapper.toDto(characterRepository.save(heroMapper.toEntity(aim)));
     }
 
     @Transactional(readOnly = true)
-    public HeroDTO findHeroByNameAndWorld(String heroName, UUID worldUid) {
-        Optional<Hero> found = heroRepository.findByHeroNameAndWorldUid(heroName, worldUid);
+    public CharacterDTO findHeroByNameAndWorld(String heroName, UUID worldUid) {
+        Optional<Character> found = characterRepository.findByNameAndWorldUid(heroName, worldUid);
         return found.map(heroMapper::toDto).orElse(null);
     }
 
     public boolean isHeroExist(UUID uuid) {
-        return heroRepository.existsById(uuid);
+        return characterRepository.existsById(uuid);
     }
 
     @Transactional(readOnly = true)
-    public HeroDTO getByUid(UUID uuid) {
-        return heroMapper.toDto(heroRepository.getReferenceById(uuid));
+    public CharacterDTO getByUid(UUID uuid) {
+        return heroMapper.toDto(characterRepository.getReferenceById(uuid));
     }
 
-    public ClientDataDTO heroToCli(HeroDTO hero, PlayerDTO currentPlayer) {
+    public ClientDataDTO heroToCli(CharacterDTO hero, PlayerDTO currentPlayer) {
         return heroMapper.heroToCli(hero, currentPlayer);
     }
 
-    public HeroDTO cliToHero(ClientDataDTO cli) {
+    public CharacterDTO cliToHero(ClientDataDTO cli) {
         return heroMapper.cliToHero(cli);
     }
 }

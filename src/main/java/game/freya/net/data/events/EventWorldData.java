@@ -1,6 +1,5 @@
 package game.freya.net.data.events;
 
-import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.entities.World;
 import game.freya.net.data.iClientEventData;
 import lombok.Builder;
@@ -9,11 +8,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Builder
-@HeroDataBuilder
 public record EventWorldData(
         UUID dataUid,
         UUID heroUid,
-        UUID playerUid,
+        UUID ownerUid,
         String playerName,
         UUID worldUid,
         World world

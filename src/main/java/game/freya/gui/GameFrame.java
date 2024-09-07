@@ -1,13 +1,14 @@
 package game.freya.gui;
 
 import fox.components.FOptionPane;
-import game.freya.GameController;
+import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.enums.other.ScreenType;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
+import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,14 +31,14 @@ public class GameFrame implements WindowListener, WindowStateListener {
 
     private Dimension windowSize;
 
-    private GameController gameController;
+    private GameControllerService gameController;
 
     private JFrame frame;
 
-    public void showMainMenu(GameController gameController) {
+    public void showMainMenu(GameControllerService gameController) {
         this.gameController = gameController;
 
-        Dimension monitorSize = Constants.MON.getConfiguration().getBounds().getSize();
+        Dimension monitorSize = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
         double delta = monitorSize.getWidth() / monitorSize.getHeight();
         double newWidth = monitorSize.getWidth() * 0.75d;
         double newHeight = newWidth / delta;

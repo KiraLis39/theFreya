@@ -1,9 +1,8 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
-import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.entities.dto.HeroDTO;
+import game.freya.dto.roots.CharacterDTO;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
@@ -11,6 +10,7 @@ import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import game.freya.net.data.NetConnectTemplate;
+import game.freya.services.GameControllerService;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -23,11 +23,11 @@ import java.awt.image.BufferedImage;
 public class HeroesListPane extends JPanel implements iSubPane {
     private final transient FoxCanvas canvas;
 
-    private final transient GameController gameController;
+    private final transient GameControllerService gameController;
 
     private transient BufferedImage snap;
 
-    public HeroesListPane(FoxCanvas canvas, GameController controller) {
+    public HeroesListPane(FoxCanvas canvas, GameControllerService controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -47,8 +47,8 @@ public class HeroesListPane extends JPanel implements iSubPane {
     private void reloadHeroes(FoxCanvas canvas) {
         HeroesListPane.this.removeAll();
 
-        for (HeroDTO hero : gameController.getMyCurrentWorldHeroes()) {
-            add(new SubPane("Герой: ".concat(hero.getHeroName()), hero.getHeroType().getColor()) {{
+        for (CharacterDTO hero : gameController.getMyCurrentWorldHeroes()) {
+            add(new SubPane("Герой: ".concat(hero.getName()), hero.getHeroType().getColor()) {{
                 setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {
                     @Override
@@ -119,7 +119,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                                 "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                         ) {
-                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getHeroUid());
+                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getUid());
                                             reloadHeroes(canvas);
                                         }
                                     }

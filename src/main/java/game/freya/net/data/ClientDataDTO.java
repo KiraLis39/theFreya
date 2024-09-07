@@ -1,7 +1,6 @@
 package game.freya.net.data;
 
-import game.freya.config.annotations.HeroDataBuilder;
-import game.freya.entities.dto.HeroDTO;
+import game.freya.dto.roots.CharacterDTO;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import lombok.Builder;
@@ -11,13 +10,12 @@ import java.util.Set;
 import java.util.UUID;
 
 @Builder
-@HeroDataBuilder
 public record ClientDataDTO(
         UUID dataUid,
         NetDataType dataType,
         NetDataEvent dataEvent,
         iClientEventData content,
-        UUID playerUid,
+        UUID ownerUid,
         String playerName,
 //        Color baseColor,
 //        Color secondColor,
@@ -28,7 +26,7 @@ public record ClientDataDTO(
         String heroName,
 //        HeroType heroType,
 //        short level,
-//        long experience,
+        long experience,
 //        int hp,
 //        int oil,
 //        int maxHp,
@@ -37,7 +35,7 @@ public record ClientDataDTO(
 //        double positionY,
 //        MovingVector vector,
 //        byte speed,
-//        float power,
+        float power,
 //        String explanation,
 //        UUID worldUid,
 //        World world,
@@ -47,9 +45,8 @@ public record ClientDataDTO(
 //        String chatMessage,
 //        String buffsJson,
 //        String inventoryJson,
-        Set<HeroDTO> heroes
+        Set<CharacterDTO> heroes
 ) implements iClientEventData {
-
     public ClientDataDTO {
         if (dataUid == null) {
             dataUid = UUID.randomUUID();

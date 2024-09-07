@@ -3,9 +3,8 @@ package game.freya.gui.panes.sub;
 import fox.FoxRender;
 import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
-import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.entities.dto.WorldDTO;
+import game.freya.dto.WorldDTO;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -15,6 +14,7 @@ import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
 import game.freya.gui.panes.sub.templates.WorldCreator;
 import game.freya.net.data.NetConnectTemplate;
+import game.freya.services.GameControllerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,7 +38,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
     private final transient FoxCanvas canvas;
 
-    private final transient GameController gameController;
+    private final transient GameControllerService gameController;
 
     private final SubPane centerList;
 
@@ -58,7 +58,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
     private transient Thread pingActionThread;
 
-    public NetworkListPane(FoxCanvas canvas, GameController controller) {
+    public NetworkListPane(FoxCanvas canvas, GameControllerService controller) {
         this.canvas = canvas;
         this.gameController = controller;
 

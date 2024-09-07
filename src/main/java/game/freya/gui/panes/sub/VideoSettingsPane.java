@@ -1,6 +1,7 @@
 package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
+import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
@@ -22,7 +23,7 @@ import java.util.List;
 
 @Slf4j
 public class VideoSettingsPane extends JPanel implements iSubPane {
-    private static final List<DisplayMode> modes = new ArrayList<>(List.of(Constants.MON.getDevice().getDisplayModes()));
+    private static final List<DisplayMode> modes = new ArrayList<>(List.of(FoxVideoMonitorUtil.getDisplayModes()));
 
     private transient BufferedImage snap;
 
@@ -66,7 +67,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                 }};
                 zlider = new JZlider("fpsLimiterSlider") {{
                     setMinimum(30);
-                    setMaximum(Constants.MON.getRefreshRate());
+                    setMaximum(FoxVideoMonitorUtil.getRefreshRate());
 
                     setMinorTickSpacing(2);
                     setMajorTickSpacing(5);
@@ -137,7 +138,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                 setIgnoreRepaint(true);
 
                 setBorder(null);
-                setSelectedItem(Constants.MON.getDevice().getDisplayMode());
+                setSelectedItem(FoxVideoMonitorUtil.getDevice().getDisplayMode());
             }};
 
             add(new SubPane("Экран") {{
@@ -150,12 +151,12 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                                 new FOptionPane().buildFOptionPane("Ошибка", "Требуется полноэкранный режим", 10, false);
                             } else {
                                 if (Constants.getDefaultDisplayMode() == null) {
-                                    Constants.setDefaultDisplayMode(Constants.MON.getDevice().getDisplayMode());
+                                    Constants.setDefaultDisplayMode(FoxVideoMonitorUtil.getDisplayMode());
                                 }
                                 try {
                                     DisplayMode chosenMode = (DisplayMode) displayModeBox.getSelectedItem();
 //                                    Constants.getUserConfig().setFpsLimit(chosenMode.getRefreshRate());
-                                    Constants.MON.getDevice().setDisplayMode(chosenMode);
+                                    FoxVideoMonitorUtil.setDisplayMode(chosenMode);
                                 } catch (Exception e1) {
                                     log.error("Не удалось изменить разрешение монитора: {}", ExceptionUtils.getFullExceptionMessage(e1));
                                 }

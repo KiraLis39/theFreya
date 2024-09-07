@@ -1,6 +1,5 @@
 package game.freya.net.data.types;
 
-import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.net.data.iClientEventData;
@@ -10,13 +9,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Builder
-@HeroDataBuilder
 public record TypeChat(
         UUID dataUid,
         NetDataType dataType,
         NetDataEvent dataEvent,
         iClientEventData content,
-        UUID playerUid,
+        UUID ownerUid,
         String playerName,
         UUID heroUid,
         String heroName,

@@ -1,5 +1,6 @@
 package game.freya.utils;
 
+import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +16,7 @@ public final class Screenshoter {
     public BufferedImage doScreenshot(Rectangle bounds) {
         BufferedImage capture = null;
         try {
-            Robot robot = new Robot(Constants.MON.getDevice());
+            Robot robot = new Robot(FoxVideoMonitorUtil.getDevice());
             capture = robot.createScreenCapture(new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height));
         } catch (AWTException e) {
             log.error("Ошибка сриншотера: {}", ExceptionUtils.getFullExceptionMessage(e));

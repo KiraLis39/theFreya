@@ -1,6 +1,5 @@
 package game.freya.net.data.events;
 
-import game.freya.config.annotations.HeroDataBuilder;
 import game.freya.enums.net.NetDataType;
 import game.freya.net.data.iClientEventData;
 import lombok.Builder;
@@ -9,12 +8,11 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Builder
-@HeroDataBuilder
 public record EventPlayerAuth(
         UUID dataUid,
         NetDataType dataType,
         UUID heroUid,
-        UUID playerUid,
+        UUID ownerUid,
         String playerName,
         int passwordHash,
         UUID worldUid

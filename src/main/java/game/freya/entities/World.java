@@ -1,14 +1,17 @@
 package game.freya.entities;
 
+import game.freya.entities.roots.Environment;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.items.prototypes.Environment;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -20,10 +23,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 
 import javax.validation.constraints.NotNull;
-import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.LinkedHashSet;
-import java.util.Objects;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,12 +35,10 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "worlds", uniqueConstraints = @UniqueConstraint(name = "uc_title_n_uid_world", columnNames = {"id", "title"}))
-public class World implements Serializable {
-
+public class World {
     @Id
-    @NotNull
-    // @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false, insertable = false, updatable = false, unique = true)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id", nullable = false)
     private UUID uid;
 
     @NotNull
@@ -74,38 +73,17 @@ public class World implements Serializable {
     @Builder.Default
     @CreatedDate
     @CreationTimestamp
-    @Column(name = "create_date", nullable = false, columnDefinition = "TIMESTAMP", updatable = false)
-    private LocalDateTime createDate = LocalDateTime.now();
+    @Column(name = "created_date", nullable = false, columnDefinition = "TIMESTAMP", updatable = false)
+    private LocalDateTime createdDate = LocalDateTime.now();
 
     @Builder.Default
-    @Column(name = "is_local_world", columnDefinition = "BOOLEAN DEFAULT TRUE")
+    @Column(name = "local_world", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean isLocalWorld = true;
 
     @Column(name = "network_address")
     private String networkAddress;
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
-    private Set<Environment> environments = new LinkedHashSet<>();
-
-//    @OneToMany(cascade = CascadeType.ALL)
-//    @LazyCollection(LazyCollectionOption.FALSE)
-//    private Set<Environment> environments = new ArrayList<>();
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getUid(), getCreateDate());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        World world = (World) o;
-        return Objects.equals(getUid(), world.getUid()) && Objects.equals(getCreateDate(), world.getCreateDate());
-    }
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<Environment> environments = new HashSet<>();
 }

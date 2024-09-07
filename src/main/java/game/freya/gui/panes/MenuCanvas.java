@@ -1,10 +1,10 @@
 package game.freya.gui.panes;
 
 import fox.components.FOptionPane;
-import game.freya.GameController;
 import game.freya.config.Constants;
-import game.freya.entities.dto.HeroDTO;
-import game.freya.entities.dto.WorldDTO;
+import game.freya.dto.PlayCharacterDto;
+import game.freya.dto.WorldDTO;
+import game.freya.dto.roots.CharacterDTO;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
@@ -13,6 +13,7 @@ import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.gui.panes.sub.HeroCreatingPane;
 import game.freya.gui.panes.sub.NetworkListPane;
 import game.freya.net.data.NetConnectTemplate;
+import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,7 +30,7 @@ import java.util.UUID;
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, Runnable
 public class MenuCanvas extends FoxCanvas {
-    private final transient GameController gameController;
+    private final transient GameControllerService gameController;
 
     private final transient JFrame parentFrame;
 
@@ -39,7 +40,7 @@ public class MenuCanvas extends FoxCanvas {
 
     private double parentHeightMemory = 0;
 
-    public MenuCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
+    public MenuCanvas(UIHandler uiHandler, JFrame parentFrame, GameControllerService gameController) {
         super("MenuCanvas", gameController, parentFrame, uiHandler);
         this.gameController = gameController;
         this.parentFrame = parentFrame;
@@ -270,7 +271,7 @@ public class MenuCanvas extends FoxCanvas {
         gameController.deleteHero(heroUid);
     }
 
-    public void openCreatingNewHeroPane(HeroDTO template) {
+    public void openCreatingNewHeroPane(CharacterDTO template) {
         getHeroesListPane().setVisible(false);
         getHeroCreatingPane().setVisible(true);
         if (template != null) {
@@ -507,7 +508,7 @@ public class MenuCanvas extends FoxCanvas {
             }
         } catch (GlobalServiceException gse) {
             log.warn("GSE here: {}", gse.getMessage());
-            if (gse.getErrorCode().equals("ER07")) {
+            if (gse.getCode().equals("ER07")) {
                 new FOptionPane().buildFOptionPane("Не доступно:", gse.getMessage(), FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
             }
         } catch (IllegalThreadStateException tse) {
@@ -553,7 +554,7 @@ public class MenuCanvas extends FoxCanvas {
      */
     public void saveNewHeroAndPlay(HeroCreatingPane newHeroTemplate) {
         // сохраняем нового героя и проставляем как текущего:
-        HeroDTO aNewToSave = HeroDTO.builder()
+        PlayCharacterDto aNewToSave = PlayCharacterDto.builder()
                 .baseColor(newHeroTemplate.getBaseColor())
                 .secondColor(newHeroTemplate.getSecondColor())
                 .corpusType(newHeroTemplate.getChosenCorpusType())
@@ -561,9 +562,9 @@ public class MenuCanvas extends FoxCanvas {
                 .peripheralSize(newHeroTemplate.getPeriferiaSize())
                 .worldUid(newHeroTemplate.getWorldUid())
                 .build();
-        aNewToSave.setHeroUid(UUID.randomUUID());
-        aNewToSave.setHeroName(newHeroTemplate.getHeroName());
-        aNewToSave.setOwnerUid(gameController.getCurrentPlayerUid());
+        aNewToSave.setUid(UUID.randomUUID());
+        aNewToSave.setName(newHeroTemplate.getHeroName());
+        aNewToSave.setCreatedBy(gameController.getCurrentPlayerUid());
         aNewToSave.setCreateDate(LocalDateTime.now());
 
         gameController.saveNewHero(aNewToSave, true);
@@ -587,7 +588,7 @@ public class MenuCanvas extends FoxCanvas {
      *
      * @param hero выбранный герой для игры в выбранном ранее мире.
      */
-    public void playWithThisHero(HeroDTO hero) {
+    public void playWithThisHero(CharacterDTO hero) {
         gameController.setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());
         gameController.setCurrentHero(hero);
 

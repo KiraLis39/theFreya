@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public interface iClientEventData extends Serializable {
 
-    UUID playerUid();
+    UUID ownerUid();
 
     UUID heroUid();
 }

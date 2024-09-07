@@ -1,10 +1,14 @@
 package game.freya;
 
+import fox.utils.FoxSystemInfoUtil;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -24,13 +28,17 @@ import java.util.TimeZone;
 @EnableConfigurationProperties({GameConfig.class})
 public class Launcher {
     public static void main(String[] args) {
+        if (!FoxSystemInfoUtil.OS.osName.startsWith("Windows")) {
+            throw new GlobalServiceException(ErrorMessages.OS_NOT_SUPPORTED, SystemUtils.OS_NAME);
+        }
+
+        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
+        globalPreInitialization();
+
         SpringApplication app = new SpringApplication(Launcher.class);
         app.setHeadless(false);
 
-        globalPreInitialization();
-
         logApplicationStartup(app.run(args).getEnvironment());
-        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
 
         log.info("Setting up the system properties...");
         System.setProperty("sun.java2d.opengl", "True");
@@ -52,7 +60,7 @@ public class Launcher {
     // устанавливаем всё, что должно быть готово к запуску:
     private static void globalPreInitialization() {
         try {
-            Path dataBasePath = Constants.getDatabaseRootDir();
+            Path dataBasePath = Constants.getDatabase();
             if (Files.notExists(dataBasePath.getParent())) {
                 Files.createDirectory(dataBasePath.getParent());
             }
@@ -63,7 +71,7 @@ public class Launcher {
 
     private static void logApplicationStartup(Environment env) {
         String protocol = Optional.ofNullable(env.getProperty("server.ssl.key-store"))
-                .map(key -> "https").orElse("http");
+                .map(_ -> "https").orElse("http");
         String serverPort = env.getProperty("server.port");
         String contextPath = Optional.ofNullable(env.getProperty("server.servlet.context-path"))
                 .filter(StringUtils::isNotBlank).orElse("/");

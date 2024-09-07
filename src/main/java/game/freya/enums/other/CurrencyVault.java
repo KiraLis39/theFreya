@@ -2,12 +2,12 @@ package game.freya.enums.other;
 
 import lombok.Getter;
 
+@Getter
 public enum CurrencyVault {
     CHIPS("микрочипов"),
     GOLD("золотых монет"),
     REAL("реалов");
 
-    @Getter
     private final String description;
 
     CurrencyVault(String description) {

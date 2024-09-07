@@ -1,7 +1,7 @@
 package game.freya.gui.panes.sub.components;
 
 import game.freya.config.Constants;
-import game.freya.entities.dto.WorldDTO;
+import game.freya.dto.WorldDTO;
 import lombok.Getter;
 import lombok.Setter;
 

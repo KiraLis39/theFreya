@@ -1,7 +1,6 @@
 package game.freya.gui.panes;
 
 import fox.components.FOptionPane;
-import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig.HotKeys;
 import game.freya.enums.other.ScreenType;
@@ -9,6 +8,7 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
+import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,7 +26,7 @@ import java.awt.geom.Point2D;
 public class GameCanvas extends FoxCanvas {
     private final transient JFrame parentFrame;
 
-    private final transient GameController gameController;
+    private final transient GameControllerService gameController;
 
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
 
@@ -39,7 +39,7 @@ public class GameCanvas extends FoxCanvas {
     private transient Thread resizeThread = null;
 
 
-    public GameCanvas(UIHandler uiHandler, JFrame parentFrame, GameController gameController) {
+    public GameCanvas(UIHandler uiHandler, JFrame parentFrame, GameControllerService gameController) {
         super("GameCanvas", gameController, parentFrame, uiHandler);
 
         this.gameController = gameController;
@@ -176,7 +176,7 @@ public class GameCanvas extends FoxCanvas {
                 try {
                     throwExceptionAndYield(e);
                 } catch (GlobalServiceException gse) {
-                    if (gse.getErrorCode().equals(ErrorMessages.DRAW_ERROR.getErrorCode())) {
+                    if (gse.getCode().equals(ErrorMessages.DRAW_ERROR.getCode())) {
                         stop();
                     } else {
                         log.error("Непредвиденная ошибка при отрисовке игры: {}", ExceptionUtils.getFullExceptionMessage(gse));

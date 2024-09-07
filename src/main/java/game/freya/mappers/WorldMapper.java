@@ -1,7 +1,7 @@
 package game.freya.mappers;
 
+import game.freya.dto.WorldDTO;
 import game.freya.entities.World;
-import game.freya.entities.dto.WorldDTO;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Component
 public class WorldMapper {
+    private final EnvironmentMapper environmentMapper;
 
     public WorldDTO toDto(World entity) {
         if (entity == null) {
@@ -27,10 +28,10 @@ public class WorldMapper {
                 .dimension(new Dimension(entity.getDimensionWidth(), entity.getDimensionHeight()))
                 .isNetAvailable(entity.isNetAvailable())
                 .passwordHash(entity.getPasswordHash())
-                .createDate(entity.getCreateDate())
+                .createDate(entity.getCreatedDate())
                 .isLocalWorld(entity.isLocalWorld())
                 .networkAddress(entity.getNetworkAddress())
-                .environments(entity.getEnvironments())
+                .environments(environmentMapper.toDto(entity.getEnvironments()))
                 .build();
     }
 
@@ -54,10 +55,10 @@ public class WorldMapper {
                 .dimensionWidth(dto.getDimension().width)
                 .dimensionHeight(dto.getDimension().height)
                 .level(dto.getLevel())
-                .createDate(dto.getCreateDate())
+                .createdDate(dto.getCreateDate())
                 .isLocalWorld(dto.isLocalWorld())
                 .networkAddress(dto.getNetworkAddress())
-                .environments(dto.getEnvironments())
+                .environments(environmentMapper.toEntity(dto.getEnvironments()))
                 .build();
     }
 }

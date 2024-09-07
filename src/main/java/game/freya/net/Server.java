@@ -1,7 +1,6 @@
 package game.freya.net;
 
 import fox.components.FOptionPane;
-import game.freya.GameController;
 import game.freya.config.Constants;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
@@ -10,7 +9,9 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDTO;
 import game.freya.net.data.events.EventHeroOffline;
 import game.freya.net.interfaces.iServer;
+import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -31,16 +32,17 @@ public class Server implements iServer {
 
     private Thread diedClientsCleaner, serverThread;
 
-    private GameController gameController;
+    private GameControllerService gameController;
 
     private ServerSocket serverSocket;
 
+    @Getter
     private String address;
 
     private boolean isServerCloseAccepted = false;
 
     @Override
-    public void open(GameController gameController) {
+    public void open(GameControllerService gameController) {
         this.gameController = gameController;
 
         if (isOpen()) {
@@ -119,7 +121,7 @@ public class Server implements iServer {
     }
 
     @Override
-    public ConnectedServerPlayer acceptNewClient(Socket socket) {
+    public void acceptNewClient(Socket socket) {
         try {
 //            if (clients.containsKey(socket.getInetAddress()) && !clients.get(socket.getInetAddress()).isClosed()) {
 //                log.warn("Клиент уже есть в карте клиентов! Возвращаем...");
@@ -128,13 +130,12 @@ public class Server implements iServer {
             clients.put(socket.getInetAddress(), new ConnectedServerPlayer(this, socket, gameController));
 //            }
 
-            return clients.get(socket.getInetAddress());
+            clients.get(socket.getInetAddress());
         } catch (IOException e) {
             log.info("Ошибка при принятии нового подключения Клиента: {}", ExceptionUtils.getFullExceptionMessage(e));
         } catch (Exception e) {
             log.warn("Not handled exception here (3): {}", ExceptionUtils.getFullExceptionMessage(e));
         }
-        return null;
     }
 
     @Override
@@ -166,7 +167,7 @@ public class Server implements iServer {
                 broadcast(ClientDataDTO.builder()
                         .dataType(NetDataType.EVENT)
                         .dataEvent(NetDataEvent.HERO_OFFLINE)
-                        .content(EventHeroOffline.builder().playerUid(client.getPlayerUid()).build())
+                        .content(EventHeroOffline.builder().ownerUid(client.getPlayerUid()).build())
                         .build(), null);
             }
         });
@@ -174,16 +175,19 @@ public class Server implements iServer {
 
     @Override
     public void handleException(Exception e) {
-        if (e instanceof BindException) {
-            new FOptionPane().buildFOptionPane("Адрес занят", "Перезапустите игру или попробуйте ещё раз");
-        } else if (e instanceof IOException io) {
-            log.warn("Завершение работы сервера по IOException: {}", ExceptionUtils.getFullExceptionMessage(io));
-            throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, ExceptionUtils.getFullExceptionMessage(io));
-        } else if (e instanceof InterruptedException) {
-            log.info("Поступило исключение прерывания основного потока Сервера.");
-            serverThread.interrupt();
-        } else {
-            log.warn("Неожиданная ошибка в работе Сервера: {}", ExceptionUtils.getFullExceptionMessage(e));
+        switch (e) {
+            case BindException _ ->
+                    new FOptionPane().buildFOptionPane("Адрес занят", "Перезапустите игру или попробуйте ещё раз");
+            case IOException io -> {
+                log.warn("Завершение работы сервера по IOException: {}", ExceptionUtils.getFullExceptionMessage(io));
+                throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED, ExceptionUtils.getFullExceptionMessage(io));
+            }
+            case InterruptedException _ -> {
+                log.info("Поступило исключение прерывания основного потока Сервера.");
+                serverThread.interrupt();
+            }
+            case null, default ->
+                    log.warn("Неожиданная ошибка в работе Сервера: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 
@@ -263,9 +267,5 @@ public class Server implements iServer {
                 serverThread.interrupt();
             }
         }
-    }
-
-    public String getAddress() {
-        return this.address;
     }
 }

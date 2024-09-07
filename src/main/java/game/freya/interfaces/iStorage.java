@@ -1,14 +1,14 @@
 package game.freya.interfaces;
 
-import game.freya.items.prototypes.Storage;
+import game.freya.entities.roots.Storage;
 
-import java.util.Set;
 import java.util.UUID;
 
 /**
  * Интерфейс складов
  */
 public interface iStorage {
+
     short capacity();
 
     void put(iStorable storable);
@@ -25,5 +25,5 @@ public interface iStorage {
 
     boolean isFull();
 
-    Set<iStorable> removeAll();
+    void removeAll();
 }

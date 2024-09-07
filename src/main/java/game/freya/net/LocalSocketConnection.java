@@ -1,10 +1,9 @@
 package game.freya.net;
 
 import fox.components.FOptionPane;
-import game.freya.GameController;
 import game.freya.config.Constants;
+import game.freya.dto.roots.CharacterDTO;
 import game.freya.entities.World;
-import game.freya.entities.dto.HeroDTO;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.enums.other.ScreenType;
@@ -16,7 +15,9 @@ import game.freya.net.data.events.EventDenied;
 import game.freya.net.data.events.EventPingPong;
 import game.freya.net.data.events.EventWorldData;
 import game.freya.net.data.types.TypeChat;
+import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @RequiredArgsConstructor
 public final class LocalSocketConnection implements Runnable, AutoCloseable {
-    private static GameController gameController;
+    private static GameControllerService gameController;
 
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
 
@@ -59,6 +60,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
 
     private int port;
 
+    @Getter
     private volatile String lastExplanation;
 
     private volatile long lastDataReceivedTimestamp;
@@ -66,7 +68,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
     @Setter
     private boolean isControlledExit = false;
 
-    public synchronized void openSocket(String host, Integer port, GameController _gameController, boolean isPing) {
+    public synchronized void openSocket(String host, Integer port, GameControllerService _gameController, boolean isPing) {
         gameController = _gameController;
         this.isPing.set(isPing);
         this.isControlledExit = false;
@@ -76,7 +78,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
         connectionThread = new Thread(LocalSocketConnection.this) {{
             setName("Socket connection thread");
             setDaemon(true);
-            setUncaughtExceptionHandler((t, e) -> {
+            setUncaughtExceptionHandler((_, e) -> {
                 lastExplanation = ExceptionUtils.getFullExceptionMessage(e);
                 log.error("Ошибка потока {}: {}", connectionThread.getName(), lastExplanation);
             });
@@ -144,10 +146,10 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
             case HERO_ACCEPTED -> {
                 this.isAccepted.set(true);
                 log.info("Сервер принял выбор Героя");
-                Collection<HeroDTO> otherHeroes = readed.heroes();
+                Collection<CharacterDTO> otherHeroes = readed.heroes();
                 log.info("На Сервере уже есть героев: {}", otherHeroes.size());
-                for (HeroDTO otherHero : otherHeroes) {
-                    HeroDTO saved = gameController.justSaveAnyHero(otherHero);
+                for (CharacterDTO otherHero : otherHeroes) {
+                    CharacterDTO saved = gameController.justSaveAnyHero(otherHero);
                     gameController.getPlayedHeroesService().addHero(saved);
                 }
             }
@@ -320,10 +322,6 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
 
     public boolean isAccepted() {
         return isAccepted.get();
-    }
-
-    public String getLastExplanation() {
-        return this.lastExplanation;
     }
 
     @Override
