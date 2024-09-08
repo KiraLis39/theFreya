@@ -1,5 +1,6 @@
 package game.freya.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.config.Constants;
 import game.freya.dto.roots.EnvironmentDto;
@@ -24,7 +25,7 @@ import java.util.UUID;
 
 @Slf4j
 @Builder
-public class WorldDTO extends ComponentAdapter implements iWorld {
+public class WorldDto extends ComponentAdapter implements iWorld {
     private static final Random r = new Random(100);
 
     private static final String scobe = ")";
@@ -74,6 +75,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
 
     @Getter
     @Builder.Default
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
     private LocalDateTime createDate = LocalDateTime.now();
 
     @Getter
@@ -264,7 +266,7 @@ public class WorldDTO extends ComponentAdapter implements iWorld {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        WorldDTO world = (WorldDTO) o;
+        WorldDto world = (WorldDto) o;
         return Objects.equals(getUid(), world.getUid()) && Objects.equals(getCreateDate(), world.getCreateDate());
     }
 }

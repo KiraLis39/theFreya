@@ -1,5 +1,6 @@
 package game.freya.dto.roots;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.config.Constants;
 import game.freya.dto.BackpackDto;
@@ -11,7 +12,6 @@ import game.freya.enums.player.MovingVector;
 import game.freya.interfaces.iEntity;
 import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iHero;
-import game.freya.prototypes.Weapon;
 import game.freya.utils.ExceptionUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Transient;
@@ -46,31 +46,13 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @Getter
 @Setter
 @SuperBuilder
-public class CharacterDTO implements iGameObject, iHero {
+public class CharacterDto implements iGameObject, iHero {
     @Schema(description = "UUID героя")
     private UUID uid;
 
     @NotNull
     @Schema(description = "Имя героя", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
-
-    @Builder.Default
-    @Schema(description = "Главный цвет раскраски корпуса героя")
-    private Color baseColor = Color.DARK_GRAY;
-
-    @Builder.Default
-    @Schema(description = "Второстепенный цвет раскраски корпуса героя")
-    private Color secondColor = Color.ORANGE;
-
-    @NotNull
-    @Builder.Default
-    @Schema(description = "Тип корпуса героя", requiredMode = Schema.RequiredMode.REQUIRED)
-    private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
-
-    @NotNull
-    @Builder.Default
-    @Schema(description = "Тип периферии героя", requiredMode = Schema.RequiredMode.REQUIRED)
-    private HeroPeripheralType peripheralType = HeroPeripheralType.COMPACT;
 
     @Builder.Default
     @Schema(description = "Размеры периферии героя")
@@ -89,10 +71,6 @@ public class CharacterDTO implements iGameObject, iHero {
     @Builder.Default
     @Schema(description = "Тип корпуса героя")
     private HeroType heroType = HeroType.VOID;
-
-    @Builder.Default
-    @Schema(description = "Мощность героя")
-    private float power = 1f;
 
     @Min(0)
     @Builder.Default
@@ -119,6 +97,14 @@ public class CharacterDTO implements iGameObject, iHero {
     @Schema(description = "Максимальный запас масла героя")
     private int maxOil = 100;
 
+    @Builder.Default
+    @Schema(description = "Мощность героя")
+    private float power = 1f;
+
+    @Builder.Default
+    @Schema(description = "The Player`s hurt level")
+    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
+
     @Min(0)
     @Max(18)
     @Builder.Default
@@ -129,6 +115,27 @@ public class CharacterDTO implements iGameObject, iHero {
     @Builder.Default
     @Schema(description = "Вектор направления героя", requiredMode = Schema.RequiredMode.REQUIRED)
     private MovingVector vector = MovingVector.UP;
+
+    @Builder.Default
+    @Schema(description = "Главный цвет раскраски корпуса героя")
+    private Color baseColor = Color.DARK_GRAY;
+
+    @Builder.Default
+    @Schema(description = "Второстепенный цвет раскраски корпуса героя")
+    private Color secondColor = Color.ORANGE;
+
+    @NotNull
+    @Builder.Default
+    @Schema(description = "Тип корпуса героя", requiredMode = Schema.RequiredMode.REQUIRED)
+    private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
+
+    @NotNull
+    @Builder.Default
+    @Schema(description = "Тип периферии героя", requiredMode = Schema.RequiredMode.REQUIRED)
+    private HeroPeripheralType peripheralType = HeroPeripheralType.COMPACT;
+
+    @Schema(description = "Текущее оружие в руках героя")
+    private WeaponDto currentWeapon;
 
     @NotNull
     @NotEmpty
@@ -160,26 +167,21 @@ public class CharacterDTO implements iGameObject, iHero {
     @NotNull
     @Builder.Default
     @Schema(description = "Дата создания героя")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
     private LocalDateTime createDate = LocalDateTime.now();
 
     @Schema(description = "Дата последнего входа в игру")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
     private LocalDateTime lastPlayDate;
 
     @Builder.Default
     @Schema(description = "Is on-line now")
     private boolean isOnline = false;
 
-    @Builder.Default
-    @Schema(description = "The Player`s hurt level")
-    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
-
     @Transient
     @JsonIgnore
     @Schema(description = "The Player`s avatar")
     private Image heroViewImage;
-
-    @Schema(description = "The Player`s current weapon in the hands")
-    private Weapon currentWeapon;
 
     @Schema(description = "The Player`s real box shape")
     private Rectangle shape;

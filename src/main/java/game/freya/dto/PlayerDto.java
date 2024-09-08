@@ -1,7 +1,7 @@
 package game.freya.dto;
 
 import game.freya.config.Constants;
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.utils.ExceptionUtils;
@@ -25,7 +25,7 @@ import java.util.UUID;
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class PlayerDTO {
+public class PlayerDto {
     @NotNull
     private final String email;
 
@@ -49,7 +49,7 @@ public class PlayerDTO {
 
     @Getter
     @Setter
-    private CharacterDTO currentActiveHero;
+    private CharacterDto currentActiveHero;
 
     public BufferedImage getAvatar() {
         try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
@@ -79,15 +79,15 @@ public class PlayerDTO {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        PlayerDTO player = (PlayerDTO) o;
+        PlayerDto player = (PlayerDto) o;
         return Objects.equals(getUid(), player.getUid())
                 && Objects.equals(getNickName(), player.getNickName()) && Objects.equals(getEmail(), player.getEmail());
     }
 
     @Override
     public String toString() {
-        return "PlayerDTO{"
-                + "uuid='" + uid + '\''
+        return "PlayerDto{"
+                + "uid='" + uid + '\''
                 + "nickName='" + nickName + '\''
                 + ", email='" + email + '\''
                 + '}';

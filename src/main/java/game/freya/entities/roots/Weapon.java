@@ -11,18 +11,16 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.UUID;
 
-@Slf4j
 @Getter
 @SuperBuilder
 @RequiredArgsConstructor
 @Entity
-@DiscriminatorColumn(name = "environment_type")
-@Table(name = "environments")
-public class Environment extends AbstractEntity {
+@DiscriminatorColumn(name = "weapon_type")
+@Table(name = "weapons")
+public class Weapon extends AbstractEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "uid", nullable = false)

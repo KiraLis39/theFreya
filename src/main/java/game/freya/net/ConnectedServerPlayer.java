@@ -5,18 +5,14 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.dto.PlayCharacterDto;
-import game.freya.dto.roots.CharacterDTO;
-import game.freya.entities.World;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
-import game.freya.exceptions.ErrorMessages;
-import game.freya.exceptions.GlobalServiceException;
-import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventDenied;
 import game.freya.net.data.events.EventHeroRegister;
 import game.freya.net.data.events.EventPingPong;
 import game.freya.net.data.events.EventPlayerAuth;
-import game.freya.net.data.events.EventWorldData;
 import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
@@ -45,7 +41,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private final GameControllerService gameController;
 
-    private final PlayedHeroesService playedHeroesService;
+//    private final PlayedHeroes playedHeroes;
 
     private final Socket client;
 
@@ -72,7 +68,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         this.mapper.registerModule(new JavaTimeModule());
 
         this.server = server;
-        this.playedHeroesService = gameController.getPlayedHeroesService();
+//        this.playedHeroes = gameController.getPlayedHeroes();
         this.gameController = gameController;
         this.clientUid = UUID.randomUUID();
 
@@ -97,15 +93,15 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             this.oos = outs;
 
             // сразу шлём подключенному Клиенту сигнал, для "прокачки" соединения:
-            push(ClientDataDTO.builder()
+            push(ClientDataDto.builder()
                     .dataType(NetDataType.EVENT)
                     .dataEvent(NetDataEvent.PONG)
                     .content(EventPingPong.builder().worldUid(gameController.getCurrentWorldUid()).build())
                     .build());
 
             try (ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))) {
-                ClientDataDTO readed;
-                while ((readed = (ClientDataDTO) inps.readObject()) != null && this.client.isConnected() && !Thread.currentThread().isInterrupted()) {
+                ClientDataDto readed;
+                while ((readed = (ClientDataDto) inps.readObject()) != null && this.client.isConnected() && !Thread.currentThread().isInterrupted()) {
                     if (!readed.dataEvent().equals(NetDataEvent.PING) && !readed.dataEvent().equals(NetDataEvent.HERO_MOVING)) {
                         log.info("Игрок {} прислал на Сервер данные {} ({})", playerName, readed.dataType(), readed.dataEvent());
                     }
@@ -156,30 +152,30 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         kill();
     }
 
-    private void sendHeroDataByRequest(ClientDataDTO data) {
+    private void sendHeroDataByRequest(ClientDataDto data) {
         EventHeroRegister heroNeed = (EventHeroRegister) data.content();
-        CharacterDTO found = gameController.getConnectedHeroes().stream()
-                .filter(h -> h.getUid().equals(heroNeed.heroUid())).findFirst().orElse(null);
-        if (found != null) {
-            push(gameController.heroToCli(found, gameController.getCurrentPlayer()));
-        } else {
-            log.error("Запрошен герой {}, но такого нет в карте героев Сервера! Ответ невозможен.", heroNeed.heroUid());
-        }
+//        CharacterDTO found = gameController.getConnectedHeroes().stream()
+//                .filter(h -> h.getUid().equals(heroNeed.heroUid())).findFirst().orElse(null);
+//        if (found != null) {
+//            push(gameController.heroToCli(found, gameController.getCurrentPlayer()));
+//        } else {
+        log.error("Запрошен герой {}, но такого нет в карте героев Сервера! Ответ невозможен.", heroNeed.heroUid());
+//        }
     }
 
-    private void doPongAnswerToClient(UUID uuid) {
-        if (uuid != null && uuid.equals(gameController.getCurrentWorldUid())) {
+    private void doPongAnswerToClient(UUID uid) {
+        if (uid != null && uid.equals(gameController.getCurrentWorldUid())) {
             // Сервер не знает в какой именно из его миров стучится клиент, который
             //  сейчас загружен или другой, на этом же порту - потому сверяем.
-            log.info("Клиент успешно пингует мир {}", uuid);
-            push(ClientDataDTO.builder()
+            log.info("Клиент успешно пингует мир {}", uid);
+            push(ClientDataDto.builder()
                     .dataType(NetDataType.EVENT)
                     .dataEvent(NetDataEvent.PONG)
                     .content(EventPingPong.builder().worldUid(gameController.getCurrentWorldUid()).build())
                     .build());
         } else {
             log.debug("Пингуется не тот мир, потому WRONG_WORLD_PING");
-            push(ClientDataDTO.builder()
+            push(ClientDataDto.builder()
                     .dataType(NetDataType.EVENT)
                     .dataEvent(NetDataEvent.WRONG_WORLD_PING)
                     .content(EventDenied.builder()
@@ -189,41 +185,41 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         }
     }
 
-    private void doPlayerAuth(ClientDataDTO readed) throws IOException {
+    private void doPlayerAuth(ClientDataDto readed) throws IOException {
         EventPlayerAuth auth = (EventPlayerAuth) readed.content();
         playerUid = auth.ownerUid();
         playerName = auth.playerName();
-        if (gameController.getCurrentWorld() == null) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current world");
-        }
+//        if (gameController.getCurrentWorld() == null) {
+//            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current world");
+//        }
 
         // подготовка игрового мира, проверка пароля:
-        World cw = gameController.getCurrentWorld();
-        if (cw.getPasswordHash() != 0 && cw.getPasswordHash() != auth.passwordHash()) {
-            log.error("Игрок {} ({}) ввёл не верный пароль. В доступе отказано! (пароль мира {} - пароль клиента {})",
-                    playerName, playerUid, cw.getPasswordHash(), auth.passwordHash());
-            isAuthorized.set(false);
-            push(ClientDataDTO.builder()
-                    .dataType(NetDataType.AUTH_DENIED)
-                    .content(EventDenied.builder().explanation("Не верный пароль").build()).build());
-        } else {
-            log.info("Игрок {} ({}) успешно авторизован", auth.playerName(), auth.ownerUid());
-            // для создателя этот мир - Локальный,для удалённого игрока этот мир не может быть Локальным:
-            cw.setLocalWorld(playerUid.equals(cw.getAuthor()));
-            isAuthorized.set(true);
-            push(ClientDataDTO.builder()
-                    .dataType(NetDataType.AUTH_SUCCESS)
-                    .content(EventWorldData.builder()
-                            .worldUid(cw.getUid())
-                            .world(cw)
-                            .build())
-                    .build());
-        }
+//        World cw = gameController.getCurrentWorld();
+//        if (cw.getPasswordHash() != 0 && cw.getPasswordHash() != auth.passwordHash()) {
+//            log.error("Игрок {} ({}) ввёл не верный пароль. В доступе отказано! (пароль мира {} - пароль клиента {})",
+//                    playerName, playerUid, cw.getPasswordHash(), auth.passwordHash());
+//            isAuthorized.set(false);
+//            push(ClientDataDTO.builder()
+//                    .dataType(NetDataType.AUTH_DENIED)
+//                    .content(EventDenied.builder().explanation("Не верный пароль").build()).build());
+//        } else {
+//            log.info("Игрок {} ({}) успешно авторизован", auth.playerName(), auth.ownerUid());
+//            // для создателя этот мир - Локальный,для удалённого игрока этот мир не может быть Локальным:
+//            cw.setLocalWorld(playerUid.equals(cw.getAuthor()));
+//            isAuthorized.set(true);
+//            push(ClientDataDTO.builder()
+//                    .dataType(NetDataType.AUTH_SUCCESS)
+//                    .content(EventWorldData.builder()
+//                            .worldUid(cw.getUid())
+//                            .world(cw)
+//                            .build())
+//                    .build());
+//        }
     }
 
-    private void saveConnectedHero(ClientDataDTO readed) {
+    private void saveConnectedHero(ClientDataDto readed) {
         EventHeroRegister connected = (EventHeroRegister) readed.content();
-        CharacterDTO hero;
+        CharacterDto hero;
         if (gameController.isHeroExist(connected.heroUid())) {
             hero = gameController.getHeroByUid(connected.heroUid());
             BeanUtils.copyProperties(readed, hero, "heroUid");
@@ -232,19 +228,19 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         }
 
         this.isAccepted.set(true);
-        push(ClientDataDTO.builder()
+        push(ClientDataDto.builder()
                 .dataType(NetDataType.HERO_ACCEPTED)
-                .heroes(playedHeroesService.getHeroes())
+//                .heroes(playedHeroes.getHeroes())
                 .build());
 
         hero.setOnline(true);
-        playedHeroesService.addHero(hero);
+//        playedHeroes.addHero(hero);
 
 //        this.isAccepted.set(false);
 //        push(ClientDataDTO.builder().type(NetDataType.HERO_RESTRICTED).build());
     }
 
-    public void push(ClientDataDTO data) {
+    public void push(ClientDataDto data) {
         try {
             oos.writeObject(data);
             oos.flush();
@@ -263,12 +259,12 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
     public void kill() {
         log.warn("Destroy the client {} connection...", clientUid);
 
-        gameController.getPlayedHeroesService().offlineSaveAndRemoveOtherHeroByPlayerUid(playerUid);
+//        gameController.getPlayedHeroes().offlineSaveAndRemoveOtherHeroByPlayerUid(playerUid);
 
         if (!this.client.isClosed()) {
             try {
                 // шлём подключенному Клиенту пожелание его смерти:
-                push(ClientDataDTO.builder().dataType(NetDataType.EVENT).dataEvent(NetDataEvent.CLIENT_DIE).build());
+                push(ClientDataDto.builder().dataType(NetDataType.EVENT).dataEvent(NetDataEvent.CLIENT_DIE).build());
             } catch (Exception e) {
                 log.warn("Push DIE-message error: {}", ExceptionUtils.getFullExceptionMessage(e));
             }

@@ -2,7 +2,7 @@ package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.enums.player.HeroCorpusType;
 import game.freya.enums.player.HeroPeripheralType;
 import game.freya.gui.panes.MenuCanvas;
@@ -73,7 +73,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
     @Getter
     private Color baseColor = Color.GREEN, secondColor = Color.DARK_GRAY;
 
-    private transient CharacterDTO editableHero;
+    private transient CharacterDto editableHero;
 
     public HeroCreatingPane(FoxCanvas canvas, GameControllerService gameController) {
         setName("Hero creating pane");
@@ -211,7 +211,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                         public void actionPerformed(ActionEvent e) {
                             if (!isEditMode) {
                                 worldUid = gameController.getCurrentWorldUid();
-                                CharacterDTO existsHero = gameController.findHeroByNameAndWorld(getHeroName(), worldUid);
+                                CharacterDto existsHero = gameController.findHeroByNameAndWorld(getHeroName(), worldUid);
                                 if (existsHero != null) {
                                     new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
                                 } else {
@@ -324,7 +324,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
         recolorHeroView();
     }
 
-    public void load(CharacterDTO template) {
+    public void load(CharacterDto template) {
         this.isEditMode = true;
         this.editableHero = template;
         this.ntf.setEditable(false);

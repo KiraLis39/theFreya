@@ -2,14 +2,13 @@ package game.freya.net;
 
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.entities.World;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
-import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventClientDied;
 import game.freya.net.data.events.EventDenied;
 import game.freya.net.data.events.EventPingPong;
@@ -40,16 +39,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @RequiredArgsConstructor
 public final class LocalSocketConnection implements Runnable, AutoCloseable {
-    private static GameControllerService gameController;
-
     private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
-
     private final AtomicBoolean isAccepted = new AtomicBoolean(false);
-
     private final AtomicBoolean isPongReceived = new AtomicBoolean(false);
-
     private final AtomicBoolean isPing = new AtomicBoolean(false);
-
+    @Getter
+    private GameControllerService gameControllerService;
     private ObjectOutputStream oos;
 
     private Thread connectionThread, connectionLiveThread;
@@ -68,8 +63,8 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
     @Setter
     private boolean isControlledExit = false;
 
-    public synchronized void openSocket(String host, Integer port, GameControllerService _gameController, boolean isPing) {
-        gameController = _gameController;
+    public synchronized void openSocket(String host, Integer port, GameControllerService gameControllerService, boolean isPing) {
+        this.gameControllerService = gameControllerService;
         this.isPing.set(isPing);
         this.isControlledExit = false;
 
@@ -92,10 +87,10 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                 if (isOpen() && timePass >= Constants.getMaxConnectionWasteTime()) {
                     log.info("Тишина с Сервера уже {} мс. Допустимо: {}. Пинг для поддержки соединения...",
                             timePass, Constants.getMaxConnectionWasteTime());
-                    toServer(ClientDataDTO.builder()
+                    toServer(ClientDataDto.builder()
                             .dataType(NetDataType.EVENT)
                             .dataEvent(NetDataEvent.PING)
-                            .content(EventPingPong.builder().worldUid(gameController.getCurrentWorldUid()).build())
+                            .content(EventPingPong.builder().worldUid(gameControllerService.getCurrentWorldUid()).build())
                             .build());
                 }
                 try {
@@ -119,7 +114,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
         }
     }
 
-    private void parseNextData(ClientDataDTO readed) {
+    private void parseNextData(ClientDataDto readed) {
         if (!readed.dataEvent().equals(NetDataEvent.PONG)) {
             log.debug("Приняты данные от Сервера: {} (игрок {})", readed.dataType(), readed.playerName());
         }
@@ -139,18 +134,18 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                 World serverWorld = auth.world();
                 serverWorld.setUid(auth.worldUid());
                 serverWorld.setNetworkAddress(host + ":" + port);
-                gameController.saveServerWorldAndSetAsCurrent(serverWorld);
+                gameControllerService.saveServerWorldAndSetAsCurrent(serverWorld);
                 this.isAuthorized.set(true);
                 log.info("Сервер принял запрос авторизации, его мир установлен как текущий.");
             }
             case HERO_ACCEPTED -> {
                 this.isAccepted.set(true);
                 log.info("Сервер принял выбор Героя");
-                Collection<CharacterDTO> otherHeroes = readed.heroes();
+                Collection<CharacterDto> otherHeroes = readed.heroes();
                 log.info("На Сервере уже есть героев: {}", otherHeroes.size());
-                for (CharacterDTO otherHero : otherHeroes) {
-                    CharacterDTO saved = gameController.justSaveAnyHero(otherHero);
-                    gameController.getPlayedHeroesService().addHero(saved);
+                for (CharacterDto otherHero : otherHeroes) {
+                    CharacterDto saved = gameControllerService.justSaveAnyHero(otherHero);
+//                    gameControllerService.getPlayedHeroes().addHero(saved);
                 }
             }
             case HERO_RESTRICTED -> {
@@ -162,8 +157,8 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                         .formatted(deny.explanation()), 15, true);
             }
             case HERO_REQUEST -> {
-                gameController.saveNewRemoteHero(readed);
-                gameController.setRemoteHeroRequestSent(false);
+//                gameController.saveNewRemoteHero(readed);
+//                gameController.setRemoteHeroRequestSent(false);
             }
             case CHAT -> {
                 TypeChat chat = (TypeChat) readed.content();
@@ -183,7 +178,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                                 + (this.lastExplanation != null ? ": {}" : "") + ". Сворачиваемся...", this.lastExplanation);
                         killSelf();
                     }
-                    case PING -> toServer(ClientDataDTO.builder()
+                    case PING -> toServer(ClientDataDto.builder()
                             .dataType(NetDataType.EVENT)
                             .dataEvent(NetDataEvent.PONG)
                             .build());
@@ -202,7 +197,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                     case HERO_OFFLINE, HERO_MOVING -> {
                         log.debug("Приняты данные синхронизации {} от игрока: {} (герой: {})",
                                 readed.dataEvent(), readed.playerName(), readed.heroName());
-                        gameController.syncServerDataWithCurrentWorld(readed);
+//                        gameController.syncServerDataWithCurrentWorld(readed);
                     }
                     default -> log.error(Constants.getNotRealizedString());
                 }
@@ -216,7 +211,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
      *
      * @param dataDTO данные об изменениях локальной версии мира.
      */
-    public synchronized void toServer(ClientDataDTO dataDTO) {
+    public synchronized void toServer(ClientDataDto dataDTO) {
         // PONG никому не интересен, лишь мешает логу. EVENT тоже.
         if (!dataDTO.dataEvent().equals(NetDataEvent.PONG)) {
             if (dataDTO.dataEvent().equals(NetDataEvent.PING)) {
@@ -267,7 +262,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
             log.warn("Destroy the connection...");
             if (!isPing.get() && isOpen()) {
                 try {
-                    toServer(ClientDataDTO.builder()
+                    toServer(ClientDataDto.builder()
                             .dataType(NetDataType.EVENT)
                             .dataEvent(NetDataEvent.CLIENT_DIE)
                             .build());
@@ -286,13 +281,13 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
             connectionThread.interrupt();
         }
 
-        if (!isPing.get() && gameController.isGameActive()) {
-            gameController.setGameActive(false);
-            log.info("Переводим героя {} ({}) в статус offlile и сохраняем...",
-                    gameController.getCurrentHeroName(), gameController.getCurrentHeroUid());
-            gameController.setCurrentHeroOfflineAndSave(null);
-            gameController.loadScreen(ScreenType.MENU_SCREEN);
-        }
+//        if (!isPing.get() && gameController.isGameActive()) {
+//            gameController.setGameActive(false);
+//            log.info("Переводим героя {} ({}) в статус offlile и сохраняем...",
+//                    gameController.getCurrentHeroName(), gameController.getCurrentHeroUid());
+//            gameController.setCurrentHeroOfflineAndSave(null);
+//            gameController.loadScreen(ScreenType.MENU_SCREEN);
+//        }
     }
 
     public boolean isOpen() {
@@ -343,8 +338,8 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                 this.oos = outs;
                 log.info("Socket connection to '{}:{}' is ready!", host, port);
 
-                ClientDataDTO readed;
-                while ((readed = (ClientDataDTO) inps.readObject()) != null && !connectionThread.isInterrupted()) {
+                ClientDataDto readed;
+                while ((readed = (ClientDataDto) inps.readObject()) != null && !connectionThread.isInterrupted()) {
                     parseNextData(readed);
                 }
 

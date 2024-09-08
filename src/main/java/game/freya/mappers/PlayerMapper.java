@@ -1,6 +1,6 @@
 package game.freya.mappers;
 
-import game.freya.dto.PlayerDTO;
+import game.freya.dto.PlayerDto;
 import game.freya.entities.Player;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Component
 public final class PlayerMapper {
 
-    public Player toEntity(PlayerDTO dto) {
+    public Player toEntity(PlayerDto dto) {
         if (dto == null) {
             return null;
         }
@@ -28,15 +28,15 @@ public final class PlayerMapper {
                 .build();
     }
 
-    public Set<Player> toEntities(Map<String, PlayerDTO> players) {
+    public Set<Player> toEntities(Map<String, PlayerDto> players) {
         return players.values().stream().map(this::toEntity).collect(Collectors.toSet());
     }
 
-    public PlayerDTO toDto(Player entity) {
+    public PlayerDto toDto(Player entity) {
         if (entity == null) {
             return null;
         }
-        return PlayerDTO.builder()
+        return PlayerDto.builder()
                 .uid(entity.getUid())
                 .nickName(entity.getNickName())
                 .email(entity.getEmail())

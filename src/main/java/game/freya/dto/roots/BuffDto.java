@@ -17,11 +17,11 @@ public class BuffDto {
     @NotNull
     private String name;
 
-    public void activate(CharacterDTO playerDTO) {
+    public void activate(CharacterDto characterDto) {
 
     }
 
-    public void deactivate(CharacterDTO playerDTO) {
+    public void deactivate(CharacterDto characterDto) {
 
     }
 }

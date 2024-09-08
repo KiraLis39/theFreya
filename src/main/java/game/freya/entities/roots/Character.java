@@ -7,18 +7,7 @@ import game.freya.enums.player.HeroPeripheralType;
 import game.freya.enums.player.HeroType;
 import game.freya.enums.player.HurtLevel;
 import game.freya.enums.player.MovingVector;
-import game.freya.prototypes.Weapon;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,6 +22,7 @@ import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Setter
 @Getter
@@ -42,6 +32,11 @@ import java.util.List;
 @DiscriminatorColumn(name = "character_type")
 @Table(name = "characters", uniqueConstraints = @UniqueConstraint(name = "uc_names_in_world", columnNames = {"name", "world_uid"}))
 public class Character extends AbstractEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "uid", nullable = false)
+    private UUID uid;
+
     @Min(1)
     @Column(name = "level")
     private short level;
@@ -117,6 +112,7 @@ public class Character extends AbstractEntity {
     @NotNull
     @NotEmpty
     @Builder.Default
+    @JoinColumn(name = "buffs", referencedColumnName = "uid")
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Buff> buffs = new ArrayList<>(9);
 

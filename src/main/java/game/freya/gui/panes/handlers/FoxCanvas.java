@@ -2,11 +2,9 @@ package game.freya.gui.panes.handlers;
 
 import fox.FoxRender;
 import fox.components.FOptionPane;
-import fox.utils.FoxPointConverterUtil;
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
-import game.freya.dto.roots.CharacterDTO;
-import game.freya.enums.player.MovingVector;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GameCanvas;
@@ -40,13 +38,11 @@ import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static game.freya.config.Constants.FFB;
-import static game.freya.config.Constants.ONE_TURN_PI;
 import static javax.swing.JLayeredPane.PALETTE_LAYER;
 
 @Getter
@@ -98,6 +94,10 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
     private transient Rectangle avatarRect, minimapRect, minimapShowRect, minimapHideRect;
 
     private transient BufferedImage pAvatar;
+
+    private transient String playerNickName;
+
+    private transient String currentWorldTitle;
 
     private transient VolatileImage backImage, minimapImage;
 
@@ -154,6 +154,10 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
     }
 
     protected void drawBackground(Graphics2D bufGraphics2D) throws AWTException {
+//        if (currentWorldTitle == null && gameController.getCurrentWorld() != null) {
+//            currentWorldTitle = gameController.getCurrentWorldTitle();
+//        }
+
         Graphics2D v2D = getValidVolatileGraphic();
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.MED,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
@@ -170,7 +174,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-        drawDebugInfo(v2D, gameController.getCurrentWorldTitle());
+        drawDebugInfo(v2D, currentWorldTitle);
 
         if (Constants.isFpsInfoVisible()) {
             drawFps(v2D);
@@ -253,7 +257,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         drawLeftGrayPoly(v2D);
 
         if (!isShadowBackNeeds()) {
-            drawAvatar(v2D);
+            drawAvatar(v2D); // todo падает с ошибкой JPA, разобраться
         }
     }
 
@@ -322,7 +326,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
     private void updateMiniMap() throws AWTException {
         Point2D.Double myPos = gameController.getCurrentHeroPosition();
-        MovingVector cVector = gameController.getCurrentHeroVector();
+//        MovingVector cVector = gameController.getCurrentHeroVector();
         int srcX = (int) (myPos.x - halfDim);
         int srcY = (int) (myPos.y - halfDim);
 
@@ -347,23 +351,23 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
         // отображаем себя на миникарте:
         AffineTransform grTrMem = m2D.getTransform();
-        m2D.rotate(ONE_TURN_PI * cVector.ordinal(), minimapImage.getWidth() / 2d, minimapImage.getHeight() / 2d); // Math.toRadians(90)
+//        m2D.rotate(ONE_TURN_PI * cVector.ordinal(), minimapImage.getWidth() / 2d, minimapImage.getHeight() / 2d); // Math.toRadians(90)
         m2D.drawImage(Constants.CACHE.getBufferedImage("green_arrow"), halfDim - 64, halfDim - 64, 128, 128, null);
         m2D.setTransform(grTrMem);
 
         // отображаем других игроков на миникарте:
-        for (CharacterDTO connectedHero : gameController.getConnectedHeroes()) {
-            if (gameController.getCurrentHeroUid().equals(connectedHero.getUid())) {
-                continue;
-            }
-            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
-            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getLocation().y));
-//            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
-            m2D.setColor(connectedHero.getBaseColor());
-            m2D.fillRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
-            m2D.setColor(connectedHero.getSecondColor());
-            m2D.drawRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
-        }
+//        for (CharacterDto connectedHero : gameController.getConnectedHeroes()) {
+//            if (gameController.getCurrentHeroUid().equals(connectedHero.getUid())) {
+//                continue;
+//            }
+//            int otherHeroPosX = (int) (halfDim - (myPos.x - connectedHero.getLocation().x));
+//            int otherHeroPosY = (int) (halfDim - (myPos.y - connectedHero.getLocation().y));
+////            log.info("Рисуем игрока {} в точке миникарты {}x{}...", connectedHero.getHeroName(), otherHeroPosX, otherHeroPosY);
+//            m2D.setColor(connectedHero.getBaseColor());
+//            m2D.fillRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
+//            m2D.setColor(connectedHero.getSecondColor());
+//            m2D.drawRect(otherHeroPosX - 32, otherHeroPosY - 32, 64, 64);
+//        }
 
         if (gameController.getCurrentWorldMap() != null) {
             // сканируем все сущности указанного квадранта:
@@ -395,54 +399,54 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         g2D.setFont(Constants.DEBUG_FONT);
         g2D.setColor(Color.WHITE);
 
-        Collection<CharacterDTO> heroes;
-        if (gameController.isCurrentHeroOnline()) {
-            heroes = gameController.getConnectedHeroes();
-        } else {
-            if (gameController.getCurrentHero() == null) {
-                throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "Этого не должно было случиться.");
-            }
-            heroes = List.of(gameController.getCurrentHero());
-        }
+        Collection<CharacterDto> heroes;
+//        if (gameController.isCurrentHeroOnline()) {
+//            heroes = gameController.getConnectedHeroes();
+//        } else {
+//            if (gameController.getCurrentHero() == null) {
+//                throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "Этого не должно было случиться.");
+//            }
+//            heroes = List.of(gameController.getCurrentHero());
+//        }
 
         if (getViewPort() != null) {
             // draw heroes data:
             int sMod = (int) (infoStrut - ((getViewPort().getHeight() - getViewPort().getY()) / infoStrutHardness));
-            heroes.forEach(hero -> {
-                int strutMod = sMod;
-                if (gameController.isHeroActive(hero, getViewPort().getBounds())) {
-
-                    // Преобразуем координаты героя из карты мира в координаты текущего холста:
-                    Point2D relocatedPoint = FoxPointConverterUtil.relocateOn(getViewPort(), getBounds(), hero.getLocation()); // or relocateOnAlt(...) better?
-
-                    // draw hero name:
-                    g2D.drawString(hero.getName(),
-                            (int) (relocatedPoint.getX() - FFB.getHalfWidthOfString(g2D, hero.getName())),
-                            (int) (relocatedPoint.getY() - strutMod));
-
-                    strutMod += 24;
-
-                    // draw hero OIL:
-                    g2D.setColor(Color.YELLOW);
-                    g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
-                            (int) (relocatedPoint.getY() - strutMod),
-                            hero.getHealth(), 9, 3, 3);
-                    g2D.setColor(Color.WHITE);
-                    g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
-                            (int) (relocatedPoint.getY() - strutMod),
-                            hero.getMaxHealth(), 9, 3, 3);
-
-                    // draw hero HP:
-                    g2D.setColor(Color.RED);
-                    g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
-                            (int) (relocatedPoint.getY() - strutMod),
-                            hero.getHealth(), 9, 3, 3);
-                    g2D.setColor(Color.WHITE);
-                    g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
-                            (int) (relocatedPoint.getY() - strutMod),
-                            hero.getMaxHealth(), 9, 3, 3);
-                }
-            });
+//            heroes.forEach(hero -> {
+//                int strutMod = sMod;
+//                if (gameController.isHeroActive(hero, getViewPort().getBounds())) {
+//
+//                    // Преобразуем координаты героя из карты мира в координаты текущего холста:
+//                    Point2D relocatedPoint = FoxPointConverterUtil.relocateOn(getViewPort(), getBounds(), hero.getLocation()); // or relocateOnAlt(...) better?
+//
+//                    // draw hero name:
+//                    g2D.drawString(hero.getName(),
+//                            (int) (relocatedPoint.getX() - FFB.getHalfWidthOfString(g2D, hero.getName())),
+//                            (int) (relocatedPoint.getY() - strutMod));
+//
+//                    strutMod += 24;
+//
+//                    // draw hero OIL:
+//                    g2D.setColor(Color.YELLOW);
+//                    g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
+//                            (int) (relocatedPoint.getY() - strutMod),
+//                            hero.getHealth(), 9, 3, 3);
+//                    g2D.setColor(Color.WHITE);
+//                    g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
+//                            (int) (relocatedPoint.getY() - strutMod),
+//                            hero.getMaxHealth(), 9, 3, 3);
+//
+//                    // draw hero HP:
+//                    g2D.setColor(Color.RED);
+//                    g2D.fillRoundRect((int) (relocatedPoint.getX() - 50),
+//                            (int) (relocatedPoint.getY() - strutMod),
+//                            hero.getHealth(), 9, 3, 3);
+//                    g2D.setColor(Color.WHITE);
+//                    g2D.drawRoundRect((int) (relocatedPoint.getX() - 50),
+//                            (int) (relocatedPoint.getY() - strutMod),
+//                            hero.getMaxHealth(), 9, 3, 3);
+//                }
+//            });
         }
     }
 
@@ -498,9 +502,9 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             v2D.drawString("Connected clients: %s".formatted(gameController.getConnectedClientsCount()),
                     getWidth() - leftShift, getHeight() - 190);
         }
-        v2D.drawString("Connected players: %s".formatted(isServerIsOpen
-                        ? gameController.getConnectedPlayers().size() : gameController.getPlayedHeroesService().getHeroes().size()),
-                getWidth() - leftShift, getHeight() - 170);
+//        v2D.drawString("Connected players: %s".formatted(isServerIsOpen
+//                        ? gameController.getConnectedPlayers().size() : gameController.getPlayedHeroes().getHeroes().size()),
+//                getWidth() - leftShift, getHeight() - 170);
         v2D.setColor(Color.GRAY);
 
         // если мы в игре:
@@ -514,9 +518,9 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
                 v2D.drawString("Hero pos: %.0fx%.0f".formatted(playerShape.getBounds2D().getCenterX(), playerShape.getBounds2D().getCenterY()),
                         getWidth() - leftShift, getHeight() - 140);
                 v2D.drawString("Hero speed: %s".formatted(gameController.getCurrentHeroSpeed()), getWidth() - leftShift, getHeight() - 120);
-                v2D.drawString("Hero vector: %s %s %s".formatted(gameController.getCurrentHeroVector().getY(),
-                                gameController.getCurrentHeroVector().getX(), gameController.getCurrentHeroVector().getZ()),
-                        getWidth() - leftShift, getHeight() - 100);
+//                v2D.drawString("Hero vector: %s %s %s".formatted(gameController.getCurrentHeroVector().getY(),
+//                                gameController.getCurrentHeroVector().getX(), gameController.getCurrentHeroVector().getZ()),
+//                        getWidth() - leftShift, getHeight() - 100);
             }
 
             // gameplay info:
@@ -556,17 +560,17 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
         v2D.setFont(Constants.DEBUG_FONT);
         v2D.setColor(Color.BLACK);
-        if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 25);
-        }
+//        if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
+//            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift - 1f, downShift - 25);
+//        }
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), FoxVideoMonitorUtil.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift - 1f, downShift + 1f);
 
         v2D.setColor(Color.GRAY);
-        if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
-            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 24);
-        }
+//        if (gameController.isGameActive() && gameController.getCurrentWorld() != null && gameController.isCurrentWorldIsNetwork()) {
+//            v2D.drawString("World IP: " + gameController.getCurrentWorldAddress(), rightShift, downShift - 24);
+//        }
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), FoxVideoMonitorUtil.getRefreshRate(),
                         Constants.getRealFreshRate()), rightShift, downShift);
@@ -772,17 +776,23 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
         if (pAvatar == null) {
             pAvatar = gameController.getCurrentPlayerAvatar();
         }
+        if (playerNickName == null) {
+            playerNickName = gameController.getCurrentPlayerNickName();
+        }
+
         g2D.setColor(Color.BLACK);
         g2D.setStroke(new BasicStroke(5f));
         g2D.drawImage(pAvatar, getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, this);
         g2D.drawRoundRect(getAvatarRect().x, getAvatarRect().y, getAvatarRect().width, getAvatarRect().height, 16, 16);
         g2D.setFont(Constants.DEBUG_FONT);
-        g2D.drawString(gameController.getCurrentPlayerNickName(),
-                (int) (getAvatarRect().getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, gameController.getCurrentPlayerNickName())),
+        g2D.drawString(playerNickName,
+                (int) (getAvatarRect().getCenterX() - Constants.FFB.getHalfWidthOfString(g2D, playerNickName)),
                 getAvatarRect().height + 24);
     }
 
     protected void createSubPanes() {
+        creatingSubsRetry++;
+
         setAudiosPane(new AudioSettingsPane(this));
         setVideosPane(new VideoSettingsPane(this));
         setHotkeysPane(new HotkeysSettingsPane(this));
@@ -811,7 +821,6 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             parentFrame.getContentPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
         } catch (Exception e) {
             log.error("Ошибка при добавлении панелей на слой: {}", ExceptionUtils.getFullExceptionMessage(e));
-            creatingSubsRetry++;
             if (creatingSubsRetry < 3) {
                 createSubPanes();
             } else {

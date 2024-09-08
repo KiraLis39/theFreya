@@ -1,6 +1,6 @@
 package game.freya.services;
 
-import game.freya.dto.WorldDTO;
+import game.freya.dto.WorldDto;
 import game.freya.entities.World;
 import game.freya.interfaces.iEnvironment;
 import game.freya.mappers.WorldMapper;
@@ -26,15 +26,14 @@ import java.util.stream.Collectors;
 @Service
 public class WorldService {
     private final WorldRepository worldRepository;
-
     private final WorldMapper worldMapper;
 
     @Setter
     @Getter
-    private WorldDTO currentWorld;
+    private WorldDto currentWorld;
 
     @Transactional
-    public WorldDTO save(WorldDTO world) {
+    public WorldDto save(WorldDto world) {
         World w = worldMapper.toEntity(world);
         World w2 = worldRepository.findByUid(world.getUid()).orElse(null);
         if (w2 != null) {
@@ -60,14 +59,13 @@ public class WorldService {
 
     @Transactional
     public void saveCurrentWorld() {
-        World worldToSave = worldMapper.toEntity(currentWorld);
-        if (worldToSave != null) {
-            worldRepository.save(worldToSave);
+        if (currentWorld != null) {
+            worldRepository.saveAndFlush(worldMapper.toEntity(currentWorld));
         }
     }
 
     @Transactional(readOnly = true)
-    public List<WorldDTO> findAllByNetAvailable(boolean isNetAvailable) {
+    public List<WorldDto> findAllByNetAvailable(boolean isNetAvailable) {
         return worldMapper.toDto(worldRepository.findAllByIsNetAvailableIs(isNetAvailable));
     }
 

@@ -1,6 +1,7 @@
 package game.freya.interfaces;
 
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.roots.CharacterDto;
+import game.freya.dto.roots.ItemDto;
 import game.freya.enums.other.CurrencyVault;
 
 import java.util.UUID;
@@ -22,8 +23,8 @@ public interface iTradeable extends Comparable<iTradeable> {
 
     void setCurrentSellCost(int cost);
 
-    default boolean trade(CharacterDTO seller, iTradeable item, CharacterDTO buyer, CurrencyVault vaultType, int paySum) {
-        iTradeable itemToSell = seller.getInventory().removeItem(item);
+    default boolean trade(CharacterDto seller, ItemDto item, CharacterDto buyer, CurrencyVault vaultType, int paySum) {
+        ItemDto itemToSell = seller.getInventory().removeItem(item);
         if (itemToSell == null) {
             return false;
         }

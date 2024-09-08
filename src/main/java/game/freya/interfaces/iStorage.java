@@ -1,6 +1,7 @@
 package game.freya.interfaces;
 
-import game.freya.entities.roots.Storage;
+import game.freya.dto.roots.ItemDto;
+import game.freya.dto.roots.StorageDto;
 
 import java.util.UUID;
 
@@ -9,17 +10,17 @@ import java.util.UUID;
  */
 public interface iStorage {
 
-    short capacity();
+    short getCapacity();
 
-    void put(iStorable storable);
+    void put(ItemDto item);
 
-    iStorable remove(UUID storableUid);
+    ItemDto remove(UUID itemUid);
 
-    void translate(Storage dst, UUID storableUid);
+    void translate(StorageDto dstStorage, UUID itemUid);
 
-    boolean has(UUID storableUid);
+    boolean has(UUID itemUid);
 
-    boolean has(String storableName);
+    boolean has(String itemName);
 
     boolean isEmpty();
 

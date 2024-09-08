@@ -11,15 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.util.UUID;
 
 @Slf4j
 @Getter
+@Setter
 @SuperBuilder
 public class MockEnvironmentWithStorageDto extends EnvironmentDto {
-    @Builder.Default
-    private BufferedImage[] spriteList = Constants.SPRITES_COMBINER.getSprites(getCacheKey(),
-            Constants.CACHE.getBufferedImage(getCacheKey()), 1, 1);
+    private final BufferedImage[] spriteList;
 
     @Setter
     @Builder.Default
@@ -28,47 +26,14 @@ public class MockEnvironmentWithStorageDto extends EnvironmentDto {
     public MockEnvironmentWithStorageDto(String name, double locationW, double locationY) {
         setName(name);
         setCacheKey("mock_0" + Math.round(1 + getRandom().nextDouble() * 2));
+        this.spriteList = Constants.SPRITES_COMBINER.getSprites(getCacheKey(),
+                Constants.CACHE.getBufferedImage(getCacheKey()), 1, 1);
 
         setLocation(new Point2D.Double(getRandom().nextDouble() * locationW, getRandom().nextDouble() * locationY));
         setSize(new Dimension(128, 128));
 
         setHasCollision(true);
         setVisible(true);
-    }
-
-    @Override
-    public UUID getUid() {
-        return null;
-    }
-
-    @Override
-    public String getName() {
-        return null;
-    }
-
-    @Override
-    public Dimension getSize() {
-        return null;
-    }
-
-    @Override
-    public Point2D.Double getLocation() {
-        return null;
-    }
-
-    @Override
-    public boolean isVisible() {
-        return false;
-    }
-
-    @Override
-    public boolean hasCollision() {
-        return false;
-    }
-
-    @Override
-    public String getCacheKey() {
-        return null;
     }
 
     @Override

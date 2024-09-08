@@ -2,7 +2,7 @@ package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
@@ -47,7 +47,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
     private void reloadHeroes(FoxCanvas canvas) {
         HeroesListPane.this.removeAll();
 
-        for (CharacterDTO hero : gameController.getMyCurrentWorldHeroes()) {
+        for (CharacterDto hero : gameController.getMyCurrentWorldHeroes()) {
             add(new SubPane("Герой: ".concat(hero.getName()), hero.getHeroType().getColor()) {{
                 setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {

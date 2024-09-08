@@ -4,27 +4,22 @@ import fox.FoxLogo;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
 import game.freya.dto.PlayCharacterDto;
-import game.freya.dto.PlayerDTO;
-import game.freya.dto.WorldDTO;
-import game.freya.dto.roots.CharacterDTO;
-import game.freya.dto.roots.EnvironmentDto;
-import game.freya.entities.Player;
+import game.freya.dto.PlayerDto;
+import game.freya.dto.WorldDto;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.entities.World;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.enums.other.ScreenType;
-import game.freya.enums.player.MovingVector;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameFrame;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.interfaces.iEnvironment;
-import game.freya.mappers.WorldMapper;
 import game.freya.net.ConnectedServerPlayer;
 import game.freya.net.LocalSocketConnection;
-import game.freya.net.PlayedHeroesService;
 import game.freya.net.Server;
-import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventHeroMoving;
 import game.freya.net.data.events.EventHeroOffline;
 import game.freya.net.data.events.EventHeroRegister;
@@ -45,7 +40,6 @@ import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
@@ -55,7 +49,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -66,22 +59,17 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class GameControllerService extends GameControllerBase {
-    private final ArrayDeque<ClientDataDTO> deque = new ArrayDeque<>();
+    private final ArrayDeque<ClientDataDto> deque = new ArrayDeque<>();
 
     private final PlayerService playerService;
 
-    private final HeroService heroService;
+    private final CharacterService characterService;
 
     private final WorldService worldService;
 
     private final EventService eventService;
 
-    private final WorldMapper worldMapper;
-
     private final GameFrame gameFrame;
-
-    @Getter
-    private final PlayedHeroesService playedHeroesService;
 
     private final Server server;
 
@@ -186,11 +174,11 @@ public class GameControllerService extends GameControllerBase {
         this.gameFrame.showMainMenu(this);
     }
 
-    public void exitTheGame(WorldDTO world) {
+    public void exitTheGame(WorldDto world) {
         this.exitTheGame(world, -1);
     }
 
-    public void exitTheGame(WorldDTO world, int errCode) {
+    public void exitTheGame(WorldDto world, int errCode) {
         saveTheGame(world);
         closeConnections();
 
@@ -211,10 +199,10 @@ public class GameControllerService extends GameControllerBase {
         }
 
         // закрываем БД:
-//        Connect.close();
+        // Connect.close();
     }
 
-    private void saveTheGame(WorldDTO world) {
+    private void saveTheGame(WorldDto world) {
         log.info("Saving the game...");
         playerService.updateCurrentPlayer();
         if (world != null) {
@@ -224,25 +212,9 @@ public class GameControllerService extends GameControllerBase {
     }
 
     private void checkCurrentPlayerExists() {
-        Optional<Player> curPlayer = playerService.findByUid(Constants.getUserConfig().getUserId());
-        if (curPlayer.isEmpty()) {
-            curPlayer = playerService.findByMail(Constants.getUserConfig().getUserMail());
-            if (curPlayer.isPresent()) {
-                log.warn("Не был найден в базе данных игрок по uuid {}, но он найден по почте {}.",
-                        Constants.getUserConfig().getUserId(), Constants.getUserConfig().getUserMail());
-                Constants.getUserConfig().setUserId(curPlayer.get().getUid());
-            }
-        }
-
-        // set current player:
-        Player found = curPlayer.orElse(null);
-        if (found == null) {
-            found = playerService.createPlayer();
-        }
-        playerService.setCurrentPlayer(found);
-
         // если сменили никнейм в конфиге:
-        playerService.getCurrentPlayer().setNickName(Constants.getUserConfig().getUserName());
+        playerService.getCurrentPlayer()
+                .setNickName(Constants.getUserConfig().getUserName());
     }
 
     public void loadScreen(ScreenType screenType) {
@@ -283,46 +255,46 @@ public class GameControllerService extends GameControllerBase {
         getNetDataTranslator().start();
     }
 
-    public void sendPacket(ClientDataDTO data) {
+    public void sendPacket(ClientDataDto data) {
         this.deque.offer(data);
     }
 
-    public CharacterDTO saveNewHero(PlayCharacterDto newHeroDto, boolean setAsCurrent) {
-        if (!heroService.isHeroExist(newHeroDto.getUid())) {
-            CharacterDTO saved = heroService.saveHero(newHeroDto);
+    public CharacterDto saveNewHero(PlayCharacterDto newHeroDto, boolean setAsCurrent) {
+        if (!characterService.isHeroExist(newHeroDto.getUid())) {
+            CharacterDto saved = characterService.saveHero(newHeroDto);
             if (setAsCurrent) {
-                playedHeroesService.addCurrentHero(saved);
+//                playedHeroes.addCurrentHero(saved);
             } else {
-                playedHeroesService.addHero(saved);
+//                playedHeroes.addHero(saved);
             }
             return saved;
         }
-        return heroService.getByUid(newHeroDto.getUid());
+        return characterService.getByUid(newHeroDto.getUid());
     }
 
-    public void saveNewRemoteHero(ClientDataDTO readed) {
+    public void saveNewRemoteHero(ClientDataDto readed) {
         saveNewHero((PlayCharacterDto) cliToHero(readed), false);
     }
 
-    public CharacterDTO justSaveAnyHero(CharacterDTO aNewHeroDto) {
-        return heroService.saveHero(aNewHeroDto);
+    public CharacterDto justSaveAnyHero(CharacterDto aNewHeroDto) {
+        return characterService.saveHero(aNewHeroDto);
     }
 
     public void deleteWorld(UUID worldUid) {
         log.warn("Удаление Героев мира {}...", worldUid);
-        heroService.findAllByWorldUuid(worldUid).forEach(hero -> heroService.deleteHeroByUuid(hero.getUid()));
+        characterService.findAllByWorldUuid(worldUid).forEach(hero -> characterService.deleteHeroByUuid(hero.getUid()));
 
         log.warn("Удаление мира {}...", worldUid);
         worldService.delete(worldUid);
     }
 
     public void setCurrentHeroOfflineAndSave(Duration gameDuration) {
-        playedHeroesService.offlineSaveAndRemoveCurrentHero(gameDuration);
+//        playedHeroes.offlineSaveAndRemoveCurrentHero(gameDuration);
     }
 
     public void justSaveOnlineHero(Duration duration) {
-        playedHeroesService.setCurrentHeroInGameTime(duration == null ? 0 : duration.toMillis());
-        heroService.saveHero(playedHeroesService.getCurrentHero());
+//        playedHeroes.setCurrentHeroInGameTime(duration == null ? 0 : duration.toMillis());
+//        characterService.saveHero(playedHeroes.getCurrentHero());
     }
 
     public void doScreenShot(Point location, Rectangle canvasRect) {
@@ -342,159 +314,159 @@ public class GameControllerService extends GameControllerBase {
      */
     public void drawHeroes(Graphics2D v2D, GameCanvas canvas) {
         if (isCurrentWorldIsNetwork()) { // если игра по сети:
-            for (CharacterDTO hero : getConnectedHeroes()) {
-                if (playedHeroesService.isCurrentHero(hero)) {
-                    // если это текущий герой:
-                    if (!Constants.isPaused()) {
-                        moveHeroIfAvailable(canvas); // узкое место!
-                    }
-                    hero.draw(v2D);
-                } else if (canvas.getViewPort().getBounds().contains(hero.getLocation())) {
-                    // если чужой герой в пределах видимости:
-                    hero.draw(v2D);
-                }
-            }
+//            for (CharacterDTO hero : getConnectedHeroes()) {
+//                if (playedHeroes.isCurrentHero(hero)) {
+//                    // если это текущий герой:
+//                    if (!Constants.isPaused()) {
+//                        moveHeroIfAvailable(canvas); // узкое место!
+//                    }
+//                    hero.draw(v2D);
+//                } else if (canvas.getViewPort().getBounds().contains(hero.getLocation())) {
+//                    // если чужой герой в пределах видимости:
+//                    hero.draw(v2D);
+//                }
+//            }
         } else { // если не-сетевая игра:
             if (!Constants.isPaused()) {
                 moveHeroIfAvailable(canvas); // узкое место!
             }
 
-            if (!playedHeroesService.isCurrentHeroNotNull()) {
-                log.info("Потеряли текущего игрока. Что-то случилось? Выходим...");
-                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Окно игры не смогло получить текущего игрока для отрисовки");
-            }
-            playedHeroesService.getCurrentHero().draw(v2D);
+//            if (!playedHeroes.isCurrentHeroNotNull()) {
+//                log.info("Потеряли текущего игрока. Что-то случилось? Выходим...");
+//                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Окно игры не смогло получить текущего игрока для отрисовки");
+//            }
+//            playedHeroes.getCurrentHero().draw(v2D);
         }
     }
 
-    public boolean isHeroActive(CharacterDTO hero, Rectangle visibleRect) {
+    public boolean isHeroActive(CharacterDto hero, Rectangle visibleRect) {
         return visibleRect.contains(hero.getLocation()) && hero.isOnline();
     }
 
     private void moveHeroIfAvailable(GameCanvas canvas) {
         if (isPlayerMoving()) {
             Rectangle visibleRect = canvas.getViewPort().getBounds();
-            MovingVector vector = playedHeroesService.getCurrentHeroVector();
-            Point2D.Double plPos = playedHeroesService.getCurrentHeroPosition();
+//            MovingVector vector = playedHeroes.getCurrentHeroVector();
+//            Point2D.Double plPos = playedHeroes.getCurrentHeroPosition();
 
             double hrc = (visibleRect.x + ((visibleRect.getWidth() - visibleRect.x) / 2d));
-            boolean isViewMovableX = plPos.x > hrc - 30 && plPos.x < hrc + 30;
+//            boolean isViewMovableX = plPos.x > hrc - 30 && plPos.x < hrc + 30;
 
             double vrc = (visibleRect.y + ((visibleRect.getHeight() - visibleRect.y) / 2d));
-            boolean isViewMovableY = plPos.y > vrc - 30 && plPos.y < vrc + 30;
+//            boolean isViewMovableY = plPos.y > vrc - 30 && plPos.y < vrc + 30;
 
             if (isPlayerMovingUp()) {
-                vector = isPlayerMovingRight() ? MovingVector.UP_RIGHT : isPlayerMovingLeft() ? MovingVector.LEFT_UP : MovingVector.UP;
+//                vector = isPlayerMovingRight() ? MovingVector.UP_RIGHT : isPlayerMovingLeft() ? MovingVector.LEFT_UP : MovingVector.UP;
             } else if (isPlayerMovingDown()) {
-                vector = isPlayerMovingRight() ? MovingVector.RIGHT_DOWN : isPlayerMovingLeft() ? MovingVector.DOWN_LEFT : MovingVector.DOWN;
+//                vector = isPlayerMovingRight() ? MovingVector.RIGHT_DOWN : isPlayerMovingLeft() ? MovingVector.DOWN_LEFT : MovingVector.DOWN;
             }
 
             if (isPlayerMovingRight()) {
-                vector = isPlayerMovingUp() ? MovingVector.UP_RIGHT : isPlayerMovingDown() ? MovingVector.RIGHT_DOWN : MovingVector.RIGHT;
+//                vector = isPlayerMovingUp() ? MovingVector.UP_RIGHT : isPlayerMovingDown() ? MovingVector.RIGHT_DOWN : MovingVector.RIGHT;
             } else if (isPlayerMovingLeft()) {
-                vector = isPlayerMovingUp() ? MovingVector.LEFT_UP : isPlayerMovingDown() ? MovingVector.DOWN_LEFT : MovingVector.LEFT;
+//                vector = isPlayerMovingUp() ? MovingVector.LEFT_UP : isPlayerMovingDown() ? MovingVector.DOWN_LEFT : MovingVector.LEFT;
             }
 
             // перемещаем камеру к ГГ:
-            if (!visibleRect.contains(playedHeroesService.getCurrentHero().getLocation())) {
-                canvas.moveViewToPlayer(0, 0);
-            }
+//            if (!visibleRect.contains(playedHeroes.getCurrentHero().getLocation())) {
+//                canvas.moveViewToPlayer(0, 0);
+//            }
 
             // move hero:
             int[] collisionMarker = hasCollision();
-            playedHeroesService.setCurrentHeroVector(vector.mod(vector, collisionMarker));
-            if (!playedHeroesService.getCurrentHeroVector().equals(MovingVector.NONE)) {
-                // двигаемся по направлению вектора (взгляда):
-                for (int i = 0; i < playedHeroesService.getCurrentHero().getSpeed(); i++) {
-                    playedHeroesService.getCurrentHero().move();
-                }
-            } else {
-                // тогда, стоя на месте, просто указываем направление вектора (взгляда):
-                playedHeroesService.setCurrentHeroVector(vector);
-            }
+//            playedHeroes.setCurrentHeroVector(vector.mod(vector, collisionMarker));
+//            if (!playedHeroes.getCurrentHeroVector().equals(MovingVector.NONE)) {
+//                // двигаемся по направлению вектора (взгляда):
+//                for (int i = 0; i < playedHeroes.getCurrentHero().getSpeed(); i++) {
+//                    playedHeroes.getCurrentHero().move();
+//                }
+//            } else {
+//                // тогда, стоя на месте, просто указываем направление вектора (взгляда):
+//                playedHeroes.setCurrentHeroVector(vector);
+//            }
 
             // send moving data to Server:
-            sendPacket(eventService.buildMove(playedHeroesService.getCurrentHero()));
+//            sendPacket(eventService.buildMove(playedHeroes.getCurrentHero()));
 
             // move map:
-            switch (vector) {
-                case UP -> {
-                    if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
-                    }
-                }
-                case UP_RIGHT -> {
-                    if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
-                    }
-                    if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
-                    }
-                }
-                case RIGHT -> {
-                    if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
-                    }
-                }
-                case RIGHT_DOWN -> {
-                    if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
-                    }
-                    if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
-                    }
-                }
-                case DOWN -> {
-                    if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
-                    }
-                }
-                case DOWN_LEFT -> {
-                    if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
-                    }
-                    if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
-                    }
-                }
-                case LEFT -> {
-                    if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
-                    }
-                }
-                case LEFT_UP -> {
-                    if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
-                    }
-                    if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
-                    }
-                }
-                default -> log.info("Обнаружено несанкционированное направление {}", vector);
-            }
+//            switch (vector) {
+//                case UP -> {
+//                    if (isViewMovableY) {
+//                        canvas.dragDown(getCurrentHeroSpeed());
+//                    }
+//                }
+//                case UP_RIGHT -> {
+//                    if (isViewMovableY) {
+//                        canvas.dragDown(getCurrentHeroSpeed());
+//                    }
+//                    if (isViewMovableX) {
+//                        canvas.dragLeft(getCurrentHeroSpeed());
+//                    }
+//                }
+//                case RIGHT -> {
+//                    if (isViewMovableX) {
+//                        canvas.dragLeft(getCurrentHeroSpeed());
+//                    }
+//                }
+//                case RIGHT_DOWN -> {
+//                    if (isViewMovableX) {
+//                        canvas.dragLeft(getCurrentHeroSpeed());
+//                    }
+//                    if (isViewMovableY) {
+//                        canvas.dragUp(getCurrentHeroSpeed());
+//                    }
+//                }
+//                case DOWN -> {
+//                    if (isViewMovableY) {
+//                        canvas.dragUp(getCurrentHeroSpeed());
+//                    }
+//                }
+//                case DOWN_LEFT -> {
+//                    if (isViewMovableY) {
+//                        canvas.dragUp(getCurrentHeroSpeed());
+//                    }
+//                    if (isViewMovableX) {
+//                        canvas.dragRight(getCurrentHeroSpeed());
+//                    }
+//                }
+//                case LEFT -> {
+//                    if (isViewMovableX) {
+//                        canvas.dragRight(getCurrentHeroSpeed());
+//                    }
+//                }
+//                case LEFT_UP -> {
+//                    if (isViewMovableX) {
+//                        canvas.dragRight(getCurrentHeroSpeed());
+//                    }
+//                    if (isViewMovableY) {
+//                        canvas.dragDown(getCurrentHeroSpeed());
+//                    }
+//                }
+//                default -> log.info("Обнаружено несанкционированное направление {}", vector);
+//            }
         }
     }
 
     private int[] hasCollision() {
         // если сущность - не призрак:
-        if (playedHeroesService.getCurrentHero().hasCollision()) {
-            Rectangle heroCollider = playedHeroesService.getCurrentHeroCollider();
-
-            // проверка коллизии с краем мира:
-            Area worldMapBorder = new Area(new Rectangle(-12, -12,
-                    getCurrentWorldMap().getWidth() + 24, getCurrentWorldMap().getHeight() + 24));
-            worldMapBorder.subtract(new Area(new Rectangle(0, 0, getCurrentWorldMap().getWidth(), getCurrentWorldMap().getHeight())));
-            if (worldMapBorder.intersects(heroCollider)) {
-                return findVectorCorrection(worldMapBorder, heroCollider);
-            }
-
-            // проверка коллизий с объектами:
-            for (EnvironmentDto env : worldService.getCurrentWorld().getEnvironments()) {
-                if (env.hasCollision() && env.getCollider().intersects(heroCollider)) {
-                    return findVectorCorrection(env.getCollider(), heroCollider);
-                }
-            }
-        }
+//        if (playedHeroes.getCurrentHero().hasCollision()) {
+//            Rectangle heroCollider = playedHeroes.getCurrentHeroCollider();
+//
+//            // проверка коллизии с краем мира:
+//            Area worldMapBorder = new Area(new Rectangle(-12, -12,
+//                    getCurrentWorldMap().getWidth() + 24, getCurrentWorldMap().getHeight() + 24));
+//            worldMapBorder.subtract(new Area(new Rectangle(0, 0, getCurrentWorldMap().getWidth(), getCurrentWorldMap().getHeight())));
+//            if (worldMapBorder.intersects(heroCollider)) {
+//                return findVectorCorrection(worldMapBorder, heroCollider);
+//            }
+//
+//            // проверка коллизий с объектами:
+//            for (EnvironmentDto env : worldService.getCurrentWorld().getEnvironments()) {
+//                if (env.hasCollision() && env.getCollider().intersects(heroCollider)) {
+//                    return findVectorCorrection(env.getCollider(), heroCollider);
+//                }
+//            }
+//        }
 
         return new int[]{0, 0};
     }
@@ -525,7 +497,7 @@ public class GameControllerService extends GameControllerBase {
     }
 
     public void deleteHero(UUID heroUid) {
-        heroService.deleteHeroByUuid(heroUid);
+        characterService.deleteHeroByUuid(heroUid);
     }
 
     public BufferedImage getCurrentPlayerAvatar() {
@@ -536,7 +508,7 @@ public class GameControllerService extends GameControllerBase {
         return playerService.getCurrentPlayer().getNickName();
     }
 
-    public WorldDTO saveNewWorld(WorldDTO newWorld) {
+    public WorldDto saveNewWorld(WorldDto newWorld) {
         newWorld.setAuthor(getCurrentPlayerUid());
         newWorld.generate();
         return worldService.save(newWorld);
@@ -581,12 +553,12 @@ public class GameControllerService extends GameControllerBase {
         return worldService.getEnvironmentsFromRectangle(rectangle);
     }
 
-    public List<CharacterDTO> findAllHeroesByWorldUid(UUID uid) {
-        return heroService.findAllByWorldUuid(uid);
+    public List<CharacterDto> findAllHeroesByWorldUid(UUID uid) {
+        return characterService.findAllByWorldUuid(uid);
     }
 
-    public List<CharacterDTO> getMyCurrentWorldHeroes() {
-        return heroService.findAllByWorldUidAndOwnerUid(worldService.getCurrentWorld().getUid(), playerService.getCurrentPlayer().getUid());
+    public List<CharacterDto> getMyCurrentWorldHeroes() {
+        return characterService.findAllByWorldUidAndOwnerUid(worldService.getCurrentWorld().getUid(), playerService.getCurrentPlayer().getUid());
     }
 
     public String getCurrentWorldTitle() {
@@ -610,31 +582,31 @@ public class GameControllerService extends GameControllerBase {
     }
 
     public long getCurrentHeroInGameTime() {
-        if (playedHeroesService.getCurrentHero() != null) {
-            return playedHeroesService.getCurrentHeroInGameTime();
-        }
+//        if (playedHeroes.getCurrentHero() != null) {
+//            return playedHeroes.getCurrentHeroInGameTime();
+//        }
         return -1;
     }
 
-    public UUID getCurrentHeroUid() {
-        return playedHeroesService.getCurrentHeroUid();
-    }
+//    public UUID getCurrentHeroUid() {
+//        return playedHeroes.getCurrentHeroUid();
+//    }
 
     public Point2D.Double getCurrentHeroPosition() {
-        if (playedHeroesService.getCurrentHero() != null) {
-            return playedHeroesService.getCurrentHeroPosition();
-        }
+//        if (playedHeroes.getCurrentHero() != null) {
+//            return playedHeroes.getCurrentHeroPosition();
+//        }
         return null;
     }
 
     public byte getCurrentHeroSpeed() {
-        if (playedHeroesService.getCurrentHero() != null) {
-            return playedHeroesService.getCurrentHeroSpeed();
-        }
+//        if (playedHeroes.getCurrentHero() != null) {
+//            return playedHeroes.getCurrentHeroSpeed();
+//        }
         return -1;
     }
 
-    public List<WorldDTO> findAllWorldsByNetworkAvailable(boolean isNetworkAvailable) {
+    public List<WorldDto> findAllWorldsByNetworkAvailable(boolean isNetworkAvailable) {
         return worldService.findAllByNetAvailable(isNetworkAvailable);
     }
 
@@ -642,8 +614,8 @@ public class GameControllerService extends GameControllerBase {
         return worldService.getCurrentWorld().isNetAvailable();
     }
 
-    public CharacterDTO findHeroByNameAndWorld(String heroName, UUID worldUid) {
-        return heroService.findHeroByNameAndWorld(heroName, worldUid);
+    public CharacterDto findHeroByNameAndWorld(String heroName, UUID worldUid) {
+        return characterService.findHeroByNameAndWorld(heroName, worldUid);
     }
 
     public boolean isServerIsOpen() {
@@ -662,13 +634,13 @@ public class GameControllerService extends GameControllerBase {
         return server.getPlayers();
     }
 
-    public Collection<CharacterDTO> getConnectedHeroes() {
-        return playedHeroesService.getHeroes();
-    }
+//    public Collection<CharacterDTO> getConnectedHeroes() {
+//        return playedHeroes.getHeroes();
+//    }
 
-    public MovingVector getCurrentHeroVector() {
-        return playedHeroesService.getCurrentHeroVector();
-    }
+//    public MovingVector getCurrentHeroVector() {
+//        return playedHeroes.getCurrentHeroVector();
+//    }
 
     public boolean connectToServer(String host, Integer port, int passwordHash) {
         this.localSocketConnection = new LocalSocketConnection();
@@ -689,7 +661,7 @@ public class GameControllerService extends GameControllerBase {
         }
 
         // передаём свои данные для авторизации:
-        localSocketConnection.toServer(ClientDataDTO.builder()
+        localSocketConnection.toServer(ClientDataDto.builder()
                 .dataType(NetDataType.AUTH_REQUEST)
                 .content(EventPlayerAuth.builder()
                         .ownerUid(getCurrentPlayerUid())
@@ -767,25 +739,29 @@ public class GameControllerService extends GameControllerBase {
         }
     }
 
-    public String getCurrentHeroName() {
-        return playedHeroesService.getCurrentHeroName();
-    }
+//    public String getCurrentHeroName() {
+//        return getCurrentHero().getName();
+//    }
 
-    public World getCurrentWorld() {
-        return worldMapper.toEntity(worldService.getCurrentWorld());
-    }
+//    public World getCurrentWorld() {
+//        WorldDTO currentWorld = worldService.getCurrentWorld();
+//        if (currentWorld == null) {
+//            return null;
+//        }
+//        return worldMapper.toEntity(currentWorld);
+//    }
 
     public void setCurrentWorld(UUID selectedWorldUuid) {
         Optional<World> selected = worldService.findByUid(selectedWorldUuid);
         if (selected.isPresent()) {
             setLastPlayedWorldUuid(selectedWorldUuid);
-            worldService.setCurrentWorld(worldMapper.toDto(selected.get()));
+//            worldService.setCurrentWorld(worldMapper.toDto(selected.get()));
             return;
         }
         throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid.toString());
     }
 
-    public void setCurrentWorld(WorldDTO newWorld) {
+    public void setCurrentWorld(WorldDto newWorld) {
         worldService.setCurrentWorld(newWorld);
     }
 
@@ -794,20 +770,20 @@ public class GameControllerService extends GameControllerBase {
         if (wOpt.isPresent()) { // тут происходит подмена worldUuid?
             World old = wOpt.get();
             BeanUtils.copyProperties(world, old);
-            worldService.setCurrentWorld(worldMapper.toDto(old));
+//            worldService.setCurrentWorld(worldMapper.toDto(old));
             worldService.saveCurrentWorld();
         } else {
-            worldService.setCurrentWorld(worldService.save(worldMapper.toDto(world)));
+//            worldService.setCurrentWorld(worldService.save(worldMapper.toDto(world)));
         }
     }
 
-    public boolean isCurrentHeroOnline() {
-        return playedHeroesService.getCurrentHero() != null && playedHeroesService.isCurrentHeroOnline();
-    }
+//    public boolean isCurrentHeroOnline() {
+//        return getCurrentHero() != null && getCurrentHero().isOnline();
+//    }
 
     public boolean registerCurrentHeroOnServer() {
         log.info("Отправка данных текущего героя на Сервер...");
-        localSocketConnection.toServer(heroToCli(getCurrentHero(), playerService.getCurrentPlayer()));
+//        localSocketConnection.toServer(heroToCli(getCurrentHero(), playerService.getCurrentPlayer()));
 
         Thread heroCheckThread = Thread.startVirtualThread(() -> {
             while (!localSocketConnection.isAccepted() && !Thread.currentThread().isInterrupted()) {
@@ -830,22 +806,18 @@ public class GameControllerService extends GameControllerBase {
         }
     }
 
-    public CharacterDTO getCurrentHero() {
-        return playedHeroesService.getCurrentHero();
-    }
-
-    public void setCurrentHero(CharacterDTO hero) {
-        if (playedHeroesService.isCurrentHeroNotNull()) {
-            if (playedHeroesService.isCurrentHero(hero)) {
-                playedHeroesService.setCurrentHeroOnline(true);
-            } else if (playedHeroesService.isCurrentHeroOnline()) {
-                // если online другой герой - снимаем:
-                log.info("Снимаем он-лайн с Героя {} и передаём этот статус Герою {}...", getCurrentHero().getName(), hero.getName());
-                playedHeroesService.offlineSaveAndRemoveCurrentHero(null);
-            }
-        }
+    public void setCurrentHero(CharacterDto hero) {
+//        if (playedHeroes.isCurrentHeroNotNull()) {
+//            if (playedHeroes.isCurrentHero(hero)) {
+//                playedHeroes.setCurrentHeroOnline(true);
+//            } else if (playedHeroes.isCurrentHeroOnline()) {
+//                // если online другой герой - снимаем:
+//                log.info("Снимаем он-лайн с Героя {} и передаём этот статус Герою {}...", getCurrentHero().getName(), hero.getName());
+//                playedHeroes.offlineSaveAndRemoveCurrentHero(null);
+//            }
+//        }
         log.info("Теперь активный Герой - {}", hero.getName());
-        playedHeroesService.addCurrentHero(hero);
+//        playedHeroes.addCurrentHero(hero);
     }
 
     public String getCurrentWorldAddress() {
@@ -879,16 +851,16 @@ public class GameControllerService extends GameControllerBase {
      *
      * @param data модель обновлений для сетевого мира от другого участника игры.
      */
-    public void syncServerDataWithCurrentWorld(@NotNull ClientDataDTO data) {
-        log.debug("Получены данные для синхронизации {} игрока {} (герой {})", data.dataEvent(),
-                data.content().ownerUid(), playedHeroesService.getHeroByOwnerUid(data.content().ownerUid()));
+    public void syncServerDataWithCurrentWorld(@NotNull ClientDataDto data) {
+        log.debug("Получены данные для синхронизации {} игрока {} (герой {})",
+                data.dataEvent(), data.content().ownerUid(), data.content().heroUid());
 
-        CharacterDTO aim = playedHeroesService.getHero(data.content().heroUid());
-        if (aim == null) {
-            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", data.content().heroUid());
-            requestHeroFromServer(data.content().heroUid());
-            return;
-        }
+//        CharacterDTO aim = playedHeroes.getHero(data.content().heroUid());
+//        if (aim == null) {
+//            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", data.content().heroUid());
+//            requestHeroFromServer(data.content().heroUid());
+//            return;
+//        }
 
         if (data.dataEvent() == NetDataEvent.HERO_OFFLINE) {
             EventHeroOffline event = (EventHeroOffline) data.content();
@@ -899,8 +871,8 @@ public class GameControllerService extends GameControllerBase {
 
         if (data.dataEvent() == NetDataEvent.HERO_MOVING) {
             EventHeroMoving event = (EventHeroMoving) data.content();
-            aim.setLocation(event.positionX(), event.positionY());
-            aim.setVector(event.vector());
+//            aim.setLocation(event.positionX(), event.positionY());
+//            aim.setVector(event.vector());
         }
 
         // Обновляем здоровье, максимальное здоровье, силу, бафы-дебафы, текущий инструмент в руках и т.п. другого игрока:
@@ -916,7 +888,7 @@ public class GameControllerService extends GameControllerBase {
         // ...
 
         // Кладём назад обновленного:
-        playedHeroesService.addHero(aim);
+//        currentHero = aim;
     }
 
     public void exitToMenu(Duration gameDuration) {
@@ -926,9 +898,9 @@ public class GameControllerService extends GameControllerBase {
 
             saveCurrentWorld();
 
-            if (gameDuration != null && playedHeroesService.isCurrentHeroNotNull()) {
-                setCurrentHeroOfflineAndSave(gameDuration);
-            }
+//            if (gameDuration != null && playedHeroes.isCurrentHeroNotNull()) {
+//                setCurrentHeroOfflineAndSave(gameDuration);
+//            }
 
             // если игра сетевая и локальная - останавливаем сервер при выходе из игры:
             if (isCurrentWorldIsNetwork()) {
@@ -954,38 +926,39 @@ public class GameControllerService extends GameControllerBase {
     }
 
     public void clearConnectedHeroes() {
-        playedHeroesService.clear();
+//        playedHeroes.clear();
     }
 
-    public boolean isHeroExist(UUID uuid) {
-        return heroService.isHeroExist(uuid);
+    public boolean isHeroExist(UUID uid) {
+        return characterService.isHeroExist(uid);
     }
 
-    public CharacterDTO getHeroByUid(UUID uuid) {
-        return heroService.getByUid(uuid);
+    public CharacterDto getHeroByUid(UUID uid) {
+        return characterService.getByUid(uid);
     }
 
     public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID clientUid) {
-        playedHeroesService.offlineSaveAndRemoveOtherHeroByPlayerUid(clientUid);
+//        playedHeroes.offlineSaveAndRemoveOtherHeroByPlayerUid(clientUid);
     }
 
-    public void requestHeroFromServer(UUID uuid) {
-        localSocketConnection.toServer(ClientDataDTO.builder()
+    public void requestHeroFromServer(UUID uid) {
+        localSocketConnection.toServer(ClientDataDto.builder()
                 .dataType(NetDataType.HERO_REMOTE_NEED)
-                .content(EventHeroRegister.builder().heroUid(uuid).build())
+                .content(EventHeroRegister.builder().heroUid(uid).build())
                 .build());
         setRemoteHeroRequestSent(true);
     }
 
-    public ClientDataDTO heroToCli(CharacterDTO found, PlayerDTO currentPlayer) {
-        return heroService.heroToCli(found, currentPlayer);
+    public ClientDataDto heroToCli(CharacterDto found, PlayerDto currentPlayer) {
+        return characterService.heroToCli(found, currentPlayer);
     }
 
-    public CharacterDTO cliToHero(ClientDataDTO readed) {
-        return heroService.cliToHero(readed);
+    public CharacterDto cliToHero(ClientDataDto readed) {
+        return characterService.cliToHero(readed);
     }
 
-    public PlayerDTO getCurrentPlayer() {
+    // проброска currentPlayer в класс-Thread, который не может быть @Component:
+    public PlayerDto getCurrentPlayer() {
         return playerService.getCurrentPlayer();
     }
 

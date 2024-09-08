@@ -22,6 +22,7 @@ import java.util.Map;
 public class FoxExceptionHandler {
 
     @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<UserErrorMessage> handleAnyException(Exception ex, WebRequest request) {
         String errorMessage = ExceptionUtils.getFullExceptionMessage(ex);
         log.error(errorMessage.concat(". Вызвано при: ")
@@ -32,6 +33,7 @@ public class FoxExceptionHandler {
     }
 
     @ExceptionHandler(GlobalServiceException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<UserErrorMessage> handleGlobalServiceException(GlobalServiceException ex, WebRequest request) {
         log.warn(ExceptionUtils.getFullExceptionMessage(ex).concat(". Вызвано при: ")
                 .concat(request != null ? request.getDescription(false) : "NA"));

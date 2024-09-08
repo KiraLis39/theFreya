@@ -4,7 +4,7 @@ import fox.FoxRender;
 import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.dto.WorldDTO;
+import game.freya.dto.WorldDto;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -140,8 +140,8 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
-        List<WorldDTO> worlds = gameController.findAllWorldsByNetworkAvailable(true);
-        for (WorldDTO world : worlds) {
+        List<WorldDto> worlds = gameController.findAllWorldsByNetworkAvailable(true);
+        for (WorldDto world : worlds) {
             centerList.add(new SubPane(world.getTitle()) {{
                 setWorld(world);
                 setPreferredSize(new Dimension(

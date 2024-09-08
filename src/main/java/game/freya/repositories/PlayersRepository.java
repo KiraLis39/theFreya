@@ -7,17 +7,15 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface PlayersRepository extends JpaRepository<Player, UUID>, JpaSpecificationExecutor<Player> {
-    @Transactional
     @Modifying
-    @Query("update Player p set p.nickName = ?1 where p.nickName = ?2")
-    int updateNickNameByNickName(String nickName, @NonNull String nickName1);
+    @Query("update Player p set p.nickName = :nickNameNew where p.nickName = :nickNameOld")
+    int updateNickNameByNickName(String nickNameNew, @NonNull String nickNameOld);
 
     Optional<Player> findByEmailIgnoreCase(@NonNull String email);
 

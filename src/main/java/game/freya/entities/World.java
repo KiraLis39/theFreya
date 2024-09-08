@@ -11,6 +11,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -38,7 +39,7 @@ import java.util.UUID;
 public class World {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false)
+    @Column(name = "uid", nullable = false)
     private UUID uid;
 
     @NotNull
@@ -84,6 +85,7 @@ public class World {
     private String networkAddress;
 
     @Builder.Default
+    @JoinColumn(name = "environments", referencedColumnName = "uid")
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<Environment> environments = new HashSet<>();
 }

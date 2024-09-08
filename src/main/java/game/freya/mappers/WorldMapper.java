@@ -1,6 +1,6 @@
 package game.freya.mappers;
 
-import game.freya.dto.WorldDTO;
+import game.freya.dto.WorldDto;
 import game.freya.entities.World;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
 public class WorldMapper {
     private final EnvironmentMapper environmentMapper;
 
-    public WorldDTO toDto(World entity) {
+    public WorldDto toDto(World entity) {
         if (entity == null) {
             return null;
         }
-        return WorldDTO.builder()
+        return WorldDto.builder()
                 .uid(entity.getUid())
                 .author(entity.getAuthor())
                 .title(entity.getTitle())
@@ -35,14 +35,14 @@ public class WorldMapper {
                 .build();
     }
 
-    public List<WorldDTO> toDto(List<World> entities) {
+    public List<WorldDto> toDto(List<World> entities) {
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
         return entities.stream().map(this::toDto).collect(Collectors.toList());
     }
 
-    public World toEntity(WorldDTO dto) {
+    public World toEntity(WorldDto dto) {
         if (dto == null) {
             return null;
         }

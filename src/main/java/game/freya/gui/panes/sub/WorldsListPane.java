@@ -3,8 +3,8 @@ package game.freya.gui.panes.sub;
 import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.dto.WorldDTO;
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.WorldDto;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
@@ -95,8 +95,8 @@ public class WorldsListPane extends JPanel implements iSubPane {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
-        List<WorldDTO> worlds = gameController.findAllWorldsByNetworkAvailable(false);
-        for (WorldDTO world : worlds) {
+        List<WorldDto> worlds = gameController.findAllWorldsByNetworkAvailable(false);
+        for (WorldDto world : worlds) {
             centerList.add(new SubPane("Мир: ".concat(world.getTitle())) {{
                 setWorld(world);
                 setPreferredSize(new Dimension(
@@ -160,7 +160,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
                         add(zlabel, BorderLayout.WEST);
 
-                        List<CharacterDTO> hers = gameController.findAllHeroesByWorldUid(world.getUid());
+                        List<CharacterDto> hers = gameController.findAllHeroesByWorldUid(world.getUid());
                         if (hers.isEmpty()) {
                             zlabel.setText(zlabel.getText().replace("</pre>",
                                     "<br>Герои:<font color=#99c7b5><b>    (нет)</b></font></pre>"));
@@ -168,7 +168,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                             String lineEnd = "</b></font>";
                             StringBuilder heroes = new StringBuilder("<br>Герои:    ");
                             boolean isFirst = true;
-                            for (CharacterDTO her : hers) {
+                            for (CharacterDto her : hers) {
                                 if (!isFirst) {
                                     heroes.append("<font color=#000000> | </font>");
                                 }

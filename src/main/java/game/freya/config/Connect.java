@@ -3,6 +3,7 @@ package game.freya.config;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import game.freya.utils.ExceptionUtils;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,7 @@ public final class Connect {
         return ds;
     }
 
+    @PostConstruct
     private void buildConn() {
         try {
             HikariConfig config = new HikariConfig();

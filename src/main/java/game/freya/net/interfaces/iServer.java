@@ -1,7 +1,7 @@
 package game.freya.net.interfaces;
 
 import game.freya.net.ConnectedServerPlayer;
-import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.ClientDataDto;
 import game.freya.services.GameControllerService;
 
 import java.net.Socket;
@@ -29,5 +29,5 @@ public interface iServer {
 
     Set<ConnectedServerPlayer> getPlayers();
 
-    void broadcast(ClientDataDTO dataDto, ConnectedServerPlayer excludedPlayer);
+    void broadcast(ClientDataDto dataDto, ConnectedServerPlayer excludedPlayer);
 }

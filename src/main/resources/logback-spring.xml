@@ -25,7 +25,7 @@
               value="[App: ${app_name}, v.${app_version}] %magenta(%d{dd MMMM HH:mm:ss}) %highlight(%level) %yellow(%thread) %green(%logger{24}.%M%red(:%L)) %1() %msg %n"/>
 
     <property name="log.colorPattern"
-              value="%magenta(%d{dd.MM.yy HH:mm:ss.SSS}) %highlight([%level]) %boldCyan(th:%thread) %green(%logger{64})\_%red(.%M\(\))\_%(:%L) %1() %yellow(%msg)\n"/>
+              value="%magenta(%d{dd.MM.yy HH:mm:ss.SSS}) %highlight([%level]) %boldCyan(th:%thread) %green(%logger{24})\_%red(.%M\(\))\_%(:%L) %1() %yellow(%msg)\n"/>
 
     <property name="log.filePattern"
               value="%d{dd MMMM HH:mm:ss.SSS} [%level] th:%thread %logger{16}.%M\\(\\)\\_%red(:%L) %1() %msg%n"/>

@@ -11,8 +11,4 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @DiscriminatorValue("backpack")
 public class Backpack extends Storage {
-    @Override
-    public short capacity() {
-        return 0;
-    }
 }

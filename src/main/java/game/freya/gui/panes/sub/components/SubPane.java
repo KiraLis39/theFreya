@@ -1,7 +1,7 @@
 package game.freya.gui.panes.sub.components;
 
 import game.freya.config.Constants;
-import game.freya.dto.WorldDTO;
+import game.freya.dto.WorldDto;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,7 +18,7 @@ public class SubPane extends JPanel {
     @Getter
     private FButton connButton;
 
-    private transient WorldDTO worldDTO;
+    private transient WorldDto worldDto;
 
     public SubPane(String title) {
         this(title, Color.DARK_GRAY);
@@ -52,11 +52,11 @@ public class SubPane extends JPanel {
         }
     }
 
-    public WorldDTO getWorld() {
-        return worldDTO;
+    public WorldDto getWorld() {
+        return worldDto;
     }
 
-    public void setWorld(WorldDTO worldDTO) {
-        this.worldDTO = worldDTO;
+    public void setWorld(WorldDto worldDto) {
+        this.worldDto = worldDto;
     }
 }

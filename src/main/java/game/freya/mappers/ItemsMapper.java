@@ -1,8 +1,7 @@
 package game.freya.mappers;
 
-import game.freya.dto.roots.StorageDto;
-import game.freya.entities.roots.Storage;
-import game.freya.repositories.ItemRepository;
+import game.freya.dto.roots.ItemDto;
+import game.freya.entities.roots.Item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,68 +13,59 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class StorageMapper {
-    private final ItemsMapper itemsMapper;
-    private final ItemRepository itemRepository;
-
-    public Storage toEntity(StorageDto dto) {
+public class ItemsMapper {
+    public Item toEntity(ItemDto dto) {
         if (dto == null) {
             return null;
         }
 
-        return Storage.builder()
+        return Item.builder()
                 .uid(dto.getUid())
-                .name(dto.getName())
                 .ownerUid(dto.getOwnerUid())
-                .location(dto.getLocation())
-                .shape(dto.getShape())
+                .createdBy(dto.getCreatedBy())
+                .worldUid(dto.getWorldUid())
+                .name(dto.getName())
                 .size(dto.getSize())
                 .collider(dto.getCollider())
-                .hasCollision(dto.hasCollision())
+                .location(dto.getLocation())
                 .isVisible(dto.isVisible())
+                .hasCollision(dto.isHasCollision())
                 .cacheKey(dto.getCacheKey())
-                .createdBy(dto.getCreatedBy())
                 .createdDate(dto.getCreatedDate())
                 .modifyDate(dto.getModifyDate())
-                .worldUid(dto.getWorldUid())
-                .capacity(dto.getCapacity())
-                .items(itemsMapper.toEntities(dto.getItems()))
                 .build();
     }
 
-    public StorageDto toDto(Storage entity) {
+    public ItemDto toDto(Item entity) {
         if (entity == null) {
             return null;
         }
 
-        return StorageDto.builder()
+        return ItemDto.builder()
                 .uid(entity.getUid())
-                .name(entity.getName())
                 .ownerUid(entity.getOwnerUid())
-                .location(entity.getLocation())
-                .shape(entity.getShape())
+                .createdBy(entity.getCreatedBy())
+                .worldUid(entity.getWorldUid())
+                .name(entity.getName())
                 .size(entity.getSize())
                 .collider(entity.getCollider())
-                .hasCollision(entity.isHasCollision())
+                .location(entity.getLocation())
                 .isVisible(entity.isVisible())
+                .hasCollision(entity.isHasCollision())
                 .cacheKey(entity.getCacheKey())
-                .createdBy(entity.getCreatedBy())
                 .createdDate(entity.getCreatedDate())
                 .modifyDate(entity.getModifyDate())
-                .worldUid(entity.getWorldUid())
-                .capacity(entity.getCapacity())
-                .items(itemsMapper.toDto(entity.getItems()))
                 .build();
     }
 
-    public List<Storage> toEntities(List<StorageDto> heroes) {
+    public List<Item> toEntities(List<ItemDto> heroes) {
         if (heroes == null) {
             return Collections.emptyList();
         }
         return heroes.stream().map(this::toEntity).collect(Collectors.toList());
     }
 
-    public List<StorageDto> toDto(List<Storage> heroes) {
+    public List<ItemDto> toDto(List<Item> heroes) {
         return heroes.stream().map(this::toDto).collect(Collectors.toList());
     }
 }

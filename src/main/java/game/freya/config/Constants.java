@@ -282,6 +282,10 @@ public final class Constants {
                 restoreDisplayMode();
             }
         } else if (userConfig.getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
+            if (frame == null) {
+                return;
+            }
+
             frame.dispose();
             frame.setResizable(true);
 

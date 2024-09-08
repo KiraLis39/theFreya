@@ -1,6 +1,6 @@
 package game.freya.net.data;
 
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import lombok.Builder;
@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Builder
-public record ClientDataDTO(
+public record ClientDataDto(
         UUID dataUid,
         NetDataType dataType,
         NetDataEvent dataEvent,
@@ -45,9 +45,9 @@ public record ClientDataDTO(
 //        String chatMessage,
 //        String buffsJson,
 //        String inventoryJson,
-        Set<CharacterDTO> heroes
+        Set<CharacterDto> heroes
 ) implements iClientEventData {
-    public ClientDataDTO {
+    public ClientDataDto {
         if (dataUid == null) {
             dataUid = UUID.randomUUID();
         }
@@ -64,7 +64,7 @@ public record ClientDataDTO(
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ClientDataDTO that = (ClientDataDTO) o;
+        ClientDataDto that = (ClientDataDto) o;
         return Objects.equals(dataUid, that.dataUid);
     }
 

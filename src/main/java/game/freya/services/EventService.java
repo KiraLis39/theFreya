@@ -1,9 +1,9 @@
 package game.freya.services;
 
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
-import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventHeroMoving;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +15,8 @@ import org.springframework.stereotype.Service;
 public class EventService {
     private final PlayerService playerService;
 
-    public ClientDataDTO buildMove(CharacterDTO dto) {
-        return ClientDataDTO.builder()
+    public ClientDataDto buildMove(CharacterDto dto) {
+        return ClientDataDto.builder()
                 .dataType(NetDataType.EVENT)
                 .heroUid(dto.getUid())
                 .heroName(dto.getName())

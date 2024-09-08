@@ -1,13 +1,13 @@
 package game.freya.mappers;
 
 import game.freya.dto.BackpackDto;
-import game.freya.dto.PlayerDTO;
-import game.freya.dto.roots.CharacterDTO;
+import game.freya.dto.PlayerDto;
+import game.freya.dto.roots.CharacterDto;
 import game.freya.entities.Backpack;
 import game.freya.entities.roots.Character;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
-import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventHeroRegister;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ public final class CharMapper {
     private final BuffMapper buffMapper;
     private final StorageMapper storageMapper;
 
-    public Character toEntity(CharacterDTO dto) {
+    public Character toEntity(CharacterDto dto) {
         if (dto == null) {
             return null;
         }
@@ -59,12 +59,12 @@ public final class CharMapper {
                 .build();
     }
 
-    public CharacterDTO toDto(Character entity) {
+    public CharacterDto toDto(Character entity) {
         if (entity == null) {
             return null;
         }
 
-        return CharacterDTO.builder()
+        return CharacterDto.builder()
                 .baseColor(entity.getBaseColor())
                 .secondColor(entity.getSecondColor())
                 .corpusType(entity.getCorpusType())
@@ -91,23 +91,23 @@ public final class CharMapper {
                 .build();
     }
 
-    public Set<Character> toEntities(Set<CharacterDTO> heroes) {
+    public Set<Character> toEntities(Set<CharacterDto> heroes) {
         if (heroes == null) {
             return Collections.emptySet();
         }
         return heroes.stream().map(this::toEntity).collect(Collectors.toSet());
     }
 
-    public List<CharacterDTO> toDto(List<Character> heroes) {
+    public List<CharacterDto> toDto(List<Character> heroes) {
         return heroes.stream().map(this::toDto).collect(Collectors.toList());
     }
 
-    public ClientDataDTO heroToCli(CharacterDTO hero, PlayerDTO currentPlayer) {
+    public ClientDataDto heroToCli(CharacterDto hero, PlayerDto currentPlayer) {
         if (hero == null) {
             return null;
         }
 
-        return ClientDataDTO.builder()
+        return ClientDataDto.builder()
                 .dataType(NetDataType.EVENT)
                 .dataEvent(NetDataEvent.HERO_REGISTER)
                 .content(EventHeroRegister.builder()
@@ -139,13 +139,13 @@ public final class CharMapper {
                 .build();
     }
 
-    public CharacterDTO cliToHero(ClientDataDTO cli) {
+    public CharacterDto cliToHero(ClientDataDto cli) {
         if (cli == null || cli.content() == null) {
             return null;
         }
 
         EventHeroRegister heroRegister = (EventHeroRegister) cli.content();
-        return CharacterDTO.builder()
+        return CharacterDto.builder()
                 .heroType(heroRegister.heroType())
 
                 .baseColor(heroRegister.baseColor())

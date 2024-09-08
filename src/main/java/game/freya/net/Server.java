@@ -6,7 +6,7 @@ import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.net.data.ClientDataDTO;
+import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventHeroOffline;
 import game.freya.net.interfaces.iServer;
 import game.freya.services.GameControllerService;
@@ -164,7 +164,7 @@ public class Server implements iServer {
                 log.info("Удаляем игрока {} ({}) из списка подключенных, т.к. его поток прерван.",
                         client.getPlayerName(), client.getPlayerUid());
                 destroyClient(client);
-                broadcast(ClientDataDTO.builder()
+                broadcast(ClientDataDto.builder()
                         .dataType(NetDataType.EVENT)
                         .dataEvent(NetDataEvent.HERO_OFFLINE)
                         .content(EventHeroOffline.builder().ownerUid(client.getPlayerUid()).build())
@@ -202,7 +202,7 @@ public class Server implements iServer {
      * @param dataDto данные об изменениях серверной версии мира.
      */
     @Override
-    public void broadcast(ClientDataDTO dataDto, ConnectedServerPlayer excludedPlayer) {
+    public void broadcast(ClientDataDto dataDto, ConnectedServerPlayer excludedPlayer) {
         log.debug("Бродкастим инфо всем клиентам...");
         for (ConnectedServerPlayer connectedServerPlayer : getPlayers()) {
             if (excludedPlayer == null || connectedServerPlayer.getClientUid().equals(excludedPlayer.getClientUid())) {

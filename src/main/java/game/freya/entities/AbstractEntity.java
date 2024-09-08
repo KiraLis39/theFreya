@@ -1,10 +1,6 @@
 package game.freya.entities;
 
-import game.freya.entities.roots.Environment;
 import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +14,6 @@ import javax.validation.constraints.NotNull;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.UUID;
 
 @Getter
@@ -27,11 +22,6 @@ import java.util.UUID;
 @MappedSuperclass
 @RequiredArgsConstructor
 public abstract class AbstractEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "uuid", nullable = false)
-    private UUID uid;
-
     @Column(name = "owner_uid")
     private UUID ownerUid;
 
@@ -50,10 +40,10 @@ public abstract class AbstractEntity {
     @Column(name = "size", nullable = false)
     private Dimension size;
 
-    @Column(name = "collider", nullable = false)
+    @Column(name = "collider")
     private Rectangle collider;
 
-    @Column(name = "shape", nullable = false)
+    @Column(name = "shape")
     private Rectangle shape;
 
     @Column(name = "location", nullable = false)
@@ -65,45 +55,15 @@ public abstract class AbstractEntity {
     @Column(name = "collision", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean hasCollision;
 
-    @Column(name = "cache_key", length = 32)
+    @Column(name = "cache_key", length = 32, columnDefinition = "VARCHAR(32) DEFAULT no_image")
     private String cacheKey;
 
     @CreatedDate
     @CreationTimestamp
-    @Column(name = "created_date", columnDefinition = "TIMESTAMP DEFAULT current_timestamp", nullable = false)
+    @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;
 
     @LastModifiedDate
-    @Column(name = "modify_date", columnDefinition = "TIMESTAMP DEFAULT current_timestamp", nullable = false)
+    @Column(name = "modify_date", nullable = false)
     private LocalDateTime modifyDate;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Environment that)) {
-            return false;
-        }
-        return Objects.equals(uid, that.getUid())
-                && Objects.equals(name, that.getName())
-                && Objects.equals(cacheKey, that.getCacheKey());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(uid, name, cacheKey);
-    }
-
-    @Override
-    public String toString() {
-        return "AbstractEntity{"
-                + "uuid=" + uid
-                + ", createdBy=" + createdBy
-                + ", name='" + name + '\''
-                + ", isVisible=" + isVisible
-                + ", hasCollision=" + hasCollision
-                + ", cacheKey='" + cacheKey + '\''
-                + '}';
-    }
 }
