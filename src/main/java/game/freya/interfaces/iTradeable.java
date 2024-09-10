@@ -23,21 +23,5 @@ public interface iTradeable extends Comparable<iTradeable> {
 
     void setCurrentSellCost(int cost);
 
-    default boolean trade(CharacterDto seller, ItemDto item, CharacterDto buyer, CurrencyVault vaultType, int paySum) {
-        ItemDto itemToSell = seller.getInventory().removeItem(item);
-        if (itemToSell == null) {
-            return false;
-        }
-
-        if (buyer.getInventory().tryDecreaseBalance(paySum, vaultType)) {
-            // успешная торговля:
-            seller.getInventory().increaseBalance(paySum, vaultType);
-            buyer.getInventory().addItem(itemToSell);
-            return true;
-        } else {
-            // провал торговли:
-            seller.getInventory().addItem(itemToSell);
-            return false;
-        }
-    }
+    boolean trade(CharacterDto seller, ItemDto item, CharacterDto buyer, CurrencyVault vaultType, int paySum);
 }

@@ -1,7 +1,7 @@
 package game.freya.services;
 
-import game.freya.dto.WorldDto;
-import game.freya.entities.World;
+import game.freya.dto.roots.WorldDto;
+import game.freya.entities.roots.World;
 import game.freya.interfaces.iEnvironment;
 import game.freya.mappers.WorldMapper;
 import game.freya.repositories.WorldRepository;
@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -69,7 +69,7 @@ public class WorldService {
         return worldMapper.toDto(worldRepository.findAllByIsNetAvailableIs(isNetAvailable));
     }
 
-    public Set<iEnvironment> getEnvironmentsFromRectangle(Rectangle rectangle) {
+    public Set<iEnvironment> getEnvironmentsFromRectangle(Rectangle2D.Double rectangle) {
         return currentWorld.getEnvironments().stream()
                 .filter(e -> e.isInSector(rectangle))
                 .collect(Collectors.toSet());

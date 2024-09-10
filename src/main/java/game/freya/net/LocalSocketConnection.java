@@ -3,7 +3,7 @@ package game.freya.net;
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.dto.roots.CharacterDto;
-import game.freya.entities.World;
+import game.freya.entities.roots.World;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;

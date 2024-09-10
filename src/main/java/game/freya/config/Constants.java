@@ -54,7 +54,6 @@ public final class Constants {
 
 
     // libraries objects:
-
     public static final FoxFontBuilder FFB = new FoxFontBuilder();
 
     public static final FoxRender RENDER = new FoxRender();
@@ -71,6 +70,7 @@ public final class Constants {
     public static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("День dd (HH:mm)", Locale.of("ru"));
 
     public static final DateTimeFormatter DATE_FORMAT_3 = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm", Locale.of("ru"));
+
 
     // fonts:
     public static final Font DEBUG_FONT = FFB.setFoxFont(FONT.ARIAL, 16, true, FoxVideoMonitorUtil.getEnvironment());
@@ -92,28 +92,35 @@ public final class Constants {
     public static final Font PROPAGANDA_FONT;
 
     public static final Font PROPAGANDA_BIG_FONT;
+    // cache:
+    public static final String NO_CACHED_IMAGE_MOCK_KEY = "no_image_mock_key";
+    // net:
     @Getter
-    public static final String connectionUser = "freya";
+    private static final String connectionUser = "freya";
     @Getter
-    public static final String connectionPassword = "0358";
+    private static final String connectionPassword = "0358";
     @Getter
-    public static final String cachePrepStmts = "true";
+    private static final String cachePrepStmts = "true";
     @Getter
-    public static final String prepStmtCacheSize = "250";
+    private static final String prepStmtCacheSize = "250";
     @Getter
-    public static final String prepStmtCacheSqlLimit = "2048";
+    private static final String prepStmtCacheSqlLimit = "2048";
     @Getter
-    public static final boolean connectionAutoCommit = false;
+    private static final boolean connectionAutoCommit = false;
     // project:
     @Getter
     private static final String gameAuthor = "KiraLis39";
+
     @Getter
     private static final Path database = Path.of("C:\\Users\\"
             .concat(System.getProperty("user.name"))
             .concat("\\AppData\\Local\\Freya\\freya.db")).toAbsolutePath();
+
+
     // db hikari:
     @Getter
-    public static final String connectionUrl = "jdbc:sqlite:".concat(getDatabase().toString());
+    private static final String connectionUrl = "jdbc:sqlite:".concat(getDatabase().toString());
+
     @Getter
     private static final String imageExtension = ".png"; // .png
 

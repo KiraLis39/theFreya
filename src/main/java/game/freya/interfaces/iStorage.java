@@ -12,15 +12,13 @@ public interface iStorage {
 
     short getCapacity();
 
-    void put(ItemDto item);
+    boolean putItem(ItemDto itemDto, int count);
 
-    ItemDto remove(UUID itemUid);
+    UUID removeItem(UUID itemUid, int count);
 
-    void translate(StorageDto dstStorage, UUID itemUid);
+    boolean translate(StorageDto dstStorage, UUID itemUid, int count);
 
     boolean has(UUID itemUid);
-
-    boolean has(String itemName);
 
     boolean isEmpty();
 

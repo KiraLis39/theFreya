@@ -1,24 +1,25 @@
 package game.freya.entities.roots;
 
-import game.freya.entities.AbstractEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
-import java.util.UUID;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import java.util.HashSet;
+import java.util.Set;
 
+@Accessors(chain = true)
+@Setter
 @Getter
 @SuperBuilder
 @RequiredArgsConstructor
@@ -26,13 +27,17 @@ import java.util.UUID;
 @DiscriminatorColumn(name = "item_type")
 @Table(name = "items")
 public class Item extends AbstractEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "uid", nullable = false)
-    private UUID uid;
 
-    @Setter
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "storage_uid", unique = true)
-    private Storage storage;
+    @Min(1)
+    @Max(99)
+    @Column(name = "stack_count")
+    private int stackCount;
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "items", cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    private Set<Storage> storages = new HashSet<>(1);
+
+    public void addStorage(Storage storage) {
+        this.storages.add(storage);
+    }
 }

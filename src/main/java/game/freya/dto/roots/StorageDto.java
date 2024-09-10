@@ -1,8 +1,8 @@
 package game.freya.dto.roots;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iStorage;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,101 +13,27 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.validation.constraints.NotNull;
 import java.awt.*;
-import java.awt.geom.Point2D;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
-@Getter
 @Setter
+@Getter
 @SuperBuilder
+//@Accessors(chain = true, fluent = true, prefix = {"+set"})
 @RequiredArgsConstructor
-public class StorageDto implements iGameObject, iStorage {
-
-    @Schema(description = "uid of container", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private UUID uid;
-
-    @Schema(description = "Storage owner`s uid", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID ownerUid;
-
-    @NotNull
-    @Schema(description = "Uuid of container creator", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID createdBy;
-
-    @NotNull
-    @Schema(description = "Uuid of owned World", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID worldUid;
-
-    @NotNull
-    @Schema(description = "Name of container", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String name;
+public non-sealed class StorageDto extends AbstractEntityDto implements iGameObject, iStorage {
 
     @Schema(description = "The capacity of container", requiredMode = Schema.RequiredMode.REQUIRED)
     private short capacity;
 
     @Builder.Default
-    @Schema(description = "The visible size of container", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Dimension size = new Dimension(128, 64);
-
-    @Schema(description = "Collider of this container", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Rectangle collider;
-
-    @Schema(description = "Rigid body of this container", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Rectangle shape;
-
-    @Builder.Default
-    @Schema(description = "World location of this container", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Point2D.Double location = new Point2D.Double(0, 0);
-
-    @Builder.Default
-    @JsonProperty("isVisible")
-    @Schema(description = "Is container is visible?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private boolean isVisible = true;
-
-    @Builder.Default
-    @Schema(description = "Is container has collision with other objects?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private boolean hasCollision = true;
-
-    @Builder.Default
-    @Schema(description = "Cached image name of container", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private String cacheKey = "no_image";
-
-    @Builder.Default
     @Schema(description = "Container`s content items array", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private List<ItemDto> items = Collections.synchronizedList(new ArrayList<>());
-
-    @Builder.Default
-    @Schema(description = "Creation date of this container", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
-    private LocalDateTime createdDate = LocalDateTime.now();
-
-    @Builder.Default
-    @Schema(description = "Modification date of this container", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
-    private LocalDateTime modifyDate = LocalDateTime.now();
-
-    @JsonIgnore
-    public void setSize(Dimension size) {
-        this.size = size;
-        if (this.location != null) {
-            this.collider = new Rectangle((int) (this.location.x + this.size.width / 2d), (int) (this.location.y + this.size.height / 2d));
-        }
-    }
-
-    @JsonIgnore
-    public void setLocation(Point2D.Double location) {
-        this.location = location;
-        if (this.size != null) {
-            this.collider = new Rectangle((int) (this.location.x + this.size.width / 2d), (int) (this.location.y + this.size.height / 2d));
-        }
-    }
+    private List<ItemStack> stacks = new ArrayList<>();
 
     @Override
     @JsonIgnore
@@ -115,100 +41,131 @@ public class StorageDto implements iGameObject, iStorage {
 
     }
 
-    @Override
-    @JsonIgnore
-    public Rectangle getCollider() {
-        if (collider == null) {
-            createCollider();
-        }
-        return collider;
+    public boolean putItem(ItemDto itemDto) {
+        return this.putItem(itemDto, 1);
     }
 
     @Override
     @JsonIgnore
-    public boolean isInSector(Rectangle sector) {
-        return sector.contains(this.location);
-    }
-
-    @JsonIgnore
-    private void createCollider() {
-        this.collider = new Rectangle((int) location.x, (int) location.y, size.width, size.height);
-    }
-
-    @Override
-    @JsonIgnore
-    public Point2D.Double getCenterPoint() {
-        return new Point2D.Double(location.x + size.width / 2d, location.y + size.height / 2d);
-    }
-
-    @Override
-    @JsonIgnore
-    public boolean hasCollision() {
-        return hasCollision;
-    }
-
-    @JsonIgnore
-    public ItemDto removeItem(ItemDto item) {
-        log.info("Извлечён из инвентаря предмет '{} ({})'", item.getName(), item.getUid());
-        return items.remove(items.indexOf(item));
-    }
-
-    @JsonIgnore
-    public void addItem(ItemDto item) {
-        log.info("Добавлен в инвентарь предмет '{} ({})'", item.getName(), item.getUid());
-        items.add(item);
-    }
-
-    @Override
-    @JsonIgnore
-    public void put(ItemDto storable) {
-        if (items.size() < capacity) {
-            items.add(storable);
+    public boolean putItem(ItemDto itemDto, int count) {
+        // находим стак искомого предмета в инвентаре (где есть свободное место для нового предмета):
+        Optional<ItemStack> availableStack = stacks.stream().filter(stack -> stack.itemUid().equals(itemDto.getUid())
+                && stack.count() < stack.getItemDto().getStackCount()).findFirst();
+        if (availableStack.isPresent()) {
+            // если найден неполный стак этого предмета - дополняем его:
+            return addItemToExistsStack(availableStack.get(), count);
+        } else if (stacks.size() < capacity) {
+            // если в хранилище ещё нет стаков этого предмета, но есть свободные ячейки:
+            return addNewItemsStack(itemDto, count);
+        } else {
+            log.warn("Не был добавлен в инвентарь предмет '{}' ({}): Нет свободного места.", itemDto.getName(), itemDto.getUid());
+            return false;
         }
     }
 
-    @Override
-    @JsonIgnore
-    public ItemDto remove(UUID storableUid) {
-        Optional<ItemDto> uid = items.stream().filter(item -> item.getUid().equals(storableUid)).findFirst();
-        return uid.map(iStorable -> items.remove(items.indexOf(iStorable))).orElse(null);
+    private boolean addNewItemsStack(ItemDto itemDto, int count) {
+        ItemStack stack = new ItemStack()
+                .itemUid(itemDto.getUid())
+                .itemDto(itemDto)
+                .itemName(itemDto.getName())
+                .count(count);
+
+        if (itemDto.getStackCount() >= count) {
+            stacks.add(stack);
+        } else {
+            int wantsCellCount = Math.round((float) count / itemDto.getStackCount() + 0.5f);
+            if (capacity - stacks.size() >= wantsCellCount) {
+                for (int i = 0; i < wantsCellCount; i++) {
+                    stack = new ItemStack()
+                            .itemUid(itemDto.getUid())
+                            .itemDto(itemDto)
+                            .itemName(itemDto.getName())
+                            .count(Math.min(count, itemDto.getStackCount()));
+                    stacks.add(stack);
+                    count -= itemDto.getStackCount();
+                    if (count < 0) {
+                        throw new GlobalServiceException(ErrorMessages.UNIVERSAL_ERROR_MESSAGE_TEMPLATE,
+                                "Неверные расчеты: count не может становиться меньше нуля.");
+                    }
+                }
+            } else {
+                log.warn("Не был добавлен в инвентарь предмет '{}' ({}): Нет свободного места.", itemDto.getName(), itemDto.getUid());
+                return false;
+            }
+        }
+        log.info("Добавлен в инвентарь предмет '{} ({})'", stack.itemName(), stack.itemUid());
+        return true;
+    }
+
+    private boolean addItemToExistsStack(ItemStack itemStack, int count) {
+        if (itemStack.increaseCount(count) == -1) {
+            log.error("Не был добавлен в инвентарь предмет '{}': Получено -1.", itemStack.itemUid());
+            return false;
+        }
+        log.info("Добавлен в инвентарь предмет '{} ({})'", itemStack.itemName(), itemStack.itemUid());
+        return true;
     }
 
     @Override
     @JsonIgnore
-    public void translate(StorageDto dst, UUID storableUid) {
-        Optional<ItemDto> uid = items.stream().filter(item -> item.getUid().equals(storableUid)).findFirst();
-        uid.ifPresent(iStorable -> dst.put(items.remove(items.indexOf(iStorable))));
+    public UUID removeItem(UUID itemUid, int count) {
+        List<ItemStack> foundItemStacks = stacks.stream().filter(stack -> stack.itemUid().equals(itemUid)).toList();
+        if (foundItemStacks.isEmpty()) {
+            log.error("Невозможно достать из хранилища отсутствующий предмет '{}'", itemUid);
+            return null;
+        }
+
+        int itemsCount = foundItemStacks.stream().mapToInt(ItemStack::count).sum();
+        if (itemsCount < count) {
+            log.error("Невозможно достать из хранилища больше предметов '{}' чем имеется.", itemUid);
+            return null;
+        }
+
+        for (ItemStack stack : foundItemStacks) {
+            if (stack.count() <= count) {
+                count -= stack.count();
+                stacks.remove(stack);
+            } else {
+                stack.decreaseCount(count);
+//                or better? stacks.stream().filter(stk -> stk.equals(stack)).findFirst().get().decreaseCount(count);
+            }
+        }
+        return itemUid;
     }
 
     @Override
     @JsonIgnore
-    public boolean has(UUID storableUid) {
-        return items.stream().anyMatch(iStorable -> iStorable.getUid().equals(storableUid));
+    public boolean translate(StorageDto dst, UUID itemUid, int count) {
+        UUID srcRemovedItem = removeItem(itemUid, count);
+        if (srcRemovedItem == null) {
+            return false;
+        }
+        dst.putItem(ItemDto.builder().uid(srcRemovedItem).build(), count);
+        return true;
     }
 
     @Override
     @JsonIgnore
-    public boolean has(String storableName) {
-        return items.stream().anyMatch(iStorable -> iStorable.getName().equals(storableName));
+    public boolean has(UUID itemUid) {
+        return stacks.stream().anyMatch(stack -> stack.itemUid().equals(itemUid));
     }
 
     @Override
     @JsonIgnore
     public boolean isEmpty() {
-        return items.isEmpty();
+        return stacks.isEmpty();
     }
 
     @Override
     @JsonIgnore
     public boolean isFull() {
-        return items.size() >= capacity;
+        return stacks.size() >= capacity;
     }
 
     @Override
     @JsonIgnore
     public void removeAll() {
-        items.clear();
+        stacks.clear();
     }
 
     @Override

@@ -1,13 +1,14 @@
 package game.freya.services;
 
 import fox.FoxLogo;
+import game.freya.WorldEngine;
 import game.freya.config.Constants;
 import game.freya.config.GameConfig;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.PlayerDto;
-import game.freya.dto.WorldDto;
 import game.freya.dto.roots.CharacterDto;
-import game.freya.entities.World;
+import game.freya.dto.roots.WorldDto;
+import game.freya.entities.roots.World;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.enums.other.ScreenType;
@@ -41,6 +42,7 @@ import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 import java.io.IOException;
@@ -68,6 +70,7 @@ public class GameControllerService extends GameControllerBase {
     private final WorldService worldService;
 
     private final EventService eventService;
+    private final WorldEngine worldEngine;
 
     private final GameFrame gameFrame;
 
@@ -509,7 +512,7 @@ public class GameControllerService extends GameControllerBase {
     }
 
     public WorldDto saveNewWorld(WorldDto newWorld) {
-        newWorld.setAuthor(getCurrentPlayerUid());
+        newWorld.setCreatedBy(getCurrentPlayerUid());
         newWorld.generate();
         return worldService.save(newWorld);
     }
@@ -549,7 +552,7 @@ public class GameControllerService extends GameControllerBase {
         playerService.getCurrentPlayer().setLastPlayedWorldUid(lastWorldUuid);
     }
 
-    public Set<iEnvironment> getWorldEnvironments(Rectangle rectangle) {
+    public Set<iEnvironment> getWorldEnvironments(Rectangle2D.Double rectangle) {
         return worldService.getEnvironmentsFromRectangle(rectangle);
     }
 
@@ -562,11 +565,11 @@ public class GameControllerService extends GameControllerBase {
     }
 
     public String getCurrentWorldTitle() {
-        return worldService.getCurrentWorld() == null ? null : worldService.getCurrentWorld().getTitle();
+        return worldService.getCurrentWorld() == null ? null : worldService.getCurrentWorld().getName();
     }
 
     public VolatileImage getCurrentWorldMap() {
-        return worldService.getCurrentWorld().getGameMap();
+        return worldEngine.getGameMap();
     }
 
     public void getDrawCurrentWorld(Graphics2D v2D) throws AWTException {

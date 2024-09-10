@@ -22,7 +22,12 @@ public enum ErrorMessages {
     WRONG_STATE("ER13", "Не верный статус приложения"),
     HERO_NOT_FOUND("ER14", "Не обнаружен Герой"),
     SOCKET_CLOSED("ER15", "Сокет закрыт и не может быть использован"),
-    OS_NOT_SUPPORTED("ER16", "Operation system is not supported");
+    OS_NOT_SUPPORTED("ER16", "Operation system is not supported"),
+    ITEM_NOT_FOUND("ER17", "Item not exists?"),
+    NOT_ENOUGH_DATA("ER18", "Not enough data for processing"),
+
+    // game operations:
+    GAME_OPERATION_RESTRICTED("G001", "Запрошенная операция не прошла");
 
     private final String code;
 

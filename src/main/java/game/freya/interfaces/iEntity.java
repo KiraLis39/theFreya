@@ -1,8 +1,6 @@
 package game.freya.interfaces;
 
-import java.awt.*;
-
-public interface iEntity {
+public interface iEntity extends iGameObject {
     int getHealth();
 
     int getOil();
@@ -14,12 +12,4 @@ public interface iEntity {
     void hurt(float hurtPoints);
 
     boolean isDead();
-
-    Rectangle getCollider();
-
-    void setCollider(Rectangle collider);
-
-    Rectangle getShape();
-
-    void setShape(Rectangle shape);
 }

@@ -1,15 +1,17 @@
 package game.freya.dto.roots;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import lombok.experimental.Accessors;
 
 import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Getter
 @Setter
-@SuperBuilder
+@RequiredArgsConstructor
+@Accessors(chain = true, fluent = true)
 public class BuffDto {
     @NotNull
     private UUID uid;

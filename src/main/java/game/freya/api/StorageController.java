@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -47,8 +48,8 @@ public class StorageController {
             @Parameter(description = "Storage model to create one")
             @RequestBody StorageDto dto
     ) {
-        return storageService.createStorage(dto).map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.internalServerError().build());
+        Optional<StorageDto> created = storageService.createStorage(dto);
+        return created.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.internalServerError().build());
     }
 
     @GMOnly

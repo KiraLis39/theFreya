@@ -1,13 +1,23 @@
 package game.freya.entities.roots;
 
-import game.freya.entities.AbstractEntity;
 import game.freya.entities.Backpack;
 import game.freya.enums.player.HeroCorpusType;
 import game.freya.enums.player.HeroPeripheralType;
 import game.freya.enums.player.HeroType;
 import game.freya.enums.player.HurtLevel;
 import game.freya.enums.player.MovingVector;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,13 +26,11 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Setter
 @Getter
@@ -32,11 +40,6 @@ import java.util.UUID;
 @DiscriminatorColumn(name = "character_type")
 @Table(name = "characters", uniqueConstraints = @UniqueConstraint(name = "uc_names_in_world", columnNames = {"name", "world_uid"}))
 public class Character extends AbstractEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "uid", nullable = false)
-    private UUID uid;
-
     @Min(1)
     @Column(name = "level")
     private short level;
@@ -110,10 +113,9 @@ public class Character extends AbstractEntity {
     private HeroType heroType;
 
     @NotNull
-    @NotEmpty
+    @Size(max = 32)
     @Builder.Default
-    @JoinColumn(name = "buffs", referencedColumnName = "uid")
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "uid")
     private List<Buff> buffs = new ArrayList<>(9);
 
     @Builder.Default

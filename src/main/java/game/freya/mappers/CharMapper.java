@@ -49,7 +49,7 @@ public final class CharMapper {
                 .speed(dto.getSpeed())
                 .location(dto.getLocation())
                 .hurtLevel(dto.getHurtLevel())
-                .createdDate(dto.getCreateDate())
+                .createdDate(dto.getCreatedDate())
                 .worldUid(dto.getWorldUid())
                 .ownerUid(dto.getOwnerUid())
                 .inGameTime(dto.getInGameTime())
@@ -87,7 +87,7 @@ public final class CharMapper {
                 .maxOil(entity.getMaxOil())
                 .speed(entity.getSpeed())
                 .location(entity.getLocation())
-                .createDate(entity.getCreatedDate())
+                .createdDate(entity.getCreatedDate())
                 .build();
     }
 
@@ -160,7 +160,7 @@ public final class CharMapper {
 //                .experience(heroRegister.experience())
 //                .inGameTime(heroRegister.inGameTime())
 //                .lastPlayDate(heroRegister.lastPlayDate())
-//                .createDate(heroRegister.createdDate())
+//                .createdDate(heroRegister.createdDate())
 
 //                .inventory(heroRegister.getInventory())
 //                .buffs(heroRegister.getBuffs())

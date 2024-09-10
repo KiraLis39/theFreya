@@ -2,6 +2,7 @@ package game.freya.interfaces;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -19,17 +20,17 @@ public interface iGameObject extends Serializable {
 
     Point2D.Double getLocation();
 
-    Point2D.Double getCenterPoint();
-
     boolean isVisible();
 
     boolean hasCollision();
 
     String getCacheKey();
 
-    void draw(Graphics2D g2D);
+    void draw(Graphics2D g2D) throws AWTException;
 
-    Rectangle getCollider();
+    Rectangle2D.Double getCollider();
 
-    boolean isInSector(Rectangle sector);
+    Rectangle2D.Double getShape();
+
+    boolean isInSector(Rectangle2D.Double sector);
 }

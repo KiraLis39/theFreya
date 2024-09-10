@@ -6,20 +6,12 @@ import game.freya.gui.panes.GameCanvas;
 import game.freya.services.GameControllerService;
 
 import java.awt.*;
-import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.UUID;
 
-public interface iWorld {
-    UUID getUid();
-
-    UUID getAuthor();
-
+public interface iWorld extends iGameObject {
     void init(GameCanvas canvas, GameControllerService controller);
 
-    Dimension getDimension();
-
-    void draw(Graphics2D g2D) throws AWTException;
+    Dimension getSize();
 
     void addEnvironment(EnvironmentDto o);
 
@@ -28,8 +20,6 @@ public interface iWorld {
     boolean isLocalWorld();
 
     boolean isNetAvailable();
-
-    LocalDateTime getCreateDate();
 
     HardnessLevel getHardnesslevel();
 

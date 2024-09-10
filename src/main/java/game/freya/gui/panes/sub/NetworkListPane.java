@@ -4,7 +4,7 @@ import fox.FoxRender;
 import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.dto.WorldDto;
+import game.freya.dto.roots.WorldDto;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -142,7 +142,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
         List<WorldDto> worlds = gameController.findAllWorldsByNetworkAvailable(true);
         for (WorldDto world : worlds) {
-            centerList.add(new SubPane(world.getTitle()) {{
+            centerList.add(new SubPane(world.getName()) {{
                 setWorld(world);
                 setPreferredSize(new Dimension(
                         Constants.getUserConfig().isFullscreen()
@@ -190,7 +190,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                                 + "<br>Создано:<font color=#8805A8><b>    %s</b></font>"
                                 + "<br> </pre></html>")
                                 .formatted(getWorld().getLevel().getDescription(), getWorld().getNetworkAddress(),
-                                        getWorld().getCreateDate().format(Constants.DATE_FORMAT_3)),
+                                        getWorld().getCreatedDate().format(Constants.DATE_FORMAT_3)),
                                 null) {{
                             setBackground(Color.CYAN);
                         }});

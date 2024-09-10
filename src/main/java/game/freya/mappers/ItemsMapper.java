@@ -6,14 +6,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class ItemsMapper {
+    private final StorageMapper storageMapper;
+
     public Item toEntity(ItemDto dto) {
         if (dto == null) {
             return null;
@@ -29,8 +30,9 @@ public class ItemsMapper {
                 .collider(dto.getCollider())
                 .location(dto.getLocation())
                 .isVisible(dto.isVisible())
-                .hasCollision(dto.isHasCollision())
                 .cacheKey(dto.getCacheKey())
+                .storages(storageMapper.toEntities(dto.getStorages()))
+                .stackCount(dto.getStackCount())
                 .createdDate(dto.getCreatedDate())
                 .modifyDate(dto.getModifyDate())
                 .build();
@@ -51,21 +53,19 @@ public class ItemsMapper {
                 .collider(entity.getCollider())
                 .location(entity.getLocation())
                 .isVisible(entity.isVisible())
-                .hasCollision(entity.isHasCollision())
                 .cacheKey(entity.getCacheKey())
+                //.storages(storageMapper.toDtos(entity.getStorages()))
+                .stackCount(entity.getStackCount())
                 .createdDate(entity.getCreatedDate())
                 .modifyDate(entity.getModifyDate())
                 .build();
     }
 
-    public List<Item> toEntities(List<ItemDto> heroes) {
-        if (heroes == null) {
-            return Collections.emptyList();
-        }
-        return heroes.stream().map(this::toEntity).collect(Collectors.toList());
+    public Set<Item> toEntities(Set<ItemDto> heroes) {
+        return heroes.stream().map(this::toEntity).collect(Collectors.toSet());
     }
 
-    public List<ItemDto> toDto(List<Item> heroes) {
-        return heroes.stream().map(this::toDto).collect(Collectors.toList());
+    public Set<ItemDto> toDtos(Set<Item> heroes) {
+        return heroes.stream().map(this::toDto).collect(Collectors.toSet());
     }
 }

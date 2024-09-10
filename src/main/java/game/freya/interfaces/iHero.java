@@ -3,6 +3,7 @@ package game.freya.interfaces;
 import game.freya.dto.roots.BuffDto;
 import game.freya.enums.player.MovingVector;
 
+import java.awt.geom.Point2D;
 import java.time.LocalDateTime;
 
 public interface iHero extends iEntity {
@@ -16,9 +17,9 @@ public interface iHero extends iEntity {
 
     short getLevel();
 
-    LocalDateTime getCreateDate();
+    LocalDateTime getCreatedDate();
 
-    void setVector(MovingVector movingVector);
+    MovingVector getVector();
 
-    void setLocation(double x, double y);
+    Point2D.Double getLocation();
 }

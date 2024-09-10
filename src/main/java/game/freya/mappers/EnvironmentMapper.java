@@ -21,14 +21,19 @@ public class EnvironmentMapper {
 
         return EnvironmentDto.builder()
                 .uid(entity.getUid())
-                .createdBy(entity.getCreatedBy())
                 .name(entity.getName())
+                .createdBy(entity.getCreatedBy())
+                .ownerUid(entity.getOwnerUid())
+                .worldUid(entity.getWorldUid())
+                .shape(entity.getShape())
                 .size(entity.getSize())
                 .location(entity.getLocation())
                 .collider(entity.getCollider())
                 .isVisible(entity.isVisible())
-                .hasCollision(entity.isHasCollision())
+//                .hasCollision(entity.isHasCollision()) // динамика через collider
                 .cacheKey(entity.getCacheKey())
+                .createdDate(entity.getCreatedDate())
+                .modifyDate(entity.getModifyDate())
                 .build();
     }
 
@@ -39,13 +44,16 @@ public class EnvironmentMapper {
 
         return Environment.builder()
                 .uid(dto.getUid())
-                .createdBy(dto.getCreatedBy())
                 .name(dto.getName())
+                .createdBy(dto.getCreatedBy())
+                .ownerUid(dto.getOwnerUid())
+                .worldUid(dto.getWorldUid())
+                .shape(dto.getShape())
                 .size(dto.getSize())
                 .location(dto.getLocation())
                 .collider(dto.getCollider())
                 .isVisible(dto.isVisible())
-                .hasCollision(dto.isHasCollision())
+//                .hasCollision(dto.hasCollision()) // динамика через collider
                 .cacheKey(dto.getCacheKey())
                 .build();
     }

@@ -1,6 +1,6 @@
 package game.freya.net.data.events;
 
-import game.freya.entities.World;
+import game.freya.entities.roots.World;
 import game.freya.net.data.iClientEventData;
 import lombok.Builder;
 

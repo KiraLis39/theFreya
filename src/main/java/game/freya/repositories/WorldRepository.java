@@ -1,6 +1,6 @@
 package game.freya.repositories;
 
-import game.freya.entities.World;
+import game.freya.entities.roots.World;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;

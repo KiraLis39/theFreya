@@ -189,7 +189,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                 }}, BorderLayout.EAST);
 
                 // нижняя надпись Создано:
-                add(new ZLabel("Создан: ".concat(hero.getCreateDate().format(Constants.DATE_FORMAT_3)), hero.getIcon()) {{
+                add(new ZLabel("Создан: ".concat(hero.getCreatedDate().format(Constants.DATE_FORMAT_3)), hero.getIcon()) {{
                     setFont(Constants.INFO_FONT);
                     setForeground(Color.GRAY);
                 }}, BorderLayout.SOUTH);

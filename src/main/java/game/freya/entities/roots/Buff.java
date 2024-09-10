@@ -9,16 +9,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import lombok.experimental.Accessors;
 
 import java.util.UUID;
 
 @Getter
 @Setter
-@SuperBuilder
-@NoArgsConstructor
+@Accessors(chain = true, fluent = true)
+@RequiredArgsConstructor
 @Entity
 @DiscriminatorColumn(name = "buff_type")
 @Table(name = "buffs")

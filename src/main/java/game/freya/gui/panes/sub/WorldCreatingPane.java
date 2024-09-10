@@ -2,7 +2,7 @@ package game.freya.gui.panes.sub;
 
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.dto.WorldDto;
+import game.freya.dto.roots.WorldDto;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -135,12 +135,18 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
                             if (canvas instanceof MenuCanvas mCanvas) {
                                 WorldDto aNewWorld = WorldDto.builder()
                                         .uid(UUID.randomUUID())
-                                        .author(canvas.getGameController().getCurrentPlayerUid())
-                                        .createDate(LocalDateTime.now())
-                                        .title(getWorldName())
+                                        .createdBy(canvas.getGameController().getCurrentPlayerUid())
+                                        .createdDate(LocalDateTime.now())
+                                        .name(getWorldName())
                                         .level(getHardnessLevel())
                                         .isNetAvailable(false)
                                         .isLocalWorld(true)
+//                                        .hasCollision()
+//                                        .isVisible()
+//                                        .collider()
+//                                        .cacheKey()
+//                                        .environments()
+//                                        .location()
                                         .build();
                                 mCanvas.saveNewLocalWorldAndCreateHero(aNewWorld);
                             }

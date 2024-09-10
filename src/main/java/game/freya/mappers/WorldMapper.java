@@ -1,12 +1,11 @@
 package game.freya.mappers;
 
-import game.freya.dto.WorldDto;
-import game.freya.entities.World;
+import game.freya.dto.roots.WorldDto;
+import game.freya.entities.roots.World;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,45 +19,51 @@ public class WorldMapper {
         if (entity == null) {
             return null;
         }
+
         return WorldDto.builder()
                 .uid(entity.getUid())
-                .author(entity.getAuthor())
-                .title(entity.getTitle())
+                .createdBy(entity.getCreatedBy())
+                .name(entity.getName())
                 .level(entity.getLevel())
-                .dimension(new Dimension(entity.getDimensionWidth(), entity.getDimensionHeight()))
+                .size(new Dimension(entity.getSize().width, entity.getSize().height))
                 .isNetAvailable(entity.isNetAvailable())
                 .passwordHash(entity.getPasswordHash())
-                .createDate(entity.getCreatedDate())
+                .createdDate(entity.getCreatedDate())
                 .isLocalWorld(entity.isLocalWorld())
                 .networkAddress(entity.getNetworkAddress())
                 .environments(environmentMapper.toDto(entity.getEnvironments()))
+                .cacheKey(entity.getCacheKey())
+                .collider(entity.getCollider())
+                .isVisible(entity.isVisible())
+//                .hasCollision(entity.isHasCollision()) // динамика через collider
                 .build();
-    }
-
-    public List<WorldDto> toDto(List<World> entities) {
-        if (entities == null || entities.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return entities.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public World toEntity(WorldDto dto) {
         if (dto == null) {
             return null;
         }
+
         return World.builder()
                 .uid(dto.getUid())
-                .author(dto.getAuthor())
-                .title(dto.getTitle())
+                .createdBy(dto.getCreatedBy())
+                .name(dto.getName())
                 .isNetAvailable(dto.isNetAvailable())
                 .passwordHash(dto.getPasswordHash())
-                .dimensionWidth(dto.getDimension().width)
-                .dimensionHeight(dto.getDimension().height)
+                .size(dto.getSize())
                 .level(dto.getLevel())
-                .createdDate(dto.getCreateDate())
+                .createdDate(dto.getCreatedDate())
                 .isLocalWorld(dto.isLocalWorld())
                 .networkAddress(dto.getNetworkAddress())
                 .environments(environmentMapper.toEntity(dto.getEnvironments()))
+                .cacheKey(dto.getCacheKey())
+                .collider(dto.getCollider())
+                .isVisible(dto.isVisible())
+//                .hasCollision(dto.hasCollision()) // динамика через collider
                 .build();
+    }
+
+    public List<WorldDto> toDto(List<World> entities) {
+        return entities.stream().map(this::toDto).collect(Collectors.toList());
     }
 }

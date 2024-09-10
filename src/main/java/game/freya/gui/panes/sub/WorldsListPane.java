@@ -3,8 +3,8 @@ package game.freya.gui.panes.sub;
 import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.dto.WorldDto;
 import game.freya.dto.roots.CharacterDto;
+import game.freya.dto.roots.WorldDto;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.interfaces.iSubPane;
@@ -97,7 +97,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
         List<WorldDto> worlds = gameController.findAllWorldsByNetworkAvailable(false);
         for (WorldDto world : worlds) {
-            centerList.add(new SubPane("Мир: ".concat(world.getTitle())) {{
+            centerList.add(new SubPane("Мир: ".concat(world.getName())) {{
                 setWorld(world);
                 setPreferredSize(new Dimension(
                         Constants.getUserConfig().isFullscreen()
@@ -187,7 +187,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                         }
                     }}, BorderLayout.CENTER);
 
-                    add(new ZLabel("Создан: ".concat(world.getCreateDate().format(Constants.DATE_FORMAT_3)), null) {{
+                    add(new ZLabel("Создан: ".concat(world.getCreatedDate().format(Constants.DATE_FORMAT_3)), null) {{
                         setFont(Constants.INFO_FONT);
                         setForeground(Color.GRAY);
                     }}, BorderLayout.SOUTH);

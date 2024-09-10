@@ -32,7 +32,6 @@ public class MockEnvironmentWithStorageDto extends EnvironmentDto {
         setLocation(new Point2D.Double(getRandom().nextDouble() * locationW, getRandom().nextDouble() * locationY));
         setSize(new Dimension(128, 128));
 
-        setHasCollision(true);
         setVisible(true);
     }
 

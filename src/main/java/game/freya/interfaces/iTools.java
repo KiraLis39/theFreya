@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * Интерфейс для инструментов
  */
-public interface iTools extends iStorable {
+public interface iTools extends iStorable, iUsable, iRepairable {
     float getWeight(); // вес
 
     int getStrength(); // прочность

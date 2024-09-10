@@ -67,7 +67,6 @@ spring:
 #    serialization:
 #      write-dates-as-timestamps: true
 #      write-date-keys-as-timestamps: true
-
   data:
     web:
       pageable:
@@ -75,6 +74,25 @@ spring:
     jpa:
       repositories:
         bootstrap-mode: deferred
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        check_nullability: true
+        jdbc:
+          # Hibernate прозрачно отключает пакетную вставку на уровне JDBC, если вы используете генератор IDENTITY
+          batch_size: 10
+          batch_versioned_data: true
+        order_updates: true
+        connection:
+          autocommit: false
+          pool_size: 6
+        dialect: org.hibernate.community.dialect.SQLiteDialect
 
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
@@ -111,25 +129,6 @@ spring:
   # liquibase:
   #   change-log: classpath:db/changelog/changelog.xml
   #   # drop-first: true
-
-  jpa:
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
-    open-in-view: false
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        format_sql: true
-        check_nullability: true
-        jdbc:
-          # Hibernate прозрачно отключает пакетную вставку на уровне JDBC, если вы используете генератор IDENTITY
-          batch_size: 10
-          batch_versioned_data: true
-        order_updates: true
-        connection:
-          autocommit: false
-          pool_size: 6
-        dialect: org.hibernate.community.dialect.SQLiteDialect
 
   task:
     execution:

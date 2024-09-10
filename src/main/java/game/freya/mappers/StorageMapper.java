@@ -1,22 +1,32 @@
 package game.freya.mappers;
 
+import game.freya.dto.roots.ItemDto;
+import game.freya.dto.roots.ItemStack;
 import game.freya.dto.roots.StorageDto;
 import game.freya.entities.roots.Storage;
-import game.freya.repositories.ItemRepository;
+import game.freya.services.StorageToItemsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
-@RequiredArgsConstructor
 @Component
+@RequiredArgsConstructor
 public class StorageMapper {
-    private final ItemsMapper itemsMapper;
-    private final ItemRepository itemRepository;
+    private final StorageToItemsService storageToItemsService;
+    private ItemsMapper itemsMapper;
+
+    @Autowired
+    public void setMappers(@Lazy ItemsMapper itemsMapper) {
+        this.itemsMapper = itemsMapper;
+    }
 
     public Storage toEntity(StorageDto dto) {
         if (dto == null) {
@@ -26,20 +36,20 @@ public class StorageMapper {
         return Storage.builder()
                 .uid(dto.getUid())
                 .name(dto.getName())
+                .createdBy(dto.getCreatedBy())
                 .ownerUid(dto.getOwnerUid())
-                .location(dto.getLocation())
-                .shape(dto.getShape())
+                .worldUid(dto.getWorldUid())
                 .size(dto.getSize())
+                .location(dto.getLocation())
+                .capacity(dto.getCapacity())
+                .shape(dto.getShape())
                 .collider(dto.getCollider())
-                .hasCollision(dto.hasCollision())
                 .isVisible(dto.isVisible())
                 .cacheKey(dto.getCacheKey())
-                .createdBy(dto.getCreatedBy())
                 .createdDate(dto.getCreatedDate())
                 .modifyDate(dto.getModifyDate())
-                .worldUid(dto.getWorldUid())
-                .capacity(dto.getCapacity())
-                .items(itemsMapper.toEntities(dto.getItems()))
+                .items(dto.getStacks() == null ? null
+                        : itemsMapper.toEntities(dto.getStacks().stream().map(ItemStack::getItemDto).collect(Collectors.toSet())))
                 .build();
     }
 
@@ -48,7 +58,7 @@ public class StorageMapper {
             return null;
         }
 
-        return StorageDto.builder()
+        StorageDto result = StorageDto.builder()
                 .uid(entity.getUid())
                 .name(entity.getName())
                 .ownerUid(entity.getOwnerUid())
@@ -56,7 +66,7 @@ public class StorageMapper {
                 .shape(entity.getShape())
                 .size(entity.getSize())
                 .collider(entity.getCollider())
-                .hasCollision(entity.isHasCollision())
+//                .hasCollision(entity.isHasCollision()) // динамика через collider
                 .isVisible(entity.isVisible())
                 .cacheKey(entity.getCacheKey())
                 .createdBy(entity.getCreatedBy())
@@ -64,18 +74,39 @@ public class StorageMapper {
                 .modifyDate(entity.getModifyDate())
                 .worldUid(entity.getWorldUid())
                 .capacity(entity.getCapacity())
-                .items(itemsMapper.toDto(entity.getItems()))
                 .build();
-    }
 
-    public List<Storage> toEntities(List<StorageDto> heroes) {
-        if (heroes == null) {
-            return Collections.emptyList();
+        if (entity.getItems() != null && !entity.getItems().isEmpty()) {
+            List<ItemStack> stacks = new ArrayList<>();
+            for (ItemDto dto : itemsMapper.toDtos(entity.getItems())) {
+                int count = storageToItemsService.findCountByItemUidAndStorageUid(dto.getUid(), result.getUid());
+                // добавляем полные стаки предметов:
+                while (count > dto.getStackCount()) {
+                    stacks.add(new ItemStack()
+                            .itemUid(dto.getUid())
+                            .itemDto(dto)
+                            .itemName(dto.getName())
+                            .count(dto.getStackCount()));
+                    count -= dto.getStackCount();
+                }
+                // добавляем последний (единственный), неполный стак:
+                stacks.add(new ItemStack()
+                        .itemUid(dto.getUid())
+                        .itemDto(dto)
+                        .itemName(dto.getName())
+                        .count(count));
+            }
+            result.setStacks(stacks);
         }
-        return heroes.stream().map(this::toEntity).collect(Collectors.toList());
+
+        return result;
     }
 
-    public List<StorageDto> toDto(List<Storage> heroes) {
-        return heroes.stream().map(this::toDto).collect(Collectors.toList());
+    public Set<Storage> toEntities(Set<StorageDto> heroes) {
+        return heroes.stream().map(this::toEntity).collect(Collectors.toSet());
+    }
+
+    public Set<StorageDto> toDtos(Set<Storage> heroes) {
+        return heroes.stream().map(this::toDto).collect(Collectors.toSet());
     }
 }

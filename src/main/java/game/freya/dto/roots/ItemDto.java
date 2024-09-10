@@ -1,103 +1,43 @@
 package game.freya.dto.roots;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import game.freya.enums.other.CurrencyVault;
 import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iStorable;
-import game.freya.interfaces.iStorage;
-import game.freya.interfaces.iTradeable;
+import game.freya.interfaces.impl.TradeableImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Transient;
+import jakarta.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
 @Slf4j
 @Getter
 @Setter
 @SuperBuilder
-@NoArgsConstructor
 @RequiredArgsConstructor
-public class ItemDto implements iGameObject, iStorable {
-    @Schema(description = "UUID of this item", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private UUID uid;
+public non-sealed class ItemDto extends AbstractEntityDto implements iGameObject, iStorable {
 
-    @NotNull
-    @Schema(description = "Owner`s uid of this item", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID ownerUid;
-
-    @NotNull
-    @Schema(description = "Creator`s uid of this item", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID createdBy;
-
-    @NotNull
-    @Schema(description = "World`s uid of this item", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID worldUid;
-
-    @NotNull
-    @Schema(description = "Name of this item", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String name;
-
-    @Builder.Default
-    @Schema(description = "Visual size of this item", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Dimension size = new Dimension(32, 32);
-
-    @Schema(description = "Collider of this item", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Rectangle collider;
-
-    @Schema(description = "Rigid body of this item", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Rectangle shape;
-
-    @Builder.Default
-    @Schema(description = "World location of this item", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Point2D.Double location = new Point2D.Double(0, 0);
-
-    @Builder.Default
-    @JsonProperty("isVisible")
-    @Schema(description = "Is item is visible?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private boolean isVisible = true;
-
-    @Builder.Default
-    @Schema(description = "Is item has collision with other objects?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private boolean hasCollision = true;
-
-    @NotNull
-    @Builder.Default
-    @Schema(description = "Cached image name of this item", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String cacheKey = "no_image";
-
-    @Builder.Default
-    @Schema(description = "Created date of this item", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
-    private LocalDateTime createdDate = LocalDateTime.now();
-
-    @Builder.Default
-    @Schema(description = "Modification date of this item", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
-    private LocalDateTime modifyDate = LocalDateTime.now();
-
-    @Override
+    @Transient
     @JsonIgnore
-    public Point2D.Double getCenterPoint() {
-        return null;
-    }
+    private static TradeableImpl tradeable;
 
-    @Override
-    @JsonIgnore
-    public boolean hasCollision() {
-        return false;
-    }
+    @Builder.Default
+    @Min(1)
+    @Schema(description = "По сколько может стаковаться в ячейке", requiredMode = Schema.RequiredMode.REQUIRED)
+    private int stackCount = 1;
+
+    @Builder.Default
+    @Schema(description = "Хранилища этого предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Set<StorageDto> storages = new HashSet<>(1);
 
     @Override
     @JsonIgnore
@@ -107,61 +47,15 @@ public class ItemDto implements iGameObject, iStorable {
 
     @Override
     @JsonIgnore
-    public boolean isInSector(Rectangle sector) {
-        return false;
+    public void drop(Point2D.Double location) {
+        // setCacheKey("dropped_item_type_image");
+        setOwnerUid(null);
+        setLocation(location);
     }
 
     @Override
     @JsonIgnore
-    public void drop() {
-
-    }
-
-    @Override
-    @JsonIgnore
-    public void store(iStorage inStorage) {
-
-    }
-
-    @Override
-    @JsonIgnore
-    public CurrencyVault getCurrencyType() {
-        return null;
-    }
-
-    @Override
-    @JsonIgnore
-    public int getDefaultByeCost() {
-        return 0;
-    }
-
-    @Override
-    @JsonIgnore
-    public int getCurrentByeCost() {
-        return 0;
-    }
-
-    @Override
-    @JsonIgnore
-    public int getDefaultSellCost() {
-        return 0;
-    }
-
-    @Override
-    @JsonIgnore
-    public int getCurrentSellCost() {
-        return 0;
-    }
-
-    @Override
-    @JsonIgnore
-    public void setCurrentSellCost(int cost) {
-
-    }
-
-    @Override
-    @JsonIgnore
-    public int compareTo(@NotNull iTradeable o) {
-        return 0;
+    public boolean store(StorageDto storageDto) {
+        return storageDto.translate(storageDto, getUid(), 1);
     }
 }

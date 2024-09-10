@@ -18,10 +18,9 @@ public class BuffMapper {
             return null;
         }
 
-        return BuffDto.builder()
-                .uid(entity.getUid())
-                .name(entity.getName())
-                .build();
+        return new BuffDto()
+                .uid(entity.uid())
+                .name(entity.name());
     }
 
     public Buff toEntity(BuffDto dto) {
@@ -29,10 +28,9 @@ public class BuffMapper {
             return null;
         }
 
-        return Buff.builder()
-                .uid(dto.getUid())
-                .name(dto.getName())
-                .build();
+        return new Buff()
+                .uid(dto.uid())
+                .name(dto.name());
     }
 
     public List<BuffDto> toDto(List<Buff> entities) {

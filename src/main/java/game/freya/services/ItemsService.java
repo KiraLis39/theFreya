@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -14,7 +15,11 @@ import java.util.Optional;
 public class ItemsService {
     private final ItemRepository itemRepository;
 
-    public Optional<Item> createItem(Item storage) {
-        return Optional.of(itemRepository.save(storage));
+    public Optional<Item> createItem(Item item) {
+        return Optional.of(itemRepository.save(item));
+    }
+
+    public Optional<Item> findByUid(UUID itemUid) {
+        return itemRepository.findById(itemUid);
     }
 }

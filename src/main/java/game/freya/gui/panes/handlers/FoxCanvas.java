@@ -371,7 +371,7 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
 
         if (gameController.getCurrentWorldMap() != null) {
             // сканируем все сущности указанного квадранта:
-            Rectangle scanRect = new Rectangle(
+            Rectangle2D.Double scanRect = new Rectangle2D.Double(
                     Math.min(Math.max(srcX, 0), gameController.getCurrentWorldMap().getWidth() - minimapDim),
                     Math.min(Math.max(srcY, 0), gameController.getCurrentWorldMap().getHeight() - minimapDim),
                     minimapDim, minimapDim);
@@ -379,8 +379,8 @@ public abstract class FoxCanvas extends JPanel implements iCanvas {
             m2D.setColor(Color.CYAN);
             gameController.getWorldEnvironments(scanRect)
                     .forEach(entity -> {
-                        int otherHeroPosX = (int) (halfDim - (myPos.x - entity.getCenterPoint().x));
-                        int otherHeroPosY = (int) (halfDim - (myPos.y - entity.getCenterPoint().y));
+                        int otherHeroPosX = (int) (halfDim - (myPos.x - entity.getLocation().x));
+                        int otherHeroPosY = (int) (halfDim - (myPos.y - entity.getLocation().y));
                         m2D.fillRect(otherHeroPosX - 16, otherHeroPosY - 16, 32, 32);
                     });
         }

@@ -40,7 +40,7 @@ public record ClientDataDto(
 //        UUID worldUid,
 //        World world,
 //        int passwordHash,
-//        LocalDateTime createDate,
+//        LocalDateTime createdDate,
 //        LocalDateTime lastPlayDate,
 //        String chatMessage,
 //        String buffsJson,

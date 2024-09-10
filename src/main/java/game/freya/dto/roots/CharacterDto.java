@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Transient;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,6 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.RGBImageFilter;
@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import static game.freya.config.Constants.ONE_TURN_PI;
 
@@ -46,14 +45,8 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @Getter
 @Setter
 @SuperBuilder
-public class CharacterDto implements iGameObject, iHero {
-    @Schema(description = "UUID героя")
-    private UUID uid;
-
-    @NotNull
-    @Schema(description = "Имя героя", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String name;
-
+@RequiredArgsConstructor
+public non-sealed class CharacterDto extends AbstractEntityDto implements iGameObject, iHero {
     @Builder.Default
     @Schema(description = "Размеры периферии героя")
     private short peripheralSize = 50;
@@ -143,32 +136,10 @@ public class CharacterDto implements iGameObject, iHero {
     @Schema(description = "Бафы наложенные на игрока", requiredMode = Schema.RequiredMode.REQUIRED)
     private List<BuffDto> buffs = new ArrayList<>(9);
 
-    @NotNull
-    @Schema(description = "Позиция героя на карте", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Point2D.Double location;
-
     @Min(0)
     @Builder.Default
     @Schema(description = "Время, проведенное в игре")
     private long inGameTime = 0;
-
-    @NotNull
-    @Schema(description = "Мир героя", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID worldUid;
-
-    @NotNull
-    @Schema(description = "Игрок создавший героя", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID ownerUid;
-
-    @NotNull
-    @Schema(description = "Создатель героя", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID createdBy;
-
-    @NotNull
-    @Builder.Default
-    @Schema(description = "Дата создания героя")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
-    private LocalDateTime createDate = LocalDateTime.now();
 
     @Schema(description = "Дата последнего входа в игру")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
@@ -183,28 +154,10 @@ public class CharacterDto implements iGameObject, iHero {
     @Schema(description = "The Player`s avatar")
     private Image heroViewImage;
 
-    @Schema(description = "The Player`s real box shape")
-    private Rectangle shape;
-
-    @Schema(description = "The Player`s collider")
-    private Rectangle collider;
-
-    @Schema(description = "The Player`s dimension")
-    private Dimension size;
-
-    @Schema(description = "Image name into cache")
-    private String cacheKey;
-
-    @Schema(description = "Is Player visible?")
-    private boolean isVisible;
-
-    @Schema(description = "Is Player has collision?")
-    private boolean hasCollision;
-
     @Override
     public void draw(Graphics2D g2D) {
         if (getCollider() == null || getShape() == null) {
-            resetCollider(getLocation());
+            setCollider(getLocation());
         }
 
         if (heroViewImage == null) {
@@ -216,9 +169,8 @@ public class CharacterDto implements iGameObject, iHero {
                 getShape().x + getShape().width / 2d,
                 getShape().y + getShape().height / 2d);
 
-        g2D.drawImage(heroViewImage,
-                getShape().x, getShape().y,
-                getShape().width, getShape().height, null);
+        Rectangle bounds = getShape().getBounds();
+        g2D.drawImage(heroViewImage, bounds.x, bounds.y, bounds.width, bounds.height, null);
         g2D.setTransform(tr);
 
         if (Constants.isDebugInfoVisible()) {
@@ -229,13 +181,13 @@ public class CharacterDto implements iGameObject, iHero {
             g2D.draw(getCollider());
 
             g2D.setColor(Color.YELLOW);
-            g2D.fillOval((int) (getCenterPoint().x - 3), (int) (getCenterPoint().y - 3), 6, 6);
+            g2D.fillOval((int) (getLocation().x - 3), (int) (getLocation().y - 3), 6, 6);
         }
     }
 
     @Override
     public void addBuff(BuffDto buff) {
-        log.info("Герою {} добавлен бафф {}", getName(), buff.getName());
+        log.info("Герою {} добавлен бафф {}", getName(), buff.name());
         buffs.add(buff);
         buff.activate(this);
     }
@@ -272,7 +224,7 @@ public class CharacterDto implements iGameObject, iHero {
 
     private void move(MovingVector vector) {
         setLocation(getLocation().x + vector.getX(), getLocation().y + vector.getY());
-        resetCollider(getLocation());
+        setCollider(getLocation());
     }
 
     public Icon getIcon() {
@@ -282,10 +234,6 @@ public class CharacterDto implements iGameObject, iHero {
 
     public void move() {
         move(getVector());
-    }
-
-    public void setOnline(boolean b) {
-        this.isOnline = b;
     }
 
     public BackpackDto getInventory() {
@@ -308,36 +256,6 @@ public class CharacterDto implements iGameObject, iHero {
         } else {
             log.warn("Player {} can`t attack itself!", getName());
         }
-    }
-
-    protected void resetCollider(Point2D position) {
-        setShape(new Rectangle((int) position.getX() - getSize().width / 2,
-                (int) position.getY() - getSize().height / 2, getSize().width, getSize().height));
-        setCollider(new Rectangle(getShape().x + 3, getShape().y + 3, getShape().width - 6, getShape().height - 6));
-    }
-
-    @Override
-    public void setLocation(double x, double y) {
-        if (this.location == null) {
-            this.location = new Point2D.Double(x, y);
-        }
-        this.location.setLocation(x, y);
-    }
-
-    @Override
-    public Dimension getSize() {
-        if (size == null) {
-            size = new Dimension(64, 64);
-        }
-        return size;
-    }
-
-    @Override
-    public Point2D.Double getLocation() {
-        if (location == null) {
-            location = new Point2D.Double(256, 256);
-        }
-        return location;
     }
 
     public void setHealth(int health) {
@@ -386,31 +304,6 @@ public class CharacterDto implements iGameObject, iHero {
     }
 
     @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public Point2D.Double getCenterPoint() {
-        return new Point2D.Double(getLocation().x, getLocation().y);
-    }
-
-    @Override
-    public boolean hasCollision() {
-        return hasCollision;
-    }
-
-    @Override
-    public String getCacheKey() {
-        return cacheKey;
-    }
-
-    @Override
-    public boolean isInSector(Rectangle sector) {
-        return getCollider().intersects(sector);
-    }
-
-    @Override
     public void increaseExp(float increaseValue) {
         if (isDead()) {
             return;
@@ -425,29 +318,7 @@ public class CharacterDto implements iGameObject, iHero {
         recheckPlayerLevel();
     }
 
-    @Override
-    public LocalDateTime getCreateDate() {
-        return createDate;
-    }
-
-    public void setCreateDate(LocalDateTime createDate) {
-        if (this.createDate == null) {
-            this.createDate = createDate;
-        }
-    }
-
-    @Override
-    public void setVector(MovingVector movingVector) {
-        this.vector = movingVector;
-    }
-
     private void recheckPlayerLevel() {
         this.level = (short) (this.experience / 1000);
-    }
-
-    public void setExperience(long experience) {
-        if (this.experience == 0) {
-            this.experience = experience;
-        }
     }
 }

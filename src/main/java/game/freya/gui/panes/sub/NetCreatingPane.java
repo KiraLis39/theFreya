@@ -2,7 +2,7 @@ package game.freya.gui.panes.sub;
 
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.dto.WorldDto;
+import game.freya.dto.roots.WorldDto;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.MenuCanvas;
 import game.freya.gui.panes.handlers.FoxCanvas;
@@ -142,9 +142,9 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
 
                             log.warn("Найдено сетей для размещения Сервера: {}. Будет использован адрес {}", addresses.size(), addresses.getFirst());
                             WorldDto aNewWorld = WorldDto.builder()
-                                    .author(canvas.getGameController().getCurrentPlayerUid())
-                                    .createDate(LocalDateTime.now())
-                                    .title(getWorldName())
+                                    .createdBy(canvas.getGameController().getCurrentPlayerUid())
+                                    .createdDate(LocalDateTime.now())
+                                    .name(getWorldName())
                                     .level(getHardnessLevel())
                                     .isLocalWorld(true)
                                     .isNetAvailable(true)

@@ -3,8 +3,8 @@ package game.freya.gui.panes;
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.dto.PlayCharacterDto;
-import game.freya.dto.WorldDto;
 import game.freya.dto.roots.CharacterDto;
+import game.freya.dto.roots.WorldDto;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.handlers.FoxCanvas;
 import game.freya.gui.panes.handlers.UIHandler;
@@ -553,19 +553,21 @@ public class MenuCanvas extends FoxCanvas {
     public void saveNewHeroAndPlay(HeroCreatingPane newHeroTemplate) {
         // сохраняем нового героя и проставляем как текущего:
         PlayCharacterDto aNewToSave = PlayCharacterDto.builder()
+                .uid(UUID.randomUUID())
+                .name(newHeroTemplate.getHeroName())
+                .ownerUid(Constants.getUserConfig().getUserId())
+                .createdBy(gameControllerService.getCurrentPlayerUid())
+                .worldUid(newHeroTemplate.getWorldUid())
                 .baseColor(newHeroTemplate.getBaseColor())
                 .secondColor(newHeroTemplate.getSecondColor())
                 .corpusType(newHeroTemplate.getChosenCorpusType())
                 .peripheralType(newHeroTemplate.getChosenPeriferiaType())
                 .peripheralSize(newHeroTemplate.getPeriferiaSize())
-                .worldUid(newHeroTemplate.getWorldUid())
+                .createdDate(LocalDateTime.now())
+                .modifyDate(LocalDateTime.now())
                 .build();
-        aNewToSave.setUid(UUID.randomUUID());
-        aNewToSave.setName(newHeroTemplate.getHeroName());
-//        aNewToSave.setCreatedBy(gameController.getCurrentPlayerUid());
-        aNewToSave.setCreateDate(LocalDateTime.now());
 
-//        gameController.saveNewHero(aNewToSave, true);
+        gameControllerService.saveNewHero(aNewToSave, true);
 
         // если подключение к Серверу уже закрылось пока мы собирались:
 //        if (gameController.isCurrentWorldIsNetwork() && !gameController.isServerIsOpen()) {

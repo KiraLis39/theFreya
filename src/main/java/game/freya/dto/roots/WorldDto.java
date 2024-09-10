@@ -1,34 +1,34 @@
-package game.freya.dto;
+package game.freya.dto.roots;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.config.Constants;
-import game.freya.dto.roots.EnvironmentDto;
+import game.freya.dto.MockEnvironmentWithStorageDto;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.gui.panes.GameCanvas;
 import game.freya.interfaces.iWorld;
 import game.freya.services.GameControllerService;
+import jakarta.persistence.Transient;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.VolatileImage;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
-@Builder
-public class WorldDto extends ComponentAdapter implements iWorld {
+@SuperBuilder
+public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { //  extends ComponentAdapter
     private static final Random r = new Random(100);
 
-    private static final String scobe = ")";
+    private final char scobe = ')';
 
     private final Color textColor = new Color(58, 175, 217, 191);
 
@@ -38,47 +38,30 @@ public class WorldDto extends ComponentAdapter implements iWorld {
 
     @Getter
     @Builder.Default
-    private final Set<EnvironmentDto> environments = HashSet.newHashSet(100);
+    private final Set<EnvironmentDto> environments = HashSet.newHashSet(128);
 
     @Getter
+    @Setter
     @Builder.Default
-    private UUID uid = UUID.randomUUID();
+    private String name = "world_demo_" + r.nextInt(1000);
 
-    @Setter
     @Getter
-    private UUID author;
-
     @Setter
-    @Getter
-    @Builder.Default
-    private String title = "world_demo_" + r.nextInt(1000);
-
-    @Setter
-    @Getter
     @Builder.Default
     private boolean isNetAvailable = false;
 
-    @Setter
     @Getter
+    @Setter
     @Builder.Default
     private int passwordHash = 0;
 
-    @Setter
     @Getter
-    @Builder.Default
-    private Dimension dimension = new Dimension(32, 32);
-
     @Setter
-    @Getter
     @Builder.Default
     private HardnessLevel level = HardnessLevel.EASY;
 
     @Getter
-    @Builder.Default
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
-    private LocalDateTime createDate = LocalDateTime.now();
-
-    @Getter
+    @Setter
     @Builder.Default
     private boolean isLocalWorld = true;
 
@@ -87,25 +70,29 @@ public class WorldDto extends ComponentAdapter implements iWorld {
     private String networkAddress;
 
     // custom fields:
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @Transient
     @JsonIgnore
     private GameCanvas canvas;
 
-    @Getter
+    @Transient
+    @JsonIgnore
+    private GameControllerService gameController;
+
+    @Transient
     @JsonIgnore
     private VolatileImage gameMap;
 
+    @Transient
     @JsonIgnore
     private Image icon;
-
-    @JsonIgnore
-    private GameControllerService gameController;
 
     @Override
     public void init(GameCanvas canvas, GameControllerService controller) {
         this.canvas = canvas;
         this.gameController = controller;
-
-        log.info("World {} initialized successfully", getTitle());
+        log.info("World {} initialized successfully", getName());
     }
 
     /**
@@ -120,16 +107,16 @@ public class WorldDto extends ComponentAdapter implements iWorld {
             log.error("Нельзя рисовать мир, пока canvas = null!");
             return;
         }
-        Rectangle camera = canvas.getViewPort().getBounds();
+        Rectangle2D.Double camera = (Rectangle2D.Double) canvas.getViewPort();
 
         // рисуем готовый кадр мира:
+        Rectangle bounds = camera.getBounds();
         v2D.drawImage(repaintMap(camera),
-
                 0, 0,
                 canvas.getWidth(), canvas.getHeight(),
 
-                camera.x, camera.y,
-                camera.width, camera.height,
+                bounds.x, bounds.y,
+                bounds.width, bounds.height,
 
                 canvas);
     }
@@ -148,7 +135,7 @@ public class WorldDto extends ComponentAdapter implements iWorld {
     public void generate() {
         for (int i = 0; i < 32; ) {
             MockEnvironmentWithStorageDto nextMock = new MockEnvironmentWithStorageDto("mock_" + (i + 1),
-                    dimension.width * Constants.MAP_CELL_DIM, dimension.height * Constants.MAP_CELL_DIM);
+                    getSize().width * Constants.MAP_CELL_DIM, getSize().height * Constants.MAP_CELL_DIM);
             boolean isBusy = false;
             for (EnvironmentDto environment : getEnvironments()) {
                 if (environment.getCollider().intersects(nextMock.getCollider())) {
@@ -163,17 +150,17 @@ public class WorldDto extends ComponentAdapter implements iWorld {
         }
     }
 
-    private VolatileImage repaintMap(Rectangle camera) throws AWTException {
+    private VolatileImage repaintMap(Rectangle2D.Double camera) throws AWTException {
         if (this.gameMap == null) {
-            this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
-                    dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
+            this.gameMap = canvas.createVolatileImage(getSize().width * Constants.MAP_CELL_DIM,
+                    getSize().height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
         }
 
         Graphics2D v2D;
         int valid = this.gameMap.validate(canvas.getGraphicsConfiguration());
         while (valid == VolatileImage.IMAGE_INCOMPATIBLE) {
-            this.gameMap = canvas.createVolatileImage(dimension.width * Constants.MAP_CELL_DIM,
-                    dimension.height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
+            this.gameMap = canvas.createVolatileImage(getSize().width * Constants.MAP_CELL_DIM,
+                    getSize().height * Constants.MAP_CELL_DIM, new ImageCapabilities(true));
             valid = this.gameMap.validate(canvas.getGraphicsConfiguration());
         }
         if (valid == VolatileImage.IMAGE_RESTORED) {
@@ -182,10 +169,10 @@ public class WorldDto extends ComponentAdapter implements iWorld {
             v2D = (Graphics2D) this.gameMap.getGraphics();
         }
 
-        v2D.setClip(0, 0, camera.width, camera.height);
+        v2D.setClip(0, 0, (int) camera.getWidth(), (int) camera.getHeight());
 
         v2D.setColor(backColor);
-        v2D.fillRect(0, 0, camera.width, camera.height);
+        v2D.fillRect(0, 0, (int) camera.getWidth(), (int) camera.getHeight());
 
         int n = 1;
         v2D.setStroke(new BasicStroke(2f));
@@ -193,7 +180,7 @@ public class WorldDto extends ComponentAdapter implements iWorld {
 
             // draw numbers of rows and columns:
             if (Constants.isDebugInfoVisible()) {
-                String ns = n + scobe;
+                String ns = String.valueOf(n + scobe);
                 v2D.setColor(textColor);
                 v2D.drawString(ns, i - 26, 12);
                 v2D.drawString(ns, i - 34, gameMap.getHeight() - 12);
@@ -230,7 +217,7 @@ public class WorldDto extends ComponentAdapter implements iWorld {
         return this.gameMap;
     }
 
-    private void drawEnvironments(Graphics2D g2D, Rectangle visibleRect) {
+    private void drawEnvironments(Graphics2D g2D, Rectangle2D.Double visibleRect) {
         for (EnvironmentDto env : environments) {
             if (env.isInSector(visibleRect)) {
                 env.draw(g2D);
@@ -255,7 +242,7 @@ public class WorldDto extends ComponentAdapter implements iWorld {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getUid(), getCreateDate());
+        return Objects.hash(getUid(), getCreatedDate());
     }
 
     @Override
@@ -267,6 +254,6 @@ public class WorldDto extends ComponentAdapter implements iWorld {
             return false;
         }
         WorldDto world = (WorldDto) o;
-        return Objects.equals(getUid(), world.getUid()) && Objects.equals(getCreateDate(), world.getCreateDate());
+        return Objects.equals(getUid(), world.getUid()) && Objects.equals(getCreatedDate(), world.getCreatedDate());
     }
 }
