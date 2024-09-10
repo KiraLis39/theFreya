@@ -4,6 +4,9 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import lombok.Builder;
@@ -34,10 +37,7 @@ public class Item extends AbstractEntity {
     private int stackCount;
 
     @Builder.Default
-    @ManyToMany(mappedBy = "items", cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, fetch = FetchType.LAZY)
+    @JoinTable(name = "storages_items", joinColumns = @JoinColumn(name = "item_uid"), inverseJoinColumns = @JoinColumn(name = "storage_uid"))
     private Set<Storage> storages = new HashSet<>(1);
-
-    public void addStorage(Storage storage) {
-        this.storages.add(storage);
-    }
 }

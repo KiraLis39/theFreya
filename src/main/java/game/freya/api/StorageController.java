@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,6 +51,26 @@ public class StorageController {
     ) {
         Optional<StorageDto> created = storageService.createStorage(dto);
         return created.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.internalServerError().build());
+    }
+
+    @GMOnly
+    @Operation(summary = "Delete exists storage")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "A storage deleted",
+                    content = @Content(schema = @Schema(implementation = StorageDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request",
+                    content = @Content(schema = @Schema(implementation = GlobalServiceException.class))),
+            @ApiResponse(responseCode = "404", description = "Storage wasn't deleted",
+                    content = @Content(schema = @Schema(implementation = GlobalServiceException.class))),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(schema = @Schema(implementation = GlobalServiceException.class)))
+    })
+    @DeleteMapping("/delete")
+    public ResponseEntity<HttpStatus> deleteStorage(
+            @Parameter(description = "Storage uid for delete")
+            @RequestParam UUID storageUid
+    ) {
+        return storageService.deleteStorageByUid(storageUid);
     }
 
     @GMOnly

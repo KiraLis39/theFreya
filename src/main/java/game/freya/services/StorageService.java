@@ -70,4 +70,13 @@ public class StorageService {
         }
         throw new GlobalServiceException(ErrorMessages.GAME_OPERATION_RESTRICTED, "Размещение предмета %s не прошло".formatted(storedItem.get().getName()));
     }
+
+    public ResponseEntity<HttpStatus> deleteStorageByUid(UUID storageUid) {
+        if (storageRepository.existsById(storageUid)) {
+            storageRepository.deleteById(storageUid);
+            log.info("Удалёно хранилище {}", storageUid);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
 }
