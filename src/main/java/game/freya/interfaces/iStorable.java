@@ -12,5 +12,5 @@ public interface iStorable {
 
     void drop(Point2D.Double location); // drop this (to current location)
 
-    boolean store(StorageDto storageDto); // put this to storage
+    void onStoreTo(StorageDto storageDto); // put this to storage
 }

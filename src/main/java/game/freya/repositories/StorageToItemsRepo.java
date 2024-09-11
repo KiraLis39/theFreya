@@ -27,4 +27,9 @@ public interface StorageToItemsRepo extends JpaRepository<StorageToItems, UUID>,
     int updateById_ItemUidAndId_StorageUid(UUID itemUid, UUID storageUid, int count);
 
     boolean existsById(StorageToItemsPK id);
+
+    @Modifying
+    @Query("""
+        delete from StorageToItems sti where sti.id.itemUid = :itemUid and sti.id.storageUid = :storageUid""")
+    void deleteByItemUidAndStorageUid(UUID itemUid, UUID storageUid);
 }

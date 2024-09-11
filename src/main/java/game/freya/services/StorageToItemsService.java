@@ -29,6 +29,13 @@ public class StorageToItemsService {
         return storageToItemsRepo.existsById(StorageToItemsPK.builder().itemUid(itemUid).storageUid(storageUid).build());
     }
 
+    /**
+     * Обновляет запись о стаке предметов промежуточной таблицы между хранилищами и предметами.
+     * @param stack стэк предметов.
+     * @param storageDto хранилище.
+     * @param count актуальное количество указанных выше предметов.
+     * @return актуальное количество указанных выше предметов либо -1 при ошибке операции.
+     */
     public int updateStackCountByItemUidAndStorageUid(ItemStack stack, StorageDto storageDto, int count) {
         if (existsByItemUidAndStorageUid(stack.itemUid(), storageDto.getUid())) {
             // если стак этих предметов уже лежит в хранилище:
@@ -48,5 +55,9 @@ public class StorageToItemsService {
             log.error(e.getMessage());
             return -1;
         }
+    }
+
+    public void deleteByItemUidAndStorageUid(UUID itemUid, UUID storageUid) {
+        storageToItemsRepo.deleteByItemUidAndStorageUid(itemUid, storageUid);
     }
 }

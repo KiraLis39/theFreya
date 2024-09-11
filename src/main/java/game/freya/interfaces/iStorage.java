@@ -25,4 +25,6 @@ public interface iStorage {
     boolean isFull();
 
     void removeAll();
+
+    int getItemsHaveCount(UUID itemsUid);
 }

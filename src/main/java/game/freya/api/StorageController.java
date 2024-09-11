@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -94,5 +95,34 @@ public class StorageController {
             @RequestParam UUID itemUid
     ) {
         return storageService.storeTo(storageUid, itemUid);
+    }
+
+    @GMOnly
+    @Operation(summary = "Translate some Item to other storage")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Item was translated to other Storage",
+                    content = @Content(schema = @Schema(implementation = StorageDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request",
+                    content = @Content(schema = @Schema(implementation = GlobalServiceException.class))),
+            @ApiResponse(responseCode = "404", description = "Item wasn't translated",
+                    content = @Content(schema = @Schema(implementation = GlobalServiceException.class))),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(schema = @Schema(implementation = GlobalServiceException.class)))
+    })
+    @PatchMapping("/translate")
+    public ResponseEntity<HttpStatus> translateItemFromStorage(
+            @Parameter(description = "Destination storage uid", required = true, example = "7679803b-88c9-47bc-a1a1-163f4fa59cef")
+            @RequestParam UUID srcUid,
+
+            @Parameter(description = "Destination storage uid", required = true, example = "7679803b-88c9-47bc-a1a1-163f4fa59cef")
+            @RequestParam UUID dstUid,
+
+            @Parameter(description = "Translated item uid", required = true, example = "b9804566-8377-4b69-b206-0d493cbd7d4c")
+            @RequestParam UUID itemUid,
+
+            @Parameter(description = "Translated items count", example = "1")
+            @RequestParam(defaultValue = "1", required = false) int count
+    ) {
+        return storageService.translateItems(srcUid, dstUid, itemUid, count);
     }
 }

@@ -93,7 +93,7 @@ public non-sealed class StorageDto extends AbstractEntityDto implements iGameObj
                 return false;
             }
         }
-        log.info("Добавлен в инвентарь предмет '{} ({})'", stack.itemName(), stack.itemUid());
+        log.info("Добавлен в хранилище '{} ({})' предмет '{} ({})'", getName(), getUid(), stack.itemName(), stack.itemUid());
         return true;
     }
 
@@ -128,6 +128,10 @@ public non-sealed class StorageDto extends AbstractEntityDto implements iGameObj
             } else {
                 stack.decreaseCount(count);
 //                or better? stacks.stream().filter(stk -> stk.equals(stack)).findFirst().get().decreaseCount(count);
+            }
+
+            if (stack.count() == 0) {
+                log.error("del");
             }
         }
         return itemUid;
@@ -166,6 +170,19 @@ public non-sealed class StorageDto extends AbstractEntityDto implements iGameObj
     @JsonIgnore
     public void removeAll() {
         stacks.clear();
+    }
+
+    /**
+     * Возвращает количестко указанных предметов в хранилище.
+     * @param itemsUid uid предмета, количество которого требуется получить.
+     * @return количество этих предметов в хранилище.
+     */
+    @Override
+    public int getItemsHaveCount(UUID itemsUid) {
+        return stacks.stream()
+                .filter(stack -> stack.itemUid().equals(itemsUid))
+                .mapToInt(ItemStack::count)
+                .sum();
     }
 
     @Override

@@ -31,7 +31,7 @@ public class ItemsMapper {
                 .location(dto.getLocation())
                 .isVisible(dto.isVisible())
                 .cacheKey(dto.getCacheKey())
-                .storages(storageMapper.toEntities(dto.getStorages()))
+                //.storages(storageMapper.toEntities(dto.getStorages()))
                 .stackCount(dto.getStackCount())
                 .createdDate(dto.getCreatedDate())
                 .modifyDate(dto.getModifyDate())

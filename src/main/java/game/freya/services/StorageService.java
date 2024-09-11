@@ -22,6 +22,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Один из основных сервисов инвентарей и прочих хранилищ, обмена предметами,
+ * а так же контроллер промежуточной таблицы storageToItems (через сервис storageToItemsService)
+ */
 @Slf4j
 @Service
 @Transactional
@@ -78,5 +82,62 @@ public class StorageService {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    public ResponseEntity<HttpStatus> translateItems(UUID srcUid, UUID dstUid, UUID itemUid, int count) {
+        Optional<Storage> srcStorageOpt = storageRepository.findById(srcUid);
+        Optional<Storage> dstStorageOpt = storageRepository.findById(dstUid);
+        if (srcStorageOpt.isEmpty() || dstStorageOpt.isEmpty()) {
+            throw new GlobalServiceException(ErrorMessages.STORAGE_NOT_FOUND, "Items translations wants exists storages %s and %s".formatted(srcUid, dstUid));
+        }
+
+        Optional<Item> translatedItemOpt = itemRepository.findById(itemUid);
+        if (translatedItemOpt.isEmpty()) {
+            throw new GlobalServiceException(ErrorMessages.ITEM_NOT_FOUND, "Item %s not found in DB".formatted(itemUid));
+        }
+
+        int itemsAvailable = storageToItemsService.findCountByItemUidAndStorageUid(itemUid, srcUid);
+        if (itemsAvailable < count) {
+            throw new GlobalServiceException(ErrorMessages.NOT_ENOUGH_RESOURCES, "В источнике недостаточно предметов (требовалось %s)".formatted(count));
+        }
+
+        // сам перенос предмета(-ов) из src в dst:
+        StorageDto srcDto = storageMapper.toDto(srcStorageOpt.get());
+        StorageDto dstDto = storageMapper.toDto(dstStorageOpt.get());
+        try {
+            if (srcDto.removeItem(itemUid, count) != null) {
+                if (dstDto.putItem(itemsMapper.toDto(translatedItemOpt.get()), count)) {
+                    // если не возникло исключений - фиксируем:
+                    storageToItemsService.updateStackCountByItemUidAndStorageUid(
+                            new ItemStack().itemUid(translatedItemOpt.get().getUid()).itemName(translatedItemOpt.get().getName()), srcDto,
+                            srcDto.getItemsHaveCount(translatedItemOpt.get().getUid()));
+                    storageToItemsService.updateStackCountByItemUidAndStorageUid(
+                            new ItemStack().itemUid(translatedItemOpt.get().getUid()).itemName(translatedItemOpt.get().getName()), dstDto,
+                            dstDto.getItemsHaveCount(translatedItemOpt.get().getUid()));
+
+                    // нужно ли очистить пустую ячейку:
+                    clearCellIfEmpty(srcDto, translatedItemOpt.get().getUid());
+                    clearCellIfEmpty(dstDto, translatedItemOpt.get().getUid());
+
+                    return ResponseEntity.ok().build();
+                }
+            }
+        } catch (Exception e) {
+            log.error("Что-то пошло не так при передаче предметов: {}", e.getMessage(), e);
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
+    /**
+     * Удаляет запись из промежуточной таблицы (очищает ячейку хранилища),
+     * если количество предметов в ячейке исчерпано.
+     * @param storageDto хранилище.
+     * @param itemuid предмет, наличие которого требуется проверить.
+     */
+    private void clearCellIfEmpty(StorageDto storageDto, UUID itemuid) {
+        if (storageDto.getItemsHaveCount(itemuid) <= 0) {
+            // если предметов в стаке больше нет - удаляем стак из базы:
+            storageToItemsService.deleteByItemUidAndStorageUid(itemuid, storageDto.getUid());
+        }
     }
 }

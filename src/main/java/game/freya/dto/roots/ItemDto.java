@@ -54,8 +54,7 @@ public non-sealed class ItemDto extends AbstractEntityDto implements iGameObject
     }
 
     @Override
-    @JsonIgnore
-    public boolean store(StorageDto storageDto) {
-        return storageDto.translate(storageDto, getUid(), 1);
+    public void onStoreTo(StorageDto storageDto) {
+        log.info("Item {} was stored into {}", getName(), storageDto.getName());
     }
 }

@@ -3,6 +3,7 @@ package game.freya.mappers;
 import game.freya.dto.roots.ItemDto;
 import game.freya.dto.roots.ItemStack;
 import game.freya.dto.roots.StorageDto;
+import game.freya.entities.roots.Item;
 import game.freya.entities.roots.Storage;
 import game.freya.services.StorageToItemsService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,9 @@ public class StorageMapper {
             return null;
         }
 
+        Set<Item> items = dto.getStacks() == null || dto.getStacks().isEmpty() ? null
+                : itemsMapper.toEntities(dto.getStacks().stream().map(ItemStack::getItemDto).collect(Collectors.toSet()));
+
         return Storage.builder()
                 .uid(dto.getUid())
                 .name(dto.getName())
@@ -48,8 +52,7 @@ public class StorageMapper {
                 .cacheKey(dto.getCacheKey())
                 .createdDate(dto.getCreatedDate())
                 .modifyDate(dto.getModifyDate())
-                .items(dto.getStacks() == null ? null
-                        : itemsMapper.toEntities(dto.getStacks().stream().map(ItemStack::getItemDto).collect(Collectors.toSet())))
+                .items(items)
                 .build();
     }
 

@@ -11,6 +11,7 @@ import lombok.experimental.Accessors;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 
 @Getter
 @Setter
@@ -25,11 +26,13 @@ public class StorageToItems {
     @Column(name = "storage_name")
     private String storageName;
 
-    @Column(name = "item_name")
+    @NotNull
+    @Column(name = "item_name", nullable = false)
     private String itemName;
 
     @Min(1)
     @Max(99)
-    @Column(name = "have_count")
-    private int haveCount = 1;
+    @NotNull
+    @Column(name = "have_count", nullable = false)
+    private Integer haveCount = 1;
 }

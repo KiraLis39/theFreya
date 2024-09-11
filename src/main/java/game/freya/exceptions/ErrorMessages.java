@@ -6,30 +6,41 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ErrorMessages {
-    UNIVERSAL_ERROR_MESSAGE_TEMPLATE("E0XX", ""),
-    FIELD_NOT_FOUND("ER01", "Поле отсутствует или не заполнено %s"),
-    ACCESS_DENIED("ER02", "Не хватает прав на выполнение запроса"),
-    WRONG_DATA("ER03", "Данные не соответствуют требованиям %s"),
-    JSON_PARSE_ERR("ER04", "Ошибка при парсинге JSON"),
-    SYNC_ERROR("ER05", "Ошибка синхронизации между сервисами"),
-    NOT_ENOUGH_PERMISSIONS("ER06", "У вас нет прав на выполнение данного метода"),
-    NO_CONNECTION_REACHED("ER07", "Проблема с сетевым подключением"),
-    WORLD_NOT_FOUND("ER08", "Не обнаружен в базе денных мир"),
-    DRAW_TIMEOUT("ER09", "Не удалось отрисовать компонент за отведённое время"),
-    PLAYER_NOT_FOUND("ER10", "Не обнаружен в базе денных игрок"),
-    DRAW_ERROR("ER11", "В процессе рисования произошла ошибка"),
-    RESOURCE_READ_ERROR("ER12", "Ошибка чтения ресурса игры"),
-    WRONG_STATE("ER13", "Не верный статус приложения"),
-    HERO_NOT_FOUND("ER14", "Не обнаружен Герой"),
-    SOCKET_CLOSED("ER15", "Сокет закрыт и не может быть использован"),
-    OS_NOT_SUPPORTED("ER16", "Operation system is not supported"),
-    ITEM_NOT_FOUND("ER17", "Item not exists?"),
-    NOT_ENOUGH_DATA("ER18", "Not enough data for processing"),
+    UNIVERSAL_ERROR_MESSAGE_TEMPLATE("ERRX", "Неожиданная проблема"),
 
-    // game operations:
-    GAME_OPERATION_RESTRICTED("G001", "Запрошенная операция не прошла");
+    // security:
+    ACCESS_DENIED("S001", "Не хватает прав на выполнение запроса"),
+    NOT_ENOUGH_PERMISSIONS("S002", "У вас нет прав на выполнение данного метода"),
+
+    // data IO:
+    FIELD_NOT_FOUND("IO01", "Поле отсутствует или не заполнено %s"),
+    WRONG_DATA("IO02", "Данные не соответствуют требованиям %s"),
+    NOT_ENOUGH_DATA("IO03", "Not enough data for processing"),
+    JSON_PARSE_ERR("IO04", "Ошибка при парсинге JSON"),
+    RESOURCE_READ_ERROR("IO05", "Ошибка чтения ресурса игры"),
+    SYNC_ERROR("IO06", "Ошибка синхронизации между сервисами"),
+
+    // draw UI:
+    DRAW_TIMEOUT("UI01", "Не удалось отрисовать компонент за отведённое время"),
+    DRAW_ERROR("UI02", "В процессе рисования произошла ошибка"),
+
+    // net connections:
+    NO_CONNECTION_REACHED("NT01", "Проблема с сетевым подключением"),
+    SOCKET_CLOSED("NT02", "Сокет закрыт и не может быть использован"),
+
+    // OS etc:
+    WRONG_STATE("OS01", "Не верный статус приложения"),
+    OS_NOT_SUPPORTED("OS02", "Operation system is not supported"),
+
+    // game operations:,
+    GAME_OPERATION_RESTRICTED("G001", "Запрошенная операция не прошла"),
+    STORAGE_NOT_FOUND("G002", "Хранилище не найдено"),
+    ITEM_NOT_FOUND("G003", "Item not exists?"),
+    PLAYER_NOT_FOUND("G004", "Не обнаружен в базе данных игрок"),
+    HERO_NOT_FOUND("G005", "Не обнаружен Герой"),
+    WORLD_NOT_FOUND("G006", "Не обнаружен в базе денных мир"),
+    NOT_ENOUGH_RESOURCES("G007", "Мало ресурсов для выполнения операции");
 
     private final String code;
-
     private final String errorCause;
 }
