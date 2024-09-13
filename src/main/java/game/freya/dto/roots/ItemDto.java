@@ -1,15 +1,13 @@
 package game.freya.dto.roots;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import game.freya.enums.other.CurrencyVault;
 import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iStorable;
-import game.freya.interfaces.impl.TradeableImpl;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -23,12 +21,11 @@ import java.util.Set;
 @Getter
 @Setter
 @SuperBuilder
-@RequiredArgsConstructor
-public non-sealed class ItemDto extends AbstractEntityDto implements iGameObject, iStorable {
+public non-sealed class ItemDto extends TradeableImpl implements iGameObject, iStorable {
 
-    @Transient
-    @JsonIgnore
-    private static TradeableImpl tradeable;
+//    @Transient
+//    @JsonIgnore
+//    private static TradeableImpl tradeable;
 
     @Builder.Default
     @Min(1)
@@ -56,5 +53,35 @@ public non-sealed class ItemDto extends AbstractEntityDto implements iGameObject
     @Override
     public void onStoreTo(StorageDto storageDto) {
         log.info("Item {} was stored into {}", getName(), storageDto.getName());
+    }
+
+    @Override
+    public CurrencyVault getCurrencyType() {
+        return null;
+    }
+
+    @Override
+    public int getDefaultByeCost() {
+        return 0;
+    }
+
+    @Override
+    public int getCurrentByeCost() {
+        return 0;
+    }
+
+    @Override
+    public int getDefaultSellCost() {
+        return 0;
+    }
+
+    @Override
+    public int getCurrentSellCost() {
+        return 0;
+    }
+
+    @Override
+    public void setCurrentSellCost(int cost) {
+
     }
 }

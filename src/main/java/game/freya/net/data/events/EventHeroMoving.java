@@ -4,6 +4,7 @@ import game.freya.enums.player.MovingVector;
 import game.freya.net.data.iClientEventData;
 import lombok.Builder;
 
+import java.awt.geom.Point2D;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -14,9 +15,9 @@ public record EventHeroMoving(
         String playerName,
         UUID heroUid,
         String heroName,
-        double positionX,
-        double positionY,
+        Point2D.Double location,
         MovingVector vector,
+        UUID createdBy,
         UUID worldUid
 ) implements iClientEventData {
     @Override

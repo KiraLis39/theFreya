@@ -1,11 +1,11 @@
 package game.freya.dto.roots;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Getter

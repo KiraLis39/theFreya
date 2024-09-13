@@ -7,13 +7,15 @@ logging:
     java.lang.Runtime: INFO
     org.jboss.logging: INFO
     org.springframework.orm.jpa: WARN
+    org.springframework.data.jpa: WARN
     org.springframework.data.repository.config: WARN
     org.hibernate: INFO
+    org.hibernate.cache.internal: WARN
     org.hibernate.dialect.Dialect: WARN
     org.hibernate.jpa.internal.util.LogHelper: WARN
     org.hibernate.orm.connections: WARN
-    com.zaxxer.hikari: WARN
     org.hibernate.engine.transaction.jta: WARN
+    com.zaxxer.hikari: WARN
 
 
 server:
@@ -67,13 +69,16 @@ spring:
 #    serialization:
 #      write-dates-as-timestamps: true
 #      write-date-keys-as-timestamps: true
+
   data:
     web:
       pageable:
         max-page-size: 100
+
     jpa:
       repositories:
         bootstrap-mode: deferred
+        enabled: true
 
   jpa:
     hibernate:
@@ -89,10 +94,12 @@ spring:
           batch_size: 10
           batch_versioned_data: true
         order_updates: true
+        order_inserts: true
         connection:
           autocommit: false
           pool_size: 6
         dialect: org.hibernate.community.dialect.SQLiteDialect
+        generate_statistics: false # включить сбор статистики.
 
   datasource:
     type: com.zaxxer.hikari.HikariDataSource

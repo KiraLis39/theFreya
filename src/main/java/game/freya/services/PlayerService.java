@@ -7,6 +7,7 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.PlayerMapper;
 import game.freya.repositories.PlayersRepository;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -15,9 +16,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.imageio.ImageIO;
-import javax.validation.constraints.NotNull;
-import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,7 +29,10 @@ public class PlayerService {
     private final PlayersRepository playersRepository;
     private final PlayerMapper playerMapper;
     private final UserConfigService userConfigService;
-    private PlayerDto currentPlayer;
+
+//    private final PreparedStatement cpps = new HikariProxyPreparedStatement("SELECT * FROM Player p WHERE p.uid = %s".formatted(Constants.getUserConfig().getUserId()));
+
+    private PlayerDto currentPlayer; // Текущий игрок (сидящий за клавиатурой).
 
     public Player save(@NotNull Player player) {
         return playersRepository.saveAndFlush(player);
@@ -45,9 +48,8 @@ public class PlayerService {
         return playersRepository.findByEmailIgnoreCase(userMail);
     }
 
-    //    @Transactional
-    public void updateCurrentPlayer() {
-        userConfigService.save();
+    public void saveCurrent() {
+        userConfigService.createOrSaveUserConfig();
 
         Optional<Player> playerOpt = playersRepository.findByUid(currentPlayer.getUid());
         if (playerOpt.isEmpty()) {
@@ -60,21 +62,22 @@ public class PlayerService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PlayerDto createPlayer() {
-        log.info("Создание нового пользователя {}...", Constants.getUserConfig().getUserName());
+        UUID newPlayerUid = Objects.requireNonNullElse(Constants.getUserConfig().getUserId(), UUID.randomUUID());
+        String newPlayerName = Objects.requireNonNullElse(Constants.getUserConfig().getUserName(), "NO_NAME_PLAYER");
+        String newPlayerMail = Objects.requireNonNullElse(Constants.getUserConfig().getUserMail(), "no@mail.com");
+        String newPlayerAvatar = Objects.requireNonNullElse(Constants.getUserConfig().getUserAvatar(), Constants.DEFAULT_AVATAR_URL);
+        log.info("Создание нового пользователя '{} ({})' [{}]...", newPlayerName, newPlayerMail, newPlayerUid);
         PlayerDto newPlayer = PlayerDto.builder()
-                .uid(Constants.getUserConfig().getUserId())
-                .nickName(Constants.getUserConfig().getUserName())
-                .email(Constants.getUserConfig().getUserMail())
+                .uid(newPlayerUid)
+                .nickName(newPlayerName)
+                .email(newPlayerMail)
                 .build();
-        try (InputStream ris = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
-            if (ris != null) {
-                newPlayer.setAvatar(ImageIO.read(ris));
-            } else {
-                throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, Constants.DEFAULT_AVATAR_URL);
-            }
-        } catch (IOException e) {
-            log.error("Can`t set the avatar to player {} by url '{}'", newPlayer.getNickName(), Constants.DEFAULT_AVATAR_URL);
-            throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, Constants.DEFAULT_AVATAR_URL);
+        try (InputStream ris = getClass().getResourceAsStream(newPlayerAvatar)) {
+            assert ris != null;
+            newPlayer.setAvatar(ImageIO.read(ris));
+        } catch (Exception e) {
+            log.error("Can`t set the avatar to player {} by url '{}'", newPlayer.getNickName(), newPlayerAvatar);
+            newPlayer.setAvatar(null);
         }
         log.info("Новый пользователь {} успешно создан.", newPlayer.getNickName());
         return playerMapper.toDto(save(playerMapper.toEntity(newPlayer)));
@@ -95,11 +98,13 @@ public class PlayerService {
             if (currentPlayerOpt.isPresent()) {
                 currentPlayer = playerMapper.toDto(currentPlayerOpt.get());
             } else {
+                // если кто-то надумал сменить свой uid в конфиг-файле - мешаем, т.к. у настоящего другого игрока почта тоже будет иной:
                 currentPlayerOpt = findByMail(Constants.getUserConfig().getUserMail());
                 if (currentPlayerOpt.isPresent()) {
-                    log.warn("Не был найден в базе данных игрок по uid {}, но он найден по почте {}.",
+                    log.warn("Не найден в бд игрок по uid {}, но найден по почте {}.",
                             Constants.getUserConfig().getUserId(), Constants.getUserConfig().getUserMail());
                     currentPlayer = playerMapper.toDto(currentPlayerOpt.get());
+                    // возвращаем верный uid игрока в конфиг-файл:
                     Constants.getUserConfig().setUserId(currentPlayer.getUid());
                 } else {
                     currentPlayer = createPlayer();
@@ -107,6 +112,8 @@ public class PlayerService {
                         log.warn("Не был найден в бд игрок с uid {}, или почтой {}. Создана новая запись.",
                                 Constants.getUserConfig().getUserId(), Constants.getUserConfig().getUserMail());
                     } else {
+                        log.error("Игрок {} ({}) не был найден в БД ни по имени, ни по почте. Создание нового так же провалилось по неизвестной причине.",
+                                Constants.getUserConfig().getUserId(), Constants.getUserConfig().getUserMail());
                         throw new GlobalServiceException(ErrorMessages.PLAYER_NOT_FOUND, Constants.getUserConfig().getUserId().toString());
                     }
                 }

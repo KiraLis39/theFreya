@@ -13,6 +13,7 @@ public record EventClientDied(
         String playerName,
         UUID heroUid,
         String explanation,
+        UUID createdBy,
         UUID worldUid
 ) implements iClientEventData {
     @Override

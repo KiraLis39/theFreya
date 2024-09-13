@@ -31,9 +31,10 @@ public class StorageToItemsService {
 
     /**
      * Обновляет запись о стаке предметов промежуточной таблицы между хранилищами и предметами.
-     * @param stack стэк предметов.
+     *
+     * @param stack      стэк предметов.
      * @param storageDto хранилище.
-     * @param count актуальное количество указанных выше предметов.
+     * @param count      актуальное количество указанных выше предметов.
      * @return актуальное количество указанных выше предметов либо -1 при ошибке операции.
      */
     public int updateStackCountByItemUidAndStorageUid(ItemStack stack, StorageDto storageDto, int count) {

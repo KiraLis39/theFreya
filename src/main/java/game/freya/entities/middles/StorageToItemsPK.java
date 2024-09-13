@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Embeddable
 @NoArgsConstructor
+@EqualsAndHashCode
 public class StorageToItemsPK implements Serializable {
     @Column(name = "storage_uid")
     private UUID storageUid;

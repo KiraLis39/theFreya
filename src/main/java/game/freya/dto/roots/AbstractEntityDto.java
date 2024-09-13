@@ -5,13 +5,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import game.freya.config.Constants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Transient;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import javax.validation.constraints.NotNull;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -22,8 +22,8 @@ import java.util.UUID;
 @Setter
 //@Accessors(chain = true, fluent = true, prefix = {"+get"})
 @SuperBuilder
-@RequiredArgsConstructor
-public sealed abstract class AbstractEntityDto permits CharacterDto, EnvironmentDto, ItemDto, StorageDto, WeaponDto, WorldDto {
+@NoArgsConstructor
+public sealed abstract class AbstractEntityDto permits CharacterDto, EnvironmentDto, StorageDto, WeaponDto, WorldDto, TradeableImpl {
     @Schema(description = "UUID объекта", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private UUID uid;
 
@@ -41,6 +41,7 @@ public sealed abstract class AbstractEntityDto permits CharacterDto, Environment
     @Schema(description = "Мир объекта", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private UUID worldUid;
 
+    @Builder.Default
     @Schema(description = "The object`s collider", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Rectangle2D.Double collider = new Rectangle2D.Double();
 
@@ -59,13 +60,6 @@ public sealed abstract class AbstractEntityDto permits CharacterDto, Environment
     @JsonProperty("isVisible")
     @Schema(description = "Is Object visible?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private boolean isVisible = true;
-
-    // @Setter(value = "", onMethod = "", onParam = true)
-    // @Getter(value = "", onMethod = "", lazy = true)
-//    @Accessors(fluent = true)
-//    @JsonProperty("hasCollision")
-//    @Schema(description = "Is Object has collision?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-//    private boolean hasCollision;
 
     @Builder.Default
     @Schema(description = "Image name into cache", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

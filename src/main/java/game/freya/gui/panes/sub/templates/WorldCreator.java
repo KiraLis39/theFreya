@@ -11,5 +11,5 @@ public abstract class WorldCreator extends JPanel {
 
     public abstract boolean isNetAvailable();
 
-    public abstract int getNetPasswordHash();
+    public abstract String getNetPassword(); // bcrypt
 }

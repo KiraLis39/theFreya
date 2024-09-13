@@ -9,7 +9,6 @@ import java.awt.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
 @AllArgsConstructor
 @Component
 public class WorldMapper {
@@ -27,15 +26,16 @@ public class WorldMapper {
                 .level(entity.getLevel())
                 .size(new Dimension(entity.getSize().width, entity.getSize().height))
                 .isNetAvailable(entity.isNetAvailable())
-                .passwordHash(entity.getPasswordHash())
+                .password(entity.getPassword()) // bcrypt
                 .createdDate(entity.getCreatedDate())
+                .createdBy(entity.getCreatedBy())
                 .isLocalWorld(entity.isLocalWorld())
                 .networkAddress(entity.getNetworkAddress())
                 .environments(environmentMapper.toDto(entity.getEnvironments()))
                 .cacheKey(entity.getCacheKey())
                 .collider(entity.getCollider())
                 .isVisible(entity.isVisible())
-//                .hasCollision(entity.isHasCollision()) // динамика через collider
+                .location(entity.getLocation())
                 .build();
     }
 
@@ -49,17 +49,18 @@ public class WorldMapper {
                 .createdBy(dto.getCreatedBy())
                 .name(dto.getName())
                 .isNetAvailable(dto.isNetAvailable())
-                .passwordHash(dto.getPasswordHash())
+                .password(dto.getPassword()) // bcrypt
                 .size(dto.getSize())
                 .level(dto.getLevel())
                 .createdDate(dto.getCreatedDate())
+                .createdBy(dto.getCreatedBy())
                 .isLocalWorld(dto.isLocalWorld())
                 .networkAddress(dto.getNetworkAddress())
                 .environments(environmentMapper.toEntity(dto.getEnvironments()))
                 .cacheKey(dto.getCacheKey())
                 .collider(dto.getCollider())
                 .isVisible(dto.isVisible())
-//                .hasCollision(dto.hasCollision()) // динамика через collider
+                .location(dto.getLocation())
                 .build();
     }
 

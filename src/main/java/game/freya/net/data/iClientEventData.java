@@ -8,4 +8,6 @@ public interface iClientEventData extends Serializable {
     UUID ownerUid();
 
     UUID heroUid();
+
+    UUID createdBy();
 }

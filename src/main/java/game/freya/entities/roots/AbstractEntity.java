@@ -5,15 +5,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.validation.constraints.NotNull;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -62,18 +61,14 @@ public abstract class AbstractEntity {
     @Column(name = "visible", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean isVisible;
 
-//    @Column(name = "collision", columnDefinition = "BOOLEAN DEFAULT TRUE")
-//    private boolean hasCollision;
-
     @Column(name = "cache_key", length = 32)
     private String cacheKey;
 
-    @CreatedDate
     @CreationTimestamp
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;
 
-    @LastModifiedDate
+    @UpdateTimestamp
     @Column(name = "modify_date")
     private LocalDateTime modifyDate;
 }

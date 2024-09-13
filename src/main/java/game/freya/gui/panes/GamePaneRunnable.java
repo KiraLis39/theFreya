@@ -1,13 +1,16 @@
 package game.freya.gui.panes;
 
 import fox.components.FOptionPane;
+import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig.HotKeys;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.GameWindowController;
+import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.handlers.UIHandler;
+import game.freya.services.CharacterService;
 import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +23,13 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Point2D;
+import java.time.Duration;
 
 @Slf4j
 // FoxCanvas уже включает в себя MouseListener, MouseMotionListener, ComponentListener, KeyListener, Runnable
-public class GameCanvas extends FoxCanvas {
-    private final transient JFrame parentFrame;
-
-    private final transient GameControllerService gameController;
-
+public class GamePaneRunnable extends RunnableCanvasPanel {
+    private final transient GameControllerService gameControllerService;
+    private final transient GameWindowController frameController;
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
 
     private boolean isControlsMapped = false, isMovingKeyActive = false;
@@ -39,14 +41,23 @@ public class GameCanvas extends FoxCanvas {
     private transient Thread resizeThread = null;
 
 
-    public GameCanvas(UIHandler uiHandler, JFrame parentFrame, GameControllerService gameController) {
-        super("GameCanvas", gameController, parentFrame, uiHandler);
+    public GamePaneRunnable(
+            UIHandler uiHandler,
+            JFrame parentFrame,
+            GameControllerService gameControllerService,
+            CharacterService characterService,
+            GameWindowController frameController,
+            ApplicationProperties props
+    ) {
+        super("GameCanvas", gameControllerService, characterService, parentFrame, uiHandler, props);
 
-        this.gameController = gameController;
-        this.parentFrame = parentFrame;
+        this.gameControllerService = gameControllerService;
+        this.frameController = frameController;
+        setParentFrame(parentFrame);
 
         setSize(parentFrame.getSize());
         setBackground(Color.BLACK);
+        getRootPane().setBackground(Color.RED);
         setIgnoreRepaint(true);
         setOpaque(false);
 //        setFocusable(false);
@@ -57,14 +68,14 @@ public class GameCanvas extends FoxCanvas {
         addKeyListener(this);
 //        addComponentListener(this);
 
-        if (gameController.isCurrentWorldIsNetwork()) {
-            if (gameController.isCurrentWorldIsLocal() && !gameController.isServerIsOpen()) {
-                gameController.loadScreen(ScreenType.MENU_SCREEN);
+        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
+            if (gameControllerService.getWorldService().getCurrentWorld().isLocalWorld() && !gameControllerService.getServer().isOpen()) {
+                frameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в локальной сетевой игре, но наш Сервер не запущен!");
             }
 
-            if (!gameController.isSocketIsOpen()) {
-                gameController.loadScreen(ScreenType.MENU_SCREEN);
+            if (!gameControllerService.getLocalSocketConnection().isOpen()) {
+                frameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но соединения с Сервером не существует!");
             }
         }
@@ -75,16 +86,16 @@ public class GameCanvas extends FoxCanvas {
         setSecondThread("Game second thread", new Thread(() -> {
             // ждём пока основной поток игры запустится:
             long timeout = System.currentTimeMillis();
-            while (!gameController.isGameActive()) {
+            while (!gameControllerService.isGameActive()) {
                 Thread.yield();
                 if (System.currentTimeMillis() - timeout > 7_000) {
                     throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
                 }
             }
 
-            while (gameController.isGameActive() && !getSecondThread().isInterrupted()) {
+            while (gameControllerService.isGameActive() && !getSecondThread().isInterrupted()) {
                 // check gameplay duration:
-                checkGameplayDuration(gameController.getCurrentHeroInGameTime());
+                checkGameplayDuration(gameControllerService.getCurrentHeroInGameTime());
 
                 // если изменился размер фрейма:
                 if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
@@ -115,7 +126,7 @@ public class GameCanvas extends FoxCanvas {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         if (isVisible() && Constants.isPaused()) {
-                            onExitBack(GameCanvas.this);
+                            onExitBack(GamePaneRunnable.this);
                         } else {
                             Constants.setPaused(!Constants.isPaused());
                         }
@@ -142,17 +153,17 @@ public class GameCanvas extends FoxCanvas {
         // инициализируем все для игры, отображаем окно игры:
         setGameActive();
 
-        if (gameController.isCurrentWorldIsNetwork()) {
+        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
             log.info("Начинается трансляция данных на Сервер...");
-            gameController.startClientBroadcast();
+            gameControllerService.getLocalSocketConnection().startClientBroadcast();
         }
 
         // старт потока рисования игры:
-        while (gameController.isGameActive() && !Thread.currentThread().isInterrupted()) {
+        while (gameControllerService.isGameActive() && !Thread.currentThread().isInterrupted()) {
             delta = System.currentTimeMillis() - lastTime;
             lastTime = System.currentTimeMillis();
 
-            if (!parentFrame.isActive()) {
+            if (!getParentFrame().isActive()) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -184,7 +195,9 @@ public class GameCanvas extends FoxCanvas {
                 }
             }
 
-            delayDrawing(delta);
+            if (Constants.isFpsLimited()) {
+                delayDrawing(delta);
+            }
         }
         log.info("Thread of Game canvas is finalized.");
     }
@@ -221,25 +234,25 @@ public class GameCanvas extends FoxCanvas {
 
     private void dragViewIfNeeds() {
         if (isMouseRightEdgeOver) {
-            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
+            for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
                 dragLeft(2d);
                 Thread.yield();
             }
         }
         if (isMouseLeftEdgeOver) {
-            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
+            for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
                 dragRight(2d);
                 Thread.yield();
             }
         }
         if (isMouseUpEdgeOver) {
-            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
+            for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
                 dragDown(2d);
                 Thread.yield();
             }
         }
         if (isMouseDownEdgeOver) {
-            for (int i = 0; i < Constants.getDragSpeed() / 2; i++) {
+            for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
                 dragUp(2d);
                 Thread.yield();
             }
@@ -250,7 +263,7 @@ public class GameCanvas extends FoxCanvas {
         setVisible(true);
         createSubPanes();
         init();
-        gameController.setGameActive(true);
+        gameControllerService.setGameActive(true);
 
         requestFocusInWindow();
 
@@ -273,7 +286,7 @@ public class GameCanvas extends FoxCanvas {
             return;
         }
 
-        moveViewToPlayer(Constants.getScrollSpeed(), (int) (Constants.getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
+        moveViewToPlayer(Constants.getGameConfig().getScrollSpeed(), (int) (Constants.getGameConfig().getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
     }
 
     private void zoomOut() {
@@ -281,11 +294,11 @@ public class GameCanvas extends FoxCanvas {
 
         // если окно больше установленного лимита или и так максимального размера:
         if (!canZoomOut(getViewPort().getWidth() - getViewPort().getX(), getViewPort().getHeight() - getViewPort().getY(),
-                gameController.getCurrentWorldMap().getWidth(), gameController.getCurrentWorldMap().getHeight())) {
+                gameControllerService.getWorldEngine().getGameMap().getWidth(), gameControllerService.getWorldEngine().getGameMap().getHeight())) {
             return;
         }
 
-        moveViewToPlayer(-Constants.getScrollSpeed(), -(int) (Constants.getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
+        moveViewToPlayer(-Constants.getGameConfig().getScrollSpeed(), -(int) (Constants.getGameConfig().getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
 
 //        double delta = getBounds().getWidth() / getBounds().getHeight();
 ////        double widthPercent = getBounds().getWidth() * Constants.getScrollSpeed();
@@ -308,8 +321,8 @@ public class GameCanvas extends FoxCanvas {
     }
 
     public void moveViewToPlayer(double x, double y) {
-        if (gameController.getCurrentWorldMap() != null && getViewPort() != null) {
-            Point2D.Double p = gameController.getCurrentHeroPosition();
+        if (gameControllerService.getWorldEngine().getGameMap() != null && getViewPort() != null) {
+            Point2D.Double p = gameControllerService.getCharacterService().getCurrentHero().getLocation();
             Rectangle viewRect = getViewPort().getBounds();
             getViewPort().setRect(
                     p.x - (viewRect.getWidth() - viewRect.getX()) / 2D + x,
@@ -341,19 +354,44 @@ public class GameCanvas extends FoxCanvas {
 
     @Override
     public synchronized void stop() {
-        if (gameController.isGameActive() || isVisible()) {
+        if (gameControllerService.isGameActive() || isVisible()) {
 
             boolean paused = Constants.isPaused();
-            boolean debug = Constants.isDebugInfoVisible();
+            boolean debug = Constants.getGameConfig().isDebugInfoVisible();
 
             Constants.setPaused(false);
-            Constants.setDebugInfoVisible(false);
-            gameController.doScreenShot(parentFrame.getLocation(), getBounds());
+            Constants.getGameConfig().setDebugInfoVisible(false);
+            gameControllerService.doScreenShot(getParentFrame().getLocation(), getBounds());
             Constants.setPaused(paused);
-            Constants.setDebugInfoVisible(debug);
+            Constants.getGameConfig().setDebugInfoVisible(debug);
 
             getSecondThread().interrupt();
-            gameController.exitToMenu(getDuration());
+            exitToMenu(getDuration());
+        }
+    }
+
+    public void exitToMenu(Duration gameDuration) {
+        // защита от зацикливания т.к. loadScreen может снова вызвать этот метод контрольно:
+        if (gameControllerService.isGameActive()) {
+            gameControllerService.setGameActive(false);
+
+            gameControllerService.saveTheGame(gameDuration);
+
+            // если игра сетевая и локальная - останавливаем сервер при выходе из игры:
+            if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
+                if (gameControllerService.getWorldService().getCurrentWorld().isLocalWorld()) {
+                    if (gameControllerService.closeServer()) {
+                        log.info("Сервер успешно остановлен");
+                    } else {
+                        log.warn("Возникла ошибка при закрытии сервера.");
+                    }
+                }
+                if (gameControllerService.getLocalSocketConnection().isOpen()) {
+                    gameControllerService.getLocalSocketConnection().close();
+                }
+            }
+
+            frameController.loadScreen(ScreenType.MENU_SCREEN);
         }
     }
 
@@ -362,7 +400,7 @@ public class GameCanvas extends FoxCanvas {
         log.info("Do canvas re-initialization...");
 
         // проводим основную инициализацию класса текущего мира:
-        gameController.initCurrentWorld(this);
+        gameControllerService.initCurrentWorld(this);
 
         reloadShapes(this);
         recalculateMenuRectangles();
@@ -382,9 +420,8 @@ public class GameCanvas extends FoxCanvas {
         requestFocus();
     }
 
-    private void justSave() {
-        gameController.justSaveOnlineHero(getDuration());
-        gameController.saveCurrentWorld();
+    private void justSave(Duration duration) {
+        gameControllerService.saveTheGame(duration);
     }
 
     @Override
@@ -430,7 +467,7 @@ public class GameCanvas extends FoxCanvas {
                 getGameplayPane().setVisible(false);
             } else {
                 // нет нужды в паузе здесь, просто сохраняемся:
-                justSave();
+                justSave(getDuration());
                 Constants.setPaused(false);
                 new FOptionPane().buildFOptionPane("Успешно", "Игра сохранена!",
                         FOptionPane.TYPE.INFO, null, Constants.getDefaultCursor(), 3, false);
@@ -455,7 +492,7 @@ public class GameCanvas extends FoxCanvas {
             }
         }
 
-        if (gameController.isGameActive()) {
+        if (gameControllerService.isGameActive()) {
             if (getMinimapShowRect().contains(e.getPoint())) {
                 Constants.setMinimapShowed(false);
             }
@@ -565,9 +602,9 @@ public class GameCanvas extends FoxCanvas {
             log.debug("Resizing of game canvas...");
 
             if (Constants.getUserConfig().isFullscreen()) {
-                setSize(parentFrame.getSize());
-            } else if (!getSize().equals(parentFrame.getRootPane().getSize())) {
-                setSize(parentFrame.getRootPane().getSize());
+                setSize(getParentFrame().getSize());
+            } else if (!getSize().equals(getParentFrame().getRootPane().getSize())) {
+                setSize(getParentFrame().getRootPane().getSize());
             }
 
             if (isVisible()) {
@@ -593,14 +630,14 @@ public class GameCanvas extends FoxCanvas {
     public void keyPressed(KeyEvent e) {
         // hero movement:
         if (e.getKeyCode() == HotKeys.MOVE_UP.getEvent()) {
-            gameController.setPlayerMovingUp(true);
+            gameControllerService.setPlayerMovingUp(true);
         } else if (e.getKeyCode() == HotKeys.MOVE_BACK.getEvent()) {
-            gameController.setPlayerMovingDown(true);
+            gameControllerService.setPlayerMovingDown(true);
         }
         if (e.getKeyCode() == HotKeys.MOVE_LEFT.getEvent()) {
-            gameController.setPlayerMovingLeft(true);
+            gameControllerService.setPlayerMovingLeft(true);
         } else if (e.getKeyCode() == HotKeys.MOVE_RIGHT.getEvent()) {
-            gameController.setPlayerMovingRight(true);
+            gameControllerService.setPlayerMovingRight(true);
         }
 
         // camera movement:
@@ -623,15 +660,15 @@ public class GameCanvas extends FoxCanvas {
     @Override
     public void keyReleased(KeyEvent e) {
         if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
-            gameController.setPlayerMovingUp(false);
+            gameControllerService.setPlayerMovingUp(false);
         } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
-            gameController.setPlayerMovingDown(false);
+            gameControllerService.setPlayerMovingDown(false);
         }
 
         if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
-            gameController.setPlayerMovingLeft(false);
+            gameControllerService.setPlayerMovingLeft(false);
         } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
-            gameController.setPlayerMovingRight(false);
+            gameControllerService.setPlayerMovingRight(false);
         }
 
         if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {

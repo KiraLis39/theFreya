@@ -2,9 +2,9 @@ package game.freya.gui.panes.sub;
 
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
-import game.freya.dto.roots.CharacterDto;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.dto.PlayCharacterDto;
+import game.freya.gui.panes.MenuCanvasRunnable;
+import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -21,15 +21,15 @@ import java.awt.image.BufferedImage;
 
 @Slf4j
 public class HeroesListPane extends JPanel implements iSubPane {
-    private final transient FoxCanvas canvas;
+    private final transient RunnableCanvasPanel canvas;
 
-    private final transient GameControllerService gameController;
+    private final transient GameControllerService gameControllerService;
 
     private transient BufferedImage snap;
 
-    public HeroesListPane(FoxCanvas canvas, GameControllerService controller) {
+    public HeroesListPane(RunnableCanvasPanel canvas, GameControllerService gameControllerService) {
         this.canvas = canvas;
-        this.gameController = controller;
+        this.gameControllerService = gameControllerService;
 
         setName("Heroes list pane");
         setVisible(false);
@@ -44,10 +44,10 @@ public class HeroesListPane extends JPanel implements iSubPane {
         }
     }
 
-    private void reloadHeroes(FoxCanvas canvas) {
+    private void reloadHeroes(RunnableCanvasPanel canvas) {
         HeroesListPane.this.removeAll();
 
-        for (CharacterDto hero : gameController.getMyCurrentWorldHeroes()) {
+        for (PlayCharacterDto hero : gameControllerService.getMyCurrentWorldHeroes()) {
             add(new SubPane("Герой: ".concat(hero.getName()), hero.getHeroType().getColor()) {{
                 setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {
@@ -119,7 +119,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                                 "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                         ) {
-                                            ((MenuCanvas) canvas).deleteExistsPlayerHero(hero.getUid());
+                                            ((MenuCanvasRunnable) canvas).deleteExistsPlayerHero(hero.getUid());
                                             reloadHeroes(canvas);
                                         }
                                     }
@@ -154,7 +154,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                 addActionListener(new AbstractAction() {
                                     @Override
                                     public void actionPerformed(ActionEvent e) {
-                                        ((MenuCanvas) canvas).openCreatingNewHeroPane(hero);
+                                        ((MenuCanvasRunnable) canvas).openCreatingNewHeroPane(hero);
                                     }
                                 });
                             }
@@ -174,14 +174,16 @@ public class HeroesListPane extends JPanel implements iSubPane {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                if (gameController.isCurrentWorldIsNetwork() && !gameController.isSocketIsOpen()) {
-                                    ((MenuCanvas) canvas).connectToServer(NetConnectTemplate.builder()
-                                            .address(gameController.getCurrentWorldAddress())
-                                            .worldUid(gameController.getCurrentWorldUid())
-                                            .passwordHash(gameController.getCurrentWorldPassword())
+                                if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()
+                                        && !gameControllerService.getLocalSocketConnection().isOpen()
+                                ) {
+                                    canvas.connectToServer(NetConnectTemplate.builder()
+                                            .address(gameControllerService.getWorldService().getCurrentWorld().getNetworkAddress())
+                                            .worldUid(gameControllerService.getWorldService().getCurrentWorld().getUid())
+                                            .password(gameControllerService.getWorldService().getCurrentWorld().getPassword())
                                             .build());
                                 } else {
-                                    ((MenuCanvas) canvas).playWithThisHero(hero);
+                                    ((MenuCanvasRunnable) canvas).playWithThisHero(hero);
                                 }
                             }
                         });
@@ -226,7 +228,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(RunnableCanvasPanel canvas) {
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));

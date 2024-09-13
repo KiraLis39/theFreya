@@ -11,6 +11,7 @@ import fox.player.FoxPlayer;
 import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
+import game.freya.gui.panes.GameWindow;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,20 +28,10 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public final class Constants {
-    // net:
-    public static final int DEFAULT_SERVER_PORT = 13958;
-
-    public static final int SOCKET_BUFFER_SIZE = 4096; // 65536 | 16384 | 8192 | 4096
-
-    public static final long SERVER_BROADCAST_DELAY = 50L; // миллисекунд ждать между отправками данных
-
-    public static final int SOCKET_PING_AWAIT_TIMEOUT = 9_000; // сколько миллисекунд клиент ждёт данные от Сервера
-
-    public static final int SOCKET_CONNECTION_AWAIT_TIMEOUT = 180_000; // сколько миллисекунд клиент ждёт данные от Сервера
-
     // other:
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
 
@@ -63,8 +54,6 @@ public final class Constants {
     public static final InputAction INPUT_ACTION = new InputAction();
 
     public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
-
-    // public static final FoxExperience EXP = new FoxExperience();
 
     // public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.of("ru"));
     public static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("День dd (HH:mm)", Locale.of("ru"));
@@ -94,118 +83,77 @@ public final class Constants {
     public static final Font PROPAGANDA_BIG_FONT;
     // cache:
     public static final String NO_CACHED_IMAGE_MOCK_KEY = "no_image_mock_key";
+    public static final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
+    public static final AtomicBoolean isPingAwait = new AtomicBoolean(false);
     // net:
     @Getter
     private static final String connectionUser = "freya";
     @Getter
     private static final String connectionPassword = "0358";
     @Getter
-    private static final String cachePrepStmts = "true";
-    @Getter
-    private static final String prepStmtCacheSize = "250";
-    @Getter
-    private static final String prepStmtCacheSqlLimit = "2048";
-    @Getter
     private static final boolean connectionAutoCommit = false;
     // project:
     @Getter
     private static final String gameAuthor = "KiraLis39";
-
     @Getter
-    private static final Path database = Path.of("C:\\Users\\"
-            .concat(System.getProperty("user.name"))
-            .concat("\\AppData\\Local\\Freya\\freya.db")).toAbsolutePath();
-
-
+    private static final Path database = Path.of(System.getenv("LOCALAPPDATA").concat("\\Freya\\freya.db")).toAbsolutePath();
     // db hikari:
     @Getter
     private static final String connectionUrl = "jdbc:sqlite:".concat(getDatabase().toString());
-
     @Getter
     private static final String imageExtension = ".png"; // .png
-
     @Getter
     private static final String audioExtension = ".ogg"; // .ogg | .mp3 | .wav
-
     // audio:
     @Getter
     private static final FoxPlayer soundPlayer = new FoxPlayer("soundPlayer");
-
     @Getter
     private static final FoxPlayer musicPlayer = new FoxPlayer("musicPlayer");
-
     @Getter
-    private static final double dragSpeed = 12D;
-
+    private static final String userSaveFile = "./saves/".concat(SystemUtils.USER_NAME).concat("/save.json");
     @Getter
-    private static final double scrollSpeed = 20D;
-
+    private static final String gameConfigFile = "./config.json";
     @Getter
-    private static final String userCountry = SystemUtils.USER_COUNTRY;
-
+    private static final String logoImageUrl = "/images/logo.png";
     @Getter
-    private static final String userSave = "./saves/".concat(SystemUtils.USER_NAME).concat("/save.json");
-
+    private static final String bcryptSalt = "xxwv";
     @Getter
-    private static final String logoImageUrl = "./resources/images/logo.png";
-
+    @Setter
+    private static volatile GameWindow gameWindow;
     @Getter
     @Setter
     private static DisplayMode defaultDisplayMode;
-
     @Getter
     @Setter
     private static FoxLogo logo;
-
     @Getter
     private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.85f);
-
     @Getter
     private static Color mainMenuBackgroundColor2 = new Color(0.0f, 0.0f, 0.0f, 0.45f);
-
     @Getter
     @Setter
     private static long gameStartedIn;
-
     @Getter
     private static String notRealizedString = "Не реализовано ещё";
-
     @Getter
     private static Cursor defaultCursor;
-
+    @Getter
+    @Setter
+    private static GameConfig gameConfig;
     // user config:
     @Getter
     @Setter
     private static UserConfig userConfig;
-
     // dynamic game booleans:
     @Getter
-    @Setter
-    private static boolean isDebugInfoVisible = false;
-
-    @Getter
-    @Setter
-    private static boolean isFpsInfoVisible = true;
-
-    @Getter
     private static boolean isPaused = false;
-
     @Getter
     @Setter
     private static boolean isMinimapShowed = true;
-
-    @Getter
-    private static boolean isShowStartLogo = true;
-
-    @Getter
-    private static String worldsImagesDir = "./worlds/img/";
-
     @Setter
     @Getter
     private static int realFreshRate = 0;
-
     private static long timePerFrame = -1;
-
     private static long fpsLimitMem = -1;
 
     static {
@@ -264,11 +212,9 @@ public final class Constants {
         log.info("Paused: {}", isPaused);
     }
 
-    public static int getMaxConnectionWasteTime() {
-        return SOCKET_CONNECTION_AWAIT_TIMEOUT - SOCKET_PING_AWAIT_TIMEOUT;
-    }
-
     public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {
+        boolean wasVisible = frame.isVisible();
+
         if (userConfig.getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
             try {
                 if (userConfig.isFullscreen()) {
@@ -289,10 +235,6 @@ public final class Constants {
                 restoreDisplayMode();
             }
         } else if (userConfig.getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
-            if (frame == null) {
-                return;
-            }
-
             frame.dispose();
             frame.setResizable(true);
 
@@ -312,8 +254,10 @@ public final class Constants {
         }
 
         frame.setResizable(false);
-        frame.setVisible(true);
-        frame.createBufferStrategy(getUserConfig().getBufferedDeep());
+        frame.setVisible(wasVisible);
+        if (wasVisible) {
+            frame.createBufferStrategy(getUserConfig().getBufferedDeep());
+        }
     }
 
     public static void restoreDisplayMode() {
@@ -333,5 +277,21 @@ public final class Constants {
             log.info("TPF now: {} to FPS limit {}", timePerFrame, fpsLimitMem);
         }
         return timePerFrame;
+    }
+
+    public static boolean isPingAwait() {
+        return isPingAwait.get();
+    }
+
+    public static void setPingAwait(boolean b) {
+        isPingAwait.set(b);
+    }
+
+    public static boolean isConnectionAwait() {
+        return isConnectionAwait.get();
+    }
+
+    public static void setConnectionAwait(boolean b) {
+        isConnectionAwait.set(b);
     }
 }

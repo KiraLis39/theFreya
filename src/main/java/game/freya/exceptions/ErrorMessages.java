@@ -39,7 +39,8 @@ public enum ErrorMessages {
     PLAYER_NOT_FOUND("G004", "Не обнаружен в базе данных игрок"),
     HERO_NOT_FOUND("G005", "Не обнаружен Герой"),
     WORLD_NOT_FOUND("G006", "Не обнаружен в базе денных мир"),
-    NOT_ENOUGH_RESOURCES("G007", "Мало ресурсов для выполнения операции");
+    NOT_ENOUGH_RESOURCES("G007", "Мало ресурсов для выполнения операции"),
+    PASSWORD_ENCRYPT_ERROR("G008", "Ошибка шифрования данных");
 
     private final String code;
     private final String errorCause;

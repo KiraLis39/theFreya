@@ -1,8 +1,8 @@
 package game.freya;
 
 import fox.utils.FoxSystemInfoUtil;
+import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
-import game.freya.config.GameConfig;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.utils.ExceptionUtils;
@@ -25,8 +25,9 @@ import java.util.TimeZone;
 @Slf4j
 //@EnableAsync
 @SpringBootApplication
-@EnableConfigurationProperties({GameConfig.class})
+@EnableConfigurationProperties({ApplicationProperties.class})
 public class Launcher {
+
     public static void main(String[] args) {
         if (!FoxSystemInfoUtil.OS.osName.startsWith("Windows")) {
             throw new GlobalServiceException(ErrorMessages.OS_NOT_SUPPORTED, SystemUtils.OS_NAME);
@@ -40,24 +41,23 @@ public class Launcher {
 
         logApplicationStartup(app.run(args).getEnvironment());
 
-        log.info("Setting up the system properties...");
-        System.setProperty("sun.java2d.opengl", "True");
-
-        // System.setProperty("sun.java2d.d3d", "false");
-        // System.setProperty("sun.java2d.d3dtexbpp", "16");
-
-        // System.setProperty("sun.java2d.ddoffscreen", "false");
-        // System.setProperty("sun.java2d.ddforcevram", "false");
-
-        // System.setProperty("sun.java2d.accthreshold", "0");
-        // System.setProperty("sun.java2d.translaccel", "true");
-        // System.setProperty("sun.java2d.xrender", "true");
-        // System.setProperty("sun.java2d.noddraw", "true");
-
-        // System.setProperty("sun.awt.noerasebackground", "true");
+//        log.info("Setting up the system properties...");
+//        System.setProperty("sun.java2d.opengl", "True");
+//
+//        System.setProperty("sun.java2d.d3d", "false");
+//        System.setProperty("sun.java2d.d3dtexbpp", "16");
+//
+//        System.setProperty("sun.java2d.ddoffscreen", "false");
+//        System.setProperty("sun.java2d.ddforcevram", "false");
+//
+//        System.setProperty("sun.java2d.accthreshold", "0");
+//        System.setProperty("sun.java2d.translaccel", "true");
+//        System.setProperty("sun.java2d.xrender", "true");
+//        System.setProperty("sun.java2d.noddraw", "true");
+//
+//        System.setProperty("sun.awt.noerasebackground", "true");
     }
 
-    // устанавливаем всё, что должно быть готово к запуску:
     private static void globalPreInitialization() {
         try {
             Path dataBasePath = Constants.getDatabase();
@@ -65,7 +65,7 @@ public class Launcher {
                 Files.createDirectory(dataBasePath.getParent());
             }
         } catch (IOException e) {
-            log.error("Init database creation error: {}", ExceptionUtils.getFullExceptionMessage(e));
+            log.error("Init error: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 

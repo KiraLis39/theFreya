@@ -5,8 +5,8 @@ import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.dto.roots.WorldDto;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuCanvasRunnable;
+import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
@@ -31,7 +31,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private static final int maxImageDim = 88;
 
-    private final transient FoxCanvas canvas;
+    private final transient RunnableCanvasPanel canvas;
 
     private final transient GameControllerService gameController;
 
@@ -43,7 +43,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private transient ZLabel zlabel;
 
-    public WorldsListPane(FoxCanvas canvas, GameControllerService controller) {
+    public WorldsListPane(RunnableCanvasPanel canvas, GameControllerService controller) {
         this.canvas = canvas;
         this.gameController = controller;
 
@@ -91,7 +91,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
         }
     }
 
-    private void reloadWorlds(FoxCanvas canvas) {
+    private void reloadWorlds(RunnableCanvasPanel canvas) {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
@@ -140,7 +140,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                             setMaximumSize(new Dimension(maxImageDim, maxImageDim));
 
                             try {
-                                wImage = ImageIO.read(new File(Constants.getWorldsImagesDir() + world.getUid() + Constants.getImageExtension()));
+                                wImage = ImageIO.read(new File(Constants.getGameConfig().getWorldsImagesDir() + world.getUid() + Constants.getImageExtension()));
                             } catch (IOException e) {
                                 log.error("Ошибка при чтении миниатюры мира: {}", ExceptionUtils.getFullExceptionMessage(e));
                             }
@@ -230,7 +230,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                     if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                                             "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                            && canvas instanceof MenuCanvas mCanvas
+                                            && canvas instanceof MenuCanvasRunnable mCanvas
                                     ) {
                                         mCanvas.deleteExistsWorldAndCloseThatPanel(world.getUid());
                                         reloadWorlds(canvas);
@@ -253,7 +253,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                ((MenuCanvas) canvas).chooseOrCreateHeroForWorld(world.getUid());
+                                ((MenuCanvasRunnable) canvas).chooseOrCreateHeroForWorld(world.getUid());
                             }
                         });
                     }}, BorderLayout.CENTER);
@@ -287,7 +287,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(RunnableCanvasPanel canvas) {
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));

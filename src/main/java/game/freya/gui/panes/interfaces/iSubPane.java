@@ -1,8 +1,8 @@
 package game.freya.gui.panes.interfaces;
 
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 
 public interface iSubPane {
 
-    void recalculate(FoxCanvas canvas);
+    void recalculate(RunnableCanvasPanel canvas);
 }

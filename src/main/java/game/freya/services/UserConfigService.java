@@ -34,47 +34,50 @@ public class UserConfigService {
 
     @PostConstruct
     public void load() throws IOException {
-        Path url = Path.of(Constants.getUserSave());
+        Path userSaveFile = Path.of(Constants.getUserSaveFile());
         try {
-            log.debug("Loading the save file from a disc...");
-            if (Files.notExists(url.getParent()) || Files.notExists(url)) {
-                save();
+            log.debug("Loading the user save file from a disc...");
+            if (Files.notExists(userSaveFile.getParent()) || Files.notExists(userSaveFile)) {
+                createOrSaveUserConfig();
             }
-            Constants.setUserConfig(mapper.readValue(Files.readString(url), UserConfig.class));
+
+            Constants.setUserConfig(mapper.readValue(Files.readString(userSaveFile), UserConfig.class));
             if (Constants.getUserConfig() == null) {
-                Files.deleteIfExists(url);
-                save();
-                Constants.setUserConfig(mapper.readValue(Files.readString(url), UserConfig.class));
+                Files.deleteIfExists(userSaveFile);
+                createOrSaveUserConfig();
+                Constants.setUserConfig(mapper.readValue(Files.readString(userSaveFile), UserConfig.class));
             }
         } catch (MismatchedInputException mie) {
             log.error("#010 Is the save file empty? Ex.: {}", ExceptionUtils.getFullExceptionMessage(mie));
-            save();
-            gameController.exitTheGame(null);
+            createOrSaveUserConfig();
+            gameController.exitTheGame(null, 28);
         } catch (Exception e) {
             log.error("#011 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(e));
             new FOptionPane().buildFOptionPane("Сохранение повреждено:",
                     "Что-то не так с файлом сохранения. Он еще может быть работоспособным, но требует анализа для "
                             + "выявления проблемы. Будет создан новый файл сохранение, передайте старый, переименованный файл "
                             + "(corrupted_*) разработчику для решения проблемы.", FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-            Path corrSave = Path.of(url.getParent().toString() + "/corrupted_" + url.getFileName());
+            Path corrSave = Path.of(userSaveFile.getParent().toString() + "/corrupted_" + userSaveFile.getFileName());
             Files.deleteIfExists(corrSave);
-            Files.copy(url, corrSave);
-            save();
-            Constants.setUserConfig(mapper.readValue(Files.readString(url), UserConfig.class));
+            Files.copy(userSaveFile, corrSave);
+            createOrSaveUserConfig();
+            Constants.setUserConfig(mapper.readValue(Files.readString(userSaveFile), UserConfig.class));
         }
     }
 
-    public void save() {
-        log.debug("Saving the save file to disc...");
+    public void createOrSaveUserConfig() {
+        log.debug("Saving the user save file to disc...");
         try {
-            if (!Files.exists(Path.of(Constants.getUserSave()).getParent())) {
-                Files.createDirectories(Path.of(Constants.getUserSave()).getParent());
-                mapper.writeValue(new File(Constants.getUserSave()), UserConfig.builder().build());
-            } else if (!Files.exists(Path.of(Constants.getUserSave()))) {
-                mapper.writeValue(new File(Constants.getUserSave()), UserConfig.builder().build());
+            Path saveFile = Path.of(Constants.getUserSaveFile());
+            if (Files.notExists(saveFile.getParent())) {
+                Files.createDirectories(saveFile.getParent());
+                mapper.writeValue(saveFile.toFile(), UserConfig.builder().build());
+            } else if (Files.notExists(saveFile)) {
+                mapper.writeValue(saveFile.toFile(), UserConfig.builder().build());
             } else {
-                mapper.writeValue(new File(Constants.getUserSave()), Constants.getUserConfig());
+                mapper.writeValue(saveFile.toFile(), Constants.getUserConfig());
             }
+            Constants.setUserConfig(mapper.readValue(new File(Constants.getUserSaveFile()), UserConfig.class));
         } catch (InvalidDefinitionException ide) {
             log.error("#d012 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(ide));
         } catch (Exception e) {

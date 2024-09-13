@@ -131,8 +131,9 @@ public class StorageService {
     /**
      * Удаляет запись из промежуточной таблицы (очищает ячейку хранилища),
      * если количество предметов в ячейке исчерпано.
+     *
      * @param storageDto хранилище.
-     * @param itemuid предмет, наличие которого требуется проверить.
+     * @param itemuid    предмет, наличие которого требуется проверить.
      */
     private void clearCellIfEmpty(StorageDto storageDto, UUID itemuid) {
         if (storageDto.getItemsHaveCount(itemuid) <= 0) {

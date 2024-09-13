@@ -13,20 +13,21 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -80,9 +81,11 @@ public class Character extends AbstractEntity {
     @Column(name = "vector")
     private MovingVector vector = MovingVector.UP;
 
+    @Lob
     @Column(name = "base_color", nullable = false)
     private Color baseColor;
 
+    @Lob
     @Column(name = "second_color", nullable = false)
     private Color secondColor;
 
@@ -122,7 +125,7 @@ public class Character extends AbstractEntity {
     @Column(name = "in_game_time", columnDefinition = "bigint default 0", nullable = false)
     private long inGameTime = 0;
 
-    @LastModifiedDate
+    @UpdateTimestamp
     @Column(name = "last_play_date", columnDefinition = "TIMESTAMP DEFAULT current_timestamp")
     private LocalDateTime lastPlayDate;
 

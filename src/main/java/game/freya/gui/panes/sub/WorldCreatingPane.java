@@ -4,13 +4,14 @@ import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.dto.roots.WorldDto;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuCanvasRunnable;
+import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.templates.WorldCreator;
+import game.freya.services.GameControllerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,7 +31,6 @@ import java.util.UUID;
 @Slf4j
 public class WorldCreatingPane extends WorldCreator implements iSubPane {
     private static final Random r = new Random();
-
     private transient BufferedImage snap;
 
     @Getter
@@ -45,11 +45,11 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
     private boolean isNetAvailable = false;
 
     @Getter
-    private int netPasswordHash;
+    private String netPassword;
 
     private SubPane netPassPane;
 
-    public WorldCreatingPane(FoxCanvas canvas) {
+    public WorldCreatingPane(RunnableCanvasPanel canvas, GameControllerService gameControllerService) {
         setName("World creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -103,7 +103,7 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
                     addKeyListener(new KeyAdapter() {
                         @Override
                         public void keyReleased(KeyEvent e) {
-                            netPasswordHash = Arrays.hashCode(getPassword());
+                            netPassword = gameControllerService.getBcryptUtil().encode(Arrays.toString(getPassword()));
                         }
                     });
                 }});
@@ -132,10 +132,10 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            if (canvas instanceof MenuCanvas mCanvas) {
+                            if (canvas instanceof MenuCanvasRunnable mCanvas) {
                                 WorldDto aNewWorld = WorldDto.builder()
                                         .uid(UUID.randomUUID())
-                                        .createdBy(canvas.getGameController().getCurrentPlayerUid())
+                                        .createdBy(gameControllerService.getPlayerService().getCurrentPlayer().getUid())
                                         .createdDate(LocalDateTime.now())
                                         .name(getWorldName())
                                         .level(getHardnessLevel())
@@ -186,7 +186,7 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(RunnableCanvasPanel canvas) {
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));

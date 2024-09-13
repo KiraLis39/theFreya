@@ -5,14 +5,12 @@ import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.dto.roots.WorldDto;
-import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.MenuCanvas;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.MenuCanvasRunnable;
+import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
 import game.freya.gui.panes.sub.components.SubPane;
 import game.freya.gui.panes.sub.components.ZLabel;
-import game.freya.gui.panes.sub.templates.WorldCreator;
 import game.freya.net.data.NetConnectTemplate;
 import game.freya.services.GameControllerService;
 import lombok.Getter;
@@ -29,16 +27,16 @@ import java.util.List;
 import static game.freya.config.Constants.FFB;
 
 @Slf4j
-public class NetworkListPane extends WorldCreator implements iSubPane {
+public class NetworkListPane extends JPanel implements iSubPane {
     private static final String connectionString = "- CONNECTION -";
 
     private static final String pingString = "- PING -";
 
     private static final int maxElementsDim = 96;
 
-    private final transient FoxCanvas canvas;
+    private final transient RunnableCanvasPanel canvas;
 
-    private final transient GameControllerService gameController;
+    private final transient GameControllerService gameControllerService;
 
     private final SubPane centerList;
 
@@ -58,9 +56,9 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
 
     private transient Thread pingActionThread;
 
-    public NetworkListPane(FoxCanvas canvas, GameControllerService controller) {
+    public NetworkListPane(RunnableCanvasPanel canvas, GameControllerService gameControllerService) {
         this.canvas = canvas;
-        this.gameController = controller;
+        this.gameControllerService = gameControllerService;
 
         setName("Network list pane");
         setVisible(false);
@@ -116,15 +114,15 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                         return;
                     }
                     address = address.replace(",", ".");
-                    if (canvas instanceof MenuCanvas mCanvas) {
+                    if (canvas instanceof MenuCanvasRunnable mCanvas) {
                         password = (String) new FOptionPane()
                                 .buildFOptionPane("Подключиться по IP:", "Пароль сервера:",
                                         FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
-                        mCanvas.setConnectionAwait(true);
+                        Constants.setConnectionAwait(true);
                         new Thread(() -> mCanvas.connectToServer(NetConnectTemplate.builder()
                                 .address(address)
                                 .worldUid(null)
-                                .passwordHash(password.hashCode())
+                                .password(gameControllerService.getBcryptUtil().encode(password))
                                 .build())).start();
                     }
                 }
@@ -136,11 +134,11 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
         }
     }
 
-    public void reloadNet(FoxCanvas canvas) {
+    public void reloadNet(RunnableCanvasPanel canvas) {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
-        List<WorldDto> worlds = gameController.findAllWorldsByNetworkAvailable(true);
+        List<WorldDto> worlds = gameControllerService.findAllWorldsByNetworkAvailable(true);
         for (WorldDto world : worlds) {
             centerList.add(new SubPane(world.getName()) {{
                 setWorld(world);
@@ -243,7 +241,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                                             if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                                                     "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
                                                     FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                                    && canvas instanceof MenuCanvas mCanvas
+                                                    && canvas instanceof MenuCanvasRunnable mCanvas
                                             ) {
                                                 mCanvas.deleteExistsWorldAndCloseThatPanel(getWorld().getUid());
                                                 reloadNet(canvas);
@@ -269,22 +267,20 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 pingActionThread.interrupt();
-                                gameController.setCurrentWorld(world.getUid());
+                                gameControllerService.setCurrentWorld(world.getUid());
 
+                                Constants.setConnectionAwait(true);
                                 if (getWorld().isLocalWorld()) {
-                                    canvas.setConnectionAwait(true);
-                                    ((MenuCanvas) canvas).serverUp(world);
+                                    canvas.serverUp(world);
                                 } else {
                                     address = getWorld().getNetworkAddress();
                                     password = (String) new FOptionPane()
                                             .buildFOptionPane("Подключиться:", "Пароль сервера:",
                                                     FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
-
-                                    canvas.setConnectionAwait(true);
-                                    ((MenuCanvas) canvas).connectToServer(NetConnectTemplate.builder()
+                                    canvas.connectToServer(NetConnectTemplate.builder()
                                             .address(address)
                                             .worldUid(world.getUid())
-                                            .passwordHash(password.hashCode())
+                                            .password(gameControllerService.getBcryptUtil().encode(password))
                                             .build());
                                 }
                             }
@@ -311,20 +307,20 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
         g.clearRect(0, 0, getWidth(), getHeight());
         g.drawImage(snap, 0, 0, getWidth(), getHeight(), this);
 
-        if (canvas.isConnectionAwait() || canvas.isPingAwait()) {
+        if (Constants.isConnectionAwait() || Constants.isPingAwait()) {
             g.setFont(Constants.GAME_FONT_02);
             Constants.RENDER.setRender((Graphics2D) g, FoxRender.RENDER.LOW);
 
             g.setColor(Color.BLACK);
-            g.drawString(canvas.isPingAwait() ? pingString : connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 34,
+            g.drawString(Constants.isPingAwait() ? pingString : connectionString,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, Constants.isPingAwait() ? pingString : connectionString)) - 34,
                     getHeight() / 2 + 2);
             g.drawString(dot[dots],
                     (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 34, getHeight() / 2 + 18);
 
             g.setColor(Color.WHITE);
-            g.drawString(canvas.isPingAwait() ? pingString : connectionString,
-                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, canvas.isPingAwait() ? pingString : connectionString)) - 32,
+            g.drawString(Constants.isPingAwait() ? pingString : connectionString,
+                    (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, Constants.isPingAwait() ? pingString : connectionString)) - 32,
                     getHeight() / 2);
             g.drawString(dot[dots],
                     (int) (getWidth() / 2d - FFB.getHalfWidthOfString(g, dot[dots])) - 32, getHeight() / 2 + 16);
@@ -347,15 +343,15 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
         super.setVisible(isVisible);
     }
 
-    private synchronized void pingServers() {
-        canvas.setPingAwait(true);
+    private void pingServers() {
+        Constants.setPingAwait(true);
 
         pingActionThread = Thread.startVirtualThread(() -> {
             // пинг нелокальных миров...
             Arrays.stream(centerList.getComponents()).filter(SubPane.class::isInstance).iterator().forEachRemaining(spn -> {
                 if (pingActionThread.isInterrupted()) {
-                    gameController.breakPing();
-                    canvas.setPingAwait(false);
+                    gameControllerService.getPingService().breakPing();
+                    Constants.setPingAwait(false);
                     return;
                 }
 
@@ -370,7 +366,7 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                     String nad = sp.getWorld().getNetworkAddress();
                     String host = nad.contains(":") ? nad.split(":")[0] : nad;
                     Integer port = nad.contains(":") ? Integer.parseInt(nad.split(":")[1]) : null;
-                    boolean isPingOk = canvas.ping(host, port, sp.getWorld().getUid());
+                    boolean isPingOk = canvas.pingServer(host, port, sp.getWorld().getUid());
                     add = add.formatted(isPingOk ? "<font color=#07ad3c><b>   (доступен)" : "<font color=#a31c25><b>   (не доступен)");
                     connButton.setBackground(isPingOk ? Color.GREEN : Color.GRAY);
                     connButton.setEnabled(isPingOk);
@@ -379,32 +375,12 @@ public class NetworkListPane extends WorldCreator implements iSubPane {
                 ZLabel spHeader = sp.getHeaderLabel();
                 spHeader.setText(spHeader.getText().replace("<br> </pre>", add));
             });
-            canvas.setPingAwait(false);
+            Constants.setPingAwait(false);
         });
     }
 
     @Override
-    public String getWorldName() {
-        return null;
-    }
-
-    @Override
-    public HardnessLevel getHardnessLevel() {
-        return null;
-    }
-
-    @Override
-    public boolean isNetAvailable() {
-        return false;
-    }
-
-    @Override
-    public int getNetPasswordHash() {
-        return 0;
-    }
-
-    @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(RunnableCanvasPanel canvas) {
         setLocation((int) (canvas.getWidth() * 0.32d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));

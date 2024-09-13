@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@Tag(name = "storages")
+@Tag(name = "Storages")
 @RequestMapping(value = "/storage", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 public class StorageController {

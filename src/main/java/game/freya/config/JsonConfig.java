@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.awt.geom.Rectangle2D;
 
 @Component
-public class ObjectMapperConf {
+public class JsonConfig {
     private ObjectMapper mapper;
 
     @Bean

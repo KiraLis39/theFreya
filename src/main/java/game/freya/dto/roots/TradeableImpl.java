@@ -1,65 +1,26 @@
-package game.freya.interfaces.impl;
+package game.freya.dto.roots;
 
-import game.freya.dto.roots.CharacterDto;
-import game.freya.dto.roots.ItemDto;
 import game.freya.enums.other.CurrencyVault;
 import game.freya.interfaces.iTradeable;
 import game.freya.mappers.ItemsMapper;
 import game.freya.services.ItemsService;
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Slf4j
+@Getter
 @Component
-@AllArgsConstructor
-public class TradeableImpl implements iTradeable {
+@SuperBuilder
+@RequiredArgsConstructor
+public sealed abstract class TradeableImpl extends AbstractEntityDto implements iTradeable permits ItemDto {
     private final ItemsService itemsService;
     private final ItemsMapper itemsMapper;
-
-
-    @Override
-    public UUID getUid() {
-        return null;
-    }
-
-    @Override
-    public String getName() {
-        return null;
-    }
-
-    @Override
-    public CurrencyVault getCurrencyType() {
-        return null;
-    }
-
-    @Override
-    public int getDefaultByeCost() {
-        return 0;
-    }
-
-    @Override
-    public int getCurrentByeCost() {
-        return 0;
-    }
-
-    @Override
-    public int getDefaultSellCost() {
-        return 0;
-    }
-
-    @Override
-    public int getCurrentSellCost() {
-        return 0;
-    }
-
-    @Override
-    public void setCurrentSellCost(int cost) {
-
-    }
 
     @Override
     public boolean trade(CharacterDto seller, ItemDto item, CharacterDto buyer, CurrencyVault vaultType, int paySum) {

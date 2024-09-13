@@ -2,10 +2,13 @@ package game.freya.gui.panes.handlers;
 
 import fox.FoxRender;
 import game.freya.config.Constants;
-import game.freya.gui.panes.MenuCanvas;
+import game.freya.gui.panes.MenuCanvasRunnable;
+import game.freya.services.GameControllerService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
@@ -14,11 +17,17 @@ import java.awt.*;
 @Component
 @RequiredArgsConstructor
 public final class UIHandler {
+    private GameControllerService gameControllerService;
     private Rectangle upLeftPaneRect, upCenterPaneRect, upRightPaneRect, downCenterPaneRect;
 
     private String startGameButtonText, coopPlayButtonText, optionsButtonText, randomButtonText, resetButtonText, createNewButtonText, repingButtonText;
 
     private double heightMemory;
+
+    @Autowired
+    public void loadService(@Lazy GameControllerService gameControllerService) {
+        this.gameControllerService = gameControllerService;
+    }
 
     @PostConstruct
     public void init() {
@@ -31,12 +40,12 @@ public final class UIHandler {
         repingButtonText = "Обновить";
     }
 
-    public void drawUI(Graphics2D v2D, FoxCanvas canvas) {
+    public void drawUI(Graphics2D v2D, RunnableCanvasPanel canvas) {
         if (heightMemory != canvas.getBounds().getHeight()) {
             recreateRectangles(canvas);
         }
 
-        if (canvas instanceof MenuCanvas menuCanvas) {
+        if (canvas instanceof MenuCanvasRunnable menuCanvas) {
             drawMainMenu(v2D, menuCanvas);
             drawCreatorInfo(v2D, menuCanvas);
         } else if (canvas.isOptionsMenuSetVisible()) {
@@ -46,7 +55,7 @@ public final class UIHandler {
             v2D.setStroke(new BasicStroke(2f));
             v2D.setColor(new Color(0, 95, 0, 63));
             v2D.fillRect(upLeftPaneRect.x, upLeftPaneRect.y, upLeftPaneRect.width, upLeftPaneRect.height);
-            if (Constants.isDebugInfoVisible()) {
+            if (Constants.getGameConfig().isDebugInfoVisible()) {
                 v2D.setColor(Color.GREEN);
                 v2D.drawRect(upLeftPaneRect.x, upLeftPaneRect.y, upLeftPaneRect.width, upLeftPaneRect.height);
             }
@@ -54,7 +63,7 @@ public final class UIHandler {
             // up center pane:
             v2D.setColor(new Color(0, 0, 95, 63));
             v2D.fillRect(upCenterPaneRect.x, upCenterPaneRect.y, upCenterPaneRect.width, upCenterPaneRect.height);
-            if (Constants.isDebugInfoVisible()) {
+            if (Constants.getGameConfig().isDebugInfoVisible()) {
                 v2D.setColor(Color.YELLOW);
                 v2D.drawRect(upCenterPaneRect.x, upCenterPaneRect.y, upCenterPaneRect.width, upCenterPaneRect.height);
             }
@@ -62,7 +71,7 @@ public final class UIHandler {
             // up right pane:
             v2D.setColor(new Color(95, 0, 0, 63));
             v2D.fillRect(upRightPaneRect.x, upRightPaneRect.y, upRightPaneRect.width, upRightPaneRect.height);
-            if (Constants.isDebugInfoVisible()) {
+            if (Constants.getGameConfig().isDebugInfoVisible()) {
                 v2D.setColor(Color.MAGENTA);
                 v2D.drawRect(upRightPaneRect.x, upRightPaneRect.y, upRightPaneRect.width, upRightPaneRect.height);
             }
@@ -70,20 +79,20 @@ public final class UIHandler {
             // down center pane:
             v2D.setColor(new Color(95, 95, 0, 63));
             v2D.fillRect(downCenterPaneRect.x, downCenterPaneRect.y, downCenterPaneRect.width, downCenterPaneRect.height);
-            if (Constants.isDebugInfoVisible()) {
+            if (Constants.getGameConfig().isDebugInfoVisible()) {
                 v2D.setColor(Color.YELLOW);
                 v2D.drawRect(downCenterPaneRect.x, downCenterPaneRect.y, downCenterPaneRect.width, downCenterPaneRect.height);
             }
 
             // draw chat:
-            if (canvas.getGameController().isCurrentWorldIsNetwork() && canvas.getChat() != null) {
+            if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable() && canvas.getChat() != null) {
                 Constants.RENDER.setRender(v2D, FoxRender.RENDER.OFF);
                 canvas.getChat().draw(v2D);
             }
         }
     }
 
-    private void drawCreatorInfo(Graphics2D g2D, FoxCanvas canvas) {
+    private void drawCreatorInfo(Graphics2D g2D, RunnableCanvasPanel canvas) {
         // down right corner text:
         g2D.setFont(Constants.INFO_FONT);
         g2D.setColor(Color.WHITE);
@@ -95,7 +104,7 @@ public final class UIHandler {
                 canvas.getHeight() - 25);
     }
 
-    private void drawMainMenu(Graphics2D g2D, FoxCanvas canvas) {
+    private void drawMainMenu(Graphics2D g2D, RunnableCanvasPanel canvas) {
         g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
 
         if (canvas.isOptionsMenuSetVisible()) {
@@ -177,7 +186,7 @@ public final class UIHandler {
                 ? canvas.getBackButtonText() : canvas.getExitButtonText(), canvas.getExitButtonRect().x, canvas.getExitButtonRect().y + 18);
     }
 
-    private void showHeroCreating(Graphics2D g2D, FoxCanvas canvas) {
+    private void showHeroCreating(Graphics2D g2D, RunnableCanvasPanel canvas) {
         canvas.drawHeader(g2D, "Создание героя");
 
         // creating hero buttons text:
@@ -197,7 +206,7 @@ public final class UIHandler {
         g2D.drawString(canvas.getBackButtonText(), canvas.getExitButtonRect().x, canvas.getExitButtonRect().y + 18);
     }
 
-    private void recreateRectangles(FoxCanvas canvas) {
+    private void recreateRectangles(RunnableCanvasPanel canvas) {
         Rectangle canvasRect = canvas.getBounds();
 
         heightMemory = canvasRect.getHeight();

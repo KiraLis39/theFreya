@@ -33,7 +33,7 @@ public class WorldService {
     private WorldDto currentWorld;
 
     @Transactional
-    public WorldDto save(WorldDto world) {
+    public WorldDto saveOrUpdate(WorldDto world) {
         World w = worldMapper.toEntity(world);
         World w2 = worldRepository.findByUid(world.getUid()).orElse(null);
         if (w2 != null) {
@@ -41,27 +41,33 @@ public class WorldService {
         } else {
             w2 = w;
         }
+        return worldMapper.toDto(worldRepository.saveAndFlush(w2));
+    }
 
-        w2 = worldRepository.save(w2);
-        return worldMapper.toDto(w2);
+    @Transactional
+    public void saveCurrent() {
+        if (currentWorld == null) {
+            return;
+        }
+        if (currentWorld.getCreatedBy() == null) {
+            throw new RuntimeException();
+        }
+        worldRepository.saveAndFlush(worldMapper.toEntity(currentWorld));
     }
 
     @Transactional(readOnly = true)
-    public Optional<World> findByUid(UUID uid) {
-        return worldRepository.findByUid(uid);
+    public Optional<WorldDto> findByUid(UUID uid) {
+        return worldRepository.findByUid(uid).map(worldMapper::toDto);
     }
 
     @Modifying
     @Transactional
-    public void delete(UUID worldUid) {
-        worldRepository.deleteById(worldUid);
-    }
-
-    @Transactional
-    public void saveCurrentWorld() {
-        if (currentWorld != null) {
-            worldRepository.saveAndFlush(worldMapper.toEntity(currentWorld));
+    public boolean deleteByUid(UUID worldUid) {
+        if (worldRepository.existsById(worldUid)) {
+            worldRepository.deleteById(worldUid);
+            return true;
         }
+        return false;
     }
 
     @Transactional(readOnly = true)

@@ -1,5 +1,6 @@
 package game.freya.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,50 +21,41 @@ import java.util.UUID;
 @AllArgsConstructor
 public final class UserConfig {
 
-    @Getter
     @Builder.Default
     private float miniMapOpacity = 0.65f;
 
     // player:
-    @Getter
     @Builder.Default
     private UUID userId = UUID.randomUUID();
 
-    @Getter
     @Builder.Default
     private String userName = SystemUtils.USER_NAME;
 
-    @Getter
     @Builder.Default
     private String userMail = "demo@test.ru";
 
+    private String userAvatar;
+
     // audio:
-    @Getter
     @Builder.Default
     private boolean isSoundEnabled = true;
 
-    @Getter
     @Builder.Default
     private int soundVolumePercent = 75;
 
-    @Getter
     @Builder.Default
     private boolean isMusicEnabled = true;
 
-    @Getter
     @Builder.Default
     private int musicVolumePercent = 75;
 
     // hotkeys:
-    @Getter
     @Builder.Default
     private int keyLookUp = KeyEvent.VK_UP;
 
-    @Getter
     @Builder.Default
     private int keyLookLeft = KeyEvent.VK_LEFT;
 
-    @Getter
     @Builder.Default
     private int keyLookRight = KeyEvent.VK_RIGHT;
 
@@ -71,85 +63,65 @@ public final class UserConfig {
     @Builder.Default
     private int keyLookDown = KeyEvent.VK_DOWN;
 
-    @Getter
     @Builder.Default
     private int keyMoveUp = KeyEvent.VK_W;
 
-    @Getter
     @Builder.Default
     private int keyMoveLeft = KeyEvent.VK_A;
 
-    @Getter
     @Builder.Default
     private int keyMoveRight = KeyEvent.VK_D;
 
-    @Getter
     @Builder.Default
     private int keyMoveDown = KeyEvent.VK_S;
 
-    @Getter
     @Builder.Default
     private int keyRotateClockwise = KeyEvent.VK_E;
 
-    @Getter
     @Builder.Default
     private int keyRotateCounter = KeyEvent.VK_Q;
 
-    @Getter
     @Builder.Default
     private int keyPause = KeyEvent.VK_ESCAPE;
 
-    @Getter
     @Builder.Default
     private int keyConsole = KeyEvent.VK_BACK_QUOTE;
 
-    @Getter
     @Builder.Default
     private int keyConsoleMod = InputEvent.SHIFT_DOWN_MASK;
 
-    @Getter
     @Builder.Default
     private int keyDebug = KeyEvent.VK_F10;
 
-    @Getter
     @Builder.Default
     private int keyFps = KeyEvent.VK_F9;
 
-    @Getter
     @Builder.Default
     private int keyFullscreen = KeyEvent.VK_F11;
 
     // gameplay:
-    @Getter
     @Builder.Default
     private boolean dragGameFieldOnFrameEdgeReached = true;
 
-    @Getter
     @Builder.Default
     private FullscreenType fullscreenType = FullscreenType.MAXIMIZE_WINDOW; // .EXCLUSIVE
 
-    @Getter
     @Builder.Default
     private boolean isFullscreen = false;
 
-    @Getter
     @Builder.Default
     private boolean isPauseOnHidden = true;
 
     // graphics:
-    @Getter
     @Builder.Default
     private boolean isUseSmoothing = true;
 
-    @Getter
     @Builder.Default
     private boolean isUseBicubic = false;
 
-    @Getter
     @Builder.Default
     private int fpsLimit = 60; // fps limit
 
-    @Getter
     @Builder.Default
     private boolean isMultiBufferEnabled = true;
 
@@ -161,6 +133,7 @@ public final class UserConfig {
 
 
     // other:
+    @JsonIgnore
     public int getBufferedDeep() {
         return isMultiBufferEnabled ? Math.max(bufferedDeep, maxBufferedDeep) : 1;
     }

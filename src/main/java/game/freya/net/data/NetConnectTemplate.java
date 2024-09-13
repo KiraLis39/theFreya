@@ -5,6 +5,5 @@ import lombok.Builder;
 import java.util.UUID;
 
 @Builder
-public record NetConnectTemplate(String address, int passwordHash, UUID worldUid) {
-
+public record NetConnectTemplate(String address, String password, UUID worldUid) {
 }

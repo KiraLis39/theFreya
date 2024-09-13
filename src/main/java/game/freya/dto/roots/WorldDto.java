@@ -1,16 +1,18 @@
 package game.freya.dto.roots;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import game.freya.config.Constants;
 import game.freya.dto.MockEnvironmentWithStorageDto;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes.GameCanvas;
+import game.freya.gui.panes.GamePaneRunnable;
 import game.freya.interfaces.iWorld;
 import game.freya.services.GameControllerService;
 import jakarta.persistence.Transient;
-import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -25,25 +27,37 @@ import java.util.Set;
 
 @Slf4j
 @SuperBuilder
+@NoArgsConstructor
 public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { //  extends ComponentAdapter
-    private static final Random r = new Random(100);
+    @Getter
+    @Builder.Default
+    private final Set<EnvironmentDto> environments = HashSet.newHashSet(32);
 
+    @JsonIgnore
+    @Builder.Default
     private final char scobe = ')';
 
+    @Transient
+    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Builder.Default
+    @JsonIgnoreProperties(value = "textColor")
     private final Color textColor = new Color(58, 175, 217, 191);
 
+    @Transient
+    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Builder.Default
     private final Color linesColor = new Color(47, 84, 3, 64);
 
+    @Transient
+    @JsonIgnore
+    @Builder.Default
     private final Color backColor = new Color(31, 31, 31);
 
     @Getter
     @Builder.Default
-    private final Set<EnvironmentDto> environments = HashSet.newHashSet(128);
-
-    @Getter
-    @Setter
-    @Builder.Default
-    private String name = "world_demo_" + r.nextInt(1000);
+    private String name = "world_demo_" + new Random(System.currentTimeMillis()).nextInt(100);
 
     @Getter
     @Setter
@@ -52,8 +66,7 @@ public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { /
 
     @Getter
     @Setter
-    @Builder.Default
-    private int passwordHash = 0;
+    private String password; // bcrypt
 
     @Getter
     @Setter
@@ -69,12 +82,9 @@ public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { /
     @Setter
     private String networkAddress;
 
-    // custom fields:
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @Transient
     @JsonIgnore
-    private GameCanvas canvas;
+    private GamePaneRunnable canvas;
 
     @Transient
     @JsonIgnore
@@ -89,7 +99,7 @@ public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { /
     private Image icon;
 
     @Override
-    public void init(GameCanvas canvas, GameControllerService controller) {
+    public void init(GamePaneRunnable canvas, GameControllerService controller) {
         this.canvas = canvas;
         this.gameController = controller;
         log.info("World {} initialized successfully", getName());
@@ -127,6 +137,7 @@ public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { /
     }
 
     @Override
+    @JsonIgnore
     public HardnessLevel getHardnesslevel() {
         return this.level;
     }
@@ -179,7 +190,7 @@ public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { /
         for (int i = Constants.MAP_CELL_DIM; i <= gameMap.getWidth(); i += Constants.MAP_CELL_DIM) {
 
             // draw numbers of rows and columns:
-            if (Constants.isDebugInfoVisible()) {
+            if (Constants.getGameConfig().isDebugInfoVisible()) {
                 String ns = String.valueOf(n + scobe);
                 v2D.setColor(textColor);
                 v2D.drawString(ns, i - 26, 12);
@@ -198,7 +209,7 @@ public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { /
         }
 
         // рисуем центральные оси:
-        if (Constants.isDebugInfoVisible()) {
+        if (Constants.getGameConfig().isDebugInfoVisible()) {
             v2D.setColor(Color.RED);
             v2D.setStroke(new BasicStroke(2f));
             v2D.drawLine(0, gameMap.getHeight() / 2, gameMap.getWidth(), gameMap.getHeight() / 2);
@@ -221,7 +232,7 @@ public non-sealed class WorldDto extends AbstractEntityDto implements iWorld { /
         for (EnvironmentDto env : environments) {
             if (env.isInSector(visibleRect)) {
                 env.draw(g2D);
-                if (Constants.isDebugInfoVisible()) {
+                if (Constants.getGameConfig().isDebugInfoVisible()) {
                     g2D.setColor(Color.ORANGE);
                     g2D.draw(env.getCollider());
                 }

@@ -14,6 +14,7 @@ public record EventHeroOffline(
         UUID heroUid,
         String heroName,
         String explanation,
+        UUID createdBy,
         UUID worldUid
 ) implements iClientEventData {
     @Override

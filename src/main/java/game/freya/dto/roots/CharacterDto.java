@@ -12,9 +12,12 @@ import game.freya.enums.player.MovingVector;
 import game.freya.interfaces.iEntity;
 import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iHero;
-import game.freya.utils.ExceptionUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Transient;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,19 +25,12 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.RGBImageFilter;
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -152,7 +148,7 @@ public non-sealed class CharacterDto extends AbstractEntityDto implements iGameO
     @Transient
     @JsonIgnore
     @Schema(description = "The Player`s avatar")
-    private Image heroViewImage;
+    private BufferedImage heroViewImage;
 
     @Override
     public void draw(Graphics2D g2D) {
@@ -173,7 +169,7 @@ public non-sealed class CharacterDto extends AbstractEntityDto implements iGameO
         g2D.drawImage(heroViewImage, bounds.x, bounds.y, bounds.width, bounds.height, null);
         g2D.setTransform(tr);
 
-        if (Constants.isDebugInfoVisible()) {
+        if (Constants.getGameConfig().isDebugInfoVisible()) {
             g2D.setColor(Color.GREEN);
             g2D.draw(getShape());
 
@@ -199,27 +195,24 @@ public non-sealed class CharacterDto extends AbstractEntityDto implements iGameO
     }
 
     public BufferedImage getImage() {
-        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
-            if (avatarResource != null) {
-                return ImageIO.read(avatarResource);
-            }
-            throw new IOException(Constants.DEFAULT_AVATAR_URL);
-        } catch (IOException e) {
-            log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
-            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+        if (heroViewImage == null) {
+            heroViewImage = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
         }
+        return heroViewImage;
     }
 
     private void recolorHeroView() {
         int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
                 baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
-        heroViewImage = Toolkit.getDefaultToolkit().createImage(
-                new FilteredImageSource(Constants.CACHE.getBufferedImage("player").getSource(), new RGBImageFilter() {
+        FilteredImageSource fis = new FilteredImageSource(
+                Constants.CACHE.getBufferedImage("player").getSource(),
+                new RGBImageFilter() {
                     @Override
                     public int filterRGB(final int x, final int y, final int rgb) {
                         return rgb & hexColor;
                     }
-                }));
+                });
+        heroViewImage = (BufferedImage) Toolkit.getDefaultToolkit().createImage(fis);
     }
 
     private void move(MovingVector vector) {

@@ -19,7 +19,7 @@ import java.util.Map;
 @Slf4j
 @ControllerAdvice
 @RestControllerAdvice
-public class FoxExceptionHandler {
+public final class FoxExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

@@ -174,6 +174,7 @@ public non-sealed class StorageDto extends AbstractEntityDto implements iGameObj
 
     /**
      * Возвращает количестко указанных предметов в хранилище.
+     *
      * @param itemsUid uid предмета, количество которого требуется получить.
      * @return количество этих предметов в хранилище.
      */

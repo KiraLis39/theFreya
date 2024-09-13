@@ -1,18 +1,19 @@
 package game.freya.net;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
-import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
+import game.freya.dto.roots.WorldDto;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventDenied;
 import game.freya.net.data.events.EventHeroRegister;
 import game.freya.net.data.events.EventPingPong;
 import game.freya.net.data.events.EventPlayerAuth;
+import game.freya.net.data.events.EventWorldData;
 import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
@@ -33,19 +34,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @RequiredArgsConstructor
-public class ConnectedServerPlayer extends Thread implements Runnable {
+public class ConnectedServerPlayerThread extends Thread implements Runnable {
     @Getter
     private final UUID clientUid;
 
-    private final ObjectMapper mapper;
-
-    private final GameControllerService gameController;
-
-//    private final PlayedHeroes playedHeroes;
+    private final GameControllerService gameControllerService;
 
     private final Socket client;
-
-    private final Server server;
 
     private final AtomicBoolean isAccepted = new AtomicBoolean(false);
 
@@ -63,22 +58,17 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
 
     private NetDataEvent lastEvent;
 
-    public ConnectedServerPlayer(Server server, Socket client, GameControllerService gameController) throws SocketException {
-        this.mapper = new ObjectMapper();
-        this.mapper.registerModule(new JavaTimeModule());
-
-        this.server = server;
-//        this.playedHeroes = gameController.getPlayedHeroes();
-        this.gameController = gameController;
+    public ConnectedServerPlayerThread(Socket client, GameControllerService gameControllerService) throws SocketException {
+        this.gameControllerService = gameControllerService;
         this.clientUid = UUID.randomUUID();
 
         this.client = client;
-        this.client.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
-        this.client.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
+        this.client.setSendBufferSize(Constants.getGameConfig().getSocketBufferSize());
+        this.client.setReceiveBufferSize(Constants.getGameConfig().getSocketBufferSize());
         // this.client.setReuseAddress(true);
         // this.client.setKeepAlive(true);
         this.client.setTcpNoDelay(true);
-        this.client.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
+        this.client.setSoTimeout(Constants.getGameConfig().getConnectionNoDataTimeout());
 
         setDaemon(true);
         setUncaughtExceptionHandler((_, e) -> log.error("Client`s socket thread exception: {}", ExceptionUtils.getFullExceptionMessage(e)));
@@ -96,7 +86,9 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             push(ClientDataDto.builder()
                     .dataType(NetDataType.EVENT)
                     .dataEvent(NetDataEvent.PONG)
-                    .content(EventPingPong.builder().worldUid(gameController.getCurrentWorldUid()).build())
+                    .content(EventPingPong.builder()
+                            .worldUid(gameControllerService.getWorldService().getCurrentWorld().getUid())
+                            .build())
                     .build());
 
             try (ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))) {
@@ -125,7 +117,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
                         } else if (lastEvent.equals(NetDataEvent.HERO_REGISTER)) {
                             saveConnectedHero(readed); // readed.heroUid!
                         } else {
-                            server.broadcast(readed, this);
+                            gameControllerService.getServer().broadcast(readed, this);
                         }
                     } else {
                         log.error("Неопознанный тип входящего пакета: {}", readed.dataType());
@@ -136,7 +128,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             log.warn("Соединение-входной поток клиентского подключения завершено.");
         } catch (IOException e) {
             log.warn("Something wrong with client`s data stream: {}", ExceptionUtils.getFullExceptionMessage(e));
-            if (playerName != null && !playerName.equals(gameController.getCurrentPlayerNickName())) {
+            if (playerName != null && !playerName.equals(gameControllerService.getPlayerService().getCurrentPlayer().getNickName())) {
                 new FOptionPane().buildFOptionPane("Подключение разорвано",
                         "Подключение с %s было разорвано".formatted(playerName), 30, false);
             }
@@ -164,14 +156,17 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
     }
 
     private void doPongAnswerToClient(UUID uid) {
-        if (uid != null && uid.equals(gameController.getCurrentWorldUid())) {
+        if (uid != null && uid.equals(gameControllerService.getWorldService().getCurrentWorld().getUid())) {
             // Сервер не знает в какой именно из его миров стучится клиент, который
             //  сейчас загружен или другой, на этом же порту - потому сверяем.
             log.info("Клиент успешно пингует мир {}", uid);
             push(ClientDataDto.builder()
                     .dataType(NetDataType.EVENT)
                     .dataEvent(NetDataEvent.PONG)
-                    .content(EventPingPong.builder().worldUid(gameController.getCurrentWorldUid()).build())
+                    .content(EventPingPong.builder()
+                            .worldUid(gameControllerService.getWorldService().getCurrentWorld().getUid())
+                            .createdBy(gameControllerService.getWorldService().getCurrentWorld().getCreatedBy())
+                            .build())
                     .build());
         } else {
             log.debug("Пингуется не тот мир, потому WRONG_WORLD_PING");
@@ -189,42 +184,42 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         EventPlayerAuth auth = (EventPlayerAuth) readed.content();
         playerUid = auth.ownerUid();
         playerName = auth.playerName();
-//        if (gameController.getCurrentWorld() == null) {
-//            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current world");
-//        }
+        if (gameControllerService.getWorldService().getCurrentWorld() == null) {
+            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current world");
+        }
 
         // подготовка игрового мира, проверка пароля:
-//        World cw = gameController.getCurrentWorld();
-//        if (cw.getPasswordHash() != 0 && cw.getPasswordHash() != auth.passwordHash()) {
-//            log.error("Игрок {} ({}) ввёл не верный пароль. В доступе отказано! (пароль мира {} - пароль клиента {})",
-//                    playerName, playerUid, cw.getPasswordHash(), auth.passwordHash());
-//            isAuthorized.set(false);
-//            push(ClientDataDTO.builder()
-//                    .dataType(NetDataType.AUTH_DENIED)
-//                    .content(EventDenied.builder().explanation("Не верный пароль").build()).build());
-//        } else {
-//            log.info("Игрок {} ({}) успешно авторизован", auth.playerName(), auth.ownerUid());
-//            // для создателя этот мир - Локальный,для удалённого игрока этот мир не может быть Локальным:
-//            cw.setLocalWorld(playerUid.equals(cw.getAuthor()));
-//            isAuthorized.set(true);
-//            push(ClientDataDTO.builder()
-//                    .dataType(NetDataType.AUTH_SUCCESS)
-//                    .content(EventWorldData.builder()
-//                            .worldUid(cw.getUid())
-//                            .world(cw)
-//                            .build())
-//                    .build());
-//        }
+        WorldDto cw = gameControllerService.getWorldService().getCurrentWorld();
+        if (cw.getPassword().isBlank() && !cw.getPassword().equals(auth.password())) {
+            log.error("Игрок {} ({}) ввёл не верный пароль. В доступе отказано! (пароль мира {} - пароль клиента {})",
+                    playerName, playerUid, cw.getPassword(), auth.password());
+            isAuthorized.set(false);
+            push(ClientDataDto.builder()
+                    .dataType(NetDataType.AUTH_DENIED)
+                    .content(EventDenied.builder().explanation("Не верный пароль").build()).build());
+        } else {
+            log.info("Игрок {} ({}) успешно авторизован", auth.playerName(), auth.ownerUid());
+            // для создателя этот мир - Локальный,для удалённого игрока этот мир не может быть Локальным:
+            cw.setLocalWorld(playerUid.equals(cw.getCreatedBy()));
+            isAuthorized.set(true);
+            push(ClientDataDto.builder()
+                    .dataType(NetDataType.AUTH_SUCCESS)
+                    .content(EventWorldData.builder()
+                            .worldUid(cw.getUid())
+                            .world(cw)
+                            .build())
+                    .build());
+        }
     }
 
     private void saveConnectedHero(ClientDataDto readed) {
         EventHeroRegister connected = (EventHeroRegister) readed.content();
         CharacterDto hero;
-        if (gameController.isHeroExist(connected.heroUid())) {
-            hero = gameController.getHeroByUid(connected.heroUid());
+        if (gameControllerService.getCharacterService().isHeroExist(connected.heroUid())) {
+            hero = gameControllerService.getCharacterService().getByUid(connected.heroUid());
             BeanUtils.copyProperties(readed, hero, "heroUid");
         } else {
-            hero = gameController.saveNewHero((PlayCharacterDto) gameController.cliToHero(readed), false);
+            hero = gameControllerService.getCharacterService().justSaveAnyHero(gameControllerService.getEventService().cliToHero(readed));
         }
 
         this.isAccepted.set(true);
@@ -236,8 +231,9 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
         hero.setOnline(true);
 //        playedHeroes.addHero(hero);
 
+        // or:
 //        this.isAccepted.set(false);
-//        push(ClientDataDTO.builder().type(NetDataType.HERO_RESTRICTED).build());
+//        push(ClientDataDto.builder().dataType(NetDataType.HERO_RESTRICTED).build());
     }
 
     public void push(ClientDataDto data) {
@@ -275,7 +271,7 @@ public class ConnectedServerPlayer extends Thread implements Runnable {
             }
         }
 
-        ConnectedServerPlayer.this.interrupt();
+        ConnectedServerPlayerThread.this.interrupt();
     }
 
     public boolean isAccepted() {

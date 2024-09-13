@@ -25,11 +25,11 @@ public enum RarityType {
     }
 
     public String getDescription(GenderType gt) {
-        return switch (gt) {
-            case IT -> description + "ое";
-            case HE -> description + "ый";
-            case SHE -> description + "ая";
-            case THIS -> description + "ие";
+        return description + switch (gt) {
+            case IT -> "ое";
+            case HE -> "ый";
+            case SHE -> "ая";
+            case THIS -> "ие";
         };
     }
 }

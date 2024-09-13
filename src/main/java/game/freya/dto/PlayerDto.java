@@ -2,9 +2,8 @@ package game.freya.dto;
 
 import game.freya.config.Constants;
 import game.freya.dto.roots.CharacterDto;
-import game.freya.exceptions.ErrorMessages;
-import game.freya.exceptions.GlobalServiceException;
 import game.freya.utils.ExceptionUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,9 +12,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
-import javax.validation.constraints.NotNull;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.UUID;
@@ -31,17 +28,18 @@ public class PlayerDto {
 
     @NotNull
     @Setter
-    private String nickName;
+    private UUID uid;
 
     @NotNull
     @Setter
-    private UUID uid;
+    private String nickName;
 
     @Builder.Default
-    private String avatarUrl = Constants.DEFAULT_AVATAR_URL;
+    private String avatarUrl = Constants.getUserConfig().getUserAvatar();
 
     @Setter
     private UUID lastPlayedWorldUid;
+
 
     // custom fields:
     @Setter
@@ -52,18 +50,20 @@ public class PlayerDto {
     private CharacterDto currentActiveHero;
 
     public BufferedImage getAvatar() {
-        try (InputStream avatarResource = getClass().getResourceAsStream(Constants.DEFAULT_AVATAR_URL)) {
-            if (avatarResource != null) {
-                try {
-                    return ImageIO.read(avatarResource);
-                } catch (IOException ioe) {
-                    log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(ioe));
-                }
+        if (avatar == null) {
+            if (avatarUrl == null) {
+                avatarUrl = Constants.getUserConfig().getUserAvatar();
             }
-            return new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
-        } catch (IOException e) {
-            throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, Constants.DEFAULT_AVATAR_URL);
+            try (InputStream avatarResource = getClass().getResourceAsStream(avatarUrl)) {
+                if (avatarResource != null) {
+                    avatar = ImageIO.read(avatarResource);
+                }
+            } catch (Exception e) {
+                log.error("Players avatar read exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+                avatar = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+            }
         }
+        return avatar;
     }
 
     @Override

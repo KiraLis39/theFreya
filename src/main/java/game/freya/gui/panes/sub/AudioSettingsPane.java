@@ -2,7 +2,7 @@ package game.freya.gui.panes.sub;
 
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.gui.panes.handlers.FoxCanvas;
+import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
 import game.freya.gui.panes.sub.components.JZlider;
@@ -21,7 +21,7 @@ import java.awt.image.BufferedImage;
 public class AudioSettingsPane extends JPanel implements ChangeListener, iSubPane {
     private transient BufferedImage snap;
 
-    public AudioSettingsPane(FoxCanvas canvas) {
+    public AudioSettingsPane(RunnableCanvasPanel canvas) {
         setName("Audio settings pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -99,7 +99,7 @@ public class AudioSettingsPane extends JPanel implements ChangeListener, iSubPan
     }
 
     @Override
-    public void recalculate(FoxCanvas canvas) {
+    public void recalculate(RunnableCanvasPanel canvas) {
         setLocation((int) (canvas.getWidth() * 0.34d), 2);
         setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
         setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));

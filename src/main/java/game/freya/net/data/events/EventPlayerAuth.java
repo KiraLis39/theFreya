@@ -14,7 +14,8 @@ public record EventPlayerAuth(
         UUID heroUid,
         UUID ownerUid,
         String playerName,
-        int passwordHash,
+        String password,
+        UUID createdBy,
         UUID worldUid
 ) implements iClientEventData {
     @Override

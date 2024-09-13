@@ -30,6 +30,6 @@ public interface StorageToItemsRepo extends JpaRepository<StorageToItems, UUID>,
 
     @Modifying
     @Query("""
-        delete from StorageToItems sti where sti.id.itemUid = :itemUid and sti.id.storageUid = :storageUid""")
+            delete from StorageToItems sti where sti.id.itemUid = :itemUid and sti.id.storageUid = :storageUid""")
     void deleteByItemUidAndStorageUid(UUID itemUid, UUID storageUid);
 }

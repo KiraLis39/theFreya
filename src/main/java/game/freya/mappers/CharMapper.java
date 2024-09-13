@@ -1,9 +1,11 @@
 package game.freya.mappers;
 
 import game.freya.dto.BackpackDto;
+import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.PlayerDto;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.entities.Backpack;
+import game.freya.entities.PlayCharacter;
 import game.freya.entities.roots.Character;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
@@ -13,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,6 +27,18 @@ public final class CharMapper {
     private final StorageMapper storageMapper;
 
     public Character toEntity(CharacterDto dto) {
+        return characterToEntity(dto);
+    }
+
+    public CharacterDto toDto(Character entity) {
+        return characterToDto(entity);
+    }
+
+    public PlayCharacterDto toDto(PlayCharacter entity) {
+        return playCharacterToPlayDto(entity);
+    }
+
+    private Character characterToEntity(CharacterDto dto) {
         if (dto == null) {
             return null;
         }
@@ -59,7 +72,7 @@ public final class CharMapper {
                 .build();
     }
 
-    public CharacterDto toDto(Character entity) {
+    private CharacterDto characterToDto(Character entity) {
         if (entity == null) {
             return null;
         }
@@ -91,19 +104,52 @@ public final class CharMapper {
                 .build();
     }
 
-    public Set<Character> toEntities(Set<CharacterDto> heroes) {
-        if (heroes == null) {
-            return Collections.emptySet();
+    private PlayCharacterDto playCharacterToPlayDto(PlayCharacter entity) {
+        if (entity == null) {
+            return null;
         }
-        return heroes.stream().map(this::toEntity).collect(Collectors.toSet());
+
+        return (PlayCharacterDto) CharacterDto.builder()
+                .baseColor(entity.getBaseColor())
+                .secondColor(entity.getSecondColor())
+                .corpusType(entity.getCorpusType())
+                .peripheralType(entity.getPeripheralType())
+                .peripheralSize(entity.getPeripheralSize())
+                .heroType(entity.getHeroType())
+                .worldUid(entity.getWorldUid())
+                .inGameTime(entity.getInGameTime())
+                .lastPlayDate(entity.getLastPlayDate())
+                .buffs(buffMapper.toDto(entity.getBuffs()))
+                .inventory((BackpackDto) storageMapper.toDto(entity.getInventory()))
+                .ownerUid(entity.getOwnerUid())
+                .name(entity.getName())
+                .level(entity.getLevel())
+                .power(entity.getPower())
+                .experience(entity.getExperience())
+                .health(entity.getHealth())
+                .maxHealth(entity.getMaxHealth())
+                .oil(entity.getOil())
+                .maxOil(entity.getMaxOil())
+                .speed(entity.getSpeed())
+                .location(entity.getLocation())
+                .createdDate(entity.getCreatedDate())
+                .build();
     }
 
-    public List<CharacterDto> toDto(List<Character> heroes) {
-        return heroes.stream().map(this::toDto).collect(Collectors.toList());
+    public Set<Character> toEntities(Set<CharacterDto> dtos) {
+        return dtos.stream().map(this::toEntity).collect(Collectors.toSet());
     }
 
-    public ClientDataDto heroToCli(CharacterDto hero, PlayerDto currentPlayer) {
-        if (hero == null) {
+    public List<CharacterDto> toDto(List<Character> characters) {
+        return characters.stream().map(this::characterToDto).collect(Collectors.toList());
+    }
+
+    public List<PlayCharacterDto> toPlayDto(List<PlayCharacter> characters) {
+        return characters.stream().map(this::playCharacterToPlayDto).collect(Collectors.toList());
+    }
+
+    public ClientDataDto heroToCli(CharacterDto character, PlayerDto player) {
+        if (character == null) {
             return null;
         }
 
@@ -111,41 +157,41 @@ public final class CharMapper {
                 .dataType(NetDataType.EVENT)
                 .dataEvent(NetDataEvent.HERO_REGISTER)
                 .content(EventHeroRegister.builder()
-                        .ownerUid(currentPlayer.getUid())
-                        .playerName(currentPlayer.getNickName())
-                        .heroUid(hero.getUid())
-                        .heroName(hero.getName())
-                        .heroType(hero.getHeroType())
-                        .baseColor(hero.getBaseColor())
-                        .secondColor(hero.getSecondColor())
-                        .corpusType(hero.getCorpusType())
-                        .peripheryType(hero.getPeripheralType())
-                        .peripherySize(hero.getPeripheralSize())
-                        .level(hero.getLevel())
-                        .hp(hero.getHealth())
-                        .maxHp(hero.getMaxHealth())
-                        .oil(hero.getOil())
-                        .maxOil(hero.getMaxOil())
-                        .speed(hero.getSpeed())
-                        .vector(hero.getVector())
-                        .positionX(hero.getLocation().x)
-                        .positionY(hero.getLocation().y)
-                        .worldUid(hero.getWorldUid()).build())
-                .power(hero.getPower())
-                .experience(hero.getExperience())
+                        .ownerUid(player.getUid())
+                        .playerName(player.getNickName())
+                        .heroUid(character.getUid())
+                        .heroName(character.getName())
+                        .heroType(character.getHeroType())
+                        .baseColor(character.getBaseColor())
+                        .secondColor(character.getSecondColor())
+                        .corpusType(character.getCorpusType())
+                        .peripheryType(character.getPeripheralType())
+                        .peripherySize(character.getPeripheralSize())
+                        .level(character.getLevel())
+                        .hp(character.getHealth())
+                        .maxHp(character.getMaxHealth())
+                        .oil(character.getOil())
+                        .maxOil(character.getMaxOil())
+                        .speed(character.getSpeed())
+                        .vector(character.getVector())
+                        .positionX(character.getLocation().x)
+                        .positionY(character.getLocation().y)
+                        .worldUid(character.getWorldUid()).build())
+                .power(character.getPower())
+                .experience(character.getExperience())
 //                .buffs(hero.getBuffs())
 //                .inventory(hero.getInventory())
 //                .inGameTime(hero.inGameTime())
                 .build();
     }
 
-    public CharacterDto cliToHero(ClientDataDto cli) {
+    public PlayCharacterDto cliToHero(ClientDataDto cli) {
         if (cli == null || cli.content() == null) {
             return null;
         }
 
         EventHeroRegister heroRegister = (EventHeroRegister) cli.content();
-        return CharacterDto.builder()
+        return PlayCharacterDto.builder()
                 .heroType(heroRegister.heroType())
 
                 .baseColor(heroRegister.baseColor())

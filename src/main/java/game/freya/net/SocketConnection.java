@@ -2,8 +2,9 @@ package game.freya.net;
 
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
+import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
-import game.freya.entities.roots.World;
+import game.freya.dto.roots.WorldDto;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;
@@ -34,63 +35,49 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
+@Getter
 @RequiredArgsConstructor
-public final class LocalSocketConnection implements Runnable, AutoCloseable {
-    private final AtomicBoolean isAuthorized = new AtomicBoolean(false);
-    private final AtomicBoolean isAccepted = new AtomicBoolean(false);
-    private final AtomicBoolean isPongReceived = new AtomicBoolean(false);
-    private final AtomicBoolean isPing = new AtomicBoolean(false);
-    @Getter
+public final class SocketConnection extends ConnectionHandler implements Runnable, AutoCloseable {
     private GameControllerService gameControllerService;
-    private ObjectOutputStream oos;
-
-    private Thread connectionThread, connectionLiveThread;
-
-    private Socket socket;
-
     private String host;
-
     private int port;
-
-    @Getter
     private volatile String lastExplanation;
-
     private volatile long lastDataReceivedTimestamp;
-
     @Setter
-    private boolean isControlledExit = false;
+    private volatile boolean isHandledExit;
 
-    public synchronized void openSocket(String host, Integer port, GameControllerService gameControllerService, boolean isPing) {
+    public void openSocket(String host, Integer port, GameControllerService gameControllerService, boolean isPing) {
         this.gameControllerService = gameControllerService;
-        this.isPing.set(isPing);
-        this.isControlledExit = false;
+        setPingReceived(isPing);
+        this.isHandledExit = false;
 
         this.host = host;
-        this.port = port != null ? port : Constants.DEFAULT_SERVER_PORT;
-        connectionThread = new Thread(LocalSocketConnection.this) {{
+        this.port = port != null ? port : Constants.getGameConfig().getDefaultServerPort();
+        setConnectionThread(new Thread(SocketConnection.this) {{
             setName("Socket connection thread");
             setDaemon(true);
             setUncaughtExceptionHandler((_, e) -> {
                 lastExplanation = ExceptionUtils.getFullExceptionMessage(e);
-                log.error("Ошибка потока {}: {}", connectionThread.getName(), lastExplanation);
+                log.error("Ошибка потока {}: {}", getConnectionThread().getName(), lastExplanation);
             });
             start();
-        }};
+        }});
 
-        connectionLiveThread = Thread.startVirtualThread(() -> {
+        setLiveThread(Thread.startVirtualThread(() -> {
             log.info("Поток поддержки жизни соединения начал свою работу.");
-            while (connectionThread.isAlive() && !Thread.currentThread().isInterrupted()) {
+            while (getConnectionThread().isAlive() && !Thread.currentThread().isInterrupted()) {
                 long timePass = System.currentTimeMillis() - this.lastDataReceivedTimestamp;
-                if (isOpen() && timePass >= Constants.getMaxConnectionWasteTime()) {
+                if (isOpen() && timePass >= Constants.getGameConfig().getMaxConnectionWasteTime()) {
                     log.info("Тишина с Сервера уже {} мс. Допустимо: {}. Пинг для поддержки соединения...",
-                            timePass, Constants.getMaxConnectionWasteTime());
+                            timePass, Constants.getGameConfig().getMaxConnectionWasteTime());
                     toServer(ClientDataDto.builder()
                             .dataType(NetDataType.EVENT)
                             .dataEvent(NetDataEvent.PING)
-                            .content(EventPingPong.builder().worldUid(gameControllerService.getCurrentWorldUid()).build())
+                            .content(EventPingPong.builder()
+                                    .worldUid(gameControllerService.getWorldService().getCurrentWorld().getUid())
+                                    .build())
                             .build());
                 }
                 try {
@@ -100,8 +87,8 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                 }
             }
             log.info("Поток поддержки жизни соединения завершил свою работу.");
-        });
-        connectionLiveThread.setName("Connection live thread");
+        }));
+        getLiveThread().setName("Connection live thread");
 
         // ждём пока сокет откроется и будет готов к работе:
         if (!isOpen()) {
@@ -123,7 +110,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
         switch (readed.dataType()) {
             case AUTH_DENIED -> {
                 EventDenied deny = (EventDenied) readed.content();
-                this.isAuthorized.set(false);
+                setAuthorized(false);
                 this.lastExplanation = deny.explanation();
                 log.error("Сервер отказал в авторизации по причине: {}", lastExplanation);
                 new FOptionPane().buildFOptionPane("Отказ:", "Сервер отклонил запрос на авторизацию: %s"
@@ -131,35 +118,33 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
             }
             case AUTH_SUCCESS -> {
                 EventWorldData auth = (EventWorldData) readed.content();
-                World serverWorld = auth.world();
+                WorldDto serverWorld = auth.world();
                 serverWorld.setUid(auth.worldUid());
                 serverWorld.setNetworkAddress(host + ":" + port);
-                gameControllerService.saveServerWorldAndSetAsCurrent(serverWorld);
-                this.isAuthorized.set(true);
+                gameControllerService.saveServerWorldAndSetAsCurrent(serverWorld); // todo: check createdBy not null
+                setAuthorized(true);
                 log.info("Сервер принял запрос авторизации, его мир установлен как текущий.");
             }
             case HERO_ACCEPTED -> {
-                this.isAccepted.set(true);
+                setAccepted(true);
                 log.info("Сервер принял выбор Героя");
-                Collection<CharacterDto> otherHeroes = readed.heroes();
+                Collection<PlayCharacterDto> otherHeroes = readed.heroes();
                 log.info("На Сервере уже есть героев: {}", otherHeroes.size());
-                for (CharacterDto otherHero : otherHeroes) {
-                    CharacterDto saved = gameControllerService.justSaveAnyHero(otherHero);
+                for (PlayCharacterDto otherHero : otherHeroes) {
+                    CharacterDto saved = gameControllerService.getCharacterService().justSaveAnyHero(otherHero);
 //                    gameControllerService.getPlayedHeroes().addHero(saved);
                 }
             }
             case HERO_RESTRICTED -> {
                 EventDenied deny = (EventDenied) readed.content();
-                this.isAccepted.set(false);
+                setAccepted(false);
                 this.lastExplanation = deny.explanation();
                 log.error("Сервер отказал в выборе Героя по причине: {}", deny.explanation());
                 new FOptionPane().buildFOptionPane("Отказ:", "Сервер отказал в выборе Героя: %s"
                         .formatted(deny.explanation()), 15, true);
             }
-            case HERO_REQUEST -> {
-//                gameController.saveNewRemoteHero(readed);
-//                gameController.setRemoteHeroRequestSent(false);
-            }
+            case HERO_REQUEST -> gameControllerService.getCharacterService()
+                    .justSaveAnyHero(gameControllerService.getEventService().cliToHero(readed));
             case CHAT -> {
                 TypeChat chat = (TypeChat) readed.content();
                 if (chat.chatMessage() != null) {
@@ -167,42 +152,43 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                     log.info("Новые сообщения чата: {}", message);
                 }
             }
-            case EVENT -> {
-                switch (readed.dataEvent()) {
-                    case CLIENT_DIE -> {
-                        EventClientDied died = (EventClientDied) readed.content();
-                        if (died != null) {
-                            this.lastExplanation = died.explanation();
-                        }
-                        log.info("Сервер изъявил своё желание покончить с нами"
-                                + (this.lastExplanation != null ? ": {}" : "") + ". Сворачиваемся...", this.lastExplanation);
-                        killSelf();
-                    }
-                    case PING -> toServer(ClientDataDto.builder()
-                            .dataType(NetDataType.EVENT)
-                            .dataEvent(NetDataEvent.PONG)
-                            .build());
-                    case PONG -> {
-                        EventPingPong pong = (EventPingPong) readed.content();
-                        this.lastExplanation = pong.worldUid().toString();
-                        this.isPongReceived.set(true);
-                    }
-                    case WRONG_WORLD_PING -> {
-                        EventDenied deny = (EventDenied) readed.content();
-                        log.info("Сервер сообщил о некорректном пинге активного мира: {}", deny.explanation());
-                        this.lastExplanation = deny.explanation();
-                        this.isPongReceived.set(false);
-                        killSelf();
-                    }
-                    case HERO_OFFLINE, HERO_MOVING -> {
-                        log.debug("Приняты данные синхронизации {} от игрока: {} (герой: {})",
-                                readed.dataEvent(), readed.playerName(), readed.heroName());
-//                        gameController.syncServerDataWithCurrentWorld(readed);
-                    }
-                    default -> log.error(Constants.getNotRealizedString());
-                }
-            }
+            case EVENT -> readEvent(readed);
             default -> log.error("От Сервера пришел необработанный тип данных: {}", readed.dataType());
+        }
+    }
+
+    private void readEvent(ClientDataDto clientDataDto) {
+        switch (clientDataDto.dataEvent()) {
+            case CLIENT_DIE -> {
+                EventClientDied died = (EventClientDied) clientDataDto.content();
+                if (died != null) {
+                    this.lastExplanation = died.explanation();
+                }
+                log.info("Сервер изъявил своё желание покончить с нами по причине: {}. Сворачиваемся...", this.lastExplanation);
+                close();
+            }
+            case PING -> toServer(ClientDataDto.builder()
+                    .dataType(NetDataType.EVENT)
+                    .dataEvent(NetDataEvent.PONG)
+                    .build());
+            case PONG -> {
+                EventPingPong pong = (EventPingPong) clientDataDto.content();
+                this.lastExplanation = pong.worldUid().toString();
+                setPongReceived(true);
+            }
+            case WRONG_WORLD_PING -> {
+                EventDenied deny = (EventDenied) clientDataDto.content();
+                log.info("Сервер сообщил о некорректном пинге активного мира: {}", deny.explanation());
+                this.lastExplanation = deny.explanation();
+                setPongReceived(false);
+                close();
+            }
+            case HERO_OFFLINE, HERO_MOVING -> {
+                log.debug("Приняты данные синхронизации {} от игрока: {} (герой: {})",
+                        clientDataDto.dataEvent(), clientDataDto.playerName(), clientDataDto.heroName());
+                gameControllerService.syncServerDataWithCurrentWorld(clientDataDto);
+            }
+            default -> log.error(Constants.getNotRealizedString());
         }
     }
 
@@ -211,7 +197,7 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
      *
      * @param dataDTO данные об изменениях локальной версии мира.
      */
-    public synchronized void toServer(ClientDataDto dataDTO) {
+    public void toServer(ClientDataDto dataDTO) {
         // PONG никому не интересен, лишь мешает логу. EVENT тоже.
         if (!dataDTO.dataEvent().equals(NetDataEvent.PONG)) {
             if (dataDTO.dataEvent().equals(NetDataEvent.PING)) {
@@ -221,46 +207,113 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
             }
         }
 
-        if (this.oos == null || !isOpen()) {
+        if (getOutputStream() == null || !isOpen()) {
             long was = System.currentTimeMillis();
-            while ((this.oos == null || !isOpen()) && System.currentTimeMillis() - was < 6_000) {
+            while ((getOutputStream() == null || !isOpen()) && System.currentTimeMillis() - was < 6_000) {
                 Thread.yield();
             }
         }
-        if (this.oos == null || !isOpen()) {
+        if (getOutputStream() == null || !isOpen()) {
             throw new GlobalServiceException(ErrorMessages.SOCKET_CLOSED);
         }
 
         try {
-            this.oos.writeObject(dataDTO);
-            this.oos.flush();
+            getOutputStream().writeObject(dataDTO);
+            getOutputStream().flush();
         } catch (SocketException se) {
             log.error("Ошибка сокета. Он вообще открыт? ({}): {}", isOpen(), ExceptionUtils.getFullExceptionMessage(se));
             this.lastExplanation = se.getMessage();
             // killSelf();
         } catch (IOException e) {
             log.error("Ошибка отправки данных {} на Сервер", dataDTO);
-            killSelf();
+            close();
         } catch (NullPointerException npe) {
             log.warn("Подключение имеет проблемы и будет закрыто: {}", ExceptionUtils.getFullExceptionMessage(npe));
-            killSelf();
+            close();
         } catch (Exception e) {
             log.warn("Not handled exception here (1): {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 
-    public void killSelf() {
-        resetPingPong();
-        this.isAuthorized.set(false);
-        this.isAccepted.set(false);
+    @Override
+    public void run() {
+        try (Socket client = new Socket()) {
+            setServerSocket(client);
+            getServerSocket().setSendBufferSize(Constants.getGameConfig().getSocketBufferSize());
+            getServerSocket().setReceiveBufferSize(Constants.getGameConfig().getSocketBufferSize());
+            getServerSocket().setReuseAddress(true);
+            // getServerSocket().setKeepAlive(true);
+            getServerSocket().setTcpNoDelay(true);
 
-        if (connectionLiveThread != null && !connectionLiveThread.isInterrupted()) {
-            connectionLiveThread.interrupt();
+            getServerSocket().setSoTimeout(Constants.getGameConfig().getConnectionNoDataTimeout());
+            getServerSocket().connect(new InetSocketAddress(this.host, this.port), Constants.getGameConfig().getSocketPingAwaitTimeout());
+
+            try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()));
+                 ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))
+            ) {
+                setOutputStream(outs);
+                log.info("Socket connection to '{}:{}' is ready!", host, port);
+
+                ClientDataDto readed;
+                while ((readed = (ClientDataDto) inps.readObject()) != null && !getConnectionThread().isInterrupted()) {
+                    parseNextData(readed);
+                }
+
+                log.info("Завершена работа inputs-outputs клиентского соединения с Сервером.");
+                close();
+            } catch (EOFException eof) {
+                log.error("При работе InputStream сокетного соединения с Сервером произошла ошибка EOF: {}",
+                        ExceptionUtils.getFullExceptionMessage(eof));
+            }
+            log.warn("Завершена работа всех соединений текущего подключения с Сервером.");
+        } catch (ConnectException ce) {
+            if (!isPingRecieved()) {
+                if (ce.getMessage().contains("Connection timed out")) {
+                    log.error("За указанное время не было получено никаких данных от Сервера.");
+                } else {
+                    log.error("Ошибка подключения: {}", ExceptionUtils.getFullExceptionMessage(ce));
+                }
+            }
+        } catch (SocketException e) {
+            if (!isPingRecieved() && !isHandledExit) {
+                log.error("Ошибка сокета: {}", ExceptionUtils.getFullExceptionMessage(e));
+            }
+        } catch (UnknownHostException e) {
+            log.error("Ошибка хоста: {}", ExceptionUtils.getFullExceptionMessage(e));
+        } catch (SocketTimeoutException ste) {
+            if (!isPingRecieved()) {
+                log.error("Вылет по тайм-ауту: {}", ExceptionUtils.getFullExceptionMessage(ste));
+                close();
+            }
+        } catch (IOException e) {
+            if (!isPingRecieved()) {
+                log.error("Ошибка ввода-вывода: {}", ExceptionUtils.getFullExceptionMessage(e));
+            }
+        } catch (ClassNotFoundException e) {
+            log.error("Ошибка чтения в класс: {}", ExceptionUtils.getFullExceptionMessage(e));
+        } catch (Exception e) {
+            log.warn("Not handled exception here (6): {}", ExceptionUtils.getFullExceptionMessage(e));
         }
 
-        if (this.socket != null && !this.socket.isClosed()) {
+        close();
+        if (!isPingRecieved()) {
+            log.info("Теперь локальное сокетное подключение полностью закрыто.");
+        }
+    }
+
+    @Override
+    public void close() {
+        resetPingPong();
+        setAuthorized(false);
+        setAccepted(false);
+
+        if (getLiveThread() != null && !getLiveThread().isInterrupted()) {
+            getLiveThread().interrupt();
+        }
+
+        if (getServerSocket() != null && !getServerSocket().isClosed()) {
             log.warn("Destroy the connection...");
-            if (!isPing.get() && isOpen()) {
+            if (!isPingRecieved() && isOpen()) {
                 try {
                     toServer(ClientDataDto.builder()
                             .dataType(NetDataType.EVENT)
@@ -271,126 +324,81 @@ public final class LocalSocketConnection implements Runnable, AutoCloseable {
                 }
             }
             try {
-                this.socket.close();
+                getServerSocket().close();
             } catch (Exception e) {
                 log.error("Провал гашения локального подключения к Серверу: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
         }
 
-        if (connectionThread != null && !connectionThread.isInterrupted()) {
-            connectionThread.interrupt();
+        if (getConnectionThread() != null && !getConnectionThread().isInterrupted()) {
+            getConnectionThread().interrupt();
         }
 
-//        if (!isPing.get() && gameController.isGameActive()) {
-//            gameController.setGameActive(false);
-//            log.info("Переводим героя {} ({}) в статус offlile и сохраняем...",
-//                    gameController.getCurrentHeroName(), gameController.getCurrentHeroUid());
-//            gameController.setCurrentHeroOfflineAndSave(null);
-//            gameController.loadScreen(ScreenType.MENU_SCREEN);
-//        }
+        if (!isPingRecieved() && gameControllerService.isGameActive()) {
+            // останавливаем игру:
+            gameControllerService.setGameActive(false);
+            log.info("Переводим героя {} ({}) в статус offline и сохраняем...",
+                    gameControllerService.getCharacterService().getCurrentHero().getName(),
+                    gameControllerService.getCharacterService().getCurrentHero().getUid());
+            gameControllerService.getCharacterService().getCurrentHero().setOnline(false);
+            gameControllerService.getCharacterService().saveCurrent();
+            // возвращаемся в главное меню:
+            gameControllerService.getGameFrameController().loadMenuScreen();
+        }
     }
 
-    public boolean isOpen() {
-        return this.socket != null
-                && !this.socket.isClosed()
-                && this.socket.isConnected()
-                && !this.socket.isOutputShutdown()
-                && !this.socket.isInputShutdown();
-    }
+    public void startClientBroadcast() {
+        log.info("Начало вещания на Сервер...");
+        if (getNetDataTranslator() != null && !getNetDataTranslator().isInterrupted()) {
+            getNetDataTranslator().interrupt();
+        }
 
-    public String getActiveHost() {
-        return this.host;
-    }
-
-    public boolean isPongReceived() {
-        return isPongReceived.get();
-    }
-
-    public void resetPingPong() {
-        log.debug("Сброс статуса PONG на false по-умолчанию...");
-        this.isPongReceived.set(false);
-    }
-
-    public boolean isAuthorized() {
-        return isAuthorized.get();
-    }
-
-    public boolean isAccepted() {
-        return isAccepted.get();
-    }
-
-    @Override
-    public void run() {
-        try (Socket client = new Socket()) {
-            this.socket = client;
-            this.socket.setSendBufferSize(Constants.SOCKET_BUFFER_SIZE);
-            this.socket.setReceiveBufferSize(Constants.SOCKET_BUFFER_SIZE);
-            this.socket.setReuseAddress(true);
-            // this.socket.setKeepAlive(true);
-            this.socket.setTcpNoDelay(true);
-
-            this.socket.setSoTimeout(Constants.SOCKET_CONNECTION_AWAIT_TIMEOUT);
-            this.socket.connect(new InetSocketAddress(this.host, this.port), Constants.SOCKET_PING_AWAIT_TIMEOUT);
-
-            try (ObjectOutputStream outs = new ObjectOutputStream(new BufferedOutputStream(client.getOutputStream(), client.getSendBufferSize()));
-                 ObjectInputStream inps = new ObjectInputStream(new BufferedInputStream(client.getInputStream(), client.getReceiveBufferSize()))
-            ) {
-                this.oos = outs;
-                log.info("Socket connection to '{}:{}' is ready!", host, port);
-
-                ClientDataDto readed;
-                while ((readed = (ClientDataDto) inps.readObject()) != null && !connectionThread.isInterrupted()) {
-                    parseNextData(readed);
+        // создаётся поток текущего состояния на Сервер:
+        setNetDataTranslator(new Thread(() -> {
+            while (!getNetDataTranslator().isInterrupted() && isOpen() && gameControllerService.isGameActive()) {
+                if (!getDeque().isEmpty()) {
+                    while (!getDeque().isEmpty()) {
+                        toServer(getDeque().pollFirst());
+                    }
                 }
 
-                log.info("Завершена работа inputs-outputs клиентского соединения с Сервером.");
-                killSelf();
-            } catch (EOFException eof) {
-                log.error("При работе InputStream сокетного соединения с Сервером произошла ошибка EOF: {}",
-                        ExceptionUtils.getFullExceptionMessage(eof));
-            }
-            log.warn("Завершена работа всех соединений текущего подключения с Сервером.");
-        } catch (ConnectException ce) {
-            if (!isPing.get()) {
-                if (ce.getMessage().contains("Connection timed out")) {
-                    log.error("За указанное время не было получено никаких данных от Сервера.");
-                } else {
-                    log.error("Ошибка подключения: {}", ExceptionUtils.getFullExceptionMessage(ce));
+                try {
+                    Thread.sleep(Constants.getGameConfig().getServerBroadcastDelay());
+                } catch (InterruptedException e) {
+                    log.warn("Прерывание потока отправки данных на сервер!");
+                    Thread.currentThread().interrupt();
                 }
             }
-        } catch (SocketException e) {
-            if (!isPing.get() && !isControlledExit) {
-                log.error("Ошибка сокета: {}", ExceptionUtils.getFullExceptionMessage(e));
-            }
-        } catch (UnknownHostException e) {
-            log.error("Ошибка хоста: {}", ExceptionUtils.getFullExceptionMessage(e));
-        } catch (SocketTimeoutException ste) {
-            if (!isPing.get()) {
-                log.error("Вылет по тайм-ауту: {}", ExceptionUtils.getFullExceptionMessage(ste));
-                killSelf();
-            }
-        } catch (IOException e) {
-            if (!isPing.get()) {
-                log.error("Ошибка ввода-вывода: {}", ExceptionUtils.getFullExceptionMessage(e));
-            }
-        } catch (ClassNotFoundException e) {
-            log.error("Ошибка чтения в класс: {}", ExceptionUtils.getFullExceptionMessage(e));
-        } catch (Exception e) {
-            log.warn("Not handled exception here (6): {}", ExceptionUtils.getFullExceptionMessage(e));
-        }
-
-        killSelf();
-        if (!isPing.get()) {
-            log.info("Теперь локальное сокетное подключение полностью закрыто.");
-        }
+            log.info("Поток трансляции данных игры на Сервер остановлен.");
+        }));
+        getNetDataTranslator().setName("Game-to-Server data broadcast thread");
+        getNetDataTranslator().setDaemon(true);
+        getNetDataTranslator().start();
     }
 
-    public boolean isAlive() {
-        return connectionThread != null && connectionThread.isAlive();
-    }
+    public boolean registerOnServer() {
+        log.info("Отправка данных текущего героя на Сервер...");
+        toServer(gameControllerService.getEventService()
+                .heroToCli(gameControllerService.getCharacterService().getCurrentHero(), gameControllerService.getPlayerService().getCurrentPlayer()));
 
-    @Override
-    public void close() {
-        killSelf();
+        Thread heroCheckThread = Thread.startVirtualThread(() -> {
+            while (!isAccepted() && !Thread.currentThread().isInterrupted()) {
+                Thread.yield();
+            }
+        });
+
+        try {
+            heroCheckThread.join(9_000);
+            if (heroCheckThread.isAlive()) {
+                log.error("Не получили разрешения на Героя от Сервера.");
+                heroCheckThread.interrupt();
+                return false;
+            } else {
+                return true;
+            }
+        } catch (InterruptedException e) {
+            heroCheckThread.interrupt();
+            return false;
+        }
     }
 }

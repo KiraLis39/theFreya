@@ -1,5 +1,6 @@
 package game.freya.repositories;
 
+import game.freya.entities.PlayCharacter;
 import game.freya.entities.roots.Character;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -17,7 +18,7 @@ public interface CharacterRepository extends JpaRepository<Character, UUID>, Jpa
 
     Optional<Character> findByUid(UUID heroId);
 
-    List<Character> findAllByWorldUidAndOwnerUid(UUID uid, UUID ownerUuid);
+    List<PlayCharacter> findAllByWorldUidAndOwnerUid(UUID uid, UUID ownerUuid);
 
     List<Character> findAllByWorldUid(UUID uid);
 }

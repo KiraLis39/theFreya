@@ -10,13 +10,13 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import javax.validation.constraints.NotNull;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,8 +31,8 @@ public class World extends AbstractEntity {
     @Column(name = "is_net_available", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private boolean isNetAvailable = false;
 
-    @Column(name = "password_hash")
-    private int passwordHash;
+    @Column(name = "password")
+    private String password;
 
     @NotNull
     @Builder.Default

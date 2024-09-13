@@ -22,6 +22,7 @@ public record EventHeroRegister(
         HeroPeripheralType peripheryType,
         short peripherySize,
         UUID heroUid,
+        UUID createdBy,
         String heroName,
         HeroType heroType,
         short level,

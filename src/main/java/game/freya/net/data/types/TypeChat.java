@@ -19,6 +19,7 @@ public record TypeChat(
         UUID heroUid,
         String heroName,
         UUID worldUid,
+        UUID createdBy,
         String chatMessage
 ) implements iClientEventData {
     @Override

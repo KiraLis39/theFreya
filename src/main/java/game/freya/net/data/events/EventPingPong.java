@@ -10,6 +10,7 @@ import java.util.UUID;
 public record EventPingPong(
         UUID dataUid,
         UUID heroUid,
+        UUID createdBy,
         String heroName,
         UUID ownerUid,
         String playerName,

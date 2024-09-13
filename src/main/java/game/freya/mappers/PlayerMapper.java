@@ -28,10 +28,6 @@ public final class PlayerMapper {
                 .build();
     }
 
-    public Set<Player> toEntities(Map<String, PlayerDto> players) {
-        return players.values().stream().map(this::toEntity).collect(Collectors.toSet());
-    }
-
     public PlayerDto toDto(Player entity) {
         if (entity == null) {
             return null;
@@ -43,5 +39,9 @@ public final class PlayerMapper {
                 .avatarUrl(entity.getAvatarUrl())
                 .lastPlayedWorldUid(entity.getLastPlayedWorldUid())
                 .build();
+    }
+
+    public Set<Player> toEntities(Map<String, PlayerDto> players) {
+        return players.values().stream().map(this::toEntity).collect(Collectors.toSet());
     }
 }
