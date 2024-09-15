@@ -1,7 +1,6 @@
-package game.freya.dto;
+package game.freya.dto.roots;
 
 import game.freya.config.Constants;
-import game.freya.dto.roots.CharacterDto;
 import game.freya.utils.ExceptionUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

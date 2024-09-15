@@ -1,5 +1,6 @@
 package game.freya.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.config.Constants;
 import game.freya.dto.roots.EnvironmentDto;
 import lombok.Builder;
@@ -17,9 +18,11 @@ import java.awt.image.BufferedImage;
 @Setter
 @SuperBuilder
 public class MockEnvironmentWithStorageDto extends EnvironmentDto {
+    @JsonIgnore
     private final BufferedImage[] spriteList;
 
     @Setter
+    @JsonIgnore
     @Builder.Default
     private short spriteIndex = 0;
 
@@ -39,5 +42,15 @@ public class MockEnvironmentWithStorageDto extends EnvironmentDto {
     public void draw(Graphics2D g2D) {
         g2D.drawImage(spriteList[spriteIndex],
                 (int) getLocation().x, (int) getLocation().y, getSize().width, getSize().height, null);
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        return false;
+    }
+
+    @Override
+    public void onDestroy() {
+
     }
 }

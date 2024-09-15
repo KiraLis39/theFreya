@@ -1,16 +1,9 @@
 package game.freya.interfaces;
 
-import game.freya.dto.roots.CharacterDto;
-import game.freya.dto.roots.ItemDto;
 import game.freya.enums.other.CurrencyVault;
+import game.freya.interfaces.subroot.iStorable;
 
-import java.util.UUID;
-
-public interface iTradeable extends Comparable<iTradeable> {
-    UUID getUid();
-
-    String getName();
-
+public interface iTradeable extends iStorable {
     CurrencyVault getCurrencyType();
 
     int getDefaultByeCost(); // стоимость по-умолчанию покупки у NPC
@@ -20,8 +13,4 @@ public interface iTradeable extends Comparable<iTradeable> {
     int getDefaultSellCost(); // стоимость по-умолчанию продажи у NPC
 
     int getCurrentSellCost(); // стоимость продажи у игроков
-
-    void setCurrentSellCost(int cost);
-
-    boolean trade(CharacterDto seller, ItemDto item, CharacterDto buyer, CurrencyVault vaultType, int paySum);
 }

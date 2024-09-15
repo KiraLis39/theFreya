@@ -3,9 +3,9 @@ package game.freya.dto.roots;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.interfaces.iGameObject;
-import game.freya.interfaces.iStorage;
+import game.freya.interfaces.subroot.iStorage;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +24,10 @@ import java.util.UUID;
 @Setter
 @Getter
 @SuperBuilder
+@AllArgsConstructor
 //@Accessors(chain = true, fluent = true, prefix = {"+set"})
 @RequiredArgsConstructor
-public non-sealed class StorageDto extends AbstractEntityDto implements iGameObject, iStorage {
+public abstract class StorageDto extends AbstractEntityDto implements iStorage {
 
     @Schema(description = "The capacity of container", requiredMode = Schema.RequiredMode.REQUIRED)
     private short capacity;
@@ -139,12 +140,12 @@ public non-sealed class StorageDto extends AbstractEntityDto implements iGameObj
 
     @Override
     @JsonIgnore
-    public boolean translate(StorageDto dst, UUID itemUid, int count) {
-        UUID srcRemovedItem = removeItem(itemUid, count);
+    public boolean translate(StorageDto dst, ItemDto itemDto, int count) {
+        UUID srcRemovedItem = removeItem(itemDto.getUid(), count);
         if (srcRemovedItem == null) {
             return false;
         }
-        dst.putItem(ItemDto.builder().uid(srcRemovedItem).build(), count);
+        dst.putItem(itemDto, count);
         return true;
     }
 
@@ -203,5 +204,15 @@ public non-sealed class StorageDto extends AbstractEntityDto implements iGameObj
         }
         StorageDto storage = (StorageDto) o;
         return Objects.equals(getName(), storage.getName()) && Objects.equals(getUid(), storage.getUid());
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        return false;
+    }
+
+    @Override
+    public void onDestroy() {
+
     }
 }

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 @Component
 public class WorldMapper {
     private final EnvironmentMapper environmentMapper;
+    private final CharacterMapper characterMapper;
 
     public WorldDto toDto(World entity) {
         if (entity == null) {
@@ -23,19 +24,17 @@ public class WorldMapper {
                 .uid(entity.getUid())
                 .createdBy(entity.getCreatedBy())
                 .name(entity.getName())
-                .level(entity.getLevel())
+                .hardnessLevel(entity.getHardnessLevel())
                 .size(new Dimension(entity.getSize().width, entity.getSize().height))
                 .isNetAvailable(entity.isNetAvailable())
                 .password(entity.getPassword()) // bcrypt
                 .createdDate(entity.getCreatedDate())
                 .createdBy(entity.getCreatedBy())
-                .isLocalWorld(entity.isLocalWorld())
-                .networkAddress(entity.getNetworkAddress())
-                .environments(environmentMapper.toDto(entity.getEnvironments()))
+                .isLocal(entity.isLocal())
+                .address(entity.getAddress())
                 .cacheKey(entity.getCacheKey())
-                .collider(entity.getCollider())
-                .isVisible(entity.isVisible())
-                .location(entity.getLocation())
+                .heroes(characterMapper.toDto(entity.getHeroes()))
+                .environments(environmentMapper.toDto(entity.getEnvironments()))
                 .build();
     }
 
@@ -51,16 +50,14 @@ public class WorldMapper {
                 .isNetAvailable(dto.isNetAvailable())
                 .password(dto.getPassword()) // bcrypt
                 .size(dto.getSize())
-                .level(dto.getLevel())
+                .hardnessLevel(dto.getHardnessLevel())
                 .createdDate(dto.getCreatedDate())
                 .createdBy(dto.getCreatedBy())
-                .isLocalWorld(dto.isLocalWorld())
-                .networkAddress(dto.getNetworkAddress())
-                .environments(environmentMapper.toEntity(dto.getEnvironments()))
+                .isLocal(dto.isLocal())
+                .address(dto.getAddress())
                 .cacheKey(dto.getCacheKey())
-                .collider(dto.getCollider())
-                .isVisible(dto.isVisible())
-                .location(dto.getLocation())
+                .heroes(characterMapper.toEntity(dto.getHeroes()))
+                .environments(environmentMapper.toEntity(dto.getEnvironments()))
                 .build();
     }
 

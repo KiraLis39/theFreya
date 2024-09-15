@@ -50,7 +50,7 @@ public class UserConfigService {
         } catch (MismatchedInputException mie) {
             log.error("#010 Is the save file empty? Ex.: {}", ExceptionUtils.getFullExceptionMessage(mie));
             createOrSaveUserConfig();
-            gameController.exitTheGame(null, 28);
+            Constants.setUserConfig(mapper.readValue(Files.readString(userSaveFile), UserConfig.class));
         } catch (Exception e) {
             log.error("#011 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(e));
             new FOptionPane().buildFOptionPane("Сохранение повреждено:",

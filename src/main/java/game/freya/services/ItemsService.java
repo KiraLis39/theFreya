@@ -1,6 +1,6 @@
 package game.freya.services;
 
-import game.freya.entities.roots.Item;
+import game.freya.entities.roots.prototypes.Item;
 import game.freya.repositories.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

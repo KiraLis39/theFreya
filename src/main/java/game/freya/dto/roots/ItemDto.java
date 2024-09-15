@@ -1,13 +1,14 @@
 package game.freya.dto.roots;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import game.freya.enums.amunitions.RarityType;
 import game.freya.enums.other.CurrencyVault;
-import game.freya.interfaces.iGameObject;
-import game.freya.interfaces.iStorable;
+import game.freya.interfaces.iItem;
+import game.freya.interfaces.subroot.iStorable;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -21,30 +22,36 @@ import java.util.Set;
 @Getter
 @Setter
 @SuperBuilder
-public non-sealed class ItemDto extends TradeableImpl implements iGameObject, iStorable {
-
-//    @Transient
-//    @JsonIgnore
-//    private static TradeableImpl tradeable;
-
-    @Builder.Default
-    @Min(1)
-    @Schema(description = "По сколько может стаковаться в ячейке", requiredMode = Schema.RequiredMode.REQUIRED)
-    private int stackCount = 1;
+@RequiredArgsConstructor
+public abstract class ItemDto extends AbstractEntityDto implements iItem {
+    private int durability;
 
     @Builder.Default
     @Schema(description = "Хранилища этого предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Set<StorageDto> storages = new HashSet<>(1);
+    private final Set<StorageDto> storages = new HashSet<>(1);
+
+    @Builder.Default
+    @Schema(description = "Список бафов данного предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private final Set<BuffDto> buffs = new HashSet<>(3);
+
+    @Builder.Default
+    @Min(1)
+    @Schema(description = "По сколько может стаковаться в ячейке", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private int stackCount = 1;
 
     @Override
-    @JsonIgnore
     public void draw(Graphics2D g2D) {
 
     }
 
     @Override
-    @JsonIgnore
+    public float getWeight() {
+        return 0;
+    }
+
+    @Override
     public void drop(Point2D.Double location) {
+        log.info("Оружие '{}' ({}) выбрасывается в точке '{}'...", getName(), getUid(), location);
         // setCacheKey("dropped_item_type_image");
         setOwnerUid(null);
         setLocation(location);
@@ -52,7 +59,27 @@ public non-sealed class ItemDto extends TradeableImpl implements iGameObject, iS
 
     @Override
     public void onStoreTo(StorageDto storageDto) {
-        log.info("Item {} was stored into {}", getName(), storageDto.getName());
+        log.info("Оружие '{}' ({}) помещается в хранилище '{}' ({})...", getName(), getUid(), storageDto.getName(), storageDto.getUid());
+    }
+
+    @Override
+    public RarityType getRarity() {
+        return null;
+    }
+
+    @Override
+    public Set<iStorable> getSpareParts() {
+        return null;
+    }
+
+    @Override
+    public Image getIcon() {
+        return null;
+    }
+
+    @Override
+    public String getDescription() {
+        return null;
     }
 
     @Override
@@ -81,7 +108,43 @@ public non-sealed class ItemDto extends TradeableImpl implements iGameObject, iS
     }
 
     @Override
-    public void setCurrentSellCost(int cost) {
+    public int getDurability() {
+        return this.durability;
+    }
 
+    @Override
+    public boolean isDestroyed() {
+        return durability <= 0;
+    }
+
+    @Override
+    public void onDestroy() {
+
+    }
+
+    @Override
+    public boolean isBroken() {
+        return durability <= 1;
+    }
+
+    @Override
+    public void onBreak() {
+        this.durability = 1;
+        log.info("Оружие '{}' ({}) сломано.", getName(), getUid());
+    }
+
+    @Override
+    public void repair() {
+        this.durability = 100;
+    }
+
+    @Override
+    public void onRepair() {
+        log.info("Ремонт оружия '{}' ({})...", getName(), getUid());
+    }
+
+    @Override
+    public int compareTo(iItem o) {
+        return (o.getName().compareTo(getName()) + Integer.compare(o.getDurability(), getDurability())) / 2;
     }
 }

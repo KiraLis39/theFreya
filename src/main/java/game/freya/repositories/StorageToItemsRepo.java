@@ -1,7 +1,7 @@
 package game.freya.repositories;
 
-import game.freya.entities.middles.StorageToItems;
-import game.freya.entities.middles.StorageToItemsPK;
+import game.freya.entities.embedded.StorageToItems;
+import game.freya.entities.embedded.StorageToItemsPK;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;

@@ -1,4 +1,4 @@
-package game.freya.entities.middles;
+package game.freya.entities.embedded;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

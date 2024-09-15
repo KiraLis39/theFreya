@@ -257,7 +257,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
 
         if (snap == null) {
             log.info("Reload hero creating snap...");
-            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
+            BufferedImage bim = Constants.CACHE.getBufferedImage("menu_shadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }
@@ -322,7 +322,9 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
             ntf.selectAll();
         }
 
-        recolorHeroView();
+        if (isVisible) {
+            recolorHeroView();
+        }
     }
 
     public void load(PlayCharacterDto template) {

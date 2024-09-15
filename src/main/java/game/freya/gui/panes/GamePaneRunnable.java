@@ -69,7 +69,7 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
 //        addComponentListener(this);
 
         if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
-            if (gameControllerService.getWorldService().getCurrentWorld().isLocalWorld() && !gameControllerService.getServer().isOpen()) {
+            if (gameControllerService.getWorldService().getCurrentWorld().isLocal() && !gameControllerService.getServer().isOpen()) {
                 frameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в локальной сетевой игре, но наш Сервер не запущен!");
             }
@@ -375,11 +375,11 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
         if (gameControllerService.isGameActive()) {
             gameControllerService.setGameActive(false);
 
-            gameControllerService.saveTheGame(gameDuration);
+            justSave(gameDuration);
 
             // если игра сетевая и локальная - останавливаем сервер при выходе из игры:
             if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
-                if (gameControllerService.getWorldService().getCurrentWorld().isLocalWorld()) {
+                if (gameControllerService.getWorldService().getCurrentWorld().isLocal()) {
                     if (gameControllerService.closeServer()) {
                         log.info("Сервер успешно остановлен");
                     } else {

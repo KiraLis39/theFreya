@@ -20,6 +20,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -268,7 +269,7 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
 
     public void deleteExistsWorldAndCloseThatPanel(UUID worldUid) {
         log.info("Удаление мира {}...", worldUid);
-        gameControllerService.deleteWorld(worldUid);
+        gameControllerService.getWorldService().deleteByUid(worldUid);
     }
 
     public void deleteExistsPlayerHero(UUID heroUid) {
@@ -300,11 +301,23 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
         inAc();
         setVisible(true);
 
+        loadGameImages();
+
         recalculateMenuRectangles();
         createSubPanes();
         reloadShapes(this);
 
         this.initialized = true;
+    }
+
+    private void loadGameImages() {
+        try {
+            URL necUrl = getClass().getResource("/images/game/");
+            assert necUrl != null;
+            Constants.CACHE.addAllFrom(necUrl);
+        } catch (Exception e) {
+            log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
     }
 
     @Override

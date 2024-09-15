@@ -2,7 +2,7 @@ package game.freya.api;
 
 import game.freya.dto.roots.ItemDto;
 import game.freya.dto.roots.StorageDto;
-import game.freya.entities.roots.Item;
+import game.freya.entities.roots.prototypes.Item;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.ItemsMapper;
 import game.freya.services.ItemsService;
@@ -48,7 +48,7 @@ public class ItemController {
                     content = @Content(schema = @Schema(implementation = GlobalServiceException.class)))
     })
     @PostMapping("/create")
-    public ResponseEntity<ItemDto> createStorage(
+    public ResponseEntity<ItemDto> createItem(
             @Parameter(description = "Item model to create one")
             @RequestBody ItemDto dto
     ) {
@@ -70,7 +70,7 @@ public class ItemController {
                     content = @Content(schema = @Schema(implementation = GlobalServiceException.class)))
     })
     @DeleteMapping("/delete")
-    public ResponseEntity<HttpStatus> deleteStorage(
+    public ResponseEntity<HttpStatus> deleteItem(
             @Parameter(description = "Item uid for delete")
             @RequestParam UUID itemUid
     ) {

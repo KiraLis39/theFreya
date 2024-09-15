@@ -187,7 +187,7 @@ public class NetworkListPane extends JPanel implements iSubPane {
                                 + "<br>Адрес:<font color=#fcba03><b>      %s</b></font>"
                                 + "<br>Создано:<font color=#8805A8><b>    %s</b></font>"
                                 + "<br> </pre></html>")
-                                .formatted(getWorld().getLevel().getDescription(), getWorld().getNetworkAddress(),
+                                .formatted(getWorld().getHardnessLevel().getDescription(), getWorld().getAddress(),
                                         getWorld().getCreatedDate().format(Constants.DATE_FORMAT_3)),
                                 null) {{
                             setBackground(Color.CYAN);
@@ -270,10 +270,10 @@ public class NetworkListPane extends JPanel implements iSubPane {
                                 gameControllerService.setCurrentWorld(world.getUid());
 
                                 Constants.setConnectionAwait(true);
-                                if (getWorld().isLocalWorld()) {
+                                if (getWorld().isLocal()) {
                                     canvas.serverUp(world);
                                 } else {
-                                    address = getWorld().getNetworkAddress();
+                                    address = getWorld().getAddress();
                                     password = (String) new FOptionPane()
                                             .buildFOptionPane("Подключиться:", "Пароль сервера:",
                                                     FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
@@ -300,7 +300,7 @@ public class NetworkListPane extends JPanel implements iSubPane {
         super.paintComponent(g);
         if (snap == null) {
             log.info("Net list snap...");
-            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
+            BufferedImage bim = Constants.CACHE.getBufferedImage("menu_shadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }
@@ -359,11 +359,11 @@ public class NetworkListPane extends JPanel implements iSubPane {
 
                 SubPane sp = (SubPane) spn;
                 FButton connButton = sp.getConnButton();
-                if (sp.getWorld().isLocalWorld()) {
+                if (sp.getWorld().isLocal()) {
                     add = add.formatted("<font color=#394b5e><b>   (локальный)");
                     connButton.setBackground(Color.BLUE);
                 } else {
-                    String nad = sp.getWorld().getNetworkAddress();
+                    String nad = sp.getWorld().getAddress();
                     String host = nad.contains(":") ? nad.split(":")[0] : nad;
                     Integer port = nad.contains(":") ? Integer.parseInt(nad.split(":")[1]) : null;
                     boolean isPingOk = canvas.pingServer(host, port, sp.getWorld().getUid());

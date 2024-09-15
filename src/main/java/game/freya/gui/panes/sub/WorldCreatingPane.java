@@ -138,9 +138,9 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
                                         .createdBy(gameControllerService.getPlayerService().getCurrentPlayer().getUid())
                                         .createdDate(LocalDateTime.now())
                                         .name(getWorldName())
-                                        .level(getHardnessLevel())
+                                        .hardnessLevel(getHardnessLevel())
                                         .isNetAvailable(false)
-                                        .isLocalWorld(true)
+                                        .isLocal(true)
 //                                        .hasCollision()
 //                                        .isVisible()
 //                                        .collider()
@@ -161,7 +161,7 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Reload world creating snap...");
-            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
+            BufferedImage bim = Constants.CACHE.getBufferedImage("menu_shadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

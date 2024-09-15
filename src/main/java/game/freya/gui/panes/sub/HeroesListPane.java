@@ -48,7 +48,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
         HeroesListPane.this.removeAll();
 
         for (PlayCharacterDto hero : gameControllerService.getMyCurrentWorldHeroes()) {
-            add(new SubPane("Герой: ".concat(hero.getName()), hero.getHeroType().getColor()) {{
+            add(new SubPane("Герой: ".concat(hero.getName()), hero.getType().getColor()) {{
                 setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {
                     @Override
@@ -71,7 +71,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                         + "<br>Корпус:<font color=#239BEE><b>    %s</b></font>"
                         + "<br>Периферия:<font color=#239BEE><b> %s (%d)</b></font>"
                         + "</pre></html>")
-                        .formatted(hero.getHeroType().getDescription(), hero.getCorpusType(), hero.getPeripheralType(), hero.getPeripheralSize()),
+                        .formatted(hero.getType().getDescription(), hero.getCorpusType(), hero.getPeripheralType(), hero.getPeripheralSize()),
                         null) {{
                     setVerticalAlignment(TOP);
                     setAlignmentY(TOP_ALIGNMENT);
@@ -178,7 +178,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                         && !gameControllerService.getLocalSocketConnection().isOpen()
                                 ) {
                                     canvas.connectToServer(NetConnectTemplate.builder()
-                                            .address(gameControllerService.getWorldService().getCurrentWorld().getNetworkAddress())
+                                            .address(gameControllerService.getWorldService().getCurrentWorld().getAddress())
                                             .worldUid(gameControllerService.getWorldService().getCurrentWorld().getUid())
                                             .password(gameControllerService.getWorldService().getCurrentWorld().getPassword())
                                             .build());
@@ -209,7 +209,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Heroes list snap...");
-            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
+            BufferedImage bim = Constants.CACHE.getBufferedImage("menu_shadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

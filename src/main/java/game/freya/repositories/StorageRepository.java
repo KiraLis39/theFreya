@@ -1,6 +1,6 @@
 package game.freya.repositories;
 
-import game.freya.entities.roots.Storage;
+import game.freya.entities.roots.prototypes.Storage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;

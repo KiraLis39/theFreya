@@ -2,8 +2,8 @@ package game.freya.services;
 
 import game.freya.dto.roots.ItemStack;
 import game.freya.dto.roots.StorageDto;
-import game.freya.entities.roots.Item;
-import game.freya.entities.roots.Storage;
+import game.freya.entities.roots.prototypes.Item;
+import game.freya.entities.roots.prototypes.Storage;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.ItemsMapper;

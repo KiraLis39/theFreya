@@ -1,4 +1,4 @@
-package game.freya.entities.roots;
+package game.freya.entities.roots.prototypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
@@ -54,8 +54,7 @@ public abstract class AbstractEntity {
     @Column(name = "shape")
     private Rectangle2D.Double shape;
 
-    @NotNull
-    @Column(name = "location", nullable = false)
+    @Column(name = "location")
     private Point2D.Double location;
 
     @Column(name = "visible", columnDefinition = "BOOLEAN DEFAULT TRUE")

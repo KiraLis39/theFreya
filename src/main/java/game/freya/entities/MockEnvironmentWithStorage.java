@@ -1,6 +1,6 @@
 package game.freya.entities;
 
-import game.freya.entities.roots.Environment;
+import game.freya.entities.roots.prototypes.Environment;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;

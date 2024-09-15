@@ -8,7 +8,8 @@ import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.dto.roots.EnvironmentDto;
 import game.freya.dto.roots.WorldDto;
-import game.freya.entities.roots.Character;
+import game.freya.entities.PlayCharacter;
+import game.freya.entities.roots.prototypes.Character;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.enums.player.MovingVector;
@@ -16,7 +17,7 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameWindowController;
 import game.freya.gui.panes.GamePaneRunnable;
-import game.freya.interfaces.iEnvironment;
+import game.freya.interfaces.subroot.iEnvironment;
 import game.freya.net.PingService;
 import game.freya.net.Server;
 import game.freya.net.SocketConnection;
@@ -48,11 +49,11 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -152,57 +153,20 @@ public class GameControllerService extends GameControllerBase {
         }
 
         try {
-            try (InputStream netResource = getClass().getResourceAsStream("/images/menu.png")) {
-                assert netResource != null;
-                Constants.CACHE.addIfAbsent("backMenuImage", netResource.readAllBytes());
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/menu_shadowed.png")) {
-                assert netResource != null;
-                Constants.CACHE.addIfAbsent("backMenuImageShadowed", netResource.readAllBytes());
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/green_arrow.png")) {
-                assert netResource != null;
-                Constants.CACHE.addIfAbsent("green_arrow", netResource.readAllBytes());
-            }
-
-            try (InputStream netResource = getClass().getResourceAsStream("/images/net.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("net", netResource.readAllBytes());
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/player.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("player", netResource.readAllBytes());
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_01.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_01", netResource.readAllBytes());
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_02.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_02", netResource.readAllBytes());
-            }
-            try (InputStream netResource = getClass().getResourceAsStream("/images/mock_03.png")) {
-                Objects.requireNonNull(netResource);
-                Constants.CACHE.addIfAbsent("mock_03", netResource.readAllBytes());
-            }
+            URL necUrl = getClass().getResource("/images/necessary/");
+            assert necUrl != null;
+            Constants.CACHE.addAllFrom(necUrl);
         } catch (Exception e) {
             log.error("Menu canvas initialize exception: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
     }
 
-    private void closeConnections() {
-        // закрываем Сервер:
-        if (server != null && server.isOpen()) {
-            if (localSocketConnection != null) {
-                localSocketConnection.setHandledExit(true);
-            }
-            server.close();
-        }
+    public void exitTheGame(Duration duration, int errCode) {
+        saveTheGame(duration);
+        closeConnections();
 
-        // закрываем соединения:
-        if (localSocketConnection != null && localSocketConnection.isOpen()) {
-            localSocketConnection.close();
-        }
+        log.info("The game is finished with code {}!", errCode);
+        System.exit(errCode);
     }
 
     public void saveTheGame(Duration duration) {
@@ -227,21 +191,20 @@ public class GameControllerService extends GameControllerBase {
         log.info("The game is saved.");
     }
 
-    public void exitTheGame(Duration duration, int errCode) {
-        saveTheGame(duration);
-        closeConnections();
+    private void closeConnections() {
+        // закрываем Сервер:
+        if (server != null && server.isOpen()) {
+            if (localSocketConnection != null) {
+                localSocketConnection.setHandledExit(true);
+            }
+            server.close();
+        }
 
-        log.info("The game is finished with code {}!", errCode);
-        System.exit(errCode);
-    }
-
-    public void deleteWorld(UUID worldUid) {
-        log.warn("Удаление Героев мира {}...", worldUid);
-        characterService.findAllByWorldUuid(worldUid)
-                .forEach(hero -> characterService.deleteByUuid(hero.getUid()));
-
-        log.warn("Удаление мира {}...", worldUid);
-        worldService.deleteByUid(worldUid);
+        // закрываем соединения:
+        if (localSocketConnection != null && localSocketConnection.isOpen()) {
+            localSocketConnection.setHandledExit(true);
+            localSocketConnection.close();
+        }
     }
 
     public void doScreenShot(Point location, Rectangle canvasRect) {
@@ -464,7 +427,7 @@ public class GameControllerService extends GameControllerBase {
         return worldService.getEnvironmentsFromRectangle(rectangle);
     }
 
-    public List<CharacterDto> findAllHeroesByWorldUid(UUID uid) {
+    public Set<PlayCharacterDto> findAllHeroesByWorldUid(UUID uid) {
         return characterService.findAllByWorldUuid(uid);
     }
 
@@ -579,7 +542,7 @@ public class GameControllerService extends GameControllerBase {
             WorldDto old = wOpt.get();
             BeanUtils.copyProperties(worldDto, old);
             worldService.setCurrentWorld(old);
-            saveTheGame(null);
+            worldService.saveCurrent();
         } else {
             worldService.setCurrentWorld(worldService.saveOrUpdate(worldDto));
         }
@@ -611,7 +574,7 @@ public class GameControllerService extends GameControllerBase {
         log.debug("Получены данные для синхронизации {} игрока {} (герой {})",
                 data.dataEvent(), data.content().ownerUid(), data.content().heroUid());
 
-        Optional<Character> aimOpt = characterService.findByUid(data.content().heroUid());
+        Optional<PlayCharacter> aimOpt = characterService.findByUid(data.content().heroUid());
         if (aimOpt.isEmpty()) {
             log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", data.content().heroUid());
             requestHeroFromServer(data.content().heroUid());
@@ -646,9 +609,12 @@ public class GameControllerService extends GameControllerBase {
     }
 
     public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID clientUid) {
-        PlayCharacterDto charDto = (PlayCharacterDto) characterService.getByUid(clientUid);
-        charDto.setOnline(false);
-        characterService.justSaveAnyHero(charDto);
+        Optional<CharacterDto> charDtoOpt = characterService.getByUid(clientUid);
+        if (charDtoOpt.isPresent()) {
+            PlayCharacterDto charDto = (PlayCharacterDto) charDtoOpt.get();
+            charDto.setOnline(false);
+            characterService.justSaveAnyHero(charDto);
+        }
     }
 
     public void requestHeroFromServer(UUID uid) {

@@ -248,7 +248,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
     }
 
     private void repaintMenu(Graphics2D v2D) {
-        v2D.drawImage(isShadowBackNeeds() ? Constants.CACHE.getBufferedImage("backMenuImageShadowed") : Constants.CACHE.getBufferedImage("backMenuImage"),
+        v2D.drawImage(isShadowBackNeeds() ? Constants.CACHE.getBufferedImage("menu_shadowed") : Constants.CACHE.getBufferedImage("menu"),
                 0, 0, getWidth(), getHeight(), this);
 
         drawLeftGrayPoly(v2D);
@@ -561,7 +561,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         if (gameControllerService.isGameActive()
                 && gameControllerService.getWorldService().getCurrentWorld() != null
                 && gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
-            v2D.drawString("World IP: " + gameControllerService.getWorldService().getCurrentWorld().getNetworkAddress(),
+            v2D.drawString("World IP: " + gameControllerService.getWorldService().getCurrentWorld().getAddress(),
                     rightShift - 1f, downShift - 25);
         }
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
@@ -572,7 +572,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         if (gameControllerService.isGameActive()
                 && gameControllerService.getWorldService().getCurrentWorld() != null
                 && gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
-            v2D.drawString("World IP: " + gameControllerService.getWorldService().getCurrentWorld().getNetworkAddress(), rightShift, downShift - 24);
+            v2D.drawString("World IP: " + gameControllerService.getWorldService().getCurrentWorld().getAddress(), rightShift, downShift - 24);
         }
         v2D.drawString("FPS: limit/mon/real (%s/%s/%s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), FoxVideoMonitorUtil.getRefreshRate(),
@@ -987,7 +987,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         gameControllerService.setCurrentWorld(curWorldUid);
 
         // Открываем локальный Сервер:
-        if (gameControllerService.getWorldService().getCurrentWorld().isLocalWorld()
+        if (gameControllerService.getWorldService().getCurrentWorld().isLocal()
                 && gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()
                 && (gameControllerService.getServer() == null || gameControllerService.getServer().isClosed())
         ) {
@@ -1007,7 +1007,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
         // Подключаемся к локальному Серверу как новый Клиент:
         connectToServer(NetConnectTemplate.builder()
-                .address(aNetworkWorld.getNetworkAddress())
+                .address(aNetworkWorld.getAddress())
                 .password(aNetworkWorld.getPassword())
                 .worldUid(aNetworkWorld.getUid())
                 .build());

@@ -1,23 +1,23 @@
 package game.freya.dto.roots;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.config.Constants;
 import game.freya.dto.BackpackDto;
+import game.freya.dto.WeaponDto;
 import game.freya.enums.player.HeroCorpusType;
 import game.freya.enums.player.HeroPeripheralType;
 import game.freya.enums.player.HeroType;
 import game.freya.enums.player.HurtLevel;
 import game.freya.enums.player.MovingVector;
-import game.freya.interfaces.iEntity;
-import game.freya.interfaces.iGameObject;
 import game.freya.interfaces.iHero;
+import game.freya.interfaces.subroot.iEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,6 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.RGBImageFilter;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,112 +41,115 @@ import static game.freya.config.Constants.ONE_TURN_PI;
 @Setter
 @SuperBuilder
 @RequiredArgsConstructor
-public non-sealed class CharacterDto extends AbstractEntityDto implements iGameObject, iHero {
-    @Builder.Default
-    @Schema(description = "Размеры периферии героя")
-    private short peripheralSize = 50;
-
-    @NotNull
-    @Builder.Default
-    @Schema(description = "Инвентарь героя", requiredMode = Schema.RequiredMode.REQUIRED)
-    private BackpackDto inventory = BackpackDto.builder().build();
-
+public abstract class CharacterDto extends AbstractEntityDto implements iHero {
     @Min(1)
     @Builder.Default
-    @Schema(description = "Уровень героя", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Уровень героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private short level = 1;
-
-    @Builder.Default
-    @Schema(description = "Тип корпуса героя")
-    private HeroType heroType = HeroType.VOID;
 
     @Min(0)
     @Builder.Default
-    @Schema(description = "Накопленный опыт героя")
+    @Schema(description = "Накопленный опыт героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private long experience = 0;
 
     @Min(0)
     @Builder.Default
-    @Schema(description = "Текущее здоровье героя")
+    @Schema(description = "Текущее здоровье героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private int health = 100;
 
     @Min(100)
     @Builder.Default
-    @Schema(description = "Максимальное здоровье героя")
+    @Schema(description = "Максимальное здоровье героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private int maxHealth = 100;
 
     @Min(0)
     @Builder.Default
-    @Schema(description = "Текущий запас масла героя")
+    @Schema(description = "Текущий запас масла героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private int oil = 100;
 
     @Min(100)
     @Builder.Default
-    @Schema(description = "Максимальный запас масла героя")
+    @Schema(description = "Максимальный запас масла героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private int maxOil = 100;
 
+    @Min(0)
     @Builder.Default
-    @Schema(description = "Мощность героя")
+    @Schema(description = "Мощность героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private float power = 1f;
 
+    @NotNull
     @Builder.Default
-    @Schema(description = "The Player`s hurt level")
+    @Schema(description = "The Player`s hurt level", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
 
     @Min(0)
     @Max(18)
     @Builder.Default
-    @Schema(description = "Скорость героя", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Скорость героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private byte speed = 6;
 
     @NotNull
     @Builder.Default
-    @Schema(description = "Вектор направления героя", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Вектор направления героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private MovingVector vector = MovingVector.UP;
 
+    @NotNull
     @Builder.Default
-    @Schema(description = "Главный цвет раскраски корпуса героя")
+    @Schema(description = "Главный цвет раскраски корпуса героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Color baseColor = Color.DARK_GRAY;
 
+    @NotNull
     @Builder.Default
-    @Schema(description = "Второстепенный цвет раскраски корпуса героя")
+    @Schema(description = "Второстепенный цвет раскраски корпуса героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Color secondColor = Color.ORANGE;
 
     @NotNull
     @Builder.Default
-    @Schema(description = "Тип корпуса героя", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Тип корпуса героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private HeroCorpusType corpusType = HeroCorpusType.COMPACT;
 
     @NotNull
     @Builder.Default
-    @Schema(description = "Тип периферии героя", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Тип периферии героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private HeroPeripheralType peripheralType = HeroPeripheralType.COMPACT;
-
-    @Schema(description = "Текущее оружие в руках героя")
-    private WeaponDto currentWeapon;
-
-    @NotNull
-    @NotEmpty
-    @Builder.Default
-    @Schema(description = "Бафы наложенные на игрока", requiredMode = Schema.RequiredMode.REQUIRED)
-    private List<BuffDto> buffs = new ArrayList<>(9);
 
     @Min(0)
     @Builder.Default
-    @Schema(description = "Время, проведенное в игре")
+    @Schema(description = "Размеры периферии героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private short peripheralSize = 50;
+
+    @NotNull
+    @Builder.Default
+    @Schema(description = "Тип корпуса героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private HeroType type = HeroType.VOID;
+
+    @Min(0)
+    @Builder.Default
+    @Schema(description = "Время, проведенное в игре", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private long inGameTime = 0;
 
-    @Schema(description = "Дата последнего входа в игру")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss")
-    private LocalDateTime lastPlayDate;
-
     @Builder.Default
-    @Schema(description = "Is on-line now")
+    @Schema(description = "Is on-line now", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private boolean isOnline = false;
+
+    @Schema(description = "Текущее оружие в руках героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private WeaponDto currentWeapon;
+
+    @NotNull
+    @Builder.Default
+    @Schema(description = "Инвентарь героя", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private BackpackDto inventory = BackpackDto.builder().build();
+
+    @NotNull
+    @NotEmpty
+    @Size(max = 32)
+    @Builder.Default
+    @Schema(description = "Бафы наложенные на игрока", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private List<BuffDto> buffs = new ArrayList<>(9);
 
     @Transient
     @JsonIgnore
-    @Schema(description = "The Player`s avatar")
+    @Schema(description = "The Player`s avatar", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private BufferedImage heroViewImage;
 
     @Override
@@ -204,7 +206,7 @@ public non-sealed class CharacterDto extends AbstractEntityDto implements iGameO
     private void recolorHeroView() {
         int hexColor = (int) Long.parseLong("%02x%02x%02x%02x".formatted(223, // 191
                 baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue()), 16);
-        FilteredImageSource fis = new FilteredImageSource(
+        FilteredImageSource fiProducer = new FilteredImageSource(
                 Constants.CACHE.getBufferedImage("player").getSource(),
                 new RGBImageFilter() {
                     @Override
@@ -212,7 +214,7 @@ public non-sealed class CharacterDto extends AbstractEntityDto implements iGameO
                         return rgb & hexColor;
                     }
                 });
-        heroViewImage = (BufferedImage) Toolkit.getDefaultToolkit().createImage(fis);
+        heroViewImage = (BufferedImage) Toolkit.getDefaultToolkit().createImage(fiProducer);
     }
 
     private void move(MovingVector vector) {
@@ -313,5 +315,15 @@ public non-sealed class CharacterDto extends AbstractEntityDto implements iGameO
 
     private void recheckPlayerLevel() {
         this.level = (short) (this.experience / 1000);
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        return getHealth() <= 0;
+    }
+
+    @Override
+    public void onDestroy() {
+        log.info("Герой '{}' ({}) был уничтожен!", getName(), getUid());
     }
 }

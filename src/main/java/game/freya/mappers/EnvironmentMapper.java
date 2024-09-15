@@ -1,7 +1,9 @@
 package game.freya.mappers;
 
+import game.freya.dto.MockEnvironmentWithStorageDto;
 import game.freya.dto.roots.EnvironmentDto;
-import game.freya.entities.roots.Environment;
+import game.freya.entities.MockEnvironmentWithStorage;
+import game.freya.entities.roots.prototypes.Environment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,22 +21,10 @@ public class EnvironmentMapper {
             return null;
         }
 
-        return EnvironmentDto.builder()
-                .uid(entity.getUid())
-                .name(entity.getName())
-                .createdBy(entity.getCreatedBy())
-                .ownerUid(entity.getOwnerUid())
-                .worldUid(entity.getWorldUid())
-                .shape(entity.getShape())
-                .size(entity.getSize())
-                .location(entity.getLocation())
-                .collider(entity.getCollider())
-                .isVisible(entity.isVisible())
-//                .hasCollision(entity.isHasCollision()) // динамика через collider
-                .cacheKey(entity.getCacheKey())
-                .createdDate(entity.getCreatedDate())
-                .modifyDate(entity.getModifyDate())
-                .build();
+        return switch (entity) {
+            case MockEnvironmentWithStorage m -> mockToDto(m);
+            default -> throw new IllegalStateException("Unexpected value: " + entity);
+        };
     }
 
     public Environment toEntity(EnvironmentDto dto) {
@@ -42,19 +32,45 @@ public class EnvironmentMapper {
             return null;
         }
 
-        return Environment.builder()
+        return switch (dto) {
+            case MockEnvironmentWithStorageDto m -> mockToEntity(m);
+            default -> throw new IllegalStateException("Unexpected value: " + dto);
+        };
+    }
+
+    private MockEnvironmentWithStorage mockToEntity(MockEnvironmentWithStorageDto dto) {
+        return MockEnvironmentWithStorage.builder()
                 .uid(dto.getUid())
                 .name(dto.getName())
                 .createdBy(dto.getCreatedBy())
                 .ownerUid(dto.getOwnerUid())
                 .worldUid(dto.getWorldUid())
-                .shape(dto.getShape())
+                .collider(dto.getCollider())
                 .size(dto.getSize())
                 .location(dto.getLocation())
-                .collider(dto.getCollider())
+                .shape(dto.getShape())
                 .isVisible(dto.isVisible())
-//                .hasCollision(dto.hasCollision()) // динамика через collider
                 .cacheKey(dto.getCacheKey())
+                .createdDate(dto.getCreatedDate())
+                .modifyDate(dto.getModifyDate())
+                .build();
+    }
+
+    private MockEnvironmentWithStorageDto mockToDto(MockEnvironmentWithStorage entity) {
+        return MockEnvironmentWithStorageDto.builder()
+                .uid(entity.getUid())
+                .name(entity.getName())
+                .createdBy(entity.getCreatedBy())
+                .ownerUid(entity.getOwnerUid())
+                .worldUid(entity.getWorldUid())
+                .collider(entity.getCollider())
+                .size(entity.getSize())
+                .location(entity.getLocation())
+                .shape(entity.getShape())
+                .isVisible(entity.isVisible())
+                .cacheKey(entity.getCacheKey())
+                .createdDate(entity.getCreatedDate())
+                .modifyDate(entity.getModifyDate())
                 .build();
     }
 

@@ -120,7 +120,7 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
                 EventWorldData auth = (EventWorldData) readed.content();
                 WorldDto serverWorld = auth.world();
                 serverWorld.setUid(auth.worldUid());
-                serverWorld.setNetworkAddress(host + ":" + port);
+                serverWorld.setAddress(host + ":" + port);
                 gameControllerService.saveServerWorldAndSetAsCurrent(serverWorld); // todo: check createdBy not null
                 setAuthorized(true);
                 log.info("Сервер принял запрос авторизации, его мир установлен как текущий.");

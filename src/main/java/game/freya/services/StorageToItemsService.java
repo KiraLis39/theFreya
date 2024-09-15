@@ -2,8 +2,8 @@ package game.freya.services;
 
 import game.freya.dto.roots.ItemStack;
 import game.freya.dto.roots.StorageDto;
-import game.freya.entities.middles.StorageToItems;
-import game.freya.entities.middles.StorageToItemsPK;
+import game.freya.entities.embedded.StorageToItems;
+import game.freya.entities.embedded.StorageToItemsPK;
 import game.freya.repositories.StorageToItemsRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

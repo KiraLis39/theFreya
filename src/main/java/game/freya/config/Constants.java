@@ -28,11 +28,14 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public final class Constants {
     // other:
+    public static Random RANDOM = new Random();
+    public static final char SCOBE = ')';
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
 
     public static final int MIN_ZOOM_OUT_CELLS = 8; // максимум отдаление карты ячеек.

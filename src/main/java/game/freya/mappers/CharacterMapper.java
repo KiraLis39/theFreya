@@ -2,11 +2,11 @@ package game.freya.mappers;
 
 import game.freya.dto.BackpackDto;
 import game.freya.dto.PlayCharacterDto;
-import game.freya.dto.PlayerDto;
 import game.freya.dto.roots.CharacterDto;
+import game.freya.dto.roots.PlayerDto;
 import game.freya.entities.Backpack;
 import game.freya.entities.PlayCharacter;
-import game.freya.entities.roots.Character;
+import game.freya.entities.roots.prototypes.Character;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.net.data.ClientDataDto;
@@ -22,37 +22,43 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public final class CharMapper {
+public final class CharacterMapper {
     private final BuffMapper buffMapper;
     private final StorageMapper storageMapper;
 
     public Character toEntity(CharacterDto dto) {
-        return characterToEntity(dto);
-    }
-
-    public CharacterDto toDto(Character entity) {
-        return characterToDto(entity);
-    }
-
-    public PlayCharacterDto toDto(PlayCharacter entity) {
-        return playCharacterToPlayDto(entity);
-    }
-
-    private Character characterToEntity(CharacterDto dto) {
         if (dto == null) {
             return null;
         }
 
-        return Character.builder()
+        return switch (dto) {
+            case PlayCharacterDto p -> entityToCharacter(p);
+            default -> throw new IllegalStateException("Unexpected value: " + dto);
+        };
+    }
+
+    public CharacterDto toDto(Character entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return switch (entity) {
+            case PlayCharacter p -> playCharacterToPlayDto(p);
+            default -> throw new IllegalStateException("Unexpected value: " + entity);
+        };
+    }
+
+    private PlayCharacter entityToCharacter(PlayCharacterDto dto) {
+        return PlayCharacter.builder()
                 .uid(dto.getUid())
                 .name(dto.getName())
+                .type(dto.getType())
                 .baseColor(dto.getBaseColor())
                 .secondColor(dto.getSecondColor())
                 .corpusType(dto.getCorpusType())
                 .peripheralType(dto.getPeripheralType())
                 .peripheralSize(dto.getPeripheralSize())
                 .level(dto.getLevel())
-                .heroType(dto.getHeroType())
                 .power(dto.getPower())
                 .experience(dto.getExperience())
                 .health(dto.getHealth())
@@ -66,59 +72,23 @@ public final class CharMapper {
                 .worldUid(dto.getWorldUid())
                 .ownerUid(dto.getOwnerUid())
                 .inGameTime(dto.getInGameTime())
-                .lastPlayDate(dto.getLastPlayDate())
+                .modifyDate(dto.getModifyDate())
                 .inventory((Backpack) storageMapper.toEntity(dto.getInventory()))
                 .buffs(buffMapper.toEntity(dto.getBuffs()))
                 .build();
     }
 
-    private CharacterDto characterToDto(Character entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return CharacterDto.builder()
-                .baseColor(entity.getBaseColor())
-                .secondColor(entity.getSecondColor())
-                .corpusType(entity.getCorpusType())
-                .peripheralType(entity.getPeripheralType())
-                .peripheralSize(entity.getPeripheralSize())
-                .heroType(entity.getHeroType())
-                .worldUid(entity.getWorldUid())
-                .inGameTime(entity.getInGameTime())
-                .lastPlayDate(entity.getLastPlayDate())
-                .buffs(buffMapper.toDto(entity.getBuffs()))
-                .inventory((BackpackDto) storageMapper.toDto(entity.getInventory()))
-                .ownerUid(entity.getOwnerUid())
-                .name(entity.getName())
-                .level(entity.getLevel())
-                .power(entity.getPower())
-                .experience(entity.getExperience())
-                .health(entity.getHealth())
-                .maxHealth(entity.getMaxHealth())
-                .oil(entity.getOil())
-                .maxOil(entity.getMaxOil())
-                .speed(entity.getSpeed())
-                .location(entity.getLocation())
-                .createdDate(entity.getCreatedDate())
-                .build();
-    }
-
     private PlayCharacterDto playCharacterToPlayDto(PlayCharacter entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return (PlayCharacterDto) CharacterDto.builder()
+        return PlayCharacterDto.builder()
                 .baseColor(entity.getBaseColor())
                 .secondColor(entity.getSecondColor())
                 .corpusType(entity.getCorpusType())
                 .peripheralType(entity.getPeripheralType())
                 .peripheralSize(entity.getPeripheralSize())
-                .heroType(entity.getHeroType())
+                .type(entity.getType())
                 .worldUid(entity.getWorldUid())
                 .inGameTime(entity.getInGameTime())
-                .lastPlayDate(entity.getLastPlayDate())
+                .modifyDate(entity.getModifyDate())
                 .buffs(buffMapper.toDto(entity.getBuffs()))
                 .inventory((BackpackDto) storageMapper.toDto(entity.getInventory()))
                 .ownerUid(entity.getOwnerUid())
@@ -136,16 +106,16 @@ public final class CharMapper {
                 .build();
     }
 
-    public Set<Character> toEntities(Set<CharacterDto> dtos) {
+    public Set<CharacterDto> toDto(Set<? extends Character> characters) {
+        return characters.stream().map(this::toDto).collect(Collectors.toSet());
+    }
+
+    public Set<Character> toEntity(Set<CharacterDto> dtos) {
         return dtos.stream().map(this::toEntity).collect(Collectors.toSet());
     }
 
-    public List<CharacterDto> toDto(List<Character> characters) {
-        return characters.stream().map(this::characterToDto).collect(Collectors.toList());
-    }
-
-    public List<PlayCharacterDto> toPlayDto(List<PlayCharacter> characters) {
-        return characters.stream().map(this::playCharacterToPlayDto).collect(Collectors.toList());
+    public List<CharacterDto> toDtos(List<? extends Character> characters) {
+        return characters.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public ClientDataDto heroToCli(CharacterDto character, PlayerDto player) {
@@ -161,7 +131,7 @@ public final class CharMapper {
                         .playerName(player.getNickName())
                         .heroUid(character.getUid())
                         .heroName(character.getName())
-                        .heroType(character.getHeroType())
+                        .heroType(character.getType())
                         .baseColor(character.getBaseColor())
                         .secondColor(character.getSecondColor())
                         .corpusType(character.getCorpusType())
@@ -192,7 +162,7 @@ public final class CharMapper {
 
         EventHeroRegister heroRegister = (EventHeroRegister) cli.content();
         return PlayCharacterDto.builder()
-                .heroType(heroRegister.heroType())
+                .type(heroRegister.heroType())
 
                 .baseColor(heroRegister.baseColor())
                 .secondColor(heroRegister.secondColor())

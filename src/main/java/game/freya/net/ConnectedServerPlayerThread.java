@@ -200,7 +200,7 @@ public class ConnectedServerPlayerThread extends Thread implements Runnable {
         } else {
             log.info("Игрок {} ({}) успешно авторизован", auth.playerName(), auth.ownerUid());
             // для создателя этот мир - Локальный,для удалённого игрока этот мир не может быть Локальным:
-            cw.setLocalWorld(playerUid.equals(cw.getCreatedBy()));
+            cw.setLocal(playerUid.equals(cw.getCreatedBy()));
             isAuthorized.set(true);
             push(ClientDataDto.builder()
                     .dataType(NetDataType.AUTH_SUCCESS)
@@ -216,10 +216,11 @@ public class ConnectedServerPlayerThread extends Thread implements Runnable {
         EventHeroRegister connected = (EventHeroRegister) readed.content();
         CharacterDto hero;
         if (gameControllerService.getCharacterService().isHeroExist(connected.heroUid())) {
-            hero = gameControllerService.getCharacterService().getByUid(connected.heroUid());
+            hero = gameControllerService.getCharacterService().getByUid(connected.heroUid()).get();
             BeanUtils.copyProperties(readed, hero, "heroUid");
         } else {
-            hero = gameControllerService.getCharacterService().justSaveAnyHero(gameControllerService.getEventService().cliToHero(readed));
+            hero = gameControllerService.getCharacterService()
+                    .justSaveAnyHero(gameControllerService.getEventService().cliToHero(readed));
         }
 
         this.isAccepted.set(true);

@@ -1,4 +1,4 @@
-package game.freya.entities;
+package game.freya.entities.roots;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

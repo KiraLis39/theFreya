@@ -78,7 +78,7 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPa
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Reload hotkeys snap...");
-            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
+            BufferedImage bim = Constants.CACHE.getBufferedImage("menu_shadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
             setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));

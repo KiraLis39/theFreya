@@ -140,7 +140,7 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Reload gameplay snap...");
-            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
+            BufferedImage bim = Constants.CACHE.getBufferedImage("menu_shadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

@@ -1,6 +1,8 @@
-package game.freya.interfaces;
+package game.freya.interfaces.subroot;
 
-public interface iEntity extends iGameObject {
+import game.freya.interfaces.root.iDestroyable;
+
+public interface iEntity extends iDestroyable {
     int getHealth();
 
     int getOil();

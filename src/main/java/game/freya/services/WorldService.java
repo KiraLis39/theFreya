@@ -2,7 +2,7 @@ package game.freya.services;
 
 import game.freya.dto.roots.WorldDto;
 import game.freya.entities.roots.World;
-import game.freya.interfaces.iEnvironment;
+import game.freya.interfaces.subroot.iEnvironment;
 import game.freya.mappers.WorldMapper;
 import game.freya.repositories.WorldRepository;
 import lombok.Getter;

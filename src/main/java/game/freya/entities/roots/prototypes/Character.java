@@ -1,6 +1,7 @@
-package game.freya.entities.roots;
+package game.freya.entities.roots.prototypes;
 
 import game.freya.entities.Backpack;
+import game.freya.entities.Weapon;
 import game.freya.enums.player.HeroCorpusType;
 import game.freya.enums.player.HeroPeripheralType;
 import game.freya.enums.player.HeroType;
@@ -21,65 +22,55 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.awt.*;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
+@Accessors(chain = true)
 @Setter
 @Getter
 @SuperBuilder
-@NoArgsConstructor
+@RequiredArgsConstructor
 @Entity
 @DiscriminatorColumn(name = "character_type")
-@Table(name = "characters", uniqueConstraints = @UniqueConstraint(name = "uc_names_in_world", columnNames = {"name", "world_uid"}))
-public class Character extends AbstractEntity {
+@Table(name = "characters", uniqueConstraints = {@UniqueConstraint(name = "uc_names_in_world", columnNames = {"name", "world_uid"})})
+public abstract class Character extends AbstractEntity {
     @Min(1)
-    @Column(name = "level")
+    @Column(name = "level", nullable = false)
     private short level;
 
-    @Builder.Default
-    @Column(name = "experience")
-    private long experience = 0;
+    @Column(name = "experience", nullable = false)
+    private long experience;
 
-    @Column(name = "health")
+    @Column(name = "health", nullable = false)
     private int health;
 
-    @Builder.Default
-    @Column(name = "max_health")
-    private int maxHealth = 100;
+    @Column(name = "max_health", nullable = false)
+    private int maxHealth;
 
-    @Builder.Default
-    @Column(name = "oil")
-    private int oil = 100;
+    @Column(name = "oil", nullable = false)
+    private int oil;
 
-    @Builder.Default
-    @Column(name = "max_oil")
-    private int maxOil = 100;
+    @Column(name = "max_oil", nullable = false)
+    private int maxOil;
 
-    @Builder.Default
-    @Column(name = "power")
-    private float power = 1.0f;
+    @Column(name = "power", nullable = false)
+    private float power;
 
-    @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "hurt_level")
-    private HurtLevel hurtLevel = HurtLevel.HEALTHFUL;
+    @Column(name = "hurt_level", nullable = false)
+    private HurtLevel hurtLevel;
 
-    @Builder.Default
-    @Column(name = "speed")
-    private byte speed = 6;
+    @Column(name = "speed", nullable = false)
+    private byte speed;
 
-    @Builder.Default
-    @Column(name = "vector")
-    private MovingVector vector = MovingVector.UP;
+    @Column(name = "vector", nullable = false)
+    private MovingVector vector;
 
     @Lob
     @Column(name = "base_color", nullable = false)
@@ -102,6 +93,17 @@ public class Character extends AbstractEntity {
     @Column(name = "peripheral_size", columnDefinition = "SMALLINT DEFAULT 50", nullable = false)
     private short peripheralSize;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hero_type", nullable = false)
+    private HeroType type;
+
+    @Column(name = "in_game_time", columnDefinition = "bigint default 0", nullable = false)
+    private long inGameTime;
+
+    @Column(name = "is_online", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean isOnline;
+
     // созданное игроком оружие в любом случае не удаляется, остаётся для лута или анализа
     @OneToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.DETACH}, fetch = FetchType.EAGER)
     private Weapon currentWeapon;
@@ -111,24 +113,7 @@ public class Character extends AbstractEntity {
     private Backpack inventory;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
-    @Column(name = "hero_type", nullable = false)
-    private HeroType heroType;
-
-    @NotNull
     @Size(max = 32)
-    @Builder.Default
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "uid")
-    private List<Buff> buffs = new ArrayList<>(9);
-
-    @Builder.Default
-    @Column(name = "in_game_time", columnDefinition = "bigint default 0", nullable = false)
-    private long inGameTime = 0;
-
-    @UpdateTimestamp
-    @Column(name = "last_play_date", columnDefinition = "TIMESTAMP DEFAULT current_timestamp")
-    private LocalDateTime lastPlayDate;
-
-    @Column(name = "is_online", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean isOnline;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Buff> buffs;
 }

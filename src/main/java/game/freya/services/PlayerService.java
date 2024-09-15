@@ -1,8 +1,8 @@
 package game.freya.services;
 
 import game.freya.config.Constants;
-import game.freya.dto.PlayerDto;
-import game.freya.entities.Player;
+import game.freya.dto.roots.PlayerDto;
+import game.freya.entities.roots.Player;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.PlayerMapper;
@@ -29,8 +29,6 @@ public class PlayerService {
     private final PlayersRepository playersRepository;
     private final PlayerMapper playerMapper;
     private final UserConfigService userConfigService;
-
-//    private final PreparedStatement cpps = new HikariProxyPreparedStatement("SELECT * FROM Player p WHERE p.uid = %s".formatted(Constants.getUserConfig().getUserId()));
 
     private PlayerDto currentPlayer; // Текущий игрок (сидящий за клавиатурой).
 
@@ -91,7 +89,7 @@ public class PlayerService {
         this.currentPlayer = playerMapper.toDto(playersRepository.save(playerMapper.toEntity(currentPlayer)));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public PlayerDto getCurrentPlayer() {
         if (currentPlayer == null) {
             Optional<Player> currentPlayerOpt = playersRepository.findByUid(Constants.getUserConfig().getUserId());

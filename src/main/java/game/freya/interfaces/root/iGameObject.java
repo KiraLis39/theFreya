@@ -1,4 +1,6 @@
-package game.freya.interfaces;
+package game.freya.interfaces.root;
+
+import game.freya.annotations.RootInterface;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
@@ -9,6 +11,7 @@ import java.util.UUID;
 /**
  * Базовый интерфейс, описывающий все игровые объекты.
  */
+@RootInterface
 public interface iGameObject extends Serializable {
     UUID getUid();
 

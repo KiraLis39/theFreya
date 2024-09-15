@@ -2,8 +2,8 @@ package game.freya.services;
 
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
-import game.freya.entities.roots.Character;
-import game.freya.mappers.CharMapper;
+import game.freya.entities.PlayCharacter;
+import game.freya.mappers.CharacterMapper;
 import game.freya.repositories.CharacterRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ import java.util.UUID;
 @Transactional
 public class CharacterService {
     private final CharacterRepository characterRepository;
-    private final CharMapper characterMapper;
+    private final CharacterMapper characterMapper;
 
     @Getter
     @Setter
@@ -37,19 +39,21 @@ public class CharacterService {
 
     @Transactional(readOnly = true)
     public List<PlayCharacterDto> findAllByWorldUidAndOwnerUid(UUID uid, UUID ownerUid) {
-        return characterMapper.toPlayDto(characterRepository.findAllByWorldUidAndOwnerUid(uid, ownerUid));
+        return characterMapper.toDtos(characterRepository.findAllByWorldUidAndOwnerUid(uid, ownerUid)).stream()
+                .map(characterDto -> (PlayCharacterDto) characterDto).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<CharacterDto> findAllByWorldUuid(UUID uid) {
-        return characterMapper.toDto(characterRepository.findAllByWorldUid(uid));
+    public Set<PlayCharacterDto> findAllByWorldUuid(UUID uid) {
+        return characterMapper.toDto(characterRepository.findAllByWorldUid(uid)).stream()
+                .map(characterDto -> (PlayCharacterDto) characterDto).collect(Collectors.toSet());
     }
 
     public PlayCharacterDto justSaveAnyHero(PlayCharacterDto heroDto) {
-        CharacterDto aim;
-        Optional<Character> old = characterRepository.findByUid(heroDto.getUid());
+        PlayCharacterDto aim;
+        Optional<PlayCharacter> old = characterRepository.findByUid(heroDto.getUid());
         if (old.isPresent()) {
-            aim = characterMapper.toDto(old.get());
+            aim = (PlayCharacterDto) characterMapper.toDto(old.get());
             BeanUtils.copyProperties(heroDto, aim);
         } else {
             aim = heroDto;
@@ -63,8 +67,8 @@ public class CharacterService {
     }
 
     @Transactional(readOnly = true)
-    public CharacterDto findHeroByNameAndWorld(String heroName, UUID worldUid) {
-        return characterRepository.findByNameAndWorldUid(heroName, worldUid).map(characterMapper::toDto)
+    public PlayCharacterDto findHeroByNameAndWorld(String heroName, UUID worldUid) {
+        return (PlayCharacterDto) characterRepository.findByNameAndWorldUid(heroName, worldUid).map(characterMapper::toDto)
                 .orElse(null);
     }
 
@@ -74,13 +78,13 @@ public class CharacterService {
     }
 
     @Transactional(readOnly = true)
-    public CharacterDto getByUid(UUID uid) {
+    public Optional<CharacterDto> getByUid(UUID uid) {
 //        Character found = characterRepository.getReferenceById(uid);
-        Optional<Character> found2 = characterRepository.findByUid(uid);
-        return found2.map(characterMapper::toDto).orElse(null);
+        Optional<PlayCharacter> found2 = characterRepository.findByUid(uid);
+        return found2.map(characterMapper::toDto);
     }
 
-    public Optional<Character> findByUid(UUID uuid) {
+    public Optional<PlayCharacter> findByUid(UUID uuid) {
         return characterRepository.findByUid(uuid);
     }
 }

@@ -1,4 +1,4 @@
-package game.freya.entities.roots;
+package game.freya.entities.roots.prototypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
@@ -22,7 +22,7 @@ import java.util.UUID;
 @Entity
 @DiscriminatorColumn(name = "buff_type")
 @Table(name = "buffs")
-public class Buff {
+public abstract class Buff {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "uid", nullable = false, unique = true)

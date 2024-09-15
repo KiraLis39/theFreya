@@ -1,6 +1,6 @@
 package game.freya.entities;
 
-import game.freya.entities.roots.Character;
+import game.freya.entities.roots.prototypes.Character;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import lombok.NoArgsConstructor;

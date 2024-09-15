@@ -1,4 +1,4 @@
-package game.freya.entities.roots;
+package game.freya.entities.roots.prototypes;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

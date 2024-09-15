@@ -145,11 +145,11 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
                                     .createdBy(gameControllerService.getPlayerService().getCurrentPlayer().getUid())
                                     .createdDate(LocalDateTime.now())
                                     .name(getWorldName())
-                                    .level(getHardnessLevel())
-                                    .isLocalWorld(true)
+                                    .hardnessLevel(getHardnessLevel())
+                                    .isLocal(true)
                                     .isNetAvailable(true)
                                     .password(getNetPassword())
-                                    .networkAddress(addresses.getFirst())
+                                    .address(addresses.getFirst())
                                     .build();
                             canvas.serverUp(aNewWorld);
                         }
@@ -163,7 +163,7 @@ public class NetCreatingPane extends WorldCreator implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Reload net creating snap...");
-            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
+            BufferedImage bim = Constants.CACHE.getBufferedImage("menu_shadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

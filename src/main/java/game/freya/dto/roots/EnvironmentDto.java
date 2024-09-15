@@ -1,6 +1,8 @@
 package game.freya.dto.roots;
 
-import game.freya.interfaces.iEnvironment;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import game.freya.interfaces.subroot.iEnvironment;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -13,8 +15,10 @@ import java.util.Random;
 @Setter
 @SuperBuilder
 @RequiredArgsConstructor
-public non-sealed class EnvironmentDto extends AbstractEntityDto implements iEnvironment {
+public abstract class EnvironmentDto extends AbstractEntityDto implements iEnvironment {
     @Getter
+    @Transient
+    @JsonIgnore
     private static final Random random = new Random();
 
     @Override

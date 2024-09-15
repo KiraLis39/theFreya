@@ -3,6 +3,7 @@ package game.freya.gui.panes.sub;
 import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
+import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.dto.roots.WorldDto;
 import game.freya.gui.panes.MenuCanvasRunnable;
@@ -24,6 +25,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public class WorldsListPane extends JPanel implements iSubPane {
@@ -155,12 +157,12 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                 + "Уровень:<font color=#43F8C9><b>  %s</b></font>"
                                 + "<br>Сетевой:<font color=#239BEE><b>  %s</b></font>"
                                 + "</pre></html>")
-                                .formatted(world.getLevel().getDescription(), world.isNetAvailable()),
+                                .formatted(world.getHardnessLevel().getDescription(), world.isNetAvailable()),
                                 null);
 
                         add(zlabel, BorderLayout.WEST);
 
-                        List<CharacterDto> hers = gameController.findAllHeroesByWorldUid(world.getUid());
+                        Set<PlayCharacterDto> hers = gameController.findAllHeroesByWorldUid(world.getUid());
                         if (hers.isEmpty()) {
                             zlabel.setText(zlabel.getText().replace("</pre>",
                                     "<br>Герои:<font color=#99c7b5><b>    (нет)</b></font></pre>"));
@@ -172,7 +174,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                 if (!isFirst) {
                                     heroes.append("<font color=#000000> | </font>");
                                 }
-                                String color = switch (her.getHeroType()) {
+                                String color = switch (her.getType()) {
                                     case SNIPER -> "<font color=#f0ec22><b>";
                                     case TOWER -> "<font color=#0f294d><b>";
                                     case FIXER -> "<font color=#bcd918><b>";
@@ -253,7 +255,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                         addActionListener(new AbstractAction() {
                             @Override
                             public void actionPerformed(ActionEvent e) {
-                                ((MenuCanvasRunnable) canvas).chooseOrCreateHeroForWorld(world.getUid());
+                                canvas.chooseOrCreateHeroForWorld(world.getUid());
                             }
                         });
                     }}, BorderLayout.CENTER);
@@ -268,7 +270,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
     public void paintComponent(Graphics g) {
         if (snap == null) {
             log.info("Worlds list snap...");
-            BufferedImage bim = Constants.CACHE.getBufferedImage("backMenuImageShadowed");
+            BufferedImage bim = Constants.CACHE.getBufferedImage("menu_shadowed");
             snap = bim.getSubimage((int) (bim.getWidth() * 0.335d), 0,
                     (int) (bim.getWidth() - bim.getWidth() * 0.3345d), bim.getHeight());
         }

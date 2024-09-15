@@ -1,7 +1,11 @@
 package game.freya.mappers;
 
+import game.freya.dto.FoodDto;
+import game.freya.dto.WeaponDto;
 import game.freya.dto.roots.ItemDto;
-import game.freya.entities.roots.Item;
+import game.freya.entities.Food;
+import game.freya.entities.Weapon;
+import game.freya.entities.roots.prototypes.Item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,29 +17,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Component
 public class ItemsMapper {
-    private final StorageMapper storageMapper;
-
     public Item toEntity(ItemDto dto) {
         if (dto == null) {
             return null;
         }
 
-        return Item.builder()
-                .uid(dto.getUid())
-                .ownerUid(dto.getOwnerUid())
-                .createdBy(dto.getCreatedBy())
-                .worldUid(dto.getWorldUid())
-                .name(dto.getName())
-                .size(dto.getSize())
-                .collider(dto.getCollider())
-                .location(dto.getLocation())
-                .isVisible(dto.isVisible())
-                .cacheKey(dto.getCacheKey())
-                //.storages(storageMapper.toEntities(dto.getStorages()))
-                .stackCount(dto.getStackCount())
-                .createdDate(dto.getCreatedDate())
-                .modifyDate(dto.getModifyDate())
-                .build();
+        return switch (dto) {
+            case WeaponDto w -> weaponDtoToEntity(w);
+            case FoodDto f -> foodDtoToEntity(f);
+            default -> throw new IllegalStateException("Unexpected value: " + dto);
+        };
     }
 
     public ItemDto toDto(Item entity) {
@@ -43,7 +34,15 @@ public class ItemsMapper {
             return null;
         }
 
-        return ItemDto.builder()
+        return switch (entity) {
+            case Weapon w -> weaponToDto(w);
+            case Food f -> foodToDto(f);
+            default -> throw new IllegalStateException("Unexpected value: " + entity);
+        };
+    }
+
+    private WeaponDto weaponToDto(Weapon entity) {
+        return WeaponDto.builder()
                 .uid(entity.getUid())
                 .ownerUid(entity.getOwnerUid())
                 .createdBy(entity.getCreatedBy())
@@ -54,10 +53,63 @@ public class ItemsMapper {
                 .location(entity.getLocation())
                 .isVisible(entity.isVisible())
                 .cacheKey(entity.getCacheKey())
-                //.storages(storageMapper.toDtos(entity.getStorages()))
                 .stackCount(entity.getStackCount())
                 .createdDate(entity.getCreatedDate())
                 .modifyDate(entity.getModifyDate())
+                .build();
+    }
+
+    private Weapon weaponDtoToEntity(WeaponDto dto) {
+        return Weapon.builder()
+                .uid(dto.getUid())
+                .ownerUid(dto.getOwnerUid())
+                .createdBy(dto.getCreatedBy())
+                .worldUid(dto.getWorldUid())
+                .name(dto.getName())
+                .size(dto.getSize())
+                .collider(dto.getCollider())
+                .location(dto.getLocation())
+                .isVisible(dto.isVisible())
+                .cacheKey(dto.getCacheKey())
+                .stackCount(dto.getStackCount())
+                .createdDate(dto.getCreatedDate())
+                .modifyDate(dto.getModifyDate())
+                .build();
+    }
+
+    private FoodDto foodToDto(Food entity) {
+        return FoodDto.builder()
+                .uid(entity.getUid())
+                .ownerUid(entity.getOwnerUid())
+                .createdBy(entity.getCreatedBy())
+                .worldUid(entity.getWorldUid())
+                .name(entity.getName())
+                .size(entity.getSize())
+                .collider(entity.getCollider())
+                .location(entity.getLocation())
+                .isVisible(entity.isVisible())
+                .cacheKey(entity.getCacheKey())
+                .stackCount(entity.getStackCount())
+                .createdDate(entity.getCreatedDate())
+                .modifyDate(entity.getModifyDate())
+                .build();
+    }
+
+    private Food foodDtoToEntity(FoodDto dto) {
+        return Food.builder()
+                .uid(dto.getUid())
+                .ownerUid(dto.getOwnerUid())
+                .createdBy(dto.getCreatedBy())
+                .worldUid(dto.getWorldUid())
+                .name(dto.getName())
+                .size(dto.getSize())
+                .collider(dto.getCollider())
+                .location(dto.getLocation())
+                .isVisible(dto.isVisible())
+                .cacheKey(dto.getCacheKey())
+                .stackCount(dto.getStackCount())
+                .createdDate(dto.getCreatedDate())
+                .modifyDate(dto.getModifyDate())
                 .build();
     }
 

@@ -1,7 +1,7 @@
 package game.freya.mappers;
 
-import game.freya.dto.PlayerDto;
-import game.freya.entities.Player;
+import game.freya.dto.roots.PlayerDto;
+import game.freya.entities.roots.Player;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
