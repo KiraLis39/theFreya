@@ -6,7 +6,6 @@ import game.freya.config.Constants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,6 @@ import java.util.UUID;
 @Setter
 //@Accessors(chain = true, fluent = true, prefix = {"+get"})
 @SuperBuilder
-@AllArgsConstructor
 @RequiredArgsConstructor
 public abstract class AbstractEntityDto {
     @Schema(description = "UUID объекта", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

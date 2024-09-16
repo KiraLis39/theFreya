@@ -1,5 +1,6 @@
 package game.freya.api;
 
+import game.freya.dto.LittleChestDto;
 import game.freya.dto.roots.StorageDto;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.services.StorageService;
@@ -37,7 +38,7 @@ public class StorageController {
     @Operation(summary = "Create a new storage")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "A new storage created",
-                    content = @Content(schema = @Schema(implementation = StorageDto.class))),
+                    content = @Content(schema = @Schema(implementation = LittleChestDto.class))),
             @ApiResponse(responseCode = "400", description = "Invalid request",
                     content = @Content(schema = @Schema(implementation = GlobalServiceException.class))),
             @ApiResponse(responseCode = "404", description = "Storage not created",
@@ -46,12 +47,12 @@ public class StorageController {
                     content = @Content(schema = @Schema(implementation = GlobalServiceException.class)))
     })
     @PostMapping("/create")
-    public ResponseEntity<StorageDto> createStorage(
+    public ResponseEntity<LittleChestDto> createLittleChest(
             @Parameter(description = "Storage model to create one")
-            @RequestBody StorageDto dto
+            @RequestBody LittleChestDto dto
     ) {
         Optional<StorageDto> created = storageService.createStorage(dto);
-        return created.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.internalServerError().build());
+        return ResponseEntity.ok((LittleChestDto) created.get());
     }
 
     @GMOnly

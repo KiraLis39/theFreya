@@ -2,7 +2,10 @@ package game.freya.dto;
 
 import game.freya.dto.roots.ItemDto;
 import game.freya.interfaces.iEdible;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -11,12 +14,19 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 @Setter
 @SuperBuilder
+@RequiredArgsConstructor
 public class FoodDto extends ItemDto implements iEdible {
-    public boolean isPoisoned;
+    @Builder.Default
+    @Schema(description = "Отравлена ли еда?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    public boolean isPoisoned = false;
 
-    public int healthCompensation;
+    @Builder.Default
+    @Schema(description = "Количество восстанавливаемого ХП", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    public int healthCompensation = 1;
 
-    public int oilCompensation;
+    @Builder.Default
+    @Schema(description = "Количество восстанавливаемого масла", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    public int oilCompensation = 1;
 
     @Override
     public void use() {

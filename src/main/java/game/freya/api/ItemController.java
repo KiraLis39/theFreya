@@ -1,6 +1,6 @@
 package game.freya.api;
 
-import game.freya.dto.roots.ItemDto;
+import game.freya.dto.FoodDto;
 import game.freya.dto.roots.StorageDto;
 import game.freya.entities.roots.prototypes.Item;
 import game.freya.exceptions.GlobalServiceException;
@@ -39,7 +39,7 @@ public class ItemController {
     @Operation(summary = "Create a new item")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "A new iStorable created",
-                    content = @Content(schema = @Schema(implementation = ItemDto.class))),
+                    content = @Content(schema = @Schema(implementation = FoodDto.class))),
             @ApiResponse(responseCode = "400", description = "Invalid request",
                     content = @Content(schema = @Schema(implementation = GlobalServiceException.class))),
             @ApiResponse(responseCode = "404", description = "iStorable not created",
@@ -48,12 +48,12 @@ public class ItemController {
                     content = @Content(schema = @Schema(implementation = GlobalServiceException.class)))
     })
     @PostMapping("/create")
-    public ResponseEntity<ItemDto> createItem(
+    public ResponseEntity<FoodDto> createFood(
             @Parameter(description = "Item model to create one")
-            @RequestBody ItemDto dto
+            @RequestBody FoodDto dto
     ) {
         Optional<Item> saved = itemsService.createItem(itemsMapper.toEntity(dto));
-        return saved.map(storage -> ResponseEntity.ok(itemsMapper.toDto(storage)))
+        return saved.map(storage -> ResponseEntity.ok((FoodDto) itemsMapper.toDto(storage)))
                 .orElse(ResponseEntity.internalServerError().build());
     }
 

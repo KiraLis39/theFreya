@@ -56,6 +56,7 @@ public class ItemsMapper {
                 .stackCount(entity.getStackCount())
                 .createdDate(entity.getCreatedDate())
                 .modifyDate(entity.getModifyDate())
+                .durability(entity.getDurability())
                 .build();
     }
 
@@ -74,6 +75,7 @@ public class ItemsMapper {
                 .stackCount(dto.getStackCount())
                 .createdDate(dto.getCreatedDate())
                 .modifyDate(dto.getModifyDate())
+                .durability(dto.getDurability())
                 .build();
     }
 
@@ -92,6 +94,10 @@ public class ItemsMapper {
                 .stackCount(entity.getStackCount())
                 .createdDate(entity.getCreatedDate())
                 .modifyDate(entity.getModifyDate())
+                .durability(entity.getDurability())
+                .isPoisoned(entity.isPoisoned())
+                .healthCompensation(entity.getHealthCompensation())
+                .oilCompensation(entity.getOilCompensation())
                 .build();
     }
 

@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
@@ -22,9 +23,12 @@ import java.util.Set;
 @Getter
 @Setter
 @SuperBuilder
+@NoArgsConstructor
 @RequiredArgsConstructor
 public abstract class ItemDto extends AbstractEntityDto implements iItem {
-    private int durability;
+    @Builder.Default
+    @Schema(description = "Прочность предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private int durability = 3;
 
     @Builder.Default
     @Schema(description = "Хранилища этого предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

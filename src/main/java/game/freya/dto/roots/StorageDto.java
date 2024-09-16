@@ -5,7 +5,6 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.interfaces.subroot.iStorage;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,6 @@ import java.util.UUID;
 @Setter
 @Getter
 @SuperBuilder
-@AllArgsConstructor
 //@Accessors(chain = true, fluent = true, prefix = {"+set"})
 @RequiredArgsConstructor
 public abstract class StorageDto extends AbstractEntityDto implements iStorage {

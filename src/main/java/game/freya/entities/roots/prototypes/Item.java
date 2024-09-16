@@ -34,6 +34,11 @@ public abstract class Item extends AbstractEntity {
     @Column(name = "stack_count")
     private int stackCount;
 
+    @Min(0)
+    @Max(100)
+    @Column(name = "durability")
+    private int durability;
+
     @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, fetch = FetchType.LAZY)
     @JoinTable(name = "storages_items", joinColumns = @JoinColumn(name = "item_uid"), inverseJoinColumns = @JoinColumn(name = "storage_uid"))
     private Set<Storage> storages;
