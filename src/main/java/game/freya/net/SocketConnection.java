@@ -2,6 +2,7 @@ package game.freya.net;
 
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
+import game.freya.config.Controls;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.dto.roots.WorldDto;
@@ -13,6 +14,7 @@ import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventClientDied;
 import game.freya.net.data.events.EventDenied;
 import game.freya.net.data.events.EventPingPong;
+import game.freya.net.data.events.EventPlayerAuth;
 import game.freya.net.data.events.EventWorldData;
 import game.freya.net.data.types.TypeChat;
 import game.freya.services.GameControllerService;
@@ -21,6 +23,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -35,6 +38,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.Optional;
 
 @Slf4j
 @Getter
@@ -121,7 +125,7 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
                 WorldDto serverWorld = auth.world();
                 serverWorld.setUid(auth.worldUid());
                 serverWorld.setAddress(host + ":" + port);
-                gameControllerService.saveServerWorldAndSetAsCurrent(serverWorld); // todo: check createdBy not null
+                saveServerWorldAndSetAsCurrent(serverWorld); // todo: check createdBy not null
                 setAuthorized(true);
                 log.info("Сервер принял запрос авторизации, его мир установлен как текущий.");
             }
@@ -154,6 +158,19 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
             }
             case EVENT -> readEvent(readed);
             default -> log.error("От Сервера пришел необработанный тип данных: {}", readed.dataType());
+        }
+    }
+
+    private void saveServerWorldAndSetAsCurrent(WorldDto worldDto) {
+        Optional<WorldDto> wOpt = gameControllerService.getWorldService().findByUid(worldDto.getUid());
+        if (wOpt.isPresent()) {
+            WorldDto old = wOpt.get();
+            BeanUtils.copyProperties(worldDto, old);
+            gameControllerService.getWorldService().setCurrentWorld(old);
+            gameControllerService.getWorldService().saveCurrent();
+        } else {
+            gameControllerService.getWorldService()
+                    .setCurrentWorld(gameControllerService.getWorldService().saveOrUpdate(worldDto));
         }
     }
 
@@ -334,16 +351,29 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
             getConnectionThread().interrupt();
         }
 
-        if (!isPingRecieved() && gameControllerService.isGameActive()) {
+        if (!isPingRecieved() && Controls.isGameActive()) {
             // останавливаем игру:
-            gameControllerService.setGameActive(false);
+            Controls.setGameActive(false);
+
             log.info("Переводим героя {} ({}) в статус offline и сохраняем...",
                     gameControllerService.getCharacterService().getCurrentHero().getName(),
                     gameControllerService.getCharacterService().getCurrentHero().getUid());
             gameControllerService.getCharacterService().getCurrentHero().setOnline(false);
             gameControllerService.getCharacterService().saveCurrent();
+
             // возвращаемся в главное меню:
             gameControllerService.getGameFrameController().loadMenuScreen();
+        }
+    }
+
+    public void untilOpen(int waitTime) {
+        final long was = System.currentTimeMillis();
+        try {
+            while (getConnectionThread() != null && (!isOpen() || !getServerSocket().isConnected()) && System.currentTimeMillis() - was < waitTime) {
+                join(200);
+            }
+        } catch (InterruptedException e) {
+            close();
         }
     }
 
@@ -355,8 +385,9 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
 
         // создаётся поток текущего состояния на Сервер:
         setNetDataTranslator(new Thread(() -> {
-            while (!getNetDataTranslator().isInterrupted() && isOpen() && gameControllerService.isGameActive()) {
-                if (!getDeque().isEmpty()) {
+            while (!getNetDataTranslator().isInterrupted() && isOpen() && Controls.isGameActive()) {
+                if (hasNewMessages()) {
+                    // если есть что отправлять Серверу:
                     while (!getDeque().isEmpty()) {
                         toServer(getDeque().pollFirst());
                     }
@@ -400,5 +431,17 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
             heroCheckThread.interrupt();
             return false;
         }
+    }
+
+    public void authRequest(String password) {
+        log.info("Шлём на Сервер запрос авторизации...");
+        toServer(ClientDataDto.builder()
+                .dataType(NetDataType.AUTH_REQUEST)
+                .content(EventPlayerAuth.builder()
+                        .ownerUid(gameControllerService.getPlayerService().getCurrentPlayer().getUid())
+                        .playerName(gameControllerService.getPlayerService().getCurrentPlayer().getNickName())
+                        .password(password)
+                        .build())
+                .build());
     }
 }

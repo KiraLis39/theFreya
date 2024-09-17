@@ -3,6 +3,7 @@ package game.freya.gui.panes;
 import fox.components.FOptionPane;
 import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
+import game.freya.config.Controls;
 import game.freya.config.UserConfig.HotKeys;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
@@ -13,6 +14,7 @@ import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.services.CharacterService;
 import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
+import game.freya.utils.Screenshoter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -31,10 +33,6 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
     private final transient GameControllerService gameControllerService;
     private final transient GameWindowController frameController;
     private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
-
-    private boolean isControlsMapped = false, isMovingKeyActive = false;
-
-    private boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
 
     private double parentHeightMemory = 0;
 
@@ -69,12 +67,12 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
 //        addComponentListener(this);
 
         if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
-            if (gameControllerService.getWorldService().getCurrentWorld().isLocal() && !gameControllerService.getServer().isOpen()) {
+            if (gameControllerService.getWorldService().getCurrentWorld().isLocal() && !Constants.getServer().isOpen()) {
                 frameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в локальной сетевой игре, но наш Сервер не запущен!");
             }
 
-            if (!gameControllerService.getLocalSocketConnection().isOpen()) {
+            if (!Constants.getLocalSocketConnection().isOpen()) {
                 frameController.loadScreen(ScreenType.MENU_SCREEN);
                 throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Мы в сетевой игре, но соединения с Сервером не существует!");
             }
@@ -86,16 +84,16 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
         setSecondThread("Game second thread", new Thread(() -> {
             // ждём пока основной поток игры запустится:
             long timeout = System.currentTimeMillis();
-            while (!gameControllerService.isGameActive()) {
+            while (!Controls.isGameActive()) {
                 Thread.yield();
                 if (System.currentTimeMillis() - timeout > 7_000) {
                     throw new GlobalServiceException(ErrorMessages.DRAW_TIMEOUT);
                 }
             }
 
-            while (gameControllerService.isGameActive() && !getSecondThread().isInterrupted()) {
+            while (Controls.isGameActive() && !getSecondThread().isInterrupted()) {
                 // check gameplay duration:
-                checkGameplayDuration(gameControllerService.getCurrentHeroInGameTime());
+                checkGameplayDuration(gameControllerService.getCharacterService().getCurrentHero().getInGameTime());
 
                 // если изменился размер фрейма:
                 if (parentFrame.getBounds().getHeight() != parentHeightMemory) {
@@ -116,7 +114,6 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
 
     private void setInAc() {
         final String frameName = "mainFrame";
-//        final String frameName = "game_canvas";
 
         // KeyStroke.getKeyStroke(KeyEvent.VK_A, InputEvent.CTRL_MASK)
 //        Constants.INPUT_ACTION.add(frameName, parentFrame.getRootPane());
@@ -125,15 +122,15 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
                 Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        if (isVisible() && Constants.isPaused()) {
+                        if (isVisible() && Controls.isPaused()) {
                             onExitBack(GamePaneRunnable.this);
                         } else {
-                            Constants.setPaused(!Constants.isPaused());
+                            Controls.setPaused(!Controls.isPaused());
                         }
                     }
                 });
 
-        this.isControlsMapped = true;
+        Controls.setControlsMapped(true);
     }
 
     @Override
@@ -150,16 +147,17 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
             }
         }
 
-        // инициализируем все для игры, отображаем окно игры:
+        // инициализируем все для игры, отображаем окно игры, переключаем isGameActive в true:
         setGameActive();
 
+        // старт бродкастинга с Сервером:
         if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
             log.info("Начинается трансляция данных на Сервер...");
-            gameControllerService.getLocalSocketConnection().startClientBroadcast();
+            Constants.getLocalSocketConnection().startClientBroadcast();
         }
 
         // старт потока рисования игры:
-        while (gameControllerService.isGameActive() && !Thread.currentThread().isInterrupted()) {
+        while (Controls.isGameActive() && !Thread.currentThread().isInterrupted()) {
             delta = System.currentTimeMillis() - lastTime;
             lastTime = System.currentTimeMillis();
 
@@ -172,7 +170,7 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
                 continue;
             }
 
-            if (!Constants.isPaused()) {
+            if (!Controls.isPaused()) {
                 dragViewIfNeeds();
             }
 
@@ -233,25 +231,25 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
     }
 
     private void dragViewIfNeeds() {
-        if (isMouseRightEdgeOver) {
+        if (Controls.isMouseRightEdgeOver()) {
             for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
                 dragLeft(2d);
                 Thread.yield();
             }
         }
-        if (isMouseLeftEdgeOver) {
+        if (Controls.isMouseLeftEdgeOver()) {
             for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
                 dragRight(2d);
                 Thread.yield();
             }
         }
-        if (isMouseUpEdgeOver) {
+        if (Controls.isMouseUpEdgeOver()) {
             for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
                 dragDown(2d);
                 Thread.yield();
             }
         }
-        if (isMouseDownEdgeOver) {
+        if (Controls.isMouseDownEdgeOver()) {
             for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
                 dragUp(2d);
                 Thread.yield();
@@ -263,13 +261,15 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
         setVisible(true);
         createSubPanes();
         init();
-        gameControllerService.setGameActive(true);
+
+        // включаем активную игру:
+        Controls.setGameActive(true);
 
         requestFocusInWindow();
 
         super.createChat();
 
-        Constants.setPaused(false);
+        Controls.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
     }
 
@@ -353,18 +353,20 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
     }
 
     @Override
-    public synchronized void stop() {
-        if (gameControllerService.isGameActive() || isVisible()) {
-
-            boolean paused = Constants.isPaused();
+    public void stop() {
+        if (Controls.isGameActive() || isVisible()) {
+            boolean paused = Controls.isPaused();
             boolean debug = Constants.getGameConfig().isDebugInfoVisible();
 
-            Constants.setPaused(false);
+            // do screenshot:
+            Controls.setPaused(false);
             Constants.getGameConfig().setDebugInfoVisible(false);
-            gameControllerService.doScreenShot(getParentFrame().getLocation(), getBounds());
-            Constants.setPaused(paused);
+            Screenshoter.doScreenshot(getBounds(),
+                    Constants.getGameConfig().getWorldsImagesDir() + gameControllerService.getWorldService().getCurrentWorld().getUid());
+            Controls.setPaused(paused);
             Constants.getGameConfig().setDebugInfoVisible(debug);
 
+            // exit:
             getSecondThread().interrupt();
             exitToMenu(getDuration());
         }
@@ -372,24 +374,12 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
 
     public void exitToMenu(Duration gameDuration) {
         // защита от зацикливания т.к. loadScreen может снова вызвать этот метод контрольно:
-        if (gameControllerService.isGameActive()) {
-            gameControllerService.setGameActive(false);
+        if (Controls.isGameActive()) {
+            // выходим из активной игры:
+            Controls.setGameActive(false);
 
-            justSave(gameDuration);
-
-            // если игра сетевая и локальная - останавливаем сервер при выходе из игры:
-            if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
-                if (gameControllerService.getWorldService().getCurrentWorld().isLocal()) {
-                    if (gameControllerService.closeServer()) {
-                        log.info("Сервер успешно остановлен");
-                    } else {
-                        log.warn("Возникла ошибка при закрытии сервера.");
-                    }
-                }
-                if (gameControllerService.getLocalSocketConnection().isOpen()) {
-                    gameControllerService.getLocalSocketConnection().close();
-                }
-            }
+            gameControllerService.saveTheGame(gameDuration);
+            gameControllerService.closeConnections();
 
             frameController.loadScreen(ScreenType.MENU_SCREEN);
         }
@@ -400,7 +390,7 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
         log.info("Do canvas re-initialization...");
 
         // проводим основную инициализацию класса текущего мира:
-        gameControllerService.initCurrentWorld(this);
+        gameControllerService.getWorldService().getCurrentWorld().init(this, gameControllerService);
 
         reloadShapes(this);
         recalculateMenuRectangles();
@@ -410,7 +400,7 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
             recreateViewPort();
         }
 
-        if (!isControlsMapped) {
+        if (!Controls.isControlsMapped()) {
             // назначаем горячие клавиши управления:
             setInAc();
         }
@@ -418,10 +408,6 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
         moveViewToPlayer(0, 0);
 
         requestFocus();
-    }
-
-    private void justSave(Duration duration) {
-        gameControllerService.saveTheGame(duration);
     }
 
     @Override
@@ -444,7 +430,7 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
                 getGameplayPane().setVisible(false);
 
             } else {
-                Constants.setPaused(false);
+                Controls.setPaused(false);
                 setOptionsMenuSetVisible(false);
             }
         }
@@ -467,8 +453,8 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
                 getGameplayPane().setVisible(false);
             } else {
                 // нет нужды в паузе здесь, просто сохраняемся:
-                justSave(getDuration());
-                Constants.setPaused(false);
+                gameControllerService.saveTheGame(getDuration());
+                Controls.setPaused(false);
                 new FOptionPane().buildFOptionPane("Успешно", "Игра сохранена!",
                         FOptionPane.TYPE.INFO, null, Constants.getDefaultCursor(), 3, false);
             }
@@ -492,12 +478,12 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
             }
         }
 
-        if (gameControllerService.isGameActive()) {
+        if (Controls.isGameActive()) {
             if (getMinimapShowRect().contains(e.getPoint())) {
-                Constants.setMinimapShowed(false);
+                Controls.setMinimapShowed(false);
             }
             if (getMinimapHideRect().contains(e.getPoint())) {
-                Constants.setMinimapShowed(true);
+                Controls.setMinimapShowed(true);
             }
         }
     }
@@ -518,13 +504,13 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
             Point p = e.getPoint();
             log.debug("drag: {}x{}", p.x, p.y);
             if (p.getX() < mousePressedOnPoint.getX()) {
-                isMouseLeftEdgeOver = true;
+                Controls.setMouseLeftEdgeOver(true);
             } else if (p.getX() > mousePressedOnPoint.getX()) {
-                isMouseRightEdgeOver = true;
+                Controls.setMouseRightEdgeOver(true);
             } else if (p.getY() < mousePressedOnPoint.getY()) {
-                isMouseUpEdgeOver = true;
+                Controls.setMouseUpEdgeOver(true);
             } else if (p.getY() > mousePressedOnPoint.getY()) {
-                isMouseDownEdgeOver = true;
+                Controls.setMouseDownEdgeOver(true);
             }
             this.mousePressedOnPoint = p;
         }
@@ -534,7 +520,7 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
     public void mouseMoved(MouseEvent e) {
         Point p = e.getPoint();
 
-        if (Constants.isPaused()) {
+        if (Controls.isPaused()) {
             // если пауза - проверяем меню:
             setFirstButtonOver(getFirstButtonRect().contains(p));
             setSecondButtonOver(getSecondButtonRect().contains(p));
@@ -542,20 +528,20 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
             setFourthButtonOver(getFourthButtonRect().contains(p));
             setExitButtonOver(getExitButtonRect().contains(p));
         } else { // иначе мониторим наведение на край окна для прокрутки поля:
-            if (!isMovingKeyActive && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
-                isMouseLeftEdgeOver = p.getX() <= 15
-                        && (Constants.getUserConfig().isFullscreen() || p.getX() > 1) && !getMinimapHideRect().contains(p);
-                isMouseRightEdgeOver = p.getX() >= getWidth() - 15 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1);
-                isMouseUpEdgeOver = p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1);
-                isMouseDownEdgeOver = p.getY() >= getHeight() - 15
-                        && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1) && !getMinimapHideRect().contains(p);
+            if (!Controls.isMovingKeyActive() && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
+                Controls.setMouseLeftEdgeOver(p.getX() <= 15
+                        && (Constants.getUserConfig().isFullscreen() || p.getX() > 1) && !getMinimapHideRect().contains(p));
+                Controls.setMouseRightEdgeOver(p.getX() >= getWidth() - 15 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1));
+                Controls.setMouseUpEdgeOver(p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1));
+                Controls.setMouseDownEdgeOver(p.getY() >= getHeight() - 15
+                        && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1) && !getMinimapHideRect().contains(p));
             }
         }
     }
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        if (Constants.isPaused()) {
+        if (Controls.isPaused()) {
             // not work into pause
             return;
         }
@@ -630,61 +616,61 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
     public void keyPressed(KeyEvent e) {
         // hero movement:
         if (e.getKeyCode() == HotKeys.MOVE_UP.getEvent()) {
-            gameControllerService.setPlayerMovingUp(true);
+            Controls.setPlayerMovingUp(true);
         } else if (e.getKeyCode() == HotKeys.MOVE_BACK.getEvent()) {
-            gameControllerService.setPlayerMovingDown(true);
+            Controls.setPlayerMovingDown(true);
         }
         if (e.getKeyCode() == HotKeys.MOVE_LEFT.getEvent()) {
-            gameControllerService.setPlayerMovingLeft(true);
+            Controls.setPlayerMovingLeft(true);
         } else if (e.getKeyCode() == HotKeys.MOVE_RIGHT.getEvent()) {
-            gameControllerService.setPlayerMovingRight(true);
+            Controls.setPlayerMovingRight(true);
         }
 
         // camera movement:
         if (e.getKeyCode() == HotKeys.CAM_UP.getEvent()) {
-            isMovingKeyActive = true;
-            isMouseUpEdgeOver = true;
+            Controls.setMovingKeyActive(true);
+            Controls.setMouseUpEdgeOver(true);
         } else if (e.getKeyCode() == HotKeys.CAM_DOWN.getEvent()) {
-            isMovingKeyActive = true;
-            isMouseDownEdgeOver = true;
+            Controls.setMovingKeyActive(true);
+            Controls.setMouseDownEdgeOver(true);
         }
         if (e.getKeyCode() == HotKeys.CAM_LEFT.getEvent()) {
-            isMovingKeyActive = true;
-            isMouseLeftEdgeOver = true;
+            Controls.setMovingKeyActive(true);
+            Controls.setMouseLeftEdgeOver(true);
         } else if (e.getKeyCode() == HotKeys.CAM_RIGHT.getEvent()) {
-            isMovingKeyActive = true;
-            isMouseRightEdgeOver = true;
+            Controls.setMovingKeyActive(true);
+            Controls.setMouseRightEdgeOver(true);
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
-            gameControllerService.setPlayerMovingUp(false);
+            Controls.setPlayerMovingUp(false);
         } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
-            gameControllerService.setPlayerMovingDown(false);
+            Controls.setPlayerMovingDown(false);
         }
 
         if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
-            gameControllerService.setPlayerMovingLeft(false);
+            Controls.setPlayerMovingLeft(false);
         } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
-            gameControllerService.setPlayerMovingRight(false);
+            Controls.setPlayerMovingRight(false);
         }
 
         if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {
-            isMovingKeyActive = false;
-            isMouseUpEdgeOver = false;
+            Controls.setMovingKeyActive(false);
+            Controls.setMouseUpEdgeOver(false);
         } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookDown()) {
-            isMovingKeyActive = false;
-            isMouseDownEdgeOver = false;
+            Controls.setMovingKeyActive(false);
+            Controls.setMouseDownEdgeOver(false);
         }
 
         if (e.getKeyCode() == Constants.getUserConfig().getKeyLookLeft()) {
-            isMovingKeyActive = false;
-            isMouseLeftEdgeOver = false;
+            Controls.setMovingKeyActive(false);
+            Controls.setMouseLeftEdgeOver(false);
         } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookRight()) {
-            isMovingKeyActive = false;
-            isMouseRightEdgeOver = false;
+            Controls.setMovingKeyActive(false);
+            Controls.setMouseRightEdgeOver(false);
         }
     }
 }

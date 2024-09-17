@@ -12,6 +12,8 @@ import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
 import game.freya.gui.panes.GameWindow;
+import game.freya.net.Server;
+import game.freya.net.SocketConnection;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -84,22 +86,40 @@ public final class Constants {
     public static final Font PROPAGANDA_FONT;
 
     public static final Font PROPAGANDA_BIG_FONT;
+
+
     // cache:
     public static final String NO_CACHED_IMAGE_MOCK_KEY = "no_image_mock_key";
     public static final AtomicBoolean isConnectionAwait = new AtomicBoolean(false);
     public static final AtomicBoolean isPingAwait = new AtomicBoolean(false);
+
+
     // net:
     @Getter
     private static final String connectionUser = "freya";
+
     @Getter
     private static final String connectionPassword = "0358";
+
     @Getter
     private static final boolean connectionAutoCommit = false;
+
+    @Getter
+    @Setter
+    private static Server server;
+
+    @Getter
+    @Setter
+    private static SocketConnection localSocketConnection;
+
+
     // project:
     @Getter
     private static final String gameAuthor = "KiraLis39";
     @Getter
     private static final Path database = Path.of(System.getenv("LOCALAPPDATA").concat("\\Freya\\freya.db")).toAbsolutePath();
+
+
     // db hikari:
     @Getter
     private static final String connectionUrl = "jdbc:sqlite:".concat(getDatabase().toString());
@@ -107,6 +127,8 @@ public final class Constants {
     private static final String imageExtension = ".png"; // .png
     @Getter
     private static final String audioExtension = ".ogg"; // .ogg | .mp3 | .wav
+
+
     // audio:
     @Getter
     private static final FoxPlayer soundPlayer = new FoxPlayer("soundPlayer");
@@ -143,16 +165,15 @@ public final class Constants {
     @Getter
     @Setter
     private static GameConfig gameConfig;
+
+
     // user config:
     @Getter
     @Setter
     private static UserConfig userConfig;
-    // dynamic game booleans:
-    @Getter
-    private static boolean isPaused = false;
-    @Getter
-    @Setter
-    private static boolean isMinimapShowed = true;
+
+
+    // dynamic:
     @Setter
     @Getter
     private static int realFreshRate = 0;
@@ -208,11 +229,6 @@ public final class Constants {
         new FOptionPane().buildFOptionPane("Не реализовано:",
                 "Приносим свои извинения! Данный функционал ещё находится в разработке.",
                 FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
-    }
-
-    public static void setPaused(boolean _isPaused) {
-        isPaused = _isPaused;
-        log.info("Paused: {}", isPaused);
     }
 
     public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {
@@ -297,4 +313,8 @@ public final class Constants {
     public static void setConnectionAwait(boolean b) {
         isConnectionAwait.set(b);
     }
+
+    @Getter
+    @Setter
+    private volatile static long currentTimePerFrame = 0;
 }

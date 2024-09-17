@@ -80,7 +80,7 @@ public class GameWindowController {
     }
 
     public void loadGameScreen() {
-        log.info("Try to load World '{}' screen...", gameControllerService.getCurrentWorldTitle());
+        log.info("Try to load World '{}' screen...", gameControllerService.getWorldService().getCurrentWorld().getName());
         Constants.getGameWindow()
                 .setScene(new GamePaneRunnable(uIHandler, Constants.getGameWindow(), gameControllerService, characterService, this, props));
     }

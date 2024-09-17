@@ -3,12 +3,19 @@ package game.freya.dto.roots;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import game.freya.config.Constants;
+import game.freya.config.Controls;
 import game.freya.dto.MockEnvironmentWithStorageDto;
+import game.freya.dto.PlayCharacterDto;
 import game.freya.enums.other.HardnessLevel;
+import game.freya.enums.player.MovingVector;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GamePaneRunnable;
 import game.freya.interfaces.root.iWorld;
 import game.freya.services.GameControllerService;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +24,8 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
+import java.awt.geom.Area;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.VolatileImage;
 import java.time.LocalDateTime;
@@ -129,7 +138,7 @@ public class WorldDto implements iWorld {
 
     @JsonIgnore
     @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, hidden = true, nullable = true)
-    private GameControllerService gameController;
+    private GameControllerService gameControllerService;
 
     @JsonIgnore
     @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, hidden = true, nullable = true)
@@ -140,9 +149,9 @@ public class WorldDto implements iWorld {
     private Image icon;
 
     @Override
-    public void init(GamePaneRunnable canvas, GameControllerService controller) {
+    public void init(GamePaneRunnable canvas, GameControllerService gameControllerService) {
         this.canvas = canvas;
-        this.gameController = controller;
+        this.gameControllerService = gameControllerService;
         log.info("World {} initialized successfully", getName());
     }
 
@@ -264,12 +273,204 @@ public class WorldDto implements iWorld {
         drawEnvironments(v2D, camera);
 
         // рисуем игроков из контроллера на карте:
-        gameController.drawHeroes(v2D, canvas);
+        drawHeroes(v2D, canvas);
 
         v2D.dispose();
 
         // return drown result:
         return this.gameMap;
+    }
+
+    /**
+     * Метод отрисовки всех героев подключенных к миру и авторизованных игроков.
+     *
+     * @param v2D    хост для отрисовки.
+     * @param canvas класс холста.
+     */
+    public void drawHeroes(Graphics2D v2D, GamePaneRunnable canvas) {
+        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) { // если игра по сети:
+            for (PlayCharacterDto hero : Constants.getServer().getConnectedHeroes()) {
+                if (gameControllerService.getCharacterService().getCurrentHero().equals(hero)) {
+                    // если это текущий герой:
+                    if (!Controls.isPaused()) {
+                        moveHeroIfAvailable(canvas); // узкое место!
+                    }
+                    hero.draw(v2D);
+                } else if (canvas.getViewPort().getBounds().contains(hero.getLocation())) {
+                    // если чужой герой в пределах видимости:
+                    hero.draw(v2D);
+                }
+            }
+        } else { // если не-сетевая игра:
+            if (!Controls.isPaused()) {
+                moveHeroIfAvailable(canvas); // узкое место!
+            }
+
+            if (gameControllerService.getCharacterService().getCurrentHero() == null) {
+                log.info("Потеряли текущего игрока. Что-то случилось? Выходим...");
+                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Окно игры не смогло получить текущего игрока для отрисовки");
+            }
+            gameControllerService.getCharacterService().getCurrentHero().draw(v2D);
+        }
+    }
+
+    private void moveHeroIfAvailable(GamePaneRunnable canvas) {
+        if (Controls.isPlayerMoving()) {
+            Rectangle visibleRect = canvas.getViewPort().getBounds();
+            MovingVector vector = gameControllerService.getCharacterService().getCurrentHero().getVector();
+            Point2D.Double plLocation = gameControllerService.getCharacterService().getCurrentHero().getLocation();
+
+            double hrc = (visibleRect.x + ((visibleRect.getWidth() - visibleRect.x) / 2d));
+            boolean isViewMovableX = plLocation.x > hrc - 30 && plLocation.x < hrc + 30;
+
+            double vrc = (visibleRect.y + ((visibleRect.getHeight() - visibleRect.y) / 2d));
+            boolean isViewMovableY = plLocation.y > vrc - 30 && plLocation.y < vrc + 30;
+
+            if (Controls.isPlayerMovingUp()) {
+                vector = Controls.isPlayerMovingRight() ? MovingVector.UP_RIGHT : Controls.isPlayerMovingLeft() ? MovingVector.LEFT_UP : MovingVector.UP;
+            } else if (Controls.isPlayerMovingDown()) {
+                vector = Controls.isPlayerMovingRight() ? MovingVector.RIGHT_DOWN : Controls.isPlayerMovingLeft() ? MovingVector.DOWN_LEFT : MovingVector.DOWN;
+            }
+
+            if (Controls.isPlayerMovingRight()) {
+                vector = Controls.isPlayerMovingUp() ? MovingVector.UP_RIGHT : Controls.isPlayerMovingDown() ? MovingVector.RIGHT_DOWN : MovingVector.RIGHT;
+            } else if (Controls.isPlayerMovingLeft()) {
+                vector = Controls.isPlayerMovingUp() ? MovingVector.LEFT_UP : Controls.isPlayerMovingDown() ? MovingVector.DOWN_LEFT : MovingVector.LEFT;
+            }
+
+            // перемещаем камеру к ГГ:
+            if (!visibleRect.contains(gameControllerService.getCharacterService().getCurrentHero().getLocation())) {
+                canvas.moveViewToPlayer(0, 0);
+            }
+
+            // move hero:
+            int[] collisionMarker = hasCollision();
+            gameControllerService.getCharacterService().getCurrentHero().setVector(vector.mod(vector, collisionMarker));
+            if (!gameControllerService.getCharacterService().getCurrentHero().getVector().equals(MovingVector.NONE)) {
+                // двигаемся по направлению вектора (взгляда):
+                for (int i = 0; i < gameControllerService.getCharacterService().getCurrentHero().getSpeed(); i++) {
+                    gameControllerService.getCharacterService().getCurrentHero().move();
+                }
+            } else {
+                // тогда, стоя на месте, просто указываем направление вектора (взгляда):
+                gameControllerService.getCharacterService().getCurrentHero().setVector(vector);
+            }
+
+            // send moving data to Server:
+            Constants.getLocalSocketConnection()
+                    .sendPacket(gameControllerService.getEventService().buildMove(gameControllerService.getCharacterService().getCurrentHero()));
+
+            @Min(0) @Max(18) byte chs = gameControllerService.getCharacterService().getCurrentHero().getSpeed();
+
+            // move map:
+            switch (vector) {
+                case UP -> {
+                    if (isViewMovableY) {
+                        canvas.dragDown(chs);
+                    }
+                }
+                case UP_RIGHT -> {
+                    if (isViewMovableY) {
+                        canvas.dragDown(chs);
+                    }
+                    if (isViewMovableX) {
+                        canvas.dragLeft(chs);
+                    }
+                }
+                case RIGHT -> {
+                    if (isViewMovableX) {
+                        canvas.dragLeft(chs);
+                    }
+                }
+                case RIGHT_DOWN -> {
+                    if (isViewMovableX) {
+                        canvas.dragLeft(chs);
+                    }
+                    if (isViewMovableY) {
+                        canvas.dragUp(chs);
+                    }
+                }
+                case DOWN -> {
+                    if (isViewMovableY) {
+                        canvas.dragUp(chs);
+                    }
+                }
+                case DOWN_LEFT -> {
+                    if (isViewMovableY) {
+                        canvas.dragUp(chs);
+                    }
+                    if (isViewMovableX) {
+                        canvas.dragRight(chs);
+                    }
+                }
+                case LEFT -> {
+                    if (isViewMovableX) {
+                        canvas.dragRight(chs);
+                    }
+                }
+                case LEFT_UP -> {
+                    if (isViewMovableX) {
+                        canvas.dragRight(chs);
+                    }
+                    if (isViewMovableY) {
+                        canvas.dragDown(chs);
+                    }
+                }
+                default -> log.info("Обнаружено несанкционированное направление {}", vector);
+            }
+        }
+    }
+
+    private int[] hasCollision() {
+        // если сущность - не призрак:
+        if (gameControllerService.getCharacterService().getCurrentHero().hasCollision()) {
+            Rectangle2D.Double heroCollider = gameControllerService.getCharacterService().getCurrentHero().getCollider();
+
+            // проверка коллизии с краем мира:
+            Area worldMapBorder = new Area(new Rectangle(-12, -12,
+                    gameControllerService.getWorldEngine().getGameMap().getWidth() + 24,
+                    gameControllerService.getWorldEngine().getGameMap().getHeight() + 24));
+            worldMapBorder.subtract(new Area(new Rectangle(0, 0, gameControllerService.getWorldEngine().getGameMap().getWidth(),
+                    gameControllerService.getWorldEngine().getGameMap().getHeight())));
+            if (worldMapBorder.intersects(heroCollider)) {
+                return findVectorCorrection(worldMapBorder, heroCollider);
+            }
+
+            // проверка коллизий с объектами:
+            for (EnvironmentDto env : gameControllerService.getWorldService().getCurrentWorld().getEnvironments()) {
+                if (env.hasCollision() && env.getCollider().intersects(heroCollider)) {
+                    return findVectorCorrection(env.getCollider(), heroCollider);
+                }
+            }
+        }
+
+        return new int[]{0, 0};
+    }
+
+    private int[] findVectorCorrection(Shape envColl, Rectangle2D.Double heroColl) {
+        int[] result; // y, x
+        Rectangle heroBounds = heroColl.getBounds();
+
+        final Point upDotY01 = new Point((int) (heroColl.x + heroColl.width * 0.33d), heroBounds.y);
+        final Point upDotY02 = new Point((int) (heroColl.x + heroColl.width * 0.66d), heroBounds.y);
+        final Point downDotY01 = new Point((int) (heroColl.x + heroColl.width * 0.33d), heroBounds.y + heroBounds.height);
+        final Point downDotY02 = new Point((int) (heroColl.x + heroColl.width * 0.66d), heroBounds.y + heroBounds.height);
+
+        final Point leftDotX01 = new Point(heroBounds.x, (int) (heroColl.y + heroColl.height * 0.33d));
+        final Point leftDotX02 = new Point(heroBounds.x, (int) (heroColl.y + heroColl.height * 0.66d));
+        final Point rightDotX01 = new Point(heroBounds.x + heroBounds.width, (int) (heroColl.y + heroColl.height * 0.33d));
+        final Point rightDotX02 = new Point(heroBounds.x + heroBounds.width, (int) (heroColl.y + heroColl.height * 0.66d));
+
+        result = new int[]{
+                // y
+                envColl.contains(upDotY01) || envColl.contains(upDotY02) ? -1
+                        : envColl.contains(downDotY01) || envColl.contains(downDotY02) ? 1 : 0,
+
+                // x
+                envColl.contains(leftDotX01) || envColl.contains(leftDotX02) ? -1
+                        : envColl.contains(rightDotX01) || envColl.contains(rightDotX02) ? 1 : 0
+        };
+        return result;
     }
 
     private void drawEnvironments(Graphics2D g2D, Rectangle2D.Double visibleRect) {

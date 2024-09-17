@@ -4,6 +4,7 @@ import fox.components.FOptionPane;
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
+import game.freya.config.Controls;
 import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.services.GameControllerService;
 import lombok.Getter;
@@ -132,7 +133,7 @@ public class GameWindow extends JFrame {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         log.debug("Try to switch the pause mode...");
-                        Constants.setPaused(!Constants.isPaused());
+                        Controls.setPaused(!Controls.isPaused());
                     }
                 });
 
@@ -156,17 +157,17 @@ public class GameWindow extends JFrame {
     }
 
     private void onGameRestore() {
-        if (Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
+        if (Controls.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
 //            log.info("Auto resume the game on frame restore is temporary off.");
-            Constants.setPaused(false);
+            Controls.setPaused(false);
             log.debug("Resume game...");
         }
     }
 
     private void onGameHide() {
         log.debug("Hide or minimized");
-        if (!Constants.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
-            Constants.setPaused(true);
+        if (!Controls.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
+            Controls.setPaused(true);
             log.debug("Paused...");
         }
     }

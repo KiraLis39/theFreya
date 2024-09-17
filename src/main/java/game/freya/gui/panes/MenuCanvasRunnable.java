@@ -4,6 +4,7 @@ import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.WorldDto;
+import game.freya.enums.other.ScreenType;
 import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.handlers.UIHandler;
 import game.freya.gui.panes.sub.HeroCreatingPane;
@@ -59,12 +60,12 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
         addComponentListener(this);
 //        addMouseWheelListener(this); // если понадобится - можно включить.
 
-        if (gameControllerService.getServer() != null && gameControllerService.getServer().isOpen()) {
-            gameControllerService.closeServer();
+        if (Constants.getServer() != null && Constants.getServer().isOpen()) {
+            gameControllerService.closeConnections();
             log.error("Мы в меню, но Сервер ещё запущен! Закрытие Сервера...");
         }
-        if (gameControllerService.getLocalSocketConnection() != null && gameControllerService.getLocalSocketConnection().isOpen()) {
-            gameControllerService.getLocalSocketConnection().close();
+        if (Constants.getLocalSocketConnection() != null && Constants.getLocalSocketConnection().isOpen()) {
+            Constants.getLocalSocketConnection().close();
             log.error("Мы в меню, но соединение с Сервером ещё запущено! Закрытие подключения...");
         }
 
@@ -144,8 +145,7 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
 
     @Override
     public void run() {
-        long lastTime = System.currentTimeMillis();
-        long delta;
+        long delta, lastTime = System.currentTimeMillis();
 
         // ждём пока компонент не станет виден:
         while (getParent() == null || !isDisplayable() || !initialized) {
@@ -161,19 +161,16 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
 
         this.isMenuActive = true;
         while (isMenuActive && !Thread.currentThread().isInterrupted()) {
-            delta = System.currentTimeMillis() - lastTime;
-            lastTime = System.currentTimeMillis();
-
             try {
                 if (isVisible() && isDisplayable()) {
-                    drawNextFrame(delta);
+                    drawNextFrame();
                 }
 
                 // продвигаем кадры вспомогательной анимации:
                 doAnimate();
 
                 // при успешной отрисовке:
-                if (getDrawErrors() > 0) {
+                if (getDrawErrors() == 0) {
                     decreaseDrawErrorCount();
                 }
             } catch (Exception e) {
@@ -181,6 +178,8 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
             }
 
             if (Constants.isFpsLimited()) {
+                delta = System.currentTimeMillis() - lastTime;
+                lastTime = System.currentTimeMillis();
                 delayDrawing(delta);
             }
         }
@@ -198,21 +197,20 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
         }
     }
 
-    private void drawNextFrame(long delta) {
-        repaint(); // repaint(delta);
+    private void drawNextFrame() {
+        repaint();
     }
+
+    private Graphics2D g2D;
 
     @Override
     public void paint(Graphics g) {
-        super.paint(g);
-
-        Graphics2D g2D = (Graphics2D) g;
         try {
+            g2D = (Graphics2D) g;
             super.drawBackground(g2D);
         } catch (AWTException e) {
             log.error("Ошибка отрисовки кадра игры: {}", ExceptionUtils.getFullExceptionMessage(e));
         }
-        g2D.dispose();
     }
 
     @Override
@@ -294,6 +292,7 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
         this.isMenuActive = false;
         closeBackImage();
         setVisible(false);
+        g2D.dispose();
     }
 
     @Override
@@ -463,8 +462,20 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
      * @param newWorld модель нового мира для сохранения.
      */
     public void saveNewLocalWorldAndCreateHero(WorldDto newWorld) {
-        gameControllerService.setCurrentWorld(gameControllerService.saveNewWorld(newWorld).getUid());
+        gameControllerService.setCurrentWorld(saveNewWorld(newWorld).getUid());
         chooseOrCreateHeroForWorld(gameControllerService.getWorldService().getCurrentWorld().getUid());
+    }
+
+    /**
+     * Сохранение нового, только что созданного мира в БД.
+     *
+     * @param newWorld новый мир для сохранения в базу.
+     * @return уже сохранённый в базе мир.
+     */
+    private WorldDto saveNewWorld(WorldDto newWorld) {
+        newWorld.setCreatedBy(gameControllerService.getPlayerService().getCurrentPlayer().getUid());
+        newWorld.generate();
+        return gameControllerService.getWorldService().saveOrUpdate(newWorld);
     }
 
 
@@ -493,8 +504,8 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
                 .build();
 
         // проставляем как текущего:
-        gameControllerService.getPlayerService().getCurrentPlayer()
-                .setCurrentActiveHero(gameControllerService.getCharacterService().justSaveAnyHero(aNewToSave));
+        gameControllerService.getCharacterService()
+                .setCurrentHero(gameControllerService.getCharacterService().justSaveAnyHero(aNewToSave));
 
         // если подключение к Серверу уже закрылось пока мы собирались:
 //        if (gameController.isCurrentWorldIsNetwork() && !gameController.isServerIsOpen()) {
@@ -517,16 +528,16 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
      */
     public void playWithThisHero(PlayCharacterDto hero) {
         gameControllerService.getPlayerService().setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());
-        gameControllerService.setCurrentHero(hero);
+        setCurrentHero(hero);
 
         // если этот мир по сети:
         if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
             // шлем на Сервер своего выбранного Героя:
-            if (gameControllerService.getLocalSocketConnection().registerOnServer()) {
+            if (Constants.getLocalSocketConnection().registerOnServer()) {
 //                gameControllerService.getPlayedHeroes().addHero(characterService.getCurrentHero());
                 startGame();
             } else {
-                log.error("Сервер не принял нашего Героя: {}", gameControllerService.getLocalSocketConnection().getLastExplanation());
+                log.error("Сервер не принял нашего Героя: {}", Constants.getLocalSocketConnection().getLastExplanation());
                 characterService.getCurrentHero().setOnline(false);
                 characterService.saveCurrent();
                 getHeroCreatingPane().repaint();
@@ -538,11 +549,26 @@ public class MenuCanvasRunnable extends RunnableCanvasPanel {
         }
     }
 
+    private void setCurrentHero(PlayCharacterDto hero) {
+        if (characterService.getCurrentHero() != null) {
+            if (characterService.getCurrentHero().equals(hero)) {
+                characterService.getCurrentHero().setOnline(true);
+            } else if (characterService.getCurrentHero().isOnline()) {
+                // если online другой герой - снимаем:
+                log.info("Снимаем он-лайн с Героя {} и передаём этот статус Герою {}...", characterService.getCurrentHero().getName(), hero.getName());
+                characterService.getCurrentHero().setOnline(false);
+                characterService.saveCurrent();
+            }
+        }
+        log.info("Теперь активный Герой - {}", hero.getName());
+        characterService.setCurrentHero(hero);
+    }
+
     public void startGame() {
         getHeroCreatingPane().setVisible(false);
         getHeroesListPane().setVisible(false);
 
         log.info("Подготовка к запуску игры должна была пройти успешно. Запуск игрового мира...");
-//        gameController.loadScreen(ScreenType.GAME_SCREEN);
+        gameControllerService.getGameFrameController().loadScreen(ScreenType.GAME_SCREEN);
     }
 }

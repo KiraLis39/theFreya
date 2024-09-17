@@ -92,6 +92,7 @@ public final class Server extends Thread implements iServer {
                     handleException(e);
                 }
             } finally {
+                close();
                 log.warn("Поток сервера {} прекратил свою работу.", Thread.currentThread().getName());
             }
         };
@@ -119,9 +120,9 @@ public final class Server extends Thread implements iServer {
             diedClientsCleaner.interrupt();
         }
 
-        if (gameControllerService.getLocalSocketConnection() != null) {
+        if (Constants.getLocalSocketConnection() != null) {
             log.info("Остановка бродкаст-потока Сервера...");
-            gameControllerService.getLocalSocketConnection().stopBroadcast();
+            Constants.getLocalSocketConnection().stopBroadcast();
         }
 
         log.info("Остановка основного потока Сервера...");
@@ -266,7 +267,7 @@ public final class Server extends Thread implements iServer {
         final long was = System.currentTimeMillis();
         try {
             while (!isOpen() && System.currentTimeMillis() - was < waitTime) {
-                join(200);
+                join(250);
             }
         } catch (InterruptedException e) {
             interrupt();
@@ -274,8 +275,8 @@ public final class Server extends Thread implements iServer {
     }
 
     public void untilClose(int waitTime) {
+        final long was = System.currentTimeMillis();
         try {
-            final long was = System.currentTimeMillis();
             while (!isClosed() && System.currentTimeMillis() - was < waitTime) {
                 join(250);
             }
@@ -285,6 +286,6 @@ public final class Server extends Thread implements iServer {
     }
 
     public Collection<PlayCharacterDto> getConnectedHeroes() {
-        return Collections.emptyList();
+        return Collections.emptyList(); // todo
     }
 }

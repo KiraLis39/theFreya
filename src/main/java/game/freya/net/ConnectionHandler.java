@@ -31,12 +31,6 @@ public class ConnectionHandler {
     @Setter
     private Thread connectionThread, liveThread, netDataTranslator;
 
-    public void join(int millis) throws InterruptedException {
-        if (connectionThread != null && connectionThread.isAlive()) {
-            connectionThread.join(millis);
-        }
-    }
-
     public void stopBroadcast() {
         if (netDataTranslator != null && netDataTranslator.isAlive()) {
             netDataTranslator.interrupt();
@@ -45,6 +39,10 @@ public class ConnectionHandler {
 
     public void sendPacket(ClientDataDto data) {
         this.deque.offer(data);
+    }
+
+    protected boolean hasNewMessages() {
+        return !this.deque.isEmpty();
     }
 
     protected void setPingReceived(boolean isPing) {
@@ -93,5 +91,11 @@ public class ConnectionHandler {
 
     protected boolean isAlive() {
         return getConnectionThread() != null && getConnectionThread().isAlive() && (getLiveThread() == null || getLiveThread().isAlive());
+    }
+
+    public void join(int millis) throws InterruptedException {
+        if (connectionThread != null && connectionThread.isAlive()) {
+            connectionThread.join(millis);
+        }
     }
 }

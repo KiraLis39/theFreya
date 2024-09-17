@@ -35,7 +35,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private final transient RunnableCanvasPanel canvas;
 
-    private final transient GameControllerService gameController;
+    private final transient GameControllerService gameControllerService;
 
     private final SubPane centerList;
 
@@ -45,9 +45,9 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     private transient ZLabel zlabel;
 
-    public WorldsListPane(RunnableCanvasPanel canvas, GameControllerService controller) {
+    public WorldsListPane(RunnableCanvasPanel canvas, GameControllerService gameControllerService) {
         this.canvas = canvas;
-        this.gameController = controller;
+        this.gameControllerService = gameControllerService;
 
         setName("Worlds list pane");
         setVisible(false);
@@ -97,7 +97,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
-        List<WorldDto> worlds = gameController.findAllWorldsByNetworkAvailable(false);
+        List<WorldDto> worlds = gameControllerService.findAllWorldsByNetworkAvailable(false);
         for (WorldDto world : worlds) {
             centerList.add(new SubPane("Мир: ".concat(world.getName())) {{
                 setWorld(world);
@@ -162,7 +162,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
                         add(zlabel, BorderLayout.WEST);
 
-                        Set<PlayCharacterDto> hers = gameController.findAllHeroesByWorldUid(world.getUid());
+                        Set<PlayCharacterDto> hers = gameControllerService.getCharacterService().findAllByWorldUuid(world.getUid());
                         if (hers.isEmpty()) {
                             zlabel.setText(zlabel.getText().replace("</pre>",
                                     "<br>Герои:<font color=#99c7b5><b>    (нет)</b></font></pre>"));

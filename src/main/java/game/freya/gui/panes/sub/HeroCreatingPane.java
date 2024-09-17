@@ -212,7 +212,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                         public void actionPerformed(ActionEvent e) {
                             if (!isEditMode) {
                                 worldUid = gameController.getWorldService().getCurrentWorld().getUid();
-                                CharacterDto existsHero = gameController.findHeroByNameAndWorld(getHeroName(), worldUid);
+                                CharacterDto existsHero = gameController.getCharacterService().findHeroByNameAndWorld(getHeroName(), worldUid);
                                 if (existsHero != null) {
                                     new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
                                 } else {

@@ -2,6 +2,7 @@ package game.freya.utils;
 
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 @Slf4j
+@UtilityClass
 public final class Screenshoter {
 
     public BufferedImage doScreenshot(Rectangle bounds) {

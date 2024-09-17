@@ -30,14 +30,18 @@ public final class GameConfig {
     private int defaultServerPort = 13958;
     private int socketBufferSize = 4096; // 65536 | 16384 | 8192 | 4096
 
+    private int socketAuthTimeout = 6_000; // таймаут авторизации сокета Сервером.
     private int serverOpenTimeAwait = 6_000; // сколько сервер должен открываться в начале работы
+    private int serverCloseTimeAwait = 6_000; // сколько сервер должен завершать работу
     private int socketPingAwaitTimeout = 6_000; // сколько миллисекунд Клиент и Сервер пингуются для установки факта успешной связи.
+    private int socketConnectionTimeout = 6_000; // таймаут подключения к Серверу.
     private int connectionNoDataTimeout = 30_000; // таймаут без данных до авто-отключения.
 
-    private long serverBroadcastDelay = 50L; // миллисекунд ждать между отправками данных
+    private long serverBroadcastDelay = 100L; // простой между проверками на наличие новых данных для отправки на Сервер.
 
     private double dragSpeed = 12;
     private double scrollSpeed = 20;
+
 
     @JsonIgnore
     public int getMaxConnectionWasteTime() {

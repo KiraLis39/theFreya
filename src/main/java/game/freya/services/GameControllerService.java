@@ -6,35 +6,25 @@ import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
-import game.freya.dto.roots.EnvironmentDto;
 import game.freya.dto.roots.WorldDto;
 import game.freya.entities.PlayCharacter;
 import game.freya.entities.roots.prototypes.Character;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
-import game.freya.enums.player.MovingVector;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameWindowController;
-import game.freya.gui.panes.GamePaneRunnable;
-import game.freya.interfaces.subroot.iEnvironment;
 import game.freya.net.PingService;
-import game.freya.net.Server;
-import game.freya.net.SocketConnection;
 import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventHeroMoving;
 import game.freya.net.data.events.EventHeroOffline;
 import game.freya.net.data.events.EventHeroRegister;
-import game.freya.net.data.events.EventPlayerAuth;
 import game.freya.utils.BcryptUtil;
 import game.freya.utils.ExceptionUtils;
-import game.freya.utils.Screenshoter;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -42,11 +32,7 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.geom.Area;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -55,7 +41,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -73,14 +58,7 @@ public class GameControllerService extends GameControllerBase {
     private final WorldService worldService;
     private final PingService pingService;
 
-    private Server server;
-
-    private SocketConnection localSocketConnection;
-
     private GameWindowController gameFrameController;
-
-    @Setter
-    private volatile boolean isGameActive = false;
 
     /**
      * Отсюда начинается выполнение основного кода игры.
@@ -191,339 +169,35 @@ public class GameControllerService extends GameControllerBase {
         log.info("The game is saved.");
     }
 
-    private void closeConnections() {
-        // закрываем Сервер:
-        if (server != null && server.isOpen()) {
-            if (localSocketConnection != null) {
-                localSocketConnection.setHandledExit(true);
-            }
-            server.close();
-        }
-
-        // закрываем соединения:
-        if (localSocketConnection != null && localSocketConnection.isOpen()) {
-            localSocketConnection.setHandledExit(true);
-            localSocketConnection.close();
-        }
-    }
-
-    public void doScreenShot(Point location, Rectangle canvasRect) {
-        new Screenshoter().doScreenshot(new Rectangle(
-                        location.x + 9 + canvasRect.getBounds().x,
-                        location.y + 30 + canvasRect.getBounds().y,
-                        canvasRect.getBounds().width, canvasRect.getBounds().height
-                ),
-                Constants.getGameConfig().getWorldsImagesDir() + worldService.getCurrentWorld().getUid());
-    }
-
     /**
-     * Метод отрисовки всех героев подключенных к миру и авторизованных игроков.
-     *
-     * @param v2D    хост для отрисовки.
-     * @param canvas класс холста.
+     * Закрывает все активные сетевые подключения, соединения и закрывает Сервер и Сокет.
      */
-    public void drawHeroes(Graphics2D v2D, GamePaneRunnable canvas) {
-        if (worldService.getCurrentWorld().isNetAvailable()) { // если игра по сети:
-            for (PlayCharacterDto hero : server.getConnectedHeroes()) {
-                if (characterService.getCurrentHero().equals(hero)) {
-                    // если это текущий герой:
-                    if (!Constants.isPaused()) {
-                        moveHeroIfAvailable(canvas); // узкое место!
-                    }
-                    hero.draw(v2D);
-                } else if (canvas.getViewPort().getBounds().contains(hero.getLocation())) {
-                    // если чужой герой в пределах видимости:
-                    hero.draw(v2D);
-                }
-            }
-        } else { // если не-сетевая игра:
-            if (!Constants.isPaused()) {
-                moveHeroIfAvailable(canvas); // узкое место!
-            }
+    public void closeConnections() {
+        // закрываем соединения:
+        if (Constants.getLocalSocketConnection() != null && Constants.getLocalSocketConnection().isOpen()) {
+            Constants.getLocalSocketConnection().setHandledExit(true);
+            Constants.getLocalSocketConnection().close();
+            log.info("Соединение с Сервером завершено.");
+        }
 
-            if (characterService.getCurrentHero() == null) {
-                log.info("Потеряли текущего игрока. Что-то случилось? Выходим...");
-                throw new GlobalServiceException(ErrorMessages.WRONG_STATE, "Окно игры не смогло получить текущего игрока для отрисовки");
-            }
-            characterService.getCurrentHero().draw(v2D);
+        // закрываем Сервер:
+        if (Constants.getServer() != null && Constants.getServer().isOpen()) {
+            log.warn(closeServer() ? "Сервер успешно остановлен" : "Возникла ошибка при закрытии сервера.");
         }
     }
 
-    private void moveHeroIfAvailable(GamePaneRunnable canvas) {
-        if (isPlayerMoving()) {
-            Rectangle visibleRect = canvas.getViewPort().getBounds();
-            MovingVector vector = characterService.getCurrentHero().getVector();
-            Point2D.Double plLocation = getCurrentHeroLocation();
-
-            double hrc = (visibleRect.x + ((visibleRect.getWidth() - visibleRect.x) / 2d));
-            boolean isViewMovableX = plLocation.x > hrc - 30 && plLocation.x < hrc + 30;
-
-            double vrc = (visibleRect.y + ((visibleRect.getHeight() - visibleRect.y) / 2d));
-            boolean isViewMovableY = plLocation.y > vrc - 30 && plLocation.y < vrc + 30;
-
-            if (isPlayerMovingUp()) {
-                vector = isPlayerMovingRight() ? MovingVector.UP_RIGHT : isPlayerMovingLeft() ? MovingVector.LEFT_UP : MovingVector.UP;
-            } else if (isPlayerMovingDown()) {
-                vector = isPlayerMovingRight() ? MovingVector.RIGHT_DOWN : isPlayerMovingLeft() ? MovingVector.DOWN_LEFT : MovingVector.DOWN;
-            }
-
-            if (isPlayerMovingRight()) {
-                vector = isPlayerMovingUp() ? MovingVector.UP_RIGHT : isPlayerMovingDown() ? MovingVector.RIGHT_DOWN : MovingVector.RIGHT;
-            } else if (isPlayerMovingLeft()) {
-                vector = isPlayerMovingUp() ? MovingVector.LEFT_UP : isPlayerMovingDown() ? MovingVector.DOWN_LEFT : MovingVector.LEFT;
-            }
-
-            // перемещаем камеру к ГГ:
-            if (!visibleRect.contains(characterService.getCurrentHero().getLocation())) {
-                canvas.moveViewToPlayer(0, 0);
-            }
-
-            // move hero:
-            int[] collisionMarker = hasCollision();
-            characterService.getCurrentHero().setVector(vector.mod(vector, collisionMarker));
-            if (!characterService.getCurrentHero().getVector().equals(MovingVector.NONE)) {
-                // двигаемся по направлению вектора (взгляда):
-                for (int i = 0; i < characterService.getCurrentHero().getSpeed(); i++) {
-                    characterService.getCurrentHero().move();
-                }
-            } else {
-                // тогда, стоя на месте, просто указываем направление вектора (взгляда):
-                characterService.getCurrentHero().setVector(vector);
-            }
-
-            // send moving data to Server:
-            localSocketConnection.sendPacket(eventService.buildMove(characterService.getCurrentHero()));
-
-            // move map:
-            switch (vector) {
-                case UP -> {
-                    if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
-                    }
-                }
-                case UP_RIGHT -> {
-                    if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
-                    }
-                    if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
-                    }
-                }
-                case RIGHT -> {
-                    if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
-                    }
-                }
-                case RIGHT_DOWN -> {
-                    if (isViewMovableX) {
-                        canvas.dragLeft(getCurrentHeroSpeed());
-                    }
-                    if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
-                    }
-                }
-                case DOWN -> {
-                    if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
-                    }
-                }
-                case DOWN_LEFT -> {
-                    if (isViewMovableY) {
-                        canvas.dragUp(getCurrentHeroSpeed());
-                    }
-                    if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
-                    }
-                }
-                case LEFT -> {
-                    if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
-                    }
-                }
-                case LEFT_UP -> {
-                    if (isViewMovableX) {
-                        canvas.dragRight(getCurrentHeroSpeed());
-                    }
-                    if (isViewMovableY) {
-                        canvas.dragDown(getCurrentHeroSpeed());
-                    }
-                }
-                default -> log.info("Обнаружено несанкционированное направление {}", vector);
-            }
-        }
-    }
-
-    private int[] hasCollision() {
-        // если сущность - не призрак:
-        if (characterService.getCurrentHero().hasCollision()) {
-            Rectangle2D.Double heroCollider = characterService.getCurrentHero().getCollider();
-
-            // проверка коллизии с краем мира:
-            Area worldMapBorder = new Area(new Rectangle(-12, -12,
-                    worldEngine.getGameMap().getWidth() + 24, worldEngine.getGameMap().getHeight() + 24));
-            worldMapBorder.subtract(new Area(new Rectangle(0, 0, worldEngine.getGameMap().getWidth(), worldEngine.getGameMap().getHeight())));
-            if (worldMapBorder.intersects(heroCollider)) {
-                return findVectorCorrection(worldMapBorder, heroCollider);
-            }
-
-            // проверка коллизий с объектами:
-            for (EnvironmentDto env : worldService.getCurrentWorld().getEnvironments()) {
-                if (env.hasCollision() && env.getCollider().intersects(heroCollider)) {
-                    return findVectorCorrection(env.getCollider(), heroCollider);
-                }
-            }
-        }
-
-        return new int[]{0, 0};
-    }
-
-    private int[] findVectorCorrection(Shape envColl, Rectangle2D.Double heroColl) {
-        int[] result; // y, x
-        Rectangle heroBounds = heroColl.getBounds();
-
-        final Point upDotY01 = new Point((int) (heroColl.x + heroColl.width * 0.33d), heroBounds.y);
-        final Point upDotY02 = new Point((int) (heroColl.x + heroColl.width * 0.66d), heroBounds.y);
-        final Point downDotY01 = new Point((int) (heroColl.x + heroColl.width * 0.33d), heroBounds.y + heroBounds.height);
-        final Point downDotY02 = new Point((int) (heroColl.x + heroColl.width * 0.66d), heroBounds.y + heroBounds.height);
-
-        final Point leftDotX01 = new Point(heroBounds.x, (int) (heroColl.y + heroColl.height * 0.33d));
-        final Point leftDotX02 = new Point(heroBounds.x, (int) (heroColl.y + heroColl.height * 0.66d));
-        final Point rightDotX01 = new Point(heroBounds.x + heroBounds.width, (int) (heroColl.y + heroColl.height * 0.33d));
-        final Point rightDotX02 = new Point(heroBounds.x + heroBounds.width, (int) (heroColl.y + heroColl.height * 0.66d));
-
-        result = new int[]{
-                // y
-                envColl.contains(upDotY01) || envColl.contains(upDotY02) ? -1
-                        : envColl.contains(downDotY01) || envColl.contains(downDotY02) ? 1 : 0,
-
-                // x
-                envColl.contains(leftDotX01) || envColl.contains(leftDotX02) ? -1
-                        : envColl.contains(rightDotX01) || envColl.contains(rightDotX02) ? 1 : 0
-        };
-        return result;
-    }
-
-    public WorldDto saveNewWorld(WorldDto newWorld) {
-        newWorld.setCreatedBy(playerService.getCurrentPlayer().getUid());
-        newWorld.generate();
-        return worldService.saveOrUpdate(newWorld);
-    }
-
-    public boolean openServer() {
-        server = new Server(this);
-        server.start();
-        server.untilOpen(Constants.getGameConfig().getServerOpenTimeAwait());
-        return server.isOpen();
-    }
-
-    public boolean closeServer() {
-        localSocketConnection.setHandledExit(true);
-        server.close();
-        server.untilClose(6_000);
-        return server.isClosed();
-    }
-
-    public Set<iEnvironment> getWorldEnvironments(Rectangle2D.Double rectangle) {
-        return worldService.getEnvironmentsFromRectangle(rectangle);
-    }
-
-    public Set<PlayCharacterDto> findAllHeroesByWorldUid(UUID uid) {
-        return characterService.findAllByWorldUuid(uid);
+    private boolean closeServer() {
+        Constants.getServer().close();
+        Constants.getServer().untilClose(Constants.getGameConfig().getServerCloseTimeAwait());
+        return Constants.getServer().isClosed();
     }
 
     public List<PlayCharacterDto> getMyCurrentWorldHeroes() {
         return characterService.findAllByWorldUidAndOwnerUid(worldService.getCurrentWorld().getUid(), playerService.getCurrentPlayer().getUid());
     }
 
-    public String getCurrentWorldTitle() {
-        return worldService.getCurrentWorld() == null ? null : worldService.getCurrentWorld().getName();
-    }
-
-    public void getDrawCurrentWorld(Graphics2D v2D) throws AWTException {
-        worldService.getCurrentWorld().draw(v2D);
-    }
-
-    public void initCurrentWorld(GamePaneRunnable gameCanvas) {
-        worldService.getCurrentWorld().init(gameCanvas, this);
-    }
-
-    public long getCurrentHeroInGameTime() {
-        if (characterService.getCurrentHero() != null) {
-            return characterService.getCurrentHero().getInGameTime();
-        }
-        return -1;
-    }
-
-    public Point2D.Double getCurrentHeroLocation() {
-        if (characterService.getCurrentHero() != null) {
-            return characterService.getCurrentHero().getLocation();
-        }
-        return null;
-    }
-
-    public byte getCurrentHeroSpeed() {
-        if (characterService.getCurrentHero() != null) {
-            return characterService.getCurrentHero().getSpeed();
-        }
-        return -1;
-    }
-
     public List<WorldDto> findAllWorldsByNetworkAvailable(boolean isNetworkAvailable) {
         return worldService.findAllByNetAvailable(isNetworkAvailable);
-    }
-
-    public CharacterDto findHeroByNameAndWorld(String heroName, UUID worldUid) {
-        return characterService.findHeroByNameAndWorld(heroName, worldUid);
-    }
-
-    public boolean connectToServer(String host, Integer port, String password) {
-        this.localSocketConnection = new SocketConnection();
-
-        // подключаемся к серверу:
-        if (localSocketConnection.isOpen() && localSocketConnection.getHost().equals(host)) {
-            // верно ли подобное поведение?
-            log.warn("Сокетное подключение уже открыто, пробуем использовать {}", localSocketConnection.getHost());
-        } else {
-            localSocketConnection.openSocket(host, port, this, false);
-        }
-
-        if (!localSocketConnection.isOpen()) {
-            throw new GlobalServiceException(ErrorMessages.NO_CONNECTION_REACHED,
-                    "No reached socket connection to " + host + (port == null ? "" : ":" + port));
-        } else if (!host.equals(localSocketConnection.getHost())) {
-            throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "current socket host address");
-        }
-
-        // передаём свои данные для авторизации:
-        localSocketConnection.toServer(ClientDataDto.builder()
-                .dataType(NetDataType.AUTH_REQUEST)
-                .content(EventPlayerAuth.builder()
-                        .ownerUid(playerService.getCurrentPlayer().getUid())
-                        .playerName(playerService.getCurrentPlayer().getNickName())
-                        .password(password)
-                        .build())
-                .build());
-
-        Thread authThread = Thread.startVirtualThread(() -> {
-            while (!localSocketConnection.isAuthorized() && !Thread.currentThread().isInterrupted()) {
-                Thread.yield();
-            }
-        });
-        try {
-            authThread.join(9_000);
-            if (authThread.isAlive()) {
-                log.error("Так и не получили успешной авторизации от Сервера.");
-                authThread.interrupt();
-                localSocketConnection.close();
-                return false;
-            } else {
-                return true;
-            }
-        } catch (InterruptedException e) {
-            authThread.interrupt();
-            localSocketConnection.close();
-            return false;
-        }
     }
 
     public void setCurrentWorld(UUID selectedWorldUuid) {
@@ -534,33 +208,6 @@ public class GameControllerService extends GameControllerBase {
             return;
         }
         throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid.toString());
-    }
-
-    public void saveServerWorldAndSetAsCurrent(WorldDto worldDto) {
-        Optional<WorldDto> wOpt = worldService.findByUid(worldDto.getUid());
-        if (wOpt.isPresent()) { // тут происходит подмена worldUuid?
-            WorldDto old = wOpt.get();
-            BeanUtils.copyProperties(worldDto, old);
-            worldService.setCurrentWorld(old);
-            worldService.saveCurrent();
-        } else {
-            worldService.setCurrentWorld(worldService.saveOrUpdate(worldDto));
-        }
-    }
-
-    public void setCurrentHero(PlayCharacterDto hero) {
-        if (characterService.getCurrentHero() != null) {
-            if (characterService.getCurrentHero().equals(hero)) {
-                characterService.getCurrentHero().setOnline(true);
-            } else if (characterService.getCurrentHero().isOnline()) {
-                // если online другой герой - снимаем:
-                log.info("Снимаем он-лайн с Героя {} и передаём этот статус Герою {}...", characterService.getCurrentHero().getName(), hero.getName());
-                characterService.getCurrentHero().setOnline(false);
-                characterService.saveCurrent();
-            }
-        }
-        log.info("Теперь активный Герой - {}", hero.getName());
-        characterService.setCurrentHero(hero);
     }
 
     /**
@@ -618,7 +265,7 @@ public class GameControllerService extends GameControllerBase {
     }
 
     public void requestHeroFromServer(UUID uid) {
-        localSocketConnection.toServer(ClientDataDto.builder()
+        Constants.getLocalSocketConnection().toServer(ClientDataDto.builder()
                 .dataType(NetDataType.HERO_REMOTE_NEED)
                 .content(EventHeroRegister.builder().heroUid(uid).build())
                 .build());

@@ -1,7 +1,10 @@
 package game.freya.dto.roots;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import game.freya.config.Constants;
+import game.freya.interfaces.root.iPlayer;
 import game.freya.utils.ExceptionUtils;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,36 +21,36 @@ import java.util.UUID;
 
 @Slf4j
 @Getter
+@Setter
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class PlayerDto {
+public class PlayerDto implements iPlayer {
     @NotNull
-    private final String email;
-
-    @NotNull
-    @Setter
+    @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private UUID uid;
 
     @NotNull
-    @Setter
+    @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.REQUIRED)
     private String nickName;
 
+    @NotNull
+    @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.REQUIRED, accessMode = Schema.AccessMode.READ_ONLY)
+    private final String email;
+
     @Builder.Default
+    @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private String avatarUrl = Constants.getUserConfig().getUserAvatar();
 
-    @Setter
+    @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private UUID lastPlayedWorldUid;
 
-
     // custom fields:
-    @Setter
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, accessMode = Schema.AccessMode.READ_ONLY, hidden = true)
     private BufferedImage avatar;
 
-    @Getter
-    @Setter
-    private CharacterDto currentActiveHero;
-
+    @JsonIgnore
+    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, hidden = true)
     public BufferedImage getAvatar() {
         if (avatar == null) {
             if (avatarUrl == null) {

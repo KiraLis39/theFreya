@@ -117,7 +117,7 @@ public class ConnectedServerPlayerThread extends Thread implements Runnable {
                         } else if (lastEvent.equals(NetDataEvent.HERO_REGISTER)) {
                             saveConnectedHero(readed); // readed.heroUid!
                         } else {
-                            gameControllerService.getServer().broadcast(readed, this);
+                            Constants.getServer().broadcast(readed, this);
                         }
                     } else {
                         log.error("Неопознанный тип входящего пакета: {}", readed.dataType());

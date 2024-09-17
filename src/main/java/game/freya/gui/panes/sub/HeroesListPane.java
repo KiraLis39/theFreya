@@ -175,7 +175,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()
-                                        && !gameControllerService.getLocalSocketConnection().isOpen()
+                                        && !Constants.getLocalSocketConnection().isOpen()
                                 ) {
                                     canvas.connectToServer(NetConnectTemplate.builder()
                                             .address(gameControllerService.getWorldService().getCurrentWorld().getAddress())
