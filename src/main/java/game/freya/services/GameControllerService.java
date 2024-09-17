@@ -7,21 +7,12 @@ import game.freya.config.Constants;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.dto.roots.WorldDto;
-import game.freya.entities.PlayCharacter;
-import game.freya.entities.roots.prototypes.Character;
-import game.freya.enums.net.NetDataEvent;
-import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.GameWindowController;
 import game.freya.net.PingService;
-import game.freya.net.data.ClientDataDto;
-import game.freya.net.data.events.EventHeroMoving;
-import game.freya.net.data.events.EventHeroOffline;
-import game.freya.net.data.events.EventHeroRegister;
 import game.freya.utils.BcryptUtil;
 import game.freya.utils.ExceptionUtils;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -210,51 +201,6 @@ public class GameControllerService extends GameControllerBase {
         throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid.toString());
     }
 
-    /**
-     * В этот метод приходят данные обновлений сетевого мира (Сервера).
-     * Здесь собираются все изменения, движения игроков, атаки, лечения, взаимодействия и т.п. для
-     * мержа с мирами других сетевых участников.
-     *
-     * @param data модель обновлений для сетевого мира от другого участника игры.
-     */
-    public void syncServerDataWithCurrentWorld(@NotNull ClientDataDto data) {
-        log.debug("Получены данные для синхронизации {} игрока {} (герой {})",
-                data.dataEvent(), data.content().ownerUid(), data.content().heroUid());
-
-        Optional<PlayCharacter> aimOpt = characterService.findByUid(data.content().heroUid());
-        if (aimOpt.isEmpty()) {
-            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", data.content().heroUid());
-            requestHeroFromServer(data.content().heroUid());
-            return;
-        }
-        Character aim = aimOpt.get();
-
-        if (data.dataEvent() == NetDataEvent.HERO_OFFLINE) {
-            EventHeroOffline event = (EventHeroOffline) data.content();
-            UUID offlinePlayerUid = event.ownerUid();
-            log.info("Игрок {} отключился от Сервера. Удаляем его из карты активных Героев...", offlinePlayerUid);
-            offlineSaveAndRemoveOtherHeroByPlayerUid(offlinePlayerUid);
-        }
-
-        if (data.dataEvent() == NetDataEvent.HERO_MOVING) {
-            EventHeroMoving event = (EventHeroMoving) data.content();
-            aim.setLocation(event.location());
-            aim.setVector(event.vector());
-        }
-
-        // Обновляем здоровье, максимальное здоровье, силу, бафы-дебафы, текущий инструмент в руках и т.п. другого игрока:
-        // ...
-
-        // Обновляем окружение, выросшие-срубленные деревья, снесенные, построенные постройки, их характеристики и т.п.:
-        // ...
-
-        // Обновляем данные квестов, задач, групп, союзов, обменов и т.п.:
-        // ...
-
-        // Обновляем статусы он-лайн, ветхость, таймауты и прочее...
-        // ...
-    }
-
     public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID clientUid) {
         Optional<CharacterDto> charDtoOpt = characterService.getByUid(clientUid);
         if (charDtoOpt.isPresent()) {
@@ -262,12 +208,5 @@ public class GameControllerService extends GameControllerBase {
             charDto.setOnline(false);
             characterService.justSaveAnyHero(charDto);
         }
-    }
-
-    public void requestHeroFromServer(UUID uid) {
-        Constants.getLocalSocketConnection().toServer(ClientDataDto.builder()
-                .dataType(NetDataType.HERO_REMOTE_NEED)
-                .content(EventHeroRegister.builder().heroUid(uid).build())
-                .build());
     }
 }

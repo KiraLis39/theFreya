@@ -6,6 +6,8 @@ import game.freya.config.Controls;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.dto.roots.WorldDto;
+import game.freya.entities.PlayCharacter;
+import game.freya.entities.roots.prototypes.Character;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
 import game.freya.exceptions.ErrorMessages;
@@ -13,12 +15,16 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDto;
 import game.freya.net.data.events.EventClientDied;
 import game.freya.net.data.events.EventDenied;
+import game.freya.net.data.events.EventHeroMoving;
+import game.freya.net.data.events.EventHeroOffline;
+import game.freya.net.data.events.EventHeroRegister;
 import game.freya.net.data.events.EventPingPong;
 import game.freya.net.data.events.EventPlayerAuth;
 import game.freya.net.data.events.EventWorldData;
 import game.freya.net.data.types.TypeChat;
 import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -39,6 +45,7 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Getter
@@ -203,10 +210,62 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
             case HERO_OFFLINE, HERO_MOVING -> {
                 log.debug("Приняты данные синхронизации {} от игрока: {} (герой: {})",
                         clientDataDto.dataEvent(), clientDataDto.playerName(), clientDataDto.heroName());
-                gameControllerService.syncServerDataWithCurrentWorld(clientDataDto);
+                syncServerDataWithCurrentWorld(clientDataDto);
             }
             default -> log.error(Constants.getNotRealizedString());
         }
+    }
+
+    /**
+     * В этот метод приходят данные обновлений сетевого мира (Сервера).
+     * Здесь собираются все изменения, движения игроков, атаки, лечения, взаимодействия и т.п. для
+     * мержа с мирами других сетевых участников.
+     *
+     * @param data модель обновлений для сетевого мира от другого участника игры.
+     */
+    private void syncServerDataWithCurrentWorld(@NotNull ClientDataDto data) {
+        log.debug("Получены данные для синхронизации {} игрока {} (герой {})",
+                data.dataEvent(), data.content().ownerUid(), data.content().heroUid());
+
+        Optional<PlayCharacter> aimOpt = gameControllerService.getCharacterService().findByUid(data.content().heroUid());
+        if (aimOpt.isEmpty()) {
+            log.warn("Герой {} не существует в БД. Отправляется запрос на его модель к Серверу, ожидается...", data.content().heroUid());
+            requestHeroFromServer(data.content().heroUid());
+            return;
+        }
+        Character aim = aimOpt.get();
+
+        if (data.dataEvent() == NetDataEvent.HERO_OFFLINE) {
+            EventHeroOffline event = (EventHeroOffline) data.content();
+            UUID offlinePlayerUid = event.ownerUid();
+            log.info("Игрок {} отключился от Сервера. Удаляем его из карты активных Героев...", offlinePlayerUid);
+            gameControllerService.offlineSaveAndRemoveOtherHeroByPlayerUid(offlinePlayerUid);
+        }
+
+        if (data.dataEvent() == NetDataEvent.HERO_MOVING) {
+            EventHeroMoving event = (EventHeroMoving) data.content();
+            aim.setLocation(event.location());
+            aim.setVector(event.vector());
+        }
+
+        // Обновляем здоровье, максимальное здоровье, силу, бафы-дебафы, текущий инструмент в руках и т.п. другого игрока:
+        // ...
+
+        // Обновляем окружение, выросшие-срубленные деревья, снесенные, построенные постройки, их характеристики и т.п.:
+        // ...
+
+        // Обновляем данные квестов, задач, групп, союзов, обменов и т.п.:
+        // ...
+
+        // Обновляем статусы он-лайн, ветхость, таймауты и прочее...
+        // ...
+    }
+
+    private void requestHeroFromServer(UUID uid) {
+        Constants.getLocalSocketConnection().toServer(ClientDataDto.builder()
+                .dataType(NetDataType.HERO_REMOTE_NEED)
+                .content(EventHeroRegister.builder().heroUid(uid).build())
+                .build());
     }
 
     /**

@@ -18,6 +18,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
+import java.util.List;
 
 @Slf4j
 public class HeroesListPane extends JPanel implements iSubPane {
@@ -47,7 +48,11 @@ public class HeroesListPane extends JPanel implements iSubPane {
     private void reloadHeroes(RunnableCanvasPanel canvas) {
         HeroesListPane.this.removeAll();
 
-        for (PlayCharacterDto hero : gameControllerService.getMyCurrentWorldHeroes()) {
+        List<PlayCharacterDto> worldHeroes = gameControllerService.getCharacterService().findAllByWorldUidAndOwnerUid(
+                gameControllerService.getWorldService().getCurrentWorld().getUid(),
+                gameControllerService.getPlayerService().getCurrentPlayer().getUid());
+
+        for (PlayCharacterDto hero : worldHeroes) {
             add(new SubPane("Герой: ".concat(hero.getName()), hero.getType().getColor()) {{
                 setAlignmentY(TOP_ALIGNMENT);
                 add(new JPanel() {
