@@ -29,6 +29,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -213,10 +214,11 @@ public class ConnectedServerPlayerThread extends Thread implements Runnable {
     }
 
     private void saveConnectedHero(ClientDataDto readed) {
-        EventHeroRegister connected = (EventHeroRegister) readed.content();
+        Optional<CharacterDto> charOpt = gameControllerService.getCharacterService().getByUid(readed.content().heroUid());
+
         CharacterDto hero;
-        if (gameControllerService.getCharacterService().isHeroExist(connected.heroUid())) {
-            hero = gameControllerService.getCharacterService().getByUid(connected.heroUid()).get();
+        if (charOpt.isPresent()) {
+            hero = charOpt.get();
             BeanUtils.copyProperties(readed, hero, "heroUid");
         } else {
             hero = gameControllerService.getCharacterService()
