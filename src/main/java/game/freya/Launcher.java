@@ -83,7 +83,6 @@ public class Launcher {
         }
         log.info(
                 """
-
                             ----------------------------------------------------------
                             \tApplication '{} v.{}' is running! Access URLs:
                             \tLocal: \t\t{}://localhost:{}{}
