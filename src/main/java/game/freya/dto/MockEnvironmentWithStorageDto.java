@@ -5,6 +5,7 @@ import game.freya.config.Constants;
 import game.freya.dto.roots.EnvironmentDto;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import java.awt.image.BufferedImage;
 @Getter
 @Setter
 @SuperBuilder
+@RequiredArgsConstructor
 public class MockEnvironmentWithStorageDto extends EnvironmentDto {
     @JsonIgnore
     private final BufferedImage[] spriteList;

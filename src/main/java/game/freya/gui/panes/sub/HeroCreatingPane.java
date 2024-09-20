@@ -6,7 +6,6 @@ import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.enums.player.HeroCorpusType;
 import game.freya.enums.player.HeroPeripheralType;
-import game.freya.gui.panes.MenuCanvasRunnable;
 import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
@@ -25,14 +24,12 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.RGBImageFilter;
+import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.UUID;
 
 @Slf4j
 public class HeroCreatingPane extends JPanel implements iSubPane {
-    private static final Random r = new Random();
-
     private static final float rgb = 0.18f;
 
     private final Color hnrc = new Color(rgb, rgb, rgb, 0.75f);
@@ -75,8 +72,13 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
     private Color baseColor = Color.GREEN, secondColor = Color.DARK_GRAY;
 
     private transient PlayCharacterDto editableHero;
+    private final RunnableCanvasPanel canvas;
+    private final GameControllerService gameControllerService;
 
-    public HeroCreatingPane(RunnableCanvasPanel canvas, GameControllerService gameController) {
+    public HeroCreatingPane(RunnableCanvasPanel canvas, GameControllerService gameControllerService) {
+        this.canvas = canvas;
+        this.gameControllerService = gameControllerService;
+
         setName("Hero creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -211,12 +213,12 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                         @Override
                         public void actionPerformed(ActionEvent e) {
                             if (!isEditMode) {
-                                worldUid = gameController.getWorldService().getCurrentWorld().getUid();
-                                CharacterDto existsHero = gameController.getCharacterService().findHeroByNameAndWorld(getHeroName(), worldUid);
+                                worldUid = gameControllerService.getWorldService().getCurrentWorld().getUid();
+                                CharacterDto existsHero = gameControllerService.getCharacterService().findHeroByNameAndWorld(getHeroName(), worldUid);
                                 if (existsHero != null) {
                                     new FOptionPane().buildFOptionPane("Провал:", "Герой с таким именем уже есть в этом мире");
                                 } else {
-                                    ((MenuCanvasRunnable) canvas).saveNewHeroAndPlay(HeroCreatingPane.this);
+                                    saveNewHeroAndPlay(HeroCreatingPane.this);
                                 }
                             } else {
                                 editableHero.setBaseColor(baseColor);
@@ -225,7 +227,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                                 editableHero.setPeripheralType(chosenPeriferiaType);
                                 editableHero.setPeripheralSize(periferiaSize);
 
-                                gameController.getCharacterService().justSaveAnyHero(editableHero);
+                                gameControllerService.getCharacterService().justSaveAnyHero(editableHero);
 
                                 HeroCreatingPane.this.setVisible(false);
                                 canvas.getHeroesListPane().setVisible(true);
@@ -237,6 +239,44 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
 
             add(Box.createVerticalStrut(3));
         }});
+    }
+
+    /**
+     * Приходим сюда для создания нового героя для мира.
+     *
+     * @param newHeroTemplate модель нового героя для игры в новом мире.
+     */
+    public void saveNewHeroAndPlay(HeroCreatingPane newHeroTemplate) {
+        // сохраняем нового героя и...
+        PlayCharacterDto aNewToSave = PlayCharacterDto.builder()
+                .uid(UUID.randomUUID())
+                .name(newHeroTemplate.getHeroName())
+                .ownerUid(Constants.getUserConfig().getUserId())
+                .createdBy(gameControllerService.getPlayerService().getCurrentPlayer().getUid())
+                .worldUid(newHeroTemplate.getWorldUid())
+                .baseColor(newHeroTemplate.getBaseColor())
+                .secondColor(newHeroTemplate.getSecondColor())
+                .corpusType(newHeroTemplate.getChosenCorpusType())
+                .peripheralType(newHeroTemplate.getChosenPeriferiaType())
+                .peripheralSize(newHeroTemplate.getPeriferiaSize())
+                .createdDate(LocalDateTime.now())
+                .modifyDate(LocalDateTime.now())
+                .build();
+
+        // проставляем как текущего:
+        gameControllerService.getCharacterService()
+                .setCurrentHero(gameControllerService.getCharacterService().justSaveAnyHero(aNewToSave));
+
+        // если подключение к Серверу уже закрылось пока мы собирались:
+        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable() && !Constants.getServer().isOpen()) {
+//            log.warn("Сервер уже закрыт. Требуется повторное подключение.");
+//            getHeroCreatingPane().setVisible(false);
+//            getHeroesListPane().setVisible(false);
+//            getNetworkListPane().setVisible(true);
+//            return;
+        }
+
+        canvas.playWithThisHero(gameControllerService.getCharacterService().getCurrentHero());
     }
 
     private void recolorHeroView() {
@@ -313,7 +353,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
             return;
         }
 
-        this.heroName = "Hero_%s".formatted(r.nextInt(1000));
+        this.heroName = "Hero_%s".formatted(Constants.RANDOM.nextInt(1000));
         super.setVisible(isVisible);
 
         if (ntf != null) {

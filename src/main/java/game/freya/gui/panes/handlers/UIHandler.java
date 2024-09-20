@@ -2,6 +2,7 @@ package game.freya.gui.panes.handlers;
 
 import fox.FoxRender;
 import game.freya.config.Constants;
+import game.freya.config.Controls;
 import game.freya.gui.panes.MenuCanvasRunnable;
 import game.freya.services.GameControllerService;
 import jakarta.annotation.PostConstruct;
@@ -48,7 +49,7 @@ public final class UIHandler {
         if (canvas instanceof MenuCanvasRunnable menuCanvas) {
             drawMainMenu(v2D, menuCanvas);
             drawCreatorInfo(v2D, menuCanvas);
-        } else if (canvas.isOptionsMenuSetVisible()) {
+        } else if (Controls.isOptionsMenuVisible()) {
             canvas.showOptions(v2D);
         } else {
             // up left pane:
@@ -107,7 +108,7 @@ public final class UIHandler {
     private void drawMainMenu(Graphics2D g2D, RunnableCanvasPanel canvas) {
         g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
 
-        if (canvas.isOptionsMenuSetVisible()) {
+        if (Controls.isOptionsMenuVisible()) {
             canvas.showOptions(g2D);
             return;
         } else if (canvas.getWorldCreatingPane() != null && canvas.getWorldCreatingPane().isVisible()) {
@@ -116,38 +117,38 @@ public final class UIHandler {
             // creating world buttons text:
             g2D.setColor(Color.BLACK);
             g2D.drawString(randomButtonText, canvas.getFirstButtonRect().x - 1, canvas.getFirstButtonRect().y + 17);
-            g2D.setColor(canvas.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(randomButtonText, canvas.getFirstButtonRect().x, canvas.getFirstButtonRect().y + 18);
 
             g2D.setColor(Color.BLACK);
             g2D.drawString(resetButtonText, canvas.getSecondButtonRect().x - 1, canvas.getSecondButtonRect().y + 17);
-            g2D.setColor(canvas.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(resetButtonText, canvas.getSecondButtonRect().x, canvas.getSecondButtonRect().y + 18);
         } else if (canvas.getWorldsListPane() != null && canvas.getWorldsListPane().isVisible()) {
             canvas.drawHeader(g2D, "Выбор мира");
 
             g2D.setColor(Color.BLACK);
             g2D.drawString(createNewButtonText, canvas.getFirstButtonRect().x - 1, canvas.getFirstButtonRect().y + 17);
-            g2D.setColor(canvas.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(createNewButtonText, canvas.getFirstButtonRect().x, canvas.getFirstButtonRect().y + 18);
         } else if (canvas.getHeroesListPane() != null && canvas.getHeroesListPane().isVisible()) {
             canvas.drawHeader(g2D, "Выбор героя");
 
             g2D.setColor(Color.BLACK);
             g2D.drawString(createNewButtonText, canvas.getFirstButtonRect().x - 1, canvas.getFirstButtonRect().y + 17);
-            g2D.setColor(canvas.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(createNewButtonText, canvas.getFirstButtonRect().x, canvas.getFirstButtonRect().y + 18);
         } else if (canvas.getNetworkListPane() != null && canvas.getNetworkListPane().isVisible()) {
             canvas.drawHeader(g2D, "Сетевые подключения");
 
             g2D.setColor(Color.BLACK);
             g2D.drawString(createNewButtonText, canvas.getFirstButtonRect().x - 1, canvas.getFirstButtonRect().y + 17);
-            g2D.setColor(canvas.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(createNewButtonText, canvas.getFirstButtonRect().x, canvas.getFirstButtonRect().y + 18);
 
             g2D.setColor(Color.BLACK);
             g2D.drawString(repingButtonText, canvas.getSecondButtonRect().x - 1, canvas.getSecondButtonRect().y + 17);
-            g2D.setColor(canvas.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(repingButtonText, canvas.getSecondButtonRect().x, canvas.getSecondButtonRect().y + 18);
         } else if (canvas.getNetworkCreatingPane() != null && canvas.getNetworkCreatingPane().isVisible()) {
             canvas.drawHeader(g2D, "Создание подключения");
@@ -158,28 +159,28 @@ public final class UIHandler {
             // default buttons text:
             g2D.setColor(Color.BLACK);
             g2D.drawString(startGameButtonText, canvas.getFirstButtonRect().x - 1, canvas.getFirstButtonRect().y + 17);
-            g2D.setColor(canvas.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(startGameButtonText, canvas.getFirstButtonRect().x, canvas.getFirstButtonRect().y + 18);
 
             g2D.setColor(Color.BLACK);
             g2D.drawString(coopPlayButtonText, canvas.getSecondButtonRect().x - 1, canvas.getSecondButtonRect().y + 17);
-            g2D.setColor(canvas.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(coopPlayButtonText, canvas.getSecondButtonRect().x, canvas.getSecondButtonRect().y + 18);
 
             g2D.setColor(Color.BLACK);
             g2D.drawString(optionsButtonText, canvas.getThirdButtonRect().x - 1, canvas.getThirdButtonRect().y + 17);
-            g2D.setColor(canvas.isThirdButtonOver() ? Color.GREEN : Color.WHITE);
+            g2D.setColor(Controls.isThirdButtonOver() ? Color.GREEN : Color.WHITE);
             g2D.drawString(optionsButtonText, canvas.getThirdButtonRect().x, canvas.getThirdButtonRect().y + 18);
         }
 
         g2D.setColor(Color.BLACK);
-        g2D.drawString(canvas.isOptionsMenuSetVisible()
+        g2D.drawString(Controls.isOptionsMenuVisible()
                 || (canvas.getNetworkCreatingPane() != null && canvas.getNetworkCreatingPane().isVisible())
                 || (canvas.getNetworkListPane() != null && canvas.getNetworkListPane().isVisible())
                 || (canvas.getWorldCreatingPane() != null && canvas.getWorldCreatingPane().isVisible())
                 ? canvas.getBackButtonText() : canvas.getExitButtonText(), canvas.getExitButtonRect().x - 1, canvas.getExitButtonRect().y + 17);
-        g2D.setColor(canvas.isExitButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(canvas.isOptionsMenuSetVisible()
+        g2D.setColor(Controls.isExitButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(Controls.isOptionsMenuVisible()
                 || (canvas.getNetworkCreatingPane() != null && canvas.getNetworkCreatingPane().isVisible())
                 || (canvas.getNetworkListPane() != null && canvas.getNetworkListPane().isVisible())
                 || (canvas.getWorldCreatingPane() != null && canvas.getWorldCreatingPane().isVisible())
@@ -192,17 +193,17 @@ public final class UIHandler {
         // creating hero buttons text:
         g2D.setColor(Color.BLACK);
         g2D.drawString(randomButtonText, canvas.getFirstButtonRect().x - 1, canvas.getFirstButtonRect().y + 17);
-        g2D.setColor(canvas.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(randomButtonText, canvas.getFirstButtonRect().x, canvas.getFirstButtonRect().y + 18);
 
         g2D.setColor(Color.BLACK);
         g2D.drawString(resetButtonText, canvas.getSecondButtonRect().x - 1, canvas.getSecondButtonRect().y + 17);
-        g2D.setColor(canvas.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(resetButtonText, canvas.getSecondButtonRect().x, canvas.getSecondButtonRect().y + 18);
 
         g2D.setColor(Color.BLACK);
         g2D.drawString(canvas.getBackButtonText(), canvas.getExitButtonRect().x - 1, canvas.getExitButtonRect().y + 17);
-        g2D.setColor(canvas.isExitButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isExitButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(canvas.getBackButtonText(), canvas.getExitButtonRect().x, canvas.getExitButtonRect().y + 18);
     }
 

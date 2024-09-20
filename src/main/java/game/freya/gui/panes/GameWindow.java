@@ -1,7 +1,6 @@
 package game.freya.gui.panes;
 
 import fox.components.FOptionPane;
-import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
@@ -20,8 +19,6 @@ import java.util.Arrays;
 
 @Slf4j
 public class GameWindow extends JFrame {
-    private final Dimension windowSize;
-
     @Getter
     @Setter
     private volatile boolean isReady;
@@ -29,12 +26,6 @@ public class GameWindow extends JFrame {
 
     public GameWindow(GameControllerService gameControllerService, ApplicationProperties props) {
         super(props.getAppName().concat(" v.").concat(props.getAppVersion()), Constants.getGraphicsConfiguration());
-
-        Dimension monitorSize = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
-        double delta = monitorSize.getWidth() / monitorSize.getHeight();
-        double newWidth = monitorSize.getWidth() * 0.75d;
-        double newHeight = newWidth / delta;
-        windowSize = new Dimension((int) newWidth, (int) newHeight);
 
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setCursor(Constants.getDefaultCursor());
@@ -114,6 +105,26 @@ public class GameWindow extends JFrame {
         setInAc();
     }
 
+    public void setScene(RunnableCanvasPanel scene) {
+        this.scene = scene;
+        clearFrame();
+        setVisible(true);
+        revalidate();
+        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
+    }
+
+    private void clearFrame() {
+        Arrays.stream(getComponents())
+                .filter(JRootPane.class::isInstance)
+                .forEach(rp -> Arrays.stream(((JRootPane) rp).getContentPane().getComponents())
+                        .filter(RunnableCanvasPanel.class::isInstance)
+                        .forEach(fc -> {
+                            ((RunnableCanvasPanel) fc).stop();
+                            remove(fc);
+                        }));
+        add(this.scene);
+    }
+
     private void setInAc() {
         final String frameName = "mainFrame";
 
@@ -124,7 +135,9 @@ public class GameWindow extends JFrame {
                     public void actionPerformed(ActionEvent e) {
                         log.debug("Try to switch the fullscreen mode...");
                         Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-                        Constants.checkFullscreenMode(GameWindow.this, windowSize);
+                        Constants.checkFullscreenMode(GameWindow.this, new Dimension(
+                                (int) Constants.getUserConfig().getWindowWidth(),
+                                (int) Constants.getUserConfig().getWindowHeight()));
                     }
                 });
 
@@ -158,7 +171,6 @@ public class GameWindow extends JFrame {
 
     private void onGameRestore() {
         if (Controls.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
-//            log.info("Auto resume the game on frame restore is temporary off.");
             Controls.setPaused(false);
             log.debug("Resume game...");
         }
@@ -174,26 +186,8 @@ public class GameWindow extends JFrame {
 
     public void checkFullscreenMode() {
         log.info("Show the MainFrame...");
-        Constants.checkFullscreenMode(this, windowSize);
-    }
-
-    public void setScene(RunnableCanvasPanel scene) {
-        this.scene = scene;
-        clearFrame();
-        setVisible(true);
-        revalidate();
-        createBufferStrategy(Constants.getUserConfig().getBufferedDeep());
-    }
-
-    private void clearFrame() {
-        Arrays.stream(getComponents())
-                .filter(JRootPane.class::isInstance)
-                .forEach(rp -> Arrays.stream(((JRootPane) rp).getContentPane().getComponents())
-                        .filter(RunnableCanvasPanel.class::isInstance)
-                        .forEach(fc -> {
-                            ((RunnableCanvasPanel) fc).stop();
-                            remove(fc);
-                        }));
-        add(this.scene);
+        Constants.checkFullscreenMode(this, new Dimension(
+                (int) Constants.getUserConfig().getWindowWidth(),
+                (int) Constants.getUserConfig().getWindowHeight()));
     }
 }

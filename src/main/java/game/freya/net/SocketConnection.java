@@ -10,6 +10,7 @@ import game.freya.entities.PlayCharacter;
 import game.freya.entities.roots.prototypes.Character;
 import game.freya.enums.net.NetDataEvent;
 import game.freya.enums.net.NetDataType;
+import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.net.data.ClientDataDto;
@@ -154,8 +155,8 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
                 new FOptionPane().buildFOptionPane("Отказ:", "Сервер отказал в выборе Героя: %s"
                         .formatted(deny.explanation()), 15, true);
             }
-            case HERO_REQUEST -> gameControllerService.getCharacterService()
-                    .justSaveAnyHero(gameControllerService.getEventService().cliToHero(readed));
+            case HERO_DATA -> gameControllerService.getCharacterService()
+                    .justSaveAnyHero(gameControllerService.getClientDataMapper().clientDataToPlayCharacterDto(readed));
             case CHAT -> {
                 TypeChat chat = (TypeChat) readed.content();
                 if (chat.chatMessage() != null) {
@@ -173,11 +174,11 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
         if (wOpt.isPresent()) {
             WorldDto old = wOpt.get();
             BeanUtils.copyProperties(worldDto, old);
-            gameControllerService.getWorldService().setCurrentWorld(old);
+            gameControllerService.getWorldService().setCurrentWorld(old.getUid());
             gameControllerService.getWorldService().saveCurrent();
         } else {
             gameControllerService.getWorldService()
-                    .setCurrentWorld(gameControllerService.getWorldService().saveOrUpdate(worldDto));
+                    .setCurrentWorld(gameControllerService.getWorldService().saveOrUpdate(worldDto).getUid());
         }
     }
 
@@ -239,7 +240,12 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
             EventHeroOffline event = (EventHeroOffline) data.content();
             UUID offlinePlayerUid = event.ownerUid();
             log.info("Игрок {} отключился от Сервера. Удаляем его из карты активных Героев...", offlinePlayerUid);
-            gameControllerService.offlineSaveAndRemoveOtherHeroByPlayerUid(offlinePlayerUid);
+            Optional<CharacterDto> charDtoOpt = gameControllerService.getCharacterService().getByUid(offlinePlayerUid);
+            if (charDtoOpt.isPresent()) {
+                PlayCharacterDto charDto = (PlayCharacterDto) charDtoOpt.get();
+                charDto.setOnline(false);
+                gameControllerService.getCharacterService().justSaveAnyHero(charDto);
+            }
         }
 
         if (data.dataEvent() == NetDataEvent.HERO_MOVING) {
@@ -315,8 +321,8 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
     public void run() {
         try (Socket client = new Socket()) {
             setServerSocket(client);
-            getServerSocket().setSendBufferSize(Constants.getGameConfig().getSocketBufferSize());
-            getServerSocket().setReceiveBufferSize(Constants.getGameConfig().getSocketBufferSize());
+            getServerSocket().setSendBufferSize(Constants.getGameConfig().getSocketSendBufferSize());
+            getServerSocket().setReceiveBufferSize(Constants.getGameConfig().getSocketReceiveBufferSize());
             getServerSocket().setReuseAddress(true);
             // getServerSocket().setKeepAlive(true);
             getServerSocket().setTcpNoDelay(true);
@@ -411,9 +417,6 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
         }
 
         if (!isPingRecieved() && Controls.isGameActive()) {
-            // останавливаем игру:
-            Controls.setGameActive(false);
-
             log.info("Переводим героя {} ({}) в статус offline и сохраняем...",
                     gameControllerService.getCharacterService().getCurrentHero().getName(),
                     gameControllerService.getCharacterService().getCurrentHero().getUid());
@@ -421,7 +424,7 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
             gameControllerService.getCharacterService().saveCurrent();
 
             // возвращаемся в главное меню:
-            gameControllerService.getGameFrameController().loadMenuScreen();
+            gameControllerService.getGameFrameController().loadScene(ScreenType.MENU_SCREEN);
         }
     }
 
@@ -468,8 +471,9 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
 
     public boolean registerOnServer() {
         log.info("Отправка данных текущего героя на Сервер...");
-        toServer(gameControllerService.getEventService()
-                .heroToCli(gameControllerService.getCharacterService().getCurrentHero(), gameControllerService.getPlayerService().getCurrentPlayer()));
+        toServer(gameControllerService.getClientDataMapper()
+                .playCharacterDtoToClientData(gameControllerService.getCharacterService().getCurrentHero(),
+                        gameControllerService.getPlayerService().getCurrentPlayer()));
 
         Thread heroCheckThread = Thread.startVirtualThread(() -> {
             while (!isAccepted() && !Thread.currentThread().isInterrupted()) {
@@ -495,7 +499,7 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
     public void authRequest(String password) {
         log.info("Шлём на Сервер запрос авторизации...");
         toServer(ClientDataDto.builder()
-                .dataType(NetDataType.AUTH_REQUEST)
+                .dataType(NetDataType.AUTH_DATA)
                 .content(EventPlayerAuth.builder()
                         .ownerUid(gameControllerService.getPlayerService().getCurrentPlayer().getUid())
                         .playerName(gameControllerService.getPlayerService().getCurrentPlayer().getNickName())

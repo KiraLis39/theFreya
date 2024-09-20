@@ -49,7 +49,13 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
 
     private SubPane netPassPane;
 
+    private final GameControllerService gameControllerService;
+    private final RunnableCanvasPanel canvas;
+
     public WorldCreatingPane(RunnableCanvasPanel canvas, GameControllerService gameControllerService) {
+        this.canvas = canvas;
+        this.gameControllerService = gameControllerService;
+
         setName("World creating pane");
         setVisible(false);
         setDoubleBuffered(false);
@@ -148,13 +154,35 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
 //                                        .environments()
 //                                        .location()
                                         .build();
-                                mCanvas.saveNewLocalWorldAndCreateHero(aNewWorld);
+                                saveNewLocalWorldAndCreateHero(aNewWorld);
                             }
                         }
                     });
                 }});
             }
         });
+    }
+
+    /**
+     * Когда создаём локальный, несетевой мир - идём сюда, для его сохранения и указания как текущий мир в контроллере.
+     *
+     * @param newWorld модель нового мира для сохранения.
+     */
+    private void saveNewLocalWorldAndCreateHero(WorldDto newWorld) {
+        gameControllerService.getWorldService().setCurrentWorld(saveNewWorld(newWorld).getUid());
+        canvas.chooseOrCreateHeroForWorld(gameControllerService.getWorldService().getCurrentWorld().getUid());
+    }
+
+    /**
+     * Сохранение нового, только что созданного мира в БД.
+     *
+     * @param newWorld новый мир для сохранения в базу.
+     * @return уже сохранённый в базе мир.
+     */
+    private WorldDto saveNewWorld(WorldDto newWorld) {
+        newWorld.setCreatedBy(gameControllerService.getPlayerService().getCurrentPlayer().getUid());
+        newWorld.generate();
+        return gameControllerService.getWorldService().saveOrUpdate(newWorld);
     }
 
     @Override

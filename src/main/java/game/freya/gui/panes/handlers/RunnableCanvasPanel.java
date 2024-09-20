@@ -7,9 +7,10 @@ import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
+import game.freya.config.UserConfig;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.WorldDto;
-import game.freya.enums.player.MovingVector;
+import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.panes.GamePaneRunnable;
@@ -27,18 +28,24 @@ import game.freya.gui.panes.sub.VideoSettingsPane;
 import game.freya.gui.panes.sub.WorldCreatingPane;
 import game.freya.gui.panes.sub.WorldsListPane;
 import game.freya.gui.panes.sub.components.Chat;
-import game.freya.net.Server;
 import game.freya.net.SocketConnection;
 import game.freya.net.data.NetConnectTemplate;
+import game.freya.net.server.Server;
 import game.freya.services.CharacterService;
 import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
+import game.freya.utils.Screenshoter;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ComponentEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
@@ -59,35 +66,31 @@ import static javax.swing.JLayeredPane.PALETTE_LAYER;
 @Setter
 // iCanvasRunnable уже включает в себя MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener, KeyListener, Runnable
 public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunnable {
-    // задержка вспомогательного потока сцен:
-    public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 250;
-    private static final AtomicInteger frames = new AtomicInteger(0);
-    private static final short rightShift = 21;
-    private static final double infoStrut = 58d, infoStrutHardness = 40d;
-    private static final int minimapDim = 2048;
-    private static final int halfDim = (int) (minimapDim / 2d);
-    private final ApplicationProperties props;
-    private final GameControllerService gameControllerService;
-    private final CharacterService characterService;
-    private final UIHandler uiHandler;
-    private final String name;
-    private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
-    private final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
-    private final String pausedString, downInfoString1, downInfoString2;
-    private final Color grayBackColor = new Color(0, 0, 0, 223);
-    private Long was;
+    private transient final ApplicationProperties props;
+    private transient final GameControllerService gameControllerService;
+    private transient final CharacterService characterService;
+    private transient final UIHandler uiHandler;
+    private transient final String name;
+    private transient final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
+    private transient final String backToGameButtonText, optionsButtonText, saveButtonText, backButtonText, exitButtonText;
+    private transient final String pausedString, downInfoString1, downInfoString2;
+
+    private transient Long was;
     private transient JFrame parentFrame;
-    private AtomicInteger drawErrors = new AtomicInteger(0);
+    private transient AtomicInteger drawErrors = new AtomicInteger(0);
+    private transient Thread resizeThread = null;
+    private transient Graphics2D g2D;
 
-    private Thread secondThread;
+    private transient Point mousePressedOnPoint = MouseInfo.getPointerInfo().getLocation();
+    private transient Thread secondThread;
 
-    private Rectangle2D viewPort;
+    private transient Rectangle2D viewPort;
 
-    private Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
+    private transient Rectangle firstButtonRect, secondButtonRect, thirdButtonRect, fourthButtonRect, exitButtonRect;
 
-    private Rectangle avatarRect, minimapRect, minimapShowRect, minimapHideRect;
+    private transient Rectangle avatarRect, minimapRect, minimapShowRect, minimapHideRect;
 
-    private BufferedImage pAvatar, menu, menuShadowed, greenArrow;
+    private transient BufferedImage pAvatar, menu, menuShadowed, greenArrow;
 
     private String playerNickName;
 
@@ -103,15 +106,15 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
     private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane, heroesListPane, networkListPane, networkCreatingPane;
 
-    private float downShift = 0;
-
-    private boolean firstButtonOver = false, secondButtonOver = false, thirdButtonOver = false, fourthButtonOver = false, exitButtonOver = false;
-
-    private boolean revolatileNeeds = false, isOptionsMenuSetVisible = false;
+    private short downShift = 0;
+    private final short rightShift = 21;
+    private final short infoStrut = 58, infoStrutHardness = 40;
+    private final int halfDim = (int) (Constants.getMinimapDim() / 2d);
 
     private Chat chat;
 
     private byte creatingSubsRetry = 0;
+    private long tpf;
 
     protected RunnableCanvasPanel(
             String name,
@@ -150,9 +153,24 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         setForeground(Color.BLACK);
     }
 
-    private long tpf;
+    @Override
+    public void paint(Graphics g) {
+        try {
+            drawBackground((Graphics2D) g);
+        } catch (AWTException e) {
+            log.error("Game paint exception here: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
+    }
 
-    protected void drawBackground(Graphics2D bufGraphics2D) throws AWTException {
+    private void drawBackground(Graphics2D bufGraphics2D) throws AWTException {
+        if (!isDisplayable()) {
+            try {
+                Thread.sleep(100);
+                return;
+            } catch (InterruptedException _) {
+            }
+        }
+
         tpf = System.currentTimeMillis();
 
         if (currentWorldTitle == null && gameControllerService.getWorldService().getCurrentWorld() != null) {
@@ -165,6 +183,47 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         bufGraphics2D.drawImage(this.backImage, 0, 0, this);
 
         Constants.setCurrentTimePerFrame(System.currentTimeMillis() - tpf);
+    }
+
+    protected void dragViewIfNeeds() {
+        if (Controls.isMouseRightEdgeOver()) {
+            for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
+                dragLeft(2d);
+                Thread.yield();
+            }
+        }
+        if (Controls.isMouseLeftEdgeOver()) {
+            for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
+                dragRight(2d);
+                Thread.yield();
+            }
+        }
+        if (Controls.isMouseUpEdgeOver()) {
+            for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
+                dragDown(2d);
+                Thread.yield();
+            }
+        }
+        if (Controls.isMouseDownEdgeOver()) {
+            for (int i = 0; i < Constants.getGameConfig().getDragSpeed() / 2; i++) {
+                dragUp(2d);
+                Thread.yield();
+            }
+        }
+    }
+
+    protected void setGameActive() {
+        setVisible(true);
+        createSubPanes();
+        init();
+
+        // включаем активную игру:
+        Controls.setGameActive(true);
+
+        createChat();
+
+        Controls.setPaused(false);
+        Constants.setGameStartedIn(System.currentTimeMillis());
     }
 
     private void prepareBackImage() throws AWTException {
@@ -184,7 +243,9 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.LOW,
                 Constants.getUserConfig().isUseSmoothing(), Constants.getUserConfig().isUseBicubic());
-        drawDebugInfo(v2D, currentWorldTitle);
+        if (Constants.getGameConfig().isDebugInfoVisible() && currentWorldTitle != null) {
+            drawDebug(v2D, currentWorldTitle);
+        }
 
         if (Constants.getGameConfig().isFpsInfoVisible()) {
             if (was == null) {
@@ -201,9 +262,9 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
             this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
         }
 
-        if (isRevolatileNeeds()) {
+        if (Controls.isRevolatileNeeds()) {
             this.backImage = createVolatileImage(getWidth(), getHeight(), new ImageCapabilities(true));
-            setRevolatileNeeds(false);
+            Controls.setRevolatileNeeds(false);
         }
 
         while (validateBackImage() == VolatileImage.IMAGE_INCOMPATIBLE) {
@@ -219,7 +280,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         }
     }
 
-    protected void drawPauseMode(Graphics2D g2D) {
+    private void drawPauseMode(Graphics2D g2D) {
         g2D.setFont(Constants.GAME_FONT_03);
         g2D.setColor(new Color(0, 0, 0, 63));
         g2D.drawString(getPausedString(),
@@ -241,22 +302,22 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         g2D.setFont(Constants.getUserConfig().isFullscreen() ? Constants.MENU_BUTTONS_BIG_FONT : Constants.MENU_BUTTONS_FONT);
         g2D.setColor(Color.BLACK);
         g2D.drawString(getBackToGameButtonText(), getFirstButtonRect().x - 1, getFirstButtonRect().y + 17);
-        g2D.setColor(isFirstButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(getBackToGameButtonText(), getFirstButtonRect().x, getFirstButtonRect().y + 18);
 
         g2D.setColor(Color.BLACK);
         g2D.drawString(getOptionsButtonText(), getSecondButtonRect().x - 1, getSecondButtonRect().y + 17);
-        g2D.setColor(isSecondButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(getOptionsButtonText(), getSecondButtonRect().x, getSecondButtonRect().y + 18);
 
         g2D.setColor(Color.BLACK);
         g2D.drawString(getSaveButtonText(), getThirdButtonRect().x - 1, getThirdButtonRect().y + 17);
-        g2D.setColor(isThirdButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isThirdButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(getSaveButtonText(), getThirdButtonRect().x, getThirdButtonRect().y + 18);
 
         g2D.setColor(Color.BLACK);
         g2D.drawString(getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
-        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isExitButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
@@ -342,14 +403,14 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
     private void updateMiniMap() throws AWTException {
         Point2D.Double myPos = gameControllerService.getCharacterService().getCurrentHero().getLocation();
-        MovingVector cVector = gameControllerService.getCharacterService().getCurrentHero().getVector();
+//        MovingVector cVector = gameControllerService.getCharacterService().getCurrentHero().getVector();
         int srcX = (int) (myPos.x - halfDim);
         int srcY = (int) (myPos.y - halfDim);
 
         Graphics2D m2D;
         if (minimapImage == null || minimapImage.validate(Constants.getGraphicsConfiguration()) == VolatileImage.IMAGE_INCOMPATIBLE) {
             log.info("Recreating new minimap volatile image by incompatible...");
-            minimapImage = createVolatileImage(minimapDim, minimapDim, new ImageCapabilities(true));
+            minimapImage = createVolatileImage(Constants.getMinimapDim(), Constants.getMinimapDim(), new ImageCapabilities(true));
         }
         if (minimapImage.validate(Constants.getGraphicsConfiguration()) == VolatileImage.IMAGE_RESTORED) {
             log.info("Awaits while minimap volatile image is restored...");
@@ -375,7 +436,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         m2D.setTransform(grTrMem);
 
         // отображаем других игроков на миникарте:
-        for (PlayCharacterDto connectedHero : Constants.getServer().getConnectedHeroes()) {
+        for (PlayCharacterDto connectedHero : Constants.getServer().getAcceptedHeroes()) {
             if (gameControllerService.getCharacterService().getCurrentHero().getUid().equals(connectedHero.getUid())) {
                 continue;
             }
@@ -391,9 +452,9 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         if (gameControllerService.getWorldEngine().getGameMap() != null) {
             // сканируем все сущности указанного квадранта:
             Rectangle2D.Double scanRect = new Rectangle2D.Double(
-                    Math.min(Math.max(srcX, 0), gameControllerService.getWorldEngine().getGameMap().getWidth() - minimapDim),
-                    Math.min(Math.max(srcY, 0), gameControllerService.getWorldEngine().getGameMap().getHeight() - minimapDim),
-                    minimapDim, minimapDim);
+                    Math.min(Math.max(srcX, 0), gameControllerService.getWorldEngine().getGameMap().getWidth() - Constants.getMinimapDim()),
+                    Math.min(Math.max(srcY, 0), gameControllerService.getWorldEngine().getGameMap().getHeight() - Constants.getMinimapDim()),
+                    Constants.getMinimapDim(), Constants.getMinimapDim());
 
             m2D.setColor(Color.CYAN);
             gameControllerService.getWorldService().getEnvironmentsFromRectangle(scanRect)
@@ -406,11 +467,11 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
         m2D.setStroke(new BasicStroke(5f));
         m2D.setPaint(Color.WHITE);
-        m2D.drawRect(3, 3, minimapDim - 7, minimapDim - 7);
+        m2D.drawRect(3, 3, Constants.getMinimapDim() - 7, Constants.getMinimapDim() - 7);
 
         m2D.setStroke(new BasicStroke(7f));
         m2D.setPaint(Color.GRAY);
-        m2D.drawRect(48, 48, minimapDim - 96, minimapDim - 96);
+        m2D.drawRect(48, 48, Constants.getMinimapDim() - 96, Constants.getMinimapDim() - 96);
         m2D.dispose();
     }
 
@@ -420,7 +481,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
         Collection<PlayCharacterDto> heroes;
         if (gameControllerService.getCharacterService().getCurrentHero().isOnline()) {
-            heroes = Constants.getServer().getConnectedHeroes();
+            heroes = Constants.getServer().getAcceptedHeroes();
         } else {
             if (characterService.getCurrentHero() == null) {
                 throw new GlobalServiceException(ErrorMessages.WRONG_DATA, "Этого не должно было случиться.");
@@ -468,12 +529,6 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         }
     }
 
-    protected void drawDebugInfo(Graphics2D v2D, String worldTitle) {
-        if (Constants.getGameConfig().isDebugInfoVisible() && worldTitle != null) {
-            drawDebug(v2D, worldTitle);
-        }
-    }
-
     private void drawDebug(Graphics2D v2D, String worldTitle) {
         v2D.setFont(Constants.DEBUG_FONT);
 
@@ -517,11 +572,11 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         v2D.setColor(isServerIsOpen || isSocketIsConnected ? Color.GREEN : Color.DARK_GRAY);
         v2D.drawString("Server open: %s".formatted(isServerIsOpen || isSocketIsConnected), getWidth() - leftShift, getHeight() - 210);
         if (isServerIsOpen) {
-            v2D.drawString("Connected clients: %s".formatted(Constants.getServer().connectedClients()),
+            v2D.drawString("Connected clients: %s".formatted(Constants.getServer().getAuthorizedPlayers()),
                     getWidth() - leftShift, getHeight() - 190);
         }
         v2D.drawString("Connected players: %s".formatted(isServerIsOpen
-                        ? Constants.getServer().connectedClients() : Constants.getServer().getConnectedHeroes().size()),
+                        ? Constants.getServer().getAuthorizedPlayers() : Constants.getServer().getAcceptedHeroes().size()),
                 getWidth() - leftShift, getHeight() - 170);
         v2D.setColor(Color.GRAY);
 
@@ -567,15 +622,15 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         }
 
         // FPS check:
-        frames.incrementAndGet();
+        Constants.getFrames().incrementAndGet();
         if (System.currentTimeMillis() >= was + 1000L) {
-            Constants.setRealFreshRate(frames.get());
-            frames.set(0);
+            Constants.setRealFreshRate(Constants.getFrames().get());
+            Constants.getFrames().set(0);
             was = System.currentTimeMillis();
         }
 
         if (downShift == 0) {
-            downShift = getHeight() * 0.12f;
+            downShift = (short) (getHeight() * 0.12f);
         }
 
         v2D.setFont(Constants.DEBUG_FONT);
@@ -654,10 +709,6 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         minimapHideRect = new Rectangle(0, getHeight() - 16, 16, 16);
     }
 
-    protected void checkGameplayDuration(long inGamePlayed) {
-        this.duration = Duration.ofMillis(inGamePlayed + (System.currentTimeMillis() - Constants.getGameStartedIn()));
-    }
-
     protected void drawHeader(Graphics2D g2D, String headerTitle) {
         g2D.setColor(Color.DARK_GRAY.darker());
         g2D.fill(getHeaderPoly());
@@ -680,22 +731,22 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         // default buttons text:
         g2D.setColor(Color.BLACK);
         g2D.drawString(audioSettingsButtonText, firstButtonRect.x - 1, firstButtonRect.y + 17);
-        g2D.setColor(firstButtonOver ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isFirstButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(audioSettingsButtonText, firstButtonRect.x, firstButtonRect.y + 18);
 
         g2D.setColor(Color.BLACK);
         g2D.drawString(videoSettingsButtonText, secondButtonRect.x - 1, secondButtonRect.y + 17);
-        g2D.setColor(secondButtonOver ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isSecondButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(videoSettingsButtonText, secondButtonRect.x, secondButtonRect.y + 18);
 
         g2D.setColor(Color.BLACK);
         g2D.drawString(hotkeysSettingsButtonText, thirdButtonRect.x - 1, thirdButtonRect.y + 17);
-        g2D.setColor(thirdButtonOver ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isThirdButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(hotkeysSettingsButtonText, thirdButtonRect.x, thirdButtonRect.y + 18);
 
         g2D.setColor(Color.BLACK);
         g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x - 1, fourthButtonRect.y + 17);
-        g2D.setColor(fourthButtonOver ? Color.GREEN : Color.WHITE);
+        g2D.setColor(Controls.isFourthButtonOver() ? Color.GREEN : Color.WHITE);
         g2D.drawString(gameplaySettingsButtonText, fourthButtonRect.x, fourthButtonRect.y + 18);
 
         addExitVariantToOptionsMenuFix(g2D);
@@ -703,31 +754,34 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
     private void addExitVariantToOptionsMenuFix(Graphics2D g2D) {
         g2D.setColor(Color.BLACK);
-        g2D.drawString(isOptionsMenuSetVisible()
+        g2D.drawString(Controls.isOptionsMenuVisible()
                 ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x - 1, getExitButtonRect().y + 17);
-        g2D.setColor(isExitButtonOver() ? Color.GREEN : Color.WHITE);
-        g2D.drawString(isOptionsMenuSetVisible()
+        g2D.setColor(Controls.isExitButtonOver() ? Color.GREEN : Color.WHITE);
+        g2D.drawString(Controls.isOptionsMenuVisible()
                 ? getBackButtonText() : getExitButtonText(), getExitButtonRect().x, getExitButtonRect().y + 18);
     }
 
-    protected void drawLeftGrayPoly(Graphics2D g2D) {
+    private void drawLeftGrayPoly(Graphics2D g2D) {
         // fill left gray polygon:
-        g2D.setColor(isOptionsMenuSetVisible() ? Constants.getMainMenuBackgroundColor2() : Constants.getMainMenuBackgroundColor());
+        g2D.setColor(Controls.isOptionsMenuVisible() ? Constants.getMainMenuBackgroundColor2() : Constants.getMainMenuBackgroundColor());
         g2D.fillPolygon(getLeftGrayMenuPoly());
     }
 
-    protected int validateBackImage() {
+    private int validateBackImage() {
         return this.backImage.validate(Constants.getGraphicsConfiguration());
     }
 
-    protected void closeBackImage() {
+    protected void closeGraphics() {
         this.backImage.flush();
         this.backImage.getGraphics().dispose();
+        if (this.g2D != null) {
+            this.g2D.dispose();
+        }
     }
 
-    protected void onExitBack(RunnableCanvasPanel canvas) {
-        if (isOptionsMenuSetVisible()) {
-            setOptionsMenuSetVisible(false);
+    private void onExitBack(RunnableCanvasPanel canvas) {
+        if (Controls.isOptionsMenuVisible()) {
+            Controls.setOptionsMenuVisible(false);
             audiosPane.setVisible(false);
             videosPane.setVisible(false);
             hotkeysPane.setVisible(false);
@@ -758,11 +812,12 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
             networkCreatingPane.setVisible(false);
             networkListPane.setVisible(true);
             return;
-        } else if (canvas instanceof MenuCanvasRunnable mCanvas
-                && (int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
-                FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0) {
-            mCanvas.exitTheGame();
-        } else if (canvas instanceof GamePaneRunnable) {
+        } else if (canvas instanceof MenuCanvasRunnable mcr && (int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
+                FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+        ) {
+            mcr.stop();
+            gameControllerService.exitTheGame(null, 0);
+        } else if (canvas instanceof GamePaneRunnable gpr) {
             Controls.setPaused(!Controls.isPaused());
         }
 
@@ -779,14 +834,38 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         hidePanelIfNotNull(networkCreatingPane);
     }
 
-    protected void hidePanelIfNotNull(JPanel panel) {
+    @Override
+    public void stop() {
+        closeGraphics();
+
+        if (Controls.isGameActive()) {
+            doScreenshot();
+        }
+
+        setVisible(false);
+        stopAllThreads();
+    }
+
+    private void doScreenshot() {
+        boolean paused = Controls.isPaused();
+        boolean debug = Constants.getGameConfig().isDebugInfoVisible();
+
+        Controls.setPaused(false);
+        Constants.getGameConfig().setDebugInfoVisible(false);
+        Screenshoter.doScreenshot(getBounds(),
+                Constants.getGameConfig().getWorldsImagesDir() + gameControllerService.getWorldService().getCurrentWorld().getUid());
+        Controls.setPaused(paused);
+        Constants.getGameConfig().setDebugInfoVisible(debug);
+    }
+
+    private void hidePanelIfNotNull(JPanel panel) {
         if (panel != null) {
             panel.setVisible(false);
         }
     }
 
     protected boolean isShadowBackNeeds() {
-        return isOptionsMenuSetVisible
+        return Controls.isOptionsMenuVisible()
                 || (heroCreatingPane != null && heroCreatingPane.isVisible())
                 || (worldCreatingPane != null && worldCreatingPane.isVisible())
                 || (worldsListPane != null && worldsListPane.isVisible())
@@ -795,7 +874,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
                 || (networkCreatingPane != null && networkCreatingPane.isVisible());
     }
 
-    protected void drawAvatar(Graphics2D g2D) {
+    private void drawAvatar(Graphics2D g2D) {
         if (pAvatar == null) {
             pAvatar = gameControllerService.getPlayerService().getCurrentPlayer().getAvatar();
         }
@@ -854,20 +933,20 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         creatingSubsRetry = 0;
     }
 
-    protected void drawUI(Graphics2D v2D, String canvasName) {
+    private void drawUI(Graphics2D v2D, String canvasName) {
         if (canvasName.equals("GameCanvas") && isShadowBackNeeds()) {
-            v2D.setColor(grayBackColor);
+            v2D.setColor(Constants.getGrayBackColor());
             v2D.fillRect(0, 0, getWidth(), getHeight());
         }
         uiHandler.drawUI(v2D, this);
     }
 
-    protected void createChat() {
+    private void createChat() {
         this.chat = new Chat(new Point(getWidth() - getWidth() / 5 - 9, 64), new Dimension(getWidth() / 5, getHeight() / 4));
     }
 
     protected void decreaseDrawErrorCount() {
-        log.info("Понижаем количество ошибок отрисовки...");
+        log.debug("Понижаем количество ошибок отрисовки...");
         drawErrors.decrementAndGet();
     }
 
@@ -879,18 +958,6 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         this.secondThread = secondThread;
         this.secondThread.setName(threadName);
         this.secondThread.setDaemon(true);
-    }
-
-    /**
-     * Проверка доступности удалённого сервера:
-     *
-     * @param host     адрес, куда стучимся для получения pong.
-     * @param port     адрес, куда стучимся для получения pong.
-     * @param worldUid uid мира, который пропинговывается.
-     * @return успешность получения pong от удалённого Сервера.
-     */
-    public boolean pingServer(String host, Integer port, UUID worldUid) {
-        return gameControllerService.getPingService().pingServer(host, port, worldUid);
     }
 
     protected void throwExceptionAndYield(Exception e) {
@@ -985,28 +1052,12 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         }
     }
 
-    protected void delayDrawing(long delta) {
-        if (Constants.getAimTimePerFrame() > delta) {
-            try {
-                long delay = Constants.getAimTimePerFrame() - delta - 12;
-                if (delay > 0) {
-                    Thread.sleep(delay);
-                } else {
-                    Thread.yield();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    // NETWORK game methods:
     public void serverUp(WorldDto aNetworkWorld) {
         getNetworkListPane().repaint(); // костыль для отображения анимации
 
         // Если игра по сети, но Сервер - мы, и ещё не запускался:
         UUID curWorldUid = gameControllerService.getWorldService().saveOrUpdate(aNetworkWorld).getUid();
-        gameControllerService.setCurrentWorld(curWorldUid);
+        gameControllerService.getWorldService().setCurrentWorld(curWorldUid);
 
         // Открываем локальный Сервер:
         if (gameControllerService.getWorldService().getCurrentWorld().isLocal()
@@ -1042,7 +1093,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
      * @return успешность открытия Сервера.
      */
     private boolean openServer() {
-        Constants.setServer(new Server(gameControllerService));
+        Constants.setServer(Server.getInstance(gameControllerService));
         Constants.getServer().start();
         Constants.getServer().untilOpen(Constants.getGameConfig().getServerOpenTimeAwait());
         return Constants.getServer().isOpen();
@@ -1090,7 +1141,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         }
     }
 
-    public boolean connectToServer(String host, Integer port, String password) {
+    private boolean connectToServer(String host, Integer port, String password) {
         // создание нового подключения к Серверу (сокета):
         Constants.setLocalSocketConnection(new SocketConnection());
 
@@ -1153,11 +1204,536 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         getNetworkListPane().setVisible(false);
         getNetworkCreatingPane().setVisible(false);
 
-        gameControllerService.setCurrentWorld(worldUid);
-        if (gameControllerService.getMyCurrentWorldHeroes().isEmpty()) {
+        gameControllerService.getWorldService().setCurrentWorld(worldUid);
+        List<PlayCharacterDto> heroes = gameControllerService.getCharacterService().findAllByWorldUidAndOwnerUid(
+                gameControllerService.getWorldService().getCurrentWorld().getUid(),
+                gameControllerService.getPlayerService().getCurrentPlayer().getUid());
+        if (heroes.isEmpty()) {
             getHeroCreatingPane().setVisible(true);
         } else {
             getHeroesListPane().setVisible(true);
         }
+    }
+
+    protected void onResize() {
+        if (resizeThread != null && resizeThread.isAlive()) {
+            return;
+        }
+
+        resizeThread = new Thread(() -> {
+            try {
+                Thread.sleep(30);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            log.debug("Resizing of menu canvas...");
+
+            if (Constants.getUserConfig().isFullscreen()) {
+                setSize(getParentFrame().getSize());
+            } else {
+                setSize(getParentFrame().getRootPane().getSize());
+            } // else if (!getSize().equals(getParentFrame().getRootPane().getSize())) {
+            //       setSize(getParentFrame().getRootPane().getSize());
+            //   }
+
+            if (isVisible()) {
+                reloadShapes(this);
+                recalculateMenuRectangles();
+            }
+
+            recreateViewPort();
+            moveViewToPlayer(0, 0);
+
+            requestFocusInWindow();
+
+            Controls.setRevolatileNeeds(true);
+        });
+        resizeThread.start();
+
+        try {
+            resizeThread.join(500);
+        } catch (InterruptedException e) {
+            resizeThread.interrupt();
+        }
+    }
+
+    public void moveViewToPlayer(double x, double y) {
+        if (gameControllerService.getWorldEngine().getGameMap() != null && getViewPort() != null) {
+            Point2D.Double p = gameControllerService.getCharacterService().getCurrentHero().getLocation();
+            Rectangle viewRect = getViewPort().getBounds();
+            getViewPort().setRect(
+                    p.x - (viewRect.getWidth() - viewRect.getX()) / 2D + x,
+                    p.y - (viewRect.getHeight() - viewRect.getY()) / 2D + y,
+                    p.x + (viewRect.getWidth() - viewRect.getX()) / 2D - x,
+                    p.y + (viewRect.getHeight() - viewRect.getY()) / 2D - y);
+
+            checkOutOfFieldCorrection();
+        }
+    }
+
+    protected void recreateViewPort() {
+        setViewPort(new Rectangle(0, 0, getWidth(), getHeight()));
+    }
+
+    public void openCreatingNewHeroPane(PlayCharacterDto template) {
+        getHeroesListPane().setVisible(false);
+        getHeroCreatingPane().setVisible(true);
+        if (template != null) {
+            ((HeroCreatingPane) getHeroCreatingPane()).load(template);
+        }
+    }
+
+    /**
+     * После выбора или создания мира (и указания его как текущего в контроллере) и выбора или создания героя, которым
+     * будем играть в выбранном мире - попадаем сюда для последних приготовлений и
+     * загрузки холста мира (собственно, начала игры).
+     *
+     * @param hero выбранный герой для игры в выбранном ранее мире.
+     */
+    public void playWithThisHero(PlayCharacterDto hero) {
+        gameControllerService.getPlayerService().setCurrentPlayerLastPlayedWorldUid(hero.getWorldUid());
+        gameControllerService.getCharacterService().setCurrentHero(hero);
+
+        // если этот мир по сети:
+        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
+            // шлем на Сервер своего выбранного Героя:
+            if (Constants.getLocalSocketConnection().registerOnServer()) {
+//                gameControllerService.getPlayedHeroes().addHero(characterService.getCurrentHero());
+                startGame();
+            } else {
+                log.error("Сервер не принял нашего Героя: {}", Constants.getLocalSocketConnection().getLastExplanation());
+                characterService.getCurrentHero().setOnline(false);
+                characterService.saveCurrent();
+                getHeroCreatingPane().repaint();
+                getHeroesListPane().repaint();
+            }
+        } else {
+            // иначе просто запускаем мир и играем локально:
+            startGame();
+        }
+    }
+
+    private void startGame() {
+        getHeroCreatingPane().setVisible(false);
+        getHeroesListPane().setVisible(false);
+
+        log.info("Подготовка к запуску игры должна была пройти успешно. Запуск игрового мира...");
+        gameControllerService.getGameFrameController().loadScene(ScreenType.GAME_SCREEN);
+    }
+
+    protected void zoomIn() {
+        log.debug("Zoom in...");
+
+        // если окно меньше установленного лимита:
+        if (getViewPort().getWidth() - getViewPort().getX() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
+                || getViewPort().getHeight() - getViewPort().getY() <= Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS
+        ) {
+            log.debug("Can`t zoom in: vpWidth = {}, vpHeight = {} but minSize = {}",
+                    getViewPort().getWidth() - getViewPort().getX(), getViewPort().getHeight() - getViewPort().getY(),
+                    Constants.MAP_CELL_DIM * Constants.MIN_ZOOM_OUT_CELLS);
+            return;
+        }
+
+        moveViewToPlayer(Constants.getGameConfig().getScrollSpeed(), (int) (Constants.getGameConfig().getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
+    }
+
+    protected void zoomOut() {
+        log.debug("Zoom out...");
+
+        // если окно больше установленного лимита или и так максимального размера:
+        if (!canZoomOut(getViewPort().getWidth() - getViewPort().getX(), getViewPort().getHeight() - getViewPort().getY(),
+                gameControllerService.getWorldEngine().getGameMap().getWidth(), gameControllerService.getWorldEngine().getGameMap().getHeight())) {
+            return;
+        }
+
+        moveViewToPlayer(-Constants.getGameConfig().getScrollSpeed(), -(int) (Constants.getGameConfig().getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
+
+//        double delta = getBounds().getWidth() / getBounds().getHeight();
+////        double widthPercent = getBounds().getWidth() * Constants.getScrollSpeed();
+////        double heightPercent = getBounds().getHeight() * Constants.getScrollSpeed();
+//
+////        double factor = getBounds().getWidth() % getBounds().getHeight();
+////        double resultX = getBounds().getWidth() / factor * 10;
+////        double resultY = getBounds().getHeight() / factor * 10;
+//        double sdf = (viewPort.getWidth() - viewPort.getX()) / 100d;
+//        double sdf2 = (viewPort.getHeight() - viewPort.getY()) / (100d / delta);
+//        viewPort.setRect(
+//                viewPort.getX() - sdf,
+//                viewPort.getY() - sdf2,
+//                viewPort.getWidth() + sdf,
+//                viewPort.getHeight() + sdf2);
+////        log.info("f): {}, r1): {}, r2): {}", factor, resultX, resultY);
+
+        // проверка на выход за края игрового поля:
+        checkOutOfFieldCorrection();
+    }
+
+    private boolean canZoomOut(double viewWidth, double viewHeight, double mapWidth, double mapHeight) {
+        int maxCellsSize = Constants.MAP_CELL_DIM * Constants.MAX_ZOOM_OUT_CELLS;
+
+        // если окно больше установленного лимита:
+        if (viewWidth >= maxCellsSize || viewHeight >= maxCellsSize) {
+            log.debug("Can`t zoom out: viewWidth = {} and viewHeight = {} but maxCellsSize is {}", viewWidth, viewHeight, maxCellsSize);
+            return false;
+        }
+
+        // если окно уже максимального размера:
+        if (viewWidth >= mapWidth || viewHeight >= mapHeight) {
+            log.debug("Can`t zoom out: maximum size reached.");
+            return false;
+        }
+
+        return true;
+    }
+
+    protected void doAnimate() {
+        if (getNetworkListPane().isVisible()) {
+            if (Constants.isConnectionAwait()) {
+                getNetworkListPane().repaint();
+            }
+            if (Constants.isPingAwait()) {
+                getNetworkListPane().repaint();
+            }
+        }
+    }
+
+    protected void inAc() {
+        final String frameName = "mainFrame";
+
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "backFunction",
+                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        if (isVisible() && Controls.isPaused()) {
+                            onExitBack(RunnableCanvasPanel.this);
+                        } else {
+                            Controls.setPaused(!Controls.isPaused());
+                        }
+                    }
+                });
+
+        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "enterNextFunction",
+                KeyEvent.VK_ENTER, 0, new AbstractAction() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        if (getHeroesListPane().isVisible()) {
+                            List<PlayCharacterDto> heroes = gameControllerService.getCharacterService().findAllByWorldUidAndOwnerUid(
+                                    gameControllerService.getWorldService().getCurrentWorld().getUid(),
+                                    gameControllerService.getPlayerService().getCurrentPlayer().getUid());
+                            playWithThisHero(heroes.getFirst());
+                            getHeroesListPane().setVisible(false);
+                        } else if (getWorldsListPane().isVisible()) {
+                            UUID lastWorldUid = gameControllerService.getPlayerService().getCurrentPlayer().getLastPlayedWorldUid();
+                            if (gameControllerService.getWorldService().isWorldExist(lastWorldUid)) {
+                                chooseOrCreateHeroForWorld(lastWorldUid);
+                            } else {
+                                chooseOrCreateHeroForWorld(gameControllerService.getWorldService()
+                                        .findAllByNetAvailable(false).getFirst().getUid());
+                            }
+                        } else {
+                            getWorldsListPane().setVisible(true);
+                        }
+                    }
+                });
+
+        Controls.setControlsMapped(true);
+    }
+
+    protected void stopAllThreads() {
+        if (getResizeThread() != null && getResizeThread().isAlive()) {
+            getResizeThread().interrupt();
+        }
+        if (getSecondThread() != null && getSecondThread().isAlive()) {
+            getSecondThread().interrupt();
+        }
+    }
+
+    @Override
+    public void componentResized(ComponentEvent e) {
+        onResize();
+    }
+
+    @Override
+    public void componentShown(ComponentEvent e) {
+        log.info("Возврат фокуса на холст...");
+        requestFocus();
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        Point p = e.getPoint();
+
+        if (!Controls.isGameActive() || Controls.isPaused()) {
+            // если мы в меню либо игра на паузе - проверяем меню:
+            Controls.setFirstButtonOver(getFirstButtonRect().contains(p));
+            Controls.setSecondButtonOver(getSecondButtonRect().contains(p));
+            Controls.setThirdButtonOver(getThirdButtonRect().contains(p));
+            Controls.setFourthButtonOver(getFourthButtonRect().contains(p));
+            Controls.setExitButtonOver(getExitButtonRect().contains(p));
+        } else { // иначе мониторим наведение на край окна для прокрутки поля:
+            if (!Controls.isMovingKeyActive() && Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached()) {
+                Controls.setMouseLeftEdgeOver(p.getX() <= 15
+                        && (Constants.getUserConfig().isFullscreen() || p.getX() > 1) && !getMinimapHideRect().contains(p));
+                Controls.setMouseRightEdgeOver(p.getX() >= getWidth() - 15 && (Constants.getUserConfig().isFullscreen() || p.getX() < getWidth() - 1));
+                Controls.setMouseUpEdgeOver(p.getY() <= 10 && (Constants.getUserConfig().isFullscreen() || p.getY() > 1));
+                Controls.setMouseDownEdgeOver(p.getY() >= getHeight() - 15
+                        && (Constants.getUserConfig().isFullscreen() || p.getY() < getHeight() - 1) && !getMinimapHideRect().contains(p));
+            }
+        }
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        this.mousePressedOnPoint = e.getPoint();
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        if (Controls.isGameActive()) {
+            if (getMinimapShowRect().contains(e.getPoint())) {
+                Controls.setMinimapShowed(false);
+            }
+            if (getMinimapHideRect().contains(e.getPoint())) {
+                Controls.setMinimapShowed(true);
+            }
+        }
+
+        if (Controls.isFirstButtonOver()) {
+            if (Controls.isOptionsMenuVisible()) {
+                if (!getAudiosPane().isVisible()) {
+                    getAudiosPane().setVisible(true);
+                    getVideosPane().setVisible(false);
+                    getHotkeysPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else if (getWorldsListPane().isVisible()) {
+                getWorldsListPane().setVisible(false);
+                getWorldCreatingPane().setVisible(true);
+            } else if (getHeroesListPane().isVisible()) {
+                openCreatingNewHeroPane(null);
+            } else if (getNetworkListPane().isVisible()) {
+                getNetworkListPane().setVisible(false);
+                getNetworkCreatingPane().setVisible(true);
+            } else {
+                if (gameControllerService.getWorldService().findAllByNetAvailable(false).isEmpty()) {
+                    getWorldCreatingPane().setVisible(true);
+                } else {
+                    getWorldsListPane().setVisible(true);
+                }
+            }
+        }
+        if (Controls.isSecondButtonOver()) {
+            if (Controls.isOptionsMenuVisible()) {
+                // нажато Настройки графики:
+                if (!getVideosPane().isVisible()) {
+                    getVideosPane().setVisible(true);
+                    getAudiosPane().setVisible(false);
+                    getHotkeysPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else if (getNetworkListPane().isVisible()) {
+                ((NetworkListPane) getNetworkListPane()).reloadNet(this);
+            } else {
+                getNetworkListPane().setVisible(true);
+            }
+        }
+        if (Controls.isThirdButtonOver()) {
+            if (!Controls.isOptionsMenuVisible() && !getHeroCreatingPane().isVisible() && !getWorldsListPane().isVisible()) {
+                Controls.setOptionsMenuVisible(true);
+                getAudiosPane().setVisible(true);
+            } else if (getHeroCreatingPane().isVisible()) {
+                Constants.showNFP();
+            } else if (Controls.isOptionsMenuVisible()) {
+                if (!getHotkeysPane().isVisible()) {
+                    getHotkeysPane().setVisible(true);
+                    getVideosPane().setVisible(false);
+                    getAudiosPane().setVisible(false);
+                    getGameplayPane().setVisible(false);
+                }
+            } else {
+                Constants.showNFP();
+            }
+        }
+        if (Controls.isFourthButtonOver()) {
+            if (Controls.isOptionsMenuVisible()) {
+                if (!getGameplayPane().isVisible()) {
+                    getGameplayPane().setVisible(true);
+                    getHotkeysPane().setVisible(false);
+                    getVideosPane().setVisible(false);
+                    getAudiosPane().setVisible(false);
+                }
+            } else {
+                Constants.showNFP();
+            }
+        }
+
+        // ... // ... // ... // ... // ... // ... // todo
+
+        if (Controls.isFirstButtonOver()) {
+            if (Controls.isOptionsMenuVisible()) {
+                getAudiosPane().setVisible(true);
+                getVideosPane().setVisible(false);
+                getHotkeysPane().setVisible(false);
+                getGameplayPane().setVisible(false);
+
+            } else {
+                Controls.setPaused(false);
+                Controls.setOptionsMenuVisible(false);
+            }
+        }
+        if (Controls.isSecondButtonOver()) {
+            if (Controls.isOptionsMenuVisible()) {
+                getVideosPane().setVisible(true);
+                getAudiosPane().setVisible(false);
+                getHotkeysPane().setVisible(false);
+                getGameplayPane().setVisible(false);
+            } else {
+                Controls.setOptionsMenuVisible(true);
+                getAudiosPane().setVisible(true);
+            }
+        }
+        if (Controls.isThirdButtonOver()) {
+            if (Controls.isOptionsMenuVisible()) {
+                getHotkeysPane().setVisible(true);
+                getVideosPane().setVisible(false);
+                getAudiosPane().setVisible(false);
+                getGameplayPane().setVisible(false);
+            } else {
+                // нет нужды в паузе здесь, просто сохраняемся:
+                gameControllerService.saveTheGame(getDuration());
+                Controls.setPaused(false);
+                new FOptionPane().buildFOptionPane("Успешно", "Игра сохранена!",
+                        FOptionPane.TYPE.INFO, null, Constants.getDefaultCursor(), 3, false);
+            }
+        }
+        if (Controls.isFourthButtonOver()) {
+            if (Controls.isOptionsMenuVisible()) {
+                getGameplayPane().setVisible(true);
+                getHotkeysPane().setVisible(false);
+                getVideosPane().setVisible(false);
+                getAudiosPane().setVisible(false);
+            } else {
+                Constants.showNFP();
+            }
+        }
+
+        if (Controls.isExitButtonOver()) {
+            onExitBack(this);
+        }
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        if (SwingUtilities.isRightMouseButton(e)) {
+            Point p = e.getPoint();
+            log.debug("drag: {}x{}", p.x, p.y);
+            if (p.getX() < mousePressedOnPoint.getX()) {
+                Controls.setMouseLeftEdgeOver(true);
+            } else if (p.getX() > mousePressedOnPoint.getX()) {
+                Controls.setMouseRightEdgeOver(true);
+            } else if (p.getY() < mousePressedOnPoint.getY()) {
+                Controls.setMouseUpEdgeOver(true);
+            } else if (p.getY() > mousePressedOnPoint.getY()) {
+                Controls.setMouseDownEdgeOver(true);
+            }
+            this.mousePressedOnPoint = p;
+        }
+    }
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        if (Controls.isPaused()) {
+            // not work into pause
+            return;
+        }
+        switch (e.getWheelRotation()) {
+            case 1 -> zoomOut();
+            case -1 -> zoomIn();
+            default -> log.warn("MouseWheelEvent unknown action: {}", e.getWheelRotation());
+        }
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        // hero movement:
+        if (e.getKeyCode() == UserConfig.HotKeys.MOVE_UP.getEvent()) {
+            Controls.setPlayerMovingUp(true);
+        } else if (e.getKeyCode() == UserConfig.HotKeys.MOVE_BACK.getEvent()) {
+            Controls.setPlayerMovingDown(true);
+        }
+        if (e.getKeyCode() == UserConfig.HotKeys.MOVE_LEFT.getEvent()) {
+            Controls.setPlayerMovingLeft(true);
+        } else if (e.getKeyCode() == UserConfig.HotKeys.MOVE_RIGHT.getEvent()) {
+            Controls.setPlayerMovingRight(true);
+        }
+
+        // camera movement:
+        if (e.getKeyCode() == UserConfig.HotKeys.CAM_UP.getEvent()) {
+            Controls.setMovingKeyActive(true);
+            Controls.setMouseUpEdgeOver(true);
+        } else if (e.getKeyCode() == UserConfig.HotKeys.CAM_DOWN.getEvent()) {
+            Controls.setMovingKeyActive(true);
+            Controls.setMouseDownEdgeOver(true);
+        }
+        if (e.getKeyCode() == UserConfig.HotKeys.CAM_LEFT.getEvent()) {
+            Controls.setMovingKeyActive(true);
+            Controls.setMouseLeftEdgeOver(true);
+        } else if (e.getKeyCode() == UserConfig.HotKeys.CAM_RIGHT.getEvent()) {
+            Controls.setMovingKeyActive(true);
+            Controls.setMouseRightEdgeOver(true);
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
+            Controls.setPlayerMovingUp(false);
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
+            Controls.setPlayerMovingDown(false);
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
+            Controls.setPlayerMovingLeft(false);
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
+            Controls.setPlayerMovingRight(false);
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {
+            Controls.setMovingKeyActive(false);
+            Controls.setMouseUpEdgeOver(false);
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookDown()) {
+            Controls.setMovingKeyActive(false);
+            Controls.setMouseDownEdgeOver(false);
+        }
+
+        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookLeft()) {
+            Controls.setMovingKeyActive(false);
+            Controls.setMouseLeftEdgeOver(false);
+        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookRight()) {
+            Controls.setMovingKeyActive(false);
+            Controls.setMouseRightEdgeOver(false);
+        }
+    }
+
+    public void componentMoved(ComponentEvent e) {
+    }
+
+    public void componentHidden(ComponentEvent e) {
+    }
+
+    public void keyTyped(KeyEvent e) {
+    }
+
+    public void mouseExited(MouseEvent e) {
+    }
+
+    public void mouseEntered(MouseEvent e) {
+    }
+
+    public void mouseClicked(MouseEvent e) {
     }
 }

@@ -1,5 +1,6 @@
 package game.freya.config;
 
+import com.jme3.app.Application;
 import fox.FoxFontBuilder;
 import fox.FoxFontBuilder.FONT;
 import fox.FoxLogo;
@@ -11,9 +12,9 @@ import fox.player.FoxPlayer;
 import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
-import game.freya.gui.panes.GameWindow;
-import game.freya.net.Server;
+import game.freya.gui.panes.GameWindowJME;
 import game.freya.net.SocketConnection;
+import game.freya.net.server.Server;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public final class Constants {
@@ -142,26 +144,39 @@ public final class Constants {
     private static final String logoImageUrl = "/images/logo.png";
     @Getter
     private static final String bcryptSalt = "xxwv";
+
     @Getter
     @Setter
-    private static volatile GameWindow gameWindow;
+//    private static volatile GameWindow gameWindow;
+    private static volatile GameWindowJME gameWindow;
+
     @Getter
     @Setter
     private static DisplayMode defaultDisplayMode;
+
     @Getter
     @Setter
     private static FoxLogo logo;
+
     @Getter
-    private static Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.85f);
+    private static final Color grayBackColor = new Color(0, 0, 0, 223);
+
     @Getter
-    private static Color mainMenuBackgroundColor2 = new Color(0.0f, 0.0f, 0.0f, 0.45f);
+    private static final Color mainMenuBackgroundColor = new Color(0.0f, 0.0f, 0.0f, 0.85f);
+
+    @Getter
+    private static final Color mainMenuBackgroundColor2 = new Color(0.0f, 0.0f, 0.0f, 0.45f);
+
     @Getter
     @Setter
     private static long gameStartedIn;
+
     @Getter
-    private static String notRealizedString = "Не реализовано ещё";
+    private static final String notRealizedString = "Не реализовано ещё";
+
     @Getter
     private static Cursor defaultCursor;
+
     @Getter
     @Setter
     private static GameConfig gameConfig;
@@ -172,6 +187,9 @@ public final class Constants {
     @Setter
     private static UserConfig userConfig;
 
+    // game:
+    @Getter
+    private static final int minimapDim = 2048;
 
     // dynamic:
     @Setter
@@ -179,6 +197,12 @@ public final class Constants {
     private static int realFreshRate = 0;
     private static long timePerFrame = -1;
     private static long fpsLimitMem = -1;
+
+    @Getter
+    private static final AtomicInteger frames = new AtomicInteger(0);
+
+    // задержка вспомогательного потока сцен:
+    public static final long SECOND_THREAD_SLEEP_MILLISECONDS = 250;
 
     static {
         try {
@@ -229,6 +253,22 @@ public final class Constants {
         new FOptionPane().buildFOptionPane("Не реализовано:",
                 "Приносим свои извинения! Данный функционал ещё находится в разработке.",
                 FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
+    }
+
+    public static void checkFullscreenModeJME(Application frame, Dimension normalSize) {
+        try {
+            if (userConfig.isFullscreen()) {
+                frame.getContext().getSettings().setWindowSize(normalSize.width, normalSize.height);
+            } else {
+                frame.getContext().getSettings().setWindowSize(normalSize.width, normalSize.height);
+                frame.getContext().getSettings().setCenterWindow(true);
+            }
+        } catch (Exception e) {
+            log.warn("Проблема при смене режима экрана: {}", ExceptionUtils.getFullExceptionMessage(e));
+            restoreDisplayMode();
+        }
+
+        frame.getContext().getSettings().setResizable(false);
     }
 
     public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {

@@ -2,14 +2,17 @@ package game.freya.services;
 
 import game.freya.dto.roots.WorldDto;
 import game.freya.entities.roots.World;
+import game.freya.exceptions.ErrorMessages;
+import game.freya.exceptions.GlobalServiceException;
 import game.freya.interfaces.subroot.iEnvironment;
 import game.freya.mappers.WorldMapper;
 import game.freya.repositories.WorldRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,15 +27,29 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 @Service
+@Transactional
 public class WorldService {
     private final WorldRepository worldRepository;
     private final WorldMapper worldMapper;
+    private GameControllerService gameControllerService;
 
-    @Setter
     @Getter
     private WorldDto currentWorld;
 
-    @Transactional
+    @Autowired
+    public void init(@Lazy GameControllerService gameControllerService) {
+        this.gameControllerService = gameControllerService;
+    }
+
+    public void setCurrentWorld(UUID selectedWorldUuid) {
+        Optional<WorldDto> selected = findByUid(selectedWorldUuid);
+        if (selected.isEmpty()) {
+            throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid.toString());
+        }
+        gameControllerService.getPlayerService().getCurrentPlayer().setLastPlayedWorldUid(selectedWorldUuid);
+        this.currentWorld = selected.get();
+    }
+
     public WorldDto saveOrUpdate(WorldDto world) {
         World w = worldMapper.toEntity(world);
         World w2 = worldRepository.findByUid(world.getUid()).orElse(null);
@@ -44,7 +61,6 @@ public class WorldService {
         return worldMapper.toDto(worldRepository.saveAndFlush(w2));
     }
 
-    @Transactional
     public void saveCurrent() {
         if (currentWorld == null) {
             return;
@@ -81,6 +97,7 @@ public class WorldService {
                 .collect(Collectors.toSet());
     }
 
+    @Transactional(readOnly = true)
     public boolean isWorldExist(UUID worldUid) {
         return worldRepository.existsById(worldUid);
     }

@@ -124,7 +124,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                                 "Вы хотите уничтожить своего героя\nбез возможности восстановления?",
                                                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                         ) {
-                                            ((MenuCanvasRunnable) canvas).deleteExistsPlayerHero(hero.getUid());
+                                            gameControllerService.getCharacterService().deleteByUuid(hero.getUid());
                                             reloadHeroes(canvas);
                                         }
                                     }
@@ -188,7 +188,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                             .password(gameControllerService.getWorldService().getCurrentWorld().getPassword())
                                             .build());
                                 } else {
-                                    ((MenuCanvasRunnable) canvas).playWithThisHero(hero);
+                                    canvas.playWithThisHero(hero);
                                 }
                             }
                         });

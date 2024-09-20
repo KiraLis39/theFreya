@@ -112,6 +112,10 @@ public final class UserConfig {
     @Builder.Default
     private boolean isPauseOnHidden = true;
 
+    private double windowWidth;
+
+    private double windowHeight;
+
     // graphics:
     @Builder.Default
     private boolean isUseSmoothing = true;

@@ -4,12 +4,10 @@ import fox.FoxLogo;
 import game.freya.WorldEngine;
 import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
-import game.freya.dto.PlayCharacterDto;
-import game.freya.dto.roots.CharacterDto;
-import game.freya.dto.roots.WorldDto;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.gui.GameWindowController;
+import game.freya.gui.SceneController;
+import game.freya.mappers.ClientDataMapper;
 import game.freya.net.PingService;
 import game.freya.utils.BcryptUtil;
 import game.freya.utils.ExceptionUtils;
@@ -30,15 +28,12 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Getter
 @Service
 @RequiredArgsConstructor
-public class GameControllerService extends GameControllerBase {
+public class GameControllerService {
     private final ApplicationProperties applicationProperties;
     private final BcryptUtil bcryptUtil;
     private final GameConfigService gameConfigService;
@@ -48,15 +43,16 @@ public class GameControllerService extends GameControllerBase {
     private final PlayerService playerService;
     private final WorldService worldService;
     private final PingService pingService;
+    private final ClientDataMapper clientDataMapper;
 
-    private GameWindowController gameFrameController;
+    private SceneController gameFrameController;
 
     /**
      * Отсюда начинается выполнение основного кода игры.
      * В этом методе же вызывается метод, отображающий первое игровое окно - меню игры.
      */
     @Autowired
-    public void startGameAndFirstUiShow(@Lazy GameWindowController gameFrameController) {
+    public void startGameAndFirstUiShow(@Lazy SceneController gameFrameController) {
         this.gameFrameController = gameFrameController;
 
         setLookAndFeel();
@@ -73,7 +69,7 @@ public class GameControllerService extends GameControllerBase {
 
         loadNecessaryResources();
 
-        gameFrameController.showMainMenu(this, characterService);
+        gameFrameController.showGameWindow();
     }
 
     private void setLookAndFeel() {
@@ -181,32 +177,5 @@ public class GameControllerService extends GameControllerBase {
         Constants.getServer().close();
         Constants.getServer().untilClose(Constants.getGameConfig().getServerCloseTimeAwait());
         return Constants.getServer().isClosed();
-    }
-
-    public List<PlayCharacterDto> getMyCurrentWorldHeroes() {
-        return characterService.findAllByWorldUidAndOwnerUid(worldService.getCurrentWorld().getUid(), playerService.getCurrentPlayer().getUid());
-    }
-
-    public List<WorldDto> findAllWorldsByNetworkAvailable(boolean isNetworkAvailable) {
-        return worldService.findAllByNetAvailable(isNetworkAvailable);
-    }
-
-    public void setCurrentWorld(UUID selectedWorldUuid) {
-        Optional<WorldDto> selected = worldService.findByUid(selectedWorldUuid);
-        if (selected.isPresent()) {
-            playerService.getCurrentPlayer().setLastPlayedWorldUid(selectedWorldUuid);
-            worldService.setCurrentWorld(selected.get());
-            return;
-        }
-        throw new GlobalServiceException(ErrorMessages.WORLD_NOT_FOUND, selectedWorldUuid.toString());
-    }
-
-    public void offlineSaveAndRemoveOtherHeroByPlayerUid(UUID clientUid) {
-        Optional<CharacterDto> charDtoOpt = characterService.getByUid(clientUid);
-        if (charDtoOpt.isPresent()) {
-            PlayCharacterDto charDto = (PlayCharacterDto) charDtoOpt.get();
-            charDto.setOnline(false);
-            characterService.justSaveAnyHero(charDto);
-        }
     }
 }

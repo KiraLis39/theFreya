@@ -23,6 +23,7 @@ import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static game.freya.config.Constants.FFB;
 
@@ -138,7 +139,7 @@ public class NetworkListPane extends JPanel implements iSubPane {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
-        List<WorldDto> worlds = gameControllerService.findAllWorldsByNetworkAvailable(true);
+        List<WorldDto> worlds = gameControllerService.getWorldService().findAllByNetAvailable(true);
         for (WorldDto world : worlds) {
             centerList.add(new SubPane(world.getName()) {{
                 setWorld(world);
@@ -243,7 +244,7 @@ public class NetworkListPane extends JPanel implements iSubPane {
                                                     FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                                     && canvas instanceof MenuCanvasRunnable mCanvas
                                             ) {
-                                                mCanvas.deleteExistsWorldAndCloseThatPanel(getWorld().getUid());
+                                                deleteExistsWorldAndCloseThatPanel(getWorld().getUid());
                                                 reloadNet(canvas);
                                                 NetworkListPane.this.revalidate();
                                             }
@@ -267,7 +268,7 @@ public class NetworkListPane extends JPanel implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 pingActionThread.interrupt();
-                                gameControllerService.setCurrentWorld(world.getUid());
+                                gameControllerService.getWorldService().setCurrentWorld(world.getUid());
 
                                 Constants.setConnectionAwait(true);
                                 if (getWorld().isLocal()) {
@@ -293,6 +294,11 @@ public class NetworkListPane extends JPanel implements iSubPane {
 
         pingServers();
         NetworkListPane.this.revalidate();
+    }
+
+    private void deleteExistsWorldAndCloseThatPanel(UUID worldUid) {
+        log.info("Удаление мира {}...", worldUid);
+        gameControllerService.getWorldService().deleteByUid(worldUid);
     }
 
     @Override
@@ -366,7 +372,7 @@ public class NetworkListPane extends JPanel implements iSubPane {
                     String nad = sp.getWorld().getAddress();
                     String host = nad.contains(":") ? nad.split(":")[0] : nad;
                     Integer port = nad.contains(":") ? Integer.parseInt(nad.split(":")[1]) : null;
-                    boolean isPingOk = canvas.pingServer(host, port, sp.getWorld().getUid());
+                    boolean isPingOk = pingServer(host, port, sp.getWorld().getUid());
                     add = add.formatted(isPingOk ? "<font color=#07ad3c><b>   (доступен)" : "<font color=#a31c25><b>   (не доступен)");
                     connButton.setBackground(isPingOk ? Color.GREEN : Color.GRAY);
                     connButton.setEnabled(isPingOk);
@@ -377,6 +383,18 @@ public class NetworkListPane extends JPanel implements iSubPane {
             });
             Constants.setPingAwait(false);
         });
+    }
+
+    /**
+     * Проверка доступности удалённого сервера:
+     *
+     * @param host     адрес, куда стучимся для получения pong.
+     * @param port     адрес, куда стучимся для получения pong.
+     * @param worldUid uid мира, который пропинговывается.
+     * @return успешность получения pong от удалённого Сервера.
+     */
+    private boolean pingServer(String host, Integer port, UUID worldUid) {
+        return gameControllerService.getPingService().pingServer(host, port, worldUid);
     }
 
     @Override

@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 public class WorldsListPane extends JPanel implements iSubPane {
@@ -97,7 +98,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
         centerList.removeAll();
         centerList.add(Box.createVerticalStrut(6));
 
-        List<WorldDto> worlds = gameControllerService.findAllWorldsByNetworkAvailable(false);
+        List<WorldDto> worlds = gameControllerService.getWorldService().findAllByNetAvailable(false);
         for (WorldDto world : worlds) {
             centerList.add(new SubPane("Мир: ".concat(world.getName())) {{
                 setWorld(world);
@@ -234,7 +235,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
                                             && canvas instanceof MenuCanvasRunnable mCanvas
                                     ) {
-                                        mCanvas.deleteExistsWorldAndCloseThatPanel(world.getUid());
+                                        deleteExistsWorldAndCloseThatPanel(world.getUid());
                                         reloadWorlds(canvas);
                                         WorldsListPane.this.revalidate();
                                     }
@@ -264,6 +265,11 @@ public class WorldsListPane extends JPanel implements iSubPane {
         }
 
         WorldsListPane.this.revalidate();
+    }
+
+    private void deleteExistsWorldAndCloseThatPanel(UUID worldUid) {
+        log.info("Удаление мира {}...", worldUid);
+        gameControllerService.getWorldService().deleteByUid(worldUid);
     }
 
     @Override

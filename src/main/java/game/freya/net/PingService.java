@@ -31,20 +31,18 @@ public class PingService {
                 conn.openSocket(host, port, gameControllerService, true);
 
                 // ждём пока получим ответ PONG от Сервера:
-                this.pingBroke = false;
                 long was = System.currentTimeMillis();
-                while (conn.isAlive()
-                        && !pingBroke && !conn.isPongReceived()
+                while (conn.isAlive() && !pingBroke && !conn.isPongReceived()
                         && System.currentTimeMillis() - was < Constants.getGameConfig().getSocketPingAwaitTimeout()
                 ) {
-                    conn.join(500);
+                    conn.join(333);
                 }
 
                 // проверяем получен ли ответ:
                 if (conn.isPongReceived()) {
                     log.info("Пинг к Серверу {}:{} прошел успешно", host, port);
                     return true;
-                } else if (conn.getLastExplanation() != null && conn.getLastExplanation().equals(worldUid.toString())) {
+                } else if (conn.getLastExplanation() != null) { //  && conn.getLastExplanation().equals(worldUid.toString())
                     log.warn("Пинг к Серверу {}:{} не прошел (1): {}", host, port, conn.getLastExplanation());
                 }
             } catch (InterruptedException e) {

@@ -4,16 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import fox.components.FOptionPane;
+import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.utils.ExceptionUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,13 +24,6 @@ import java.nio.file.Path;
 @RequiredArgsConstructor
 public class UserConfigService {
     private final ObjectMapper mapper;
-
-    private GameControllerService gameController;
-
-    @Autowired
-    public void setGameController(@Lazy GameControllerService gameController) {
-        this.gameController = gameController;
-    }
 
     @PostConstruct
     public void load() throws IOException {
@@ -68,12 +61,21 @@ public class UserConfigService {
     public void createOrSaveUserConfig() {
         log.debug("Saving the user save file to disc...");
         try {
+            Dimension wb = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
+            double width = wb.getWidth() * 0.75d;
+            double delta = wb.getWidth() / wb.getHeight();
+
+            UserConfig uConf = UserConfig.builder()
+                    .windowWidth(width)
+                    .windowHeight(width / delta)
+                    .build();
+
             Path saveFile = Path.of(Constants.getUserSaveFile());
             if (Files.notExists(saveFile.getParent())) {
                 Files.createDirectories(saveFile.getParent());
-                mapper.writeValue(saveFile.toFile(), UserConfig.builder().build());
+                mapper.writeValue(saveFile.toFile(), uConf);
             } else if (Files.notExists(saveFile)) {
-                mapper.writeValue(saveFile.toFile(), UserConfig.builder().build());
+                mapper.writeValue(saveFile.toFile(), uConf);
             } else {
                 mapper.writeValue(saveFile.toFile(), Constants.getUserConfig());
             }

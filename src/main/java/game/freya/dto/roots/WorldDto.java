@@ -289,7 +289,7 @@ public class WorldDto implements iWorld {
      */
     public void drawHeroes(Graphics2D v2D, GamePaneRunnable canvas) {
         if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) { // если игра по сети:
-            for (PlayCharacterDto hero : Constants.getServer().getConnectedHeroes()) {
+            for (PlayCharacterDto hero : Constants.getServer().getAcceptedHeroes()) {
                 if (gameControllerService.getCharacterService().getCurrentHero().equals(hero)) {
                     // если это текущий герой:
                     if (!Controls.isPaused()) {

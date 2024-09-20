@@ -28,7 +28,8 @@ public final class GameConfig {
     private short prepStmtCacheSqlLimit = 2048;
 
     private int defaultServerPort = 13958;
-    private int socketBufferSize = 4096; // 65536 | 16384 | 8192 | 4096
+    private int socketSendBufferSize = 2048; // 65536 | 16384 | 8192 | 4096
+    private int socketReceiveBufferSize = 8192; // 65536 | 16384 | 8192 | 4096
 
     private int socketAuthTimeout = 6_000; // таймаут авторизации сокета Сервером.
     private int serverOpenTimeAwait = 6_000; // сколько сервер должен открываться в начале работы

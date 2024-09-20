@@ -7,7 +7,6 @@ import game.freya.mappers.CharacterMapper;
 import game.freya.repositories.CharacterRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.jpa.repository.Modifying;
@@ -29,8 +28,22 @@ public class CharacterService {
     private final CharacterMapper characterMapper;
 
     @Getter
-    @Setter
     private PlayCharacterDto currentHero;
+
+    public void setCurrentHero(PlayCharacterDto hero) {
+        if (currentHero != null) {
+            if (currentHero.equals(hero)) {
+                currentHero.setOnline(true);
+            } else if (currentHero.isOnline()) {
+                // если online другой герой - снимаем:
+                log.info("Снимаем он-лайн с Героя {} и передаём этот статус Герою {}...", currentHero.getName(), hero.getName());
+                currentHero.setOnline(false);
+                saveCurrent();
+            }
+        }
+        log.info("Теперь активный Герой - {}", hero.getName());
+        currentHero = hero;
+    }
 
     @Modifying
     public void deleteByUuid(UUID characterUid) {
@@ -62,8 +75,8 @@ public class CharacterService {
         return (PlayCharacterDto) characterMapper.toDto(characterRepository.save(characterMapper.toEntity(aim)));
     }
 
-    public PlayCharacterDto saveCurrent() {
-        return (PlayCharacterDto) characterMapper.toDto(characterRepository.save(characterMapper.toEntity(currentHero)));
+    public void saveCurrent() {
+        characterMapper.toDto(characterRepository.save(characterMapper.toEntity(currentHero)));
     }
 
     @Transactional(readOnly = true)
@@ -73,15 +86,8 @@ public class CharacterService {
     }
 
     @Transactional(readOnly = true)
-    public boolean isHeroExist(UUID uid) {
-        return characterRepository.existsById(uid);
-    }
-
-    @Transactional(readOnly = true)
     public Optional<CharacterDto> getByUid(UUID uid) {
-//        Character found = characterRepository.getReferenceById(uid);
-        Optional<PlayCharacter> found2 = characterRepository.findByUid(uid);
-        return found2.map(characterMapper::toDto);
+        return characterRepository.findByUid(uid).map(characterMapper::toDto);
     }
 
     public Optional<PlayCharacter> findByUid(UUID uuid) {
