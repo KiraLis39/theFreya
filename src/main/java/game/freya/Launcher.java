@@ -33,32 +33,17 @@ public class Launcher {
             throw new GlobalServiceException(ErrorMessages.OS_NOT_SUPPORTED, SystemUtils.OS_NAME);
         }
 
-        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
         globalPreInitialization();
 
         SpringApplication app = new SpringApplication(Launcher.class);
-        app.setHeadless(false);
+        app.setHeadless(true);
 
         logApplicationStartup(app.run(args).getEnvironment());
-
-//        log.info("Setting up the system properties...");
-//        System.setProperty("sun.java2d.opengl", "True");
-//
-//        System.setProperty("sun.java2d.d3d", "false");
-//        System.setProperty("sun.java2d.d3dtexbpp", "16");
-//
-//        System.setProperty("sun.java2d.ddoffscreen", "false");
-//        System.setProperty("sun.java2d.ddforcevram", "false");
-//
-//        System.setProperty("sun.java2d.accthreshold", "0");
-//        System.setProperty("sun.java2d.translaccel", "true");
-//        System.setProperty("sun.java2d.xrender", "true");
-//        System.setProperty("sun.java2d.noddraw", "true");
-//
-//        System.setProperty("sun.awt.noerasebackground", "true");
     }
 
     private static void globalPreInitialization() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Moscow"));
+
         try {
             Path dataBasePath = Constants.getDatabase();
             if (Files.notExists(dataBasePath.getParent())) {

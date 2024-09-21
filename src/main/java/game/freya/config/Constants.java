@@ -1,6 +1,6 @@
 package game.freya.config;
 
-import com.jme3.app.Application;
+import com.jme3.system.AppSettings;
 import fox.FoxFontBuilder;
 import fox.FoxFontBuilder.FONT;
 import fox.FoxLogo;
@@ -12,7 +12,7 @@ import fox.player.FoxPlayer;
 import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
-import game.freya.gui.panes.JMEApp;
+import game.freya.gui.panes.GameWindowJME;
 import game.freya.net.SocketConnection;
 import game.freya.net.server.Server;
 import game.freya.utils.ExceptionUtils;
@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
@@ -147,11 +146,7 @@ public final class Constants {
 
     @Getter
     @Setter
-    private static JMEApp gameWindow;
-
-    @Getter
-    @Setter
-    private static JMEApp app;
+    private static GameWindowJME gameWindow;
 
     @Getter
     @Setter
@@ -198,8 +193,6 @@ public final class Constants {
     @Setter
     @Getter
     private static int realFreshRate = 0;
-    private static long timePerFrame = -1;
-    private static long fpsLimitMem = -1;
 
     @Getter
     private static final AtomicInteger frames = new AtomicInteger(0);
@@ -258,76 +251,6 @@ public final class Constants {
                 FOptionPane.TYPE.INFO, Constants.getDefaultCursor());
     }
 
-    public static void checkFullscreenModeJME(Application frame, Dimension normalSize) {
-        try {
-            if (userConfig.isFullscreen()) {
-                frame.getContext().getSettings().setWindowSize(normalSize.width, normalSize.height);
-            } else {
-                frame.getContext().getSettings().setWindowSize(normalSize.width, normalSize.height);
-                frame.getContext().getSettings().setCenterWindow(true);
-            }
-        } catch (Exception e) {
-            log.warn("Проблема при смене режима экрана: {}", ExceptionUtils.getFullExceptionMessage(e));
-            restoreDisplayMode();
-        }
-
-        frame.getContext().getSettings().setResizable(false);
-    }
-
-    public static void checkFullscreenMode(JFrame frame, Dimension normalSize) {
-        boolean wasVisible = frame.isVisible();
-
-        if (userConfig.getFullscreenType() == UserConfig.FullscreenType.EXCLUSIVE) {
-            try {
-                if (userConfig.isFullscreen()) {
-                    FoxVideoMonitorUtil.setFullscreen(frame);
-                } else {
-                    FoxVideoMonitorUtil.setFullscreen(null);
-
-//                    frame.setExtendedState(Frame.NORMAL);
-
-//                    frame.setMinimumSize(normalSize);
-//                    frame.setMaximumSize(normalSize);
-
-                    frame.setSize(normalSize);
-                    frame.setLocationRelativeTo(null);
-                }
-            } catch (Exception e) {
-                log.warn("Проблема при смене режима экрана: {}", ExceptionUtils.getFullExceptionMessage(e));
-                restoreDisplayMode();
-            }
-        } else if (userConfig.getFullscreenType() == UserConfig.FullscreenType.MAXIMIZE_WINDOW) {
-            frame.dispose();
-            frame.setResizable(true);
-
-            if (userConfig.isFullscreen()) {
-                frame.setUndecorated(true);
-                frame.setExtendedState(frame.getExtendedState() | Frame.MAXIMIZED_BOTH);
-            } else {
-                frame.setExtendedState(Frame.NORMAL);
-                frame.setUndecorated(false);
-
-                frame.setMinimumSize(normalSize);
-                frame.setMaximumSize(normalSize);
-
-                frame.setSize(normalSize);
-                frame.setLocationRelativeTo(null);
-            }
-        }
-
-        frame.setResizable(false);
-        frame.setVisible(wasVisible);
-        if (wasVisible) {
-            frame.createBufferStrategy(getUserConfig().getBufferedDeep());
-        }
-    }
-
-    public static void restoreDisplayMode() {
-        if (defaultDisplayMode != null) {
-            FoxVideoMonitorUtil.setDisplayMode(defaultDisplayMode);
-        }
-    }
-
     public static boolean isPingAwait() {
         return isPingAwait.get();
     }
@@ -347,4 +270,8 @@ public final class Constants {
     @Getter
     @Setter
     private volatile static long currentTimePerFrame = 0;
+
+    @Getter
+    @Setter
+    private static AppSettings jmeSettings;
 }

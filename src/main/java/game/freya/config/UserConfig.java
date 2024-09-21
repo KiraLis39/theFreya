@@ -115,15 +115,20 @@ public final class UserConfig {
     @Builder.Default
     private boolean isPauseOnHidden = true;
 
-    private double windowWidth;
+    @Builder.Default
+    private double windowWidth = 1440;
 
-    private double windowHeight;
+    @Builder.Default
+    private double windowHeight = 900;
 
     @Builder.Default
     private boolean isXFlipped = false;
 
     @Builder.Default
     private boolean isYFlipped = false;
+
+    @Builder.Default
+    private float fov = 45.f; // default 45
 
     // graphics:
     @Builder.Default

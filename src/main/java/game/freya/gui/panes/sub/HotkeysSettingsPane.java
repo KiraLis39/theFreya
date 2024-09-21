@@ -38,12 +38,12 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPa
                 setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 9, 9));
 
                 for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
-                    add(new SubPane(key.getDescription()) {{
+                    add(new SubPane(key.description()) {{
                         setOpaque(false);
                         setIgnoreRepaint(true);
-                        add(new JTextField((key.getMask() != 0
-                                ? (InputEvent.getModifiersExText(key.getMask()) + " + ") : "")
-                                + KeyEvent.getKeyText(key.getEvent()), canvas.getWidth() / 3 / 24 - 6) {{
+                        add(new JTextField((key.mask() != 0
+                                ? (InputEvent.getModifiersExText(key.mask()) + " + ") : "")
+                                + KeyEvent.getKeyText(key.event()), canvas.getWidth() / 3 / 24 - 6) {{
                             setHorizontalAlignment(CENTER);
                             setDoubleBuffered(false);
                             setFocusable(false);

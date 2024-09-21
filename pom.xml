@@ -251,7 +251,12 @@
             <artifactId>jme3-plugins</artifactId>
             <version>3.6.1-stable</version>
         </dependency>
-<!--        <dependency>-->
+        <dependency>
+            <groupId>org.jmonkeyengine</groupId>
+            <artifactId>jme3-jogg</artifactId>
+            <version>3.6.1-stable</version>
+        </dependency>
+        <!--        <dependency>-->
 <!--            <groupId>org.jmonkeyengine</groupId>-->
 <!--            <artifactId>jme3-networking</artifactId>-->
 <!--            <version>3.6.1-stable</version>-->

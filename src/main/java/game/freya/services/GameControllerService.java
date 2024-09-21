@@ -1,5 +1,6 @@
 package game.freya.services;
 
+import com.jme3.system.AppSettings;
 import fox.FoxLogo;
 import game.freya.WorldEngine;
 import game.freya.config.ApplicationProperties;
@@ -22,6 +23,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -34,7 +36,7 @@ import java.time.Duration;
 @Service
 @RequiredArgsConstructor
 public class GameControllerService {
-    private final ApplicationProperties applicationProperties;
+    private final ApplicationProperties props;
     private final BcryptUtil bcryptUtil;
     private final GameConfigService gameConfigService;
     private final WorldEngine worldEngine;
@@ -45,15 +47,15 @@ public class GameControllerService {
     private final PingService pingService;
     private final ClientDataMapper clientDataMapper;
 
-    private SceneController gameFrameController;
+    private SceneController sceneController;
 
     /**
      * Отсюда начинается выполнение основного кода игры.
      * В этом методе же вызывается метод, отображающий первое игровое окно - меню игры.
      */
     @Autowired
-    public void startGameAndFirstUiShow(@Lazy SceneController gameFrameController) {
-        this.gameFrameController = gameFrameController;
+    public void startGameAndFirstUiShow(@Lazy SceneController sceneController) {
+        this.sceneController = sceneController;
 
         setLookAndFeel();
 
@@ -61,7 +63,7 @@ public class GameControllerService {
         showLogoIfEnabled();
 
         // продолжаем подготовку к запуску игры пока лого отображается...
-        log.info("Check the current user in DB created...");
+        gameConfigService.load();
 
         // создаём если не было, и обновляем если ему сменили никнейм через конфиг:
         playerService.getCurrentPlayer()
@@ -69,7 +71,100 @@ public class GameControllerService {
 
         loadNecessaryResources();
 
-        gameFrameController.showGameWindow();
+        // настраиваем JME:
+        applyJmeSettings();
+
+        sceneController.showGameWindow();
+    }
+
+    private void applyJmeSettings() {
+        Constants.setJmeSettings(new AppSettings(true));
+        AppSettings settings = Constants.getJmeSettings();
+
+        settings.setTitle(props.getAppName().concat(" v.").concat(props.getAppVersion()));
+
+        settings.setVSync(Constants.getUserConfig().isUseVSync());
+        settings.setFrequency(Constants.getUserConfig().getFpsLimit());
+        settings.setFrameRate(Constants.getUserConfig().getFpsLimit());
+
+        settings.setMinResolution((int) Constants.getUserConfig().getWindowWidth(), (int) Constants.getUserConfig().getWindowHeight());
+//        settings.setResolution((int) Constants.getUserConfig().getWindowWidth(), (int) Constants.getUserConfig().getWindowHeight());
+        settings.setWindowSize((int) Constants.getUserConfig().getWindowWidth(), (int) Constants.getUserConfig().getWindowHeight());
+//        settings.setMinWidth();
+//        settings.setMinHeight();
+
+//        settings.setWindowXPosition();
+//        settings.setWindowYPosition();
+        settings.setCenterWindow(true);
+        settings.setFullscreen(Constants.getUserConfig().isFullscreen());
+        settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
+
+        settings.setBitsPerPixel(1); // 1 bpp = черно-белый, 2 bpp = серый, 4 bpp = 16 цветов, 8 bpp = 256 цветов, 24 или 32 bpp = «truecolor».
+//        settings.setAlphaBits();
+
+        /*
+            Точность буфера глубины.
+            Увеличить точность - 32 бита
+            Уменьшить точность - 16 бит
+            На некоторых платформах 24 бита могут не поддерживаться, в этом случае - 16 бит
+         */
+//        settings.setDepthBits();
+
+        /*
+            требует аппаратной поддержки со стороны драйвера графического процессора.
+            См. {@link Quad Buffering [http://en.wikipedia.org/wiki/Quad_buffering]}
+            Видеокарты AMD Radeon HD 6000 Series и более новые поддерживают.
+            Стандарты 3D, такие как OpenGL и Direct3D, поддерживают.
+         */
+        settings.setStereo3D(Constants.getUserConfig().isUseStereo3D());
+        settings.setGammaCorrection(Constants.getUserConfig().isUseGammaCorrection());
+        settings.setSwapBuffers(Constants.getUserConfig().isUseSwapBuffers());
+
+        settings.setEmulateKeyboard(false);
+        settings.setEmulateMouse(false); // для устройств с сенсорным экраном
+        settings.setEmulateMouseFlipAxis(Constants.getUserConfig().isXFlipped(), Constants.getUserConfig().isYFlipped()); // для эмулируемой мыши
+
+//        settings.setGraphicsDebug();
+//        settings.setGraphicsDebug();
+//        settings.setGraphicsTrace();
+//        settings.setGraphicsTiming();
+
+//        settings.setOpenCLSupport();
+//        settings.setOpenCLPlatformChooser();
+
+//        settings.setCustomRenderer();
+        settings.setAudioRenderer(AppSettings.LWJGL_OPENAL);
+        settings.setRenderer(AppSettings.LWJGL_OPENGL45);
+
+        settings.setIcons(new BufferedImage[] {
+                Constants.CACHE.getBufferedImage("icon128"),
+                Constants.CACHE.getBufferedImage("icon64"),
+                Constants.CACHE.getBufferedImage("icon32"),
+                Constants.CACHE.getBufferedImage("icon16"),
+        });
+
+        /*
+            мультисэмплинг 0 - отключить сглаживание (резкие края, более быстрая обработка).
+            мультисэмплинг 2 или 4 - активировать сглаживание (более мягкие края, медленнее).
+            мультисэмплинг 8, 16, 32...
+         */
+        settings.setSamples(Constants.getUserConfig().getMultiSamplingLevel());
+
+//        settings.setUseRetinaFrameBuffer();
+
+
+        /*
+            Укажите 8, чтобы указать 8-битный буфер трафарета,
+            укажите 0, чтобы отключить буфер трафарета.
+         */
+//        settings.setStencilBits();
+
+        settings.setUseInput(true); // реагировать ли на клавиатуру и мышь
+        settings.setUseJoysticks(false); // Активировать дополнительную поддержку джойстика
+
+        settings.setSettingsDialogImage("images/necessary/menu.png");
+
+        Constants.setJmeSettings(settings);
     }
 
     private void setLookAndFeel() {
@@ -97,7 +192,7 @@ public class GameControllerService {
             try (InputStream is = Constants.class.getResourceAsStream(Constants.getLogoImageUrl())) {
                 if (is != null) {
                     Constants.setLogo(new FoxLogo());
-                    Constants.getLogo().start(applicationProperties.getAppVersion(),
+                    Constants.getLogo().start(props.getAppVersion(),
                             Constants.getUserConfig().isFullscreen() ? FoxLogo.IMAGE_STYLE.FILL : FoxLogo.IMAGE_STYLE.DEFAULT,
                             FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
                 }
@@ -129,6 +224,8 @@ public class GameControllerService {
     public void exitTheGame(Duration duration, int errCode) {
         saveTheGame(duration);
         closeConnections();
+
+//        sceneController.stop();
 
         log.info("The game is finished with code {}!", errCode);
         System.exit(errCode);

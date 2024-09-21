@@ -58,7 +58,7 @@ public class UserConfigService {
         }
     }
 
-    public void createOrSaveUserConfig() {
+    public void createOrSaveUserConfig() throws IOException {
         log.debug("Saving the user save file to disc...");
         try {
             Dimension wb = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
@@ -76,14 +76,14 @@ public class UserConfigService {
                 mapper.writeValue(saveFile.toFile(), uConf);
             } else if (Files.notExists(saveFile)) {
                 mapper.writeValue(saveFile.toFile(), uConf);
-            } else {
-                mapper.writeValue(saveFile.toFile(), Constants.getUserConfig());
             }
             Constants.setUserConfig(mapper.readValue(new File(Constants.getUserSaveFile()), UserConfig.class));
+            mapper.writeValue(saveFile.toFile(), Constants.getUserConfig());
         } catch (InvalidDefinitionException ide) {
             log.error("#d012 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(ide));
         } catch (Exception e) {
             log.error("#d013 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+            throw e;
         }
     }
 }

@@ -1318,7 +1318,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         getHeroesListPane().setVisible(false);
 
         log.info("Подготовка к запуску игры должна была пройти успешно. Запуск игрового мира...");
-        gameControllerService.getGameFrameController().loadScene(ScreenType.GAME_SCREEN);
+        gameControllerService.getSceneController().loadScene(ScreenType.GAME_SCREEN);
     }
 
     protected void zoomIn() {
@@ -1660,29 +1660,29 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
     @Override
     public void keyPressed(KeyEvent e) {
         // hero movement:
-        if (e.getKeyCode() == UserConfig.HotKeys.MOVE_UP.getEvent()) {
+        if (e.getKeyCode() == UserConfig.HotKeys.MOVE_UP.event()) {
             Controls.setPlayerMovingUp(true);
-        } else if (e.getKeyCode() == UserConfig.HotKeys.MOVE_BACK.getEvent()) {
+        } else if (e.getKeyCode() == UserConfig.HotKeys.MOVE_BACK.event()) {
             Controls.setPlayerMovingDown(true);
         }
-        if (e.getKeyCode() == UserConfig.HotKeys.MOVE_LEFT.getEvent()) {
+        if (e.getKeyCode() == UserConfig.HotKeys.MOVE_LEFT.event()) {
             Controls.setPlayerMovingLeft(true);
-        } else if (e.getKeyCode() == UserConfig.HotKeys.MOVE_RIGHT.getEvent()) {
+        } else if (e.getKeyCode() == UserConfig.HotKeys.MOVE_RIGHT.event()) {
             Controls.setPlayerMovingRight(true);
         }
 
         // camera movement:
-        if (e.getKeyCode() == UserConfig.HotKeys.CAM_UP.getEvent()) {
+        if (e.getKeyCode() == UserConfig.HotKeys.CAM_UP.event()) {
             Controls.setMovingKeyActive(true);
             Controls.setMouseUpEdgeOver(true);
-        } else if (e.getKeyCode() == UserConfig.HotKeys.CAM_DOWN.getEvent()) {
+        } else if (e.getKeyCode() == UserConfig.HotKeys.CAM_DOWN.event()) {
             Controls.setMovingKeyActive(true);
             Controls.setMouseDownEdgeOver(true);
         }
-        if (e.getKeyCode() == UserConfig.HotKeys.CAM_LEFT.getEvent()) {
+        if (e.getKeyCode() == UserConfig.HotKeys.CAM_LEFT.event()) {
             Controls.setMovingKeyActive(true);
             Controls.setMouseLeftEdgeOver(true);
-        } else if (e.getKeyCode() == UserConfig.HotKeys.CAM_RIGHT.getEvent()) {
+        } else if (e.getKeyCode() == UserConfig.HotKeys.CAM_RIGHT.event()) {
             Controls.setMovingKeyActive(true);
             Controls.setMouseRightEdgeOver(true);
         }

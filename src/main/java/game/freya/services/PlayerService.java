@@ -7,6 +7,7 @@ import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.mappers.PlayerMapper;
 import game.freya.repositories.PlayersRepository;
+import game.freya.utils.ExceptionUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,11 @@ public class PlayerService {
     }
 
     public void saveCurrent() {
-        userConfigService.createOrSaveUserConfig();
+        try {
+            userConfigService.createOrSaveUserConfig();
+        } catch (Exception e) {
+            log.error("Ошибка при сохранении конфига пользователя: {}", ExceptionUtils.getFullExceptionMessage(e));
+        }
 
         Optional<Player> playerOpt = playersRepository.findByUid(currentPlayer.getUid());
         if (playerOpt.isEmpty()) {

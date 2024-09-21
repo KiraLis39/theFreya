@@ -48,10 +48,10 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
 
             add(new SubPane("Ограничить частоту кадров") {{
                 cBox = new CheckBokz("fpsLimitedCheck") {{
-                    setSelected(Constants.isFpsLimited());
                     setDoubleBuffered(false);
                     setIgnoreRepaint(true);
 
+                    setSelected(Constants.getUserConfig().getFpsLimit() > 0);
                     setAction(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
@@ -60,7 +60,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                                 log.debug("Включено ограничение частоты кадров на {}", Constants.getUserConfig().getFpsLimit());
                             } else {
                                 log.debug("Снято ограничение на частоту кадров");
-                                Constants.getUserConfig().setFpsLimit(0);
+                                Constants.getUserConfig().setFpsLimit(-1);
                             }
                         }
                     });
@@ -75,7 +75,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                     setValue(Constants.getUserConfig().getFpsLimit());
                     addChangeListener(_ -> {
                         if (cBox.isSelected()) {
-                            Constants.getUserConfig().setFpsLimit(getValue());
+                            Constants.getUserConfig().setFpsLimit(getValue() > 0 ? getValue() : -1);
                         }
                     });
                 }};

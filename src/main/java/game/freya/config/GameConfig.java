@@ -19,6 +19,7 @@ public final class GameConfig {
     private boolean isShowStartLogo = true;
     private boolean isDebugInfoVisible = false;
     private boolean isFpsInfoVisible = true;
+    private boolean isStatsInfoVisible = true;
     private boolean cachePreparedStatements = true;
     private boolean isGameWindowResizable = false;
 
@@ -44,6 +45,7 @@ public final class GameConfig {
     private double dragSpeed = 12;
     private double scrollSpeed = 20;
 
+    private float zoomSpeed = 10.0f; // default 1.0f
 
     @JsonIgnore
     public int getMaxConnectionWasteTime() {
