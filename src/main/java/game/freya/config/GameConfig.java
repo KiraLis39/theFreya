@@ -20,6 +20,7 @@ public final class GameConfig {
     private boolean isDebugInfoVisible = false;
     private boolean isFpsInfoVisible = true;
     private boolean cachePreparedStatements = true;
+    private boolean isGameWindowResizable = false;
 
     private String userCountry = SystemUtils.USER_COUNTRY;
     private String worldsImagesDir = "./worlds/img/";

@@ -246,11 +246,11 @@
             <artifactId>jme3-lwjgl3</artifactId>
             <version>3.6.1-stable</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.jmonkeyengine</groupId>-->
-<!--            <artifactId>jme3-plugins</artifactId>-->
-<!--            <version>3.6.1-stable</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.jmonkeyengine</groupId>
+            <artifactId>jme3-plugins</artifactId>
+            <version>3.6.1-stable</version>
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.jmonkeyengine</groupId>-->
 <!--            <artifactId>jme3-networking</artifactId>-->
@@ -264,11 +264,6 @@
 <!--        <dependency>-->
 <!--            <groupId>org.jmonkeyengine</groupId>-->
 <!--            <artifactId>jme3-terrain</artifactId>-->
-<!--            <version>3.6.1-stable</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.jmonkeyengine</groupId>-->
-<!--            <artifactId>jme3-lwjgl</artifactId>-->
 <!--            <version>3.6.1-stable</version>-->
 <!--        </dependency>-->
 <!--        <dependency>-->

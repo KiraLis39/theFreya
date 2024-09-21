@@ -1,11 +1,13 @@
 package game.freya.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
@@ -17,20 +19,19 @@ import java.util.UUID;
 @Getter
 @Setter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@RequiredArgsConstructor
 public final class UserConfig {
-
-    @Builder.Default
-    private float miniMapOpacity = 0.65f;
-
     // player:
+    @NotNull
     @Builder.Default
     private UUID userId = UUID.randomUUID();
 
+    @NotNull
     @Builder.Default
     private String userName = SystemUtils.USER_NAME;
 
+    @NotNull
     @Builder.Default
     private String userMail = "demo@test.ru";
 
@@ -59,7 +60,6 @@ public final class UserConfig {
     @Builder.Default
     private int keyLookRight = KeyEvent.VK_RIGHT;
 
-    @Getter
     @Builder.Default
     private int keyLookDown = KeyEvent.VK_DOWN;
 
@@ -101,6 +101,9 @@ public final class UserConfig {
 
     // gameplay:
     @Builder.Default
+    private float miniMapOpacity = 0.65f;
+
+    @Builder.Default
     private boolean dragGameFieldOnFrameEdgeReached = true;
 
     @Builder.Default
@@ -116,15 +119,27 @@ public final class UserConfig {
 
     private double windowHeight;
 
-    // graphics:
     @Builder.Default
-    private boolean isUseSmoothing = true;
+    private boolean isXFlipped = false;
 
     @Builder.Default
-    private boolean isUseBicubic = false;
+    private boolean isYFlipped = false;
+
+    // graphics:
+    @Builder.Default
+    private boolean useSmoothing = true;
+
+    @Builder.Default
+    private boolean useBicubic = false;
+
+    @Builder.Default
+    private boolean useVSync = true;
 
     @Builder.Default
     private int fpsLimit = 60; // fps limit
+
+    @Builder.Default
+    private int multiSamplingLevel = 0;
 
     @Builder.Default
     private boolean isMultiBufferEnabled = true;
@@ -135,6 +150,14 @@ public final class UserConfig {
     @Builder.Default
     private int maxBufferedDeep = 2;
 
+    @Builder.Default
+    private boolean useGammaCorrection = false;
+
+    @Builder.Default
+    private boolean useStereo3D = false;
+
+    @Builder.Default
+    private boolean useSwapBuffers = true;
 
     // other:
     @JsonIgnore
@@ -162,6 +185,8 @@ public final class UserConfig {
     }
 
     @Getter
+    @Accessors(fluent = true)
+    @AllArgsConstructor
     public enum HotKeys {
         CAM_UP("Камера вверх", Constants.getUserConfig().getKeyLookUp(), 0),
         CAM_LEFT("Камера влево", Constants.getUserConfig().getKeyLookLeft(), 0),
@@ -180,16 +205,8 @@ public final class UserConfig {
         FULLSCREEN("Переключение режима экрана", Constants.getUserConfig().getKeyFullscreen(), 0);
 
         private final String description;
-
         private final int event;
-
         private final int mask;
-
-        HotKeys(String description, int event, int mask) {
-            this.description = description;
-            this.event = event;
-            this.mask = mask;
-        }
     }
 
     public enum FullscreenType {

@@ -424,7 +424,7 @@ public final class SocketConnection extends ConnectionHandler implements Runnabl
             gameControllerService.getCharacterService().saveCurrent();
 
             // возвращаемся в главное меню:
-            gameControllerService.getGameFrameController().loadScene(ScreenType.MENU_SCREEN);
+            gameControllerService.getSceneController().loadScene(ScreenType.MENU_SCREEN);
         }
     }
 

@@ -192,7 +192,9 @@ public class WorldDto implements iWorld {
                     .name("mock_" + (i + 1))
                     .cacheKey("mock_0" + Constants.RANDOM.nextInt(3))
                     .size(new Dimension(getSize().width * Constants.MAP_CELL_DIM, getSize().height * Constants.MAP_CELL_DIM))
+                    .location(new Point2D.Double(Constants.RANDOM.nextDouble() * getSize().width, Constants.RANDOM.nextDouble() * getSize().height))
                     .createdBy(Constants.getUserConfig().getUserId())
+                    .isVisible(true)
                     .build();
             boolean isBusy = false;
             for (EnvironmentDto environment : getEnvironments()) {

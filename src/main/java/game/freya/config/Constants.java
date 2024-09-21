@@ -12,7 +12,7 @@ import fox.player.FoxPlayer;
 import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
-import game.freya.gui.panes.GameWindowJME;
+import game.freya.gui.panes.JMEApp;
 import game.freya.net.SocketConnection;
 import game.freya.net.server.Server;
 import game.freya.utils.ExceptionUtils;
@@ -147,8 +147,11 @@ public final class Constants {
 
     @Getter
     @Setter
-//    private static volatile GameWindow gameWindow;
-    private static volatile GameWindowJME gameWindow;
+    private static JMEApp gameWindow;
+
+    @Getter
+    @Setter
+    private static JMEApp app;
 
     @Getter
     @Setter
@@ -323,19 +326,6 @@ public final class Constants {
         if (defaultDisplayMode != null) {
             FoxVideoMonitorUtil.setDisplayMode(defaultDisplayMode);
         }
-    }
-
-    public static boolean isFpsLimited() {
-        return userConfig.getFpsLimit() > 0;
-    }
-
-    public static long getAimTimePerFrame() {
-        if (fpsLimitMem != userConfig.getFpsLimit()) {
-            timePerFrame = 1000 / userConfig.getFpsLimit();
-            fpsLimitMem = userConfig.getFpsLimit();
-            log.info("TPF now: {} to FPS limit {}", timePerFrame, fpsLimitMem);
-        }
-        return timePerFrame;
     }
 
     public static boolean isPingAwait() {
