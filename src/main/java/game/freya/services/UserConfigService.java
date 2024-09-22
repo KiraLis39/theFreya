@@ -66,8 +66,8 @@ public class UserConfigService {
             double delta = wb.getWidth() / wb.getHeight();
 
             UserConfig uConf = UserConfig.builder()
-                    .windowWidth(width)
-                    .windowHeight(width / delta)
+                    .windowWidth((int) width)
+                    .windowHeight((int) (width / delta))
                     .build();
 
             Path saveFile = Path.of(Constants.getUserSaveFile());

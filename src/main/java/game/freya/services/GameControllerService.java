@@ -74,12 +74,11 @@ public class GameControllerService {
         // настраиваем JME:
         applyJmeSettings();
 
-        sceneController.showGameWindow();
+        sceneController.showGameWindow(applyJmeSettings());
     }
 
-    private void applyJmeSettings() {
-        Constants.setJmeSettings(new AppSettings(true));
-        AppSettings settings = Constants.getJmeSettings();
+    private AppSettings applyJmeSettings() {
+        AppSettings settings = new AppSettings(true);
 
         settings.setTitle(props.getAppName().concat(" v.").concat(props.getAppVersion()));
 
@@ -87,19 +86,21 @@ public class GameControllerService {
         settings.setFrequency(Constants.getUserConfig().getFpsLimit());
         settings.setFrameRate(Constants.getUserConfig().getFpsLimit());
 
-        settings.setMinResolution((int) Constants.getUserConfig().getWindowWidth(), (int) Constants.getUserConfig().getWindowHeight());
-//        settings.setResolution((int) Constants.getUserConfig().getWindowWidth(), (int) Constants.getUserConfig().getWindowHeight());
-        settings.setWindowSize((int) Constants.getUserConfig().getWindowWidth(), (int) Constants.getUserConfig().getWindowHeight());
-//        settings.setMinWidth();
-//        settings.setMinHeight();
+//        settings.setMinResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+//        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
 
+        settings.setMinWidth(Constants.getUserConfig().getWindowWidth());
+        settings.setMinHeight(Constants.getUserConfig().getWindowHeight());
+        settings.setWindowSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+
+        settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
+        settings.setCenterWindow(true);
 //        settings.setWindowXPosition();
 //        settings.setWindowYPosition();
-        settings.setCenterWindow(true);
-        settings.setFullscreen(Constants.getUserConfig().isFullscreen());
-        settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
 
-        settings.setBitsPerPixel(1); // 1 bpp = черно-белый, 2 bpp = серый, 4 bpp = 16 цветов, 8 bpp = 256 цветов, 24 или 32 bpp = «truecolor».
+//        settings.setFullscreen(Constants.getUserConfig().isFullscreen());
+
+//        settings.setBitsPerPixel(32); // 1 bpp = черно-белый, 2 bpp = серый, 4 bpp = 16 цветов, 8 bpp = 256 цветов, 24 или 32 bpp = «truecolor».
 //        settings.setAlphaBits();
 
         /*
@@ -122,7 +123,7 @@ public class GameControllerService {
 
         settings.setEmulateKeyboard(false);
         settings.setEmulateMouse(false); // для устройств с сенсорным экраном
-        settings.setEmulateMouseFlipAxis(Constants.getUserConfig().isXFlipped(), Constants.getUserConfig().isYFlipped()); // для эмулируемой мыши
+//        settings.setEmulateMouseFlipAxis(Constants.getUserConfig().isXFlipped(), Constants.getUserConfig().isYFlipped()); // для эмулируемой мыши
 
 //        settings.setGraphicsDebug();
 //        settings.setGraphicsDebug();
@@ -136,7 +137,7 @@ public class GameControllerService {
         settings.setAudioRenderer(AppSettings.LWJGL_OPENAL);
         settings.setRenderer(AppSettings.LWJGL_OPENGL45);
 
-        settings.setIcons(new BufferedImage[] {
+        settings.setIcons(new BufferedImage[]{
                 Constants.CACHE.getBufferedImage("icon128"),
                 Constants.CACHE.getBufferedImage("icon64"),
                 Constants.CACHE.getBufferedImage("icon32"),
@@ -164,7 +165,7 @@ public class GameControllerService {
 
         settings.setSettingsDialogImage("images/necessary/menu.png");
 
-        Constants.setJmeSettings(settings);
+        return settings;
     }
 
     private void setLookAndFeel() {
@@ -178,6 +179,14 @@ public class GameControllerService {
 //            UIManager.put("OptionPane.cancelButtonText", "nope");
 //            UIManager.put("OptionPane.okButtonText", "yup");
 //            UIManager.put("OptionPane.inputDialogTitle", "Введите свой никнейм:");
+            // UIManager.put("FileChooser.saveButtonText", "Сохранить");
+            // UIManager.put("FileChooser.cancelButtonText", "Отмена");
+            // UIManager.put("FileChooser.openButtonText", "Выбрать");
+            // UIManager.put("FileChooser.fileNameLabelText", "Наименование файла");
+            // UIManager.put("FileChooser.filesOfTypeLabelText", "Типы файлов");
+            // UIManager.put("FileChooser.lookInLabelText", "Директория");
+            // UIManager.put("FileChooser.saveInLabelText", "Сохранить в директории");
+            // UIManager.put("FileChooser.folderNameLabelText", "Путь директории");
         } catch (Exception e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -189,15 +198,17 @@ public class GameControllerService {
 
     private void showLogoIfEnabled() {
         if (Constants.getGameConfig().isShowStartLogo()) {
-            try (InputStream is = Constants.class.getResourceAsStream(Constants.getLogoImageUrl())) {
-                if (is != null) {
+            try (InputStream is = Constants.class.getResourceAsStream(Constants.getLogoImageUrl());
+                 InputStream is2 = Constants.class.getResourceAsStream(Constants.getLogoImageUrl2())
+            ) {
+                if (is != null && is2 != null) {
                     Constants.setLogo(new FoxLogo());
                     Constants.getLogo().start(props.getAppVersion(),
                             Constants.getUserConfig().isFullscreen() ? FoxLogo.IMAGE_STYLE.FILL : FoxLogo.IMAGE_STYLE.DEFAULT,
-                            FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is));
+                            FoxLogo.BACK_STYLE.PICK, KeyEvent.VK_ESCAPE, ImageIO.read(is), ImageIO.read(is2));
                 }
             } catch (IOException e) {
-                throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/logo.png");
+                throw new GlobalServiceException(ErrorMessages.RESOURCE_READ_ERROR, "/images/logo.png or /images/logo2.png");
             }
         }
     }
@@ -225,7 +236,20 @@ public class GameControllerService {
         saveTheGame(duration);
         closeConnections();
 
-//        sceneController.stop();
+//        try {
+//            ModsLoaderEngine.stopMods();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
+        if (Constants.getGameWindow() != null) {
+            Constants.getGameWindow().stop();
+        }
+
+        Constants.getMusicPlayer().stop();
+        Constants.getSoundPlayer().stop();
+        Constants.getBackgPlayer().stop();
+        Constants.getVoicePlayer().stop();
 
         log.info("The game is finished with code {}!", errCode);
         System.exit(errCode);

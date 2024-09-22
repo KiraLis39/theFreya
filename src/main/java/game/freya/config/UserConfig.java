@@ -116,10 +116,10 @@ public final class UserConfig {
     private boolean isPauseOnHidden = true;
 
     @Builder.Default
-    private double windowWidth = 1440;
+    private int windowWidth = 1440;
 
     @Builder.Default
-    private double windowHeight = 900;
+    private int windowHeight = 900;
 
     @Builder.Default
     private boolean isXFlipped = false;

@@ -1,6 +1,5 @@
 package game.freya.config;
 
-import com.jme3.system.AppSettings;
 import fox.FoxFontBuilder;
 import fox.FoxFontBuilder.FONT;
 import fox.FoxLogo;
@@ -119,7 +118,16 @@ public final class Constants {
     private static final String gameAuthor = "KiraLis39";
     @Getter
     private static final Path database = Path.of(System.getenv("LOCALAPPDATA").concat("\\Freya\\freya.db")).toAbsolutePath();
-
+    @Getter
+    private static final String userSaveFile = "./saves/".concat(SystemUtils.USER_NAME).concat("/save.json");
+    @Getter
+    private static final String gameConfigFile = "./config.json";
+    @Getter
+    private static final String logoImageUrl = "/images/logo.png";
+    @Getter
+    private static final String logoImageUrl2 = "/images/logo2.png";
+    @Getter
+    private static final String bcryptSalt = "xxwv";
 
     // db hikari:
     @Getter
@@ -136,13 +144,10 @@ public final class Constants {
     @Getter
     private static final FoxPlayer musicPlayer = new FoxPlayer("musicPlayer");
     @Getter
-    private static final String userSaveFile = "./saves/".concat(SystemUtils.USER_NAME).concat("/save.json");
+    private static final FoxPlayer backgPlayer = new FoxPlayer("backgPlayer");
     @Getter
-    private static final String gameConfigFile = "./config.json";
-    @Getter
-    private static final String logoImageUrl = "/images/logo.png";
-    @Getter
-    private static final String bcryptSalt = "xxwv";
+    private static final FoxPlayer voicePlayer = new FoxPlayer("voicePlayer");
+
 
     @Getter
     @Setter
@@ -271,7 +276,7 @@ public final class Constants {
     @Setter
     private volatile static long currentTimePerFrame = 0;
 
-    @Getter
-    @Setter
-    private static AppSettings jmeSettings;
+//    @Getter
+//    @Setter
+//    private static AppSettings jmeSettings;
 }
