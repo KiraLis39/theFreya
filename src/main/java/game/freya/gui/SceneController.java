@@ -16,6 +16,7 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
 import game.freya.config.Constants;
+import game.freya.dto.roots.WorldDto;
 import game.freya.enums.other.ScreenType;
 import game.freya.gui.panes.GameWindowJME;
 import game.freya.gui.panes.handlers.UIHandler;
@@ -59,6 +60,7 @@ public class SceneController {
             }
         }
 
+        // ждём пока JME-окно не прогрузится:
         while (!Constants.getGameWindow().isReady()) {
             try {
                 Thread.sleep(200);
@@ -71,22 +73,12 @@ public class SceneController {
     }
 
     public void loadScene(ScreenType screenType) {
-        log.info("Try to load screen {}...", screenType);
-        switch (screenType) {
-            case MENU_SCREEN -> loadMenuScene();
-            case GAME_SCREEN -> loadGameScreen();
-            default -> log.error("Unknown screen failed to load: {}", screenType);
-        }
-    }
-
-    private void loadMenuScene() {
-        log.info("Try to load Menu screen...");
-        Constants.getGameWindow().setScene(buildMenuNode());
-    }
-
-    private void loadGameScreen() {
-        log.info("Try to load World '{}' screen...", worldService.getCurrentWorld().getName());
-        Constants.getGameWindow().setScene(buildGameNode());
+        WorldDto w = worldService.getCurrentWorld();
+        log.info("Try to load screen '".concat(screenType.toString()).concat(w != null ? "' with World " + w.getName() : "'").concat("..."));
+        Constants.getGameWindow().setScene(switch (screenType) {
+            case MENU_SCREEN -> buildMenuNode();
+            case GAME_SCREEN -> buildGameNode();
+        });
     }
 
     // menu node:
@@ -97,22 +89,20 @@ public class SceneController {
 
         // content:
         AssetManager assetManager = Constants.getGameWindow().getAssetManager();
+
+        Spatial town = assetManager.loadModel("misc/town/level.mesh.xml");
+        menuNode.attachChild(town);
+
         Box b = new Box(Vector3f.ZERO, new Vector3f(1, 1, 1));
         Spatial wall = new Geometry("Box", b);
         Material mat_brick = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
         mat_brick.setTexture("ColorMap", assetManager.loadTexture("images/logo.png"));
         //  mat_brick.setColor("Color", ColorRGBA.Blue);
         wall.setMaterial(mat_brick);
-        wall.setLocalTranslation(2.0f,-2.5f,0.0f);
+//        wall.setLocalTranslation(0.0f,0.0f,0.0f);
         menuNode.attachChild(wall);
 
-        AmbientLight ambientLight = new AmbientLight();
-        ambientLight.setName("ambiLight");
-        ambientLight.setEnabled(true);
-        ambientLight.setColor(ColorRGBA.fromRGBA255(127, 117, 120, 255));
-        ambientLight.setFrustumCheckNeeded(true);
-        ambientLight.setIntersectsFrustum(true);
-        menuNode.addLight(ambientLight);
+        setupMenuLights(menuNode);
 
         setupMenuText(menuNode);
 
@@ -121,12 +111,18 @@ public class SceneController {
 
     private void setupMenuCamera(Node menuNode) {
         FlyByCamera flyCam = Constants.getGameWindow().getFlyByCamera();
-        if (flyCam == null) {
-            throw new NullPointerException();
-        }
-
-        flyCam.setMoveSpeed(0); // default 1.0f
+        flyCam.setMoveSpeed(6); // default 1.0f
         flyCam.setZoomSpeed(0);
+    }
+
+    private void setupMenuLights(Node menuNode) {
+        AmbientLight ambientLight = new AmbientLight();
+        ambientLight.setName("ambiLight");
+        ambientLight.setEnabled(true);
+        ambientLight.setColor(ColorRGBA.fromRGBA255(127, 117, 120, 255));
+        ambientLight.setFrustumCheckNeeded(true);
+        ambientLight.setIntersectsFrustum(true);
+        menuNode.addLight(ambientLight);
     }
 
     private void setupMenuText(Node menuNode) {
@@ -137,7 +133,7 @@ public class SceneController {
         BitmapText helloText = new BitmapText(guiFont);
         helloText.setSize(guiFont.getCharSet().getRenderedSize());
         helloText.setText("Menu mode active");
-        helloText.setLocalTranslation(300, helloText.getLineHeight() * 2, 0);
+        helloText.setLocalTranslation(30, Constants.getJmeSettings().getWindowHeight() - helloText.getLineHeight() * 2, 0);
 //        Constants.getGameWindow().getGuiNode().detachAllChildren();
         Constants.getGameWindow().getGuiNode().attachChild(helloText);
     }
@@ -178,18 +174,7 @@ public class SceneController {
 //        Spatial model = assetManager.loadModel("ModelName.gltf");
 //        gameNode.attachChild(model);
 
-        AmbientLight ambientLight = new AmbientLight();
-        ambientLight.setName("ambiLight");
-        ambientLight.setEnabled(true);
-        ambientLight.setColor(ColorRGBA.fromRGBA255(127, 117, 120, 255));
-        ambientLight.setFrustumCheckNeeded(true);
-        ambientLight.setIntersectsFrustum(true);
-        gameNode.addLight(ambientLight);
-
-        /* You must add a light to make the model visible. */
-        DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f).normalizeLocal());
-        gameNode.addLight(sun);
+        setupGameLights(gameNode);
 
         setupGameText(gameNode);
 
@@ -212,6 +197,21 @@ public class SceneController {
         flyCam.setZoomSpeed(Constants.getGameConfig().getZoomSpeed());
     }
 
+    private void setupGameLights(Node gameNode) {
+        AmbientLight ambientLight = new AmbientLight();
+        ambientLight.setName("ambiLight");
+        ambientLight.setEnabled(true);
+        ambientLight.setColor(ColorRGBA.fromRGBA255(127, 117, 120, 255));
+        ambientLight.setFrustumCheckNeeded(true);
+        ambientLight.setIntersectsFrustum(true);
+        gameNode.addLight(ambientLight);
+
+        /* You must add a light to make the model visible. */
+        DirectionalLight sun = new DirectionalLight();
+        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f).normalizeLocal());
+        gameNode.addLight(sun);
+    }
+
     private void setupGameText(Node gameNode) {
         AssetManager assetManager = Constants.getGameWindow().getAssetManager();
 
@@ -220,7 +220,7 @@ public class SceneController {
         BitmapText helloText = new BitmapText(guiFont);
         helloText.setSize(guiFont.getCharSet().getRenderedSize());
         helloText.setText("Game mode active");
-        helloText.setLocalTranslation(300, helloText.getLineHeight() * 2, 0);
+        helloText.setLocalTranslation(30, Constants.getJmeSettings().getWindowHeight() - helloText.getLineHeight() * 2, 0);
 //        Constants.getGameWindow().getGuiNode().detachAllChildren();
         Constants.getGameWindow().getGuiNode().attachChild(helloText);
     }

@@ -16,7 +16,10 @@
   "serverBroadcastDelay": 100,
   "dragSpeed": 12.0,
   "scrollSpeed": 20.0,
-  "showStartLogo": false,
+  "zoomSpeed": 10.0,
+  "gameWindowResizable": false,
   "debugInfoVisible": false,
+  "showStartLogo": false,
+  "statsInfoVisible": true,
   "fpsInfoVisible": true
 }

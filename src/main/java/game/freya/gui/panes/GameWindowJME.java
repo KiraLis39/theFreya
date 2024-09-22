@@ -17,6 +17,7 @@ import java.awt.*;
 @Getter
 public class GameWindowJME extends SimpleApplication {
     private volatile boolean isReady;
+    private Node scene;
 
     public GameWindowJME() {
         //        setCursor(Constants.getDefaultCursor());
@@ -81,16 +82,19 @@ public class GameWindowJME extends SimpleApplication {
     /* Interact with game events in the main loop */
     @Override
     public void simpleUpdate(float tpf) {
-        //TODO: add update code
+
     }
 
     /* (optional) Make advanced modifications to frameBuffer and scene graph. */
     @Override
     public void simpleRender(RenderManager rm) {
-        //TODO: add render code
+        if (scene != null) {
+            scene.getChild("Box").rotate(0.003f, 0.003f, 0.003f);
+        }
     }
 
     public void setScene(Node scene) {
+        this.scene = scene;
         rootNode.detachChildNamed("menuNode");
         rootNode.detachChildNamed("gameNode");
 

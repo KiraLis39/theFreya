@@ -99,7 +99,7 @@ public class GameControllerService {
         settings.setFullscreen(Constants.getUserConfig().isFullscreen());
         settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
 
-        settings.setBitsPerPixel(1); // 1 bpp = черно-белый, 2 bpp = серый, 4 bpp = 16 цветов, 8 bpp = 256 цветов, 24 или 32 bpp = «truecolor».
+        settings.setBitsPerPixel(2); // 1 bpp = черно-белый, 2 bpp = серый, 4 bpp = 16 цветов, 8 bpp = 256 цветов, 24 или 32 bpp = «truecolor».
 //        settings.setAlphaBits();
 
         /*
@@ -122,7 +122,7 @@ public class GameControllerService {
 
         settings.setEmulateKeyboard(false);
         settings.setEmulateMouse(false); // для устройств с сенсорным экраном
-        settings.setEmulateMouseFlipAxis(Constants.getUserConfig().isXFlipped(), Constants.getUserConfig().isYFlipped()); // для эмулируемой мыши
+//        settings.setEmulateMouseFlipAxis(Constants.getUserConfig().isXFlipped(), Constants.getUserConfig().isYFlipped()); // для эмулируемой мыши
 
 //        settings.setGraphicsDebug();
 //        settings.setGraphicsDebug();
@@ -136,7 +136,7 @@ public class GameControllerService {
         settings.setAudioRenderer(AppSettings.LWJGL_OPENAL);
         settings.setRenderer(AppSettings.LWJGL_OPENGL45);
 
-        settings.setIcons(new BufferedImage[] {
+        settings.setIcons(new BufferedImage[]{
                 Constants.CACHE.getBufferedImage("icon128"),
                 Constants.CACHE.getBufferedImage("icon64"),
                 Constants.CACHE.getBufferedImage("icon32"),
