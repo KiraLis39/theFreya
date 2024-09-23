@@ -5,11 +5,11 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.app.StatsAppState;
 import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
+import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
-import com.jme3.input.event.MouseButtonEvent;
-import com.jme3.input.event.MouseMotionEvent;
+import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.renderer.RenderManager;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
@@ -20,7 +20,7 @@ import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
 import game.freya.enums.NodeNames;
-import game.freya.gui.MyMouseListenerAdapter;
+import game.freya.gui.states.MenuHotKeysState;
 import game.freya.services.GameControllerService;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,60 +36,14 @@ import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 @Setter
 @Getter
 public class GameWindowJME extends SimpleApplication implements ActionListener, AnalogListener {
+    private final List<String> events = new ArrayList<>();
     private volatile boolean isReady;
-    private Node scene;
+    private Node currentModeNode;
     private GameControllerService gameControllerService;
-    private final List<String> eventNames = new ArrayList<>();
 
     public GameWindowJME(GameControllerService gameControllerService, AppSettings settings) {
         this.gameControllerService = gameControllerService;
-//        super(new StatsAppState(), new DebugKeysAppState());
 
-        //        setCursor(Constants.getDefaultCursor());
-        //        addWindowListener(new WindowAdapter() {
-        //            public void windowClosing(WindowEvent e) {
-        //                if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
-        //                        "Выйти на рабочий стол без сохранения?", FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-        //                ) {
-        //                    gameControllerService.exitTheGame(null, 0);
-        //                }
-        //            }
-        //
-        //            public void windowClosed(WindowEvent e) {
-        //                log.debug("Окно закрыто!");
-        //            }
-        //
-        //            public void windowIconified(WindowEvent e) {
-        //                onGameHide();
-        //            }
-        //
-        //            public void windowDeiconified(WindowEvent e) {
-        //                onGameRestore();
-        //            }
-        //        });
-        //        addWindowStateListener(new WindowAdapter() {
-        //            public void windowStateChanged(WindowEvent e) {
-        //                int oldState = e.getOldState();
-        //                switch (e.getNewState()) {
-        //                    case 6 -> {
-        //                        log.info("Restored to fullscreen");
-        //                        if ((oldState == 1 || oldState == 7)) {
-        //                            onGameRestore();
-        //                        }
-        //                    }
-        //                    case 0 -> {
-        //                        log.info("Switch to windowed");
-        //                        if ((oldState == 1 || oldState == 7)) {
-        //                            onGameRestore();
-        //                        }
-        //                    }
-        //                    case 1, 7 -> onGameHide();
-        //                    default -> log.warn("MainMenu: Unhandled windows state: " + e.getNewState());
-        //                }
-        //            }
-        //        });
-        //
-        //        setInAc();
         setSettings(settings);
         setShowSettings(true); // not works
         setDisplayFps(Constants.getGameConfig().isFpsInfoVisible());
@@ -108,20 +62,21 @@ public class GameWindowJME extends SimpleApplication implements ActionListener, 
 
         setInAc();
 
-        inputManager.addListener(this, eventNames.toArray(new String[0]));
-        mouseInput.setInputListener(new MyMouseListenerAdapter() {
-            @Override
-            public void onMouseMotionEvent(MouseMotionEvent evt) {
-                // Mouse motion data: MouseMotion(X=629, Y=516, DX=1, DY=0, Wheel=0, dWheel=0)
+//        mouseInput.setInputListener(new MyMouseListenerAdapter() {
+//            @Override
+//            public void onMouseMotionEvent(MouseMotionEvent evt) {
+//                // Mouse motion data: MouseMotion(X=629, Y=516, DX=1, DY=0, Wheel=0, dWheel=0)
+//
+//            }
+//
+//            @Override
+//            public void onMouseButtonEvent(MouseButtonEvent evt) {
+//                // Mouse button data: MouseButton(BTN=1, RELEASED) | MouseButton(BTN=2, PRESSED)
+//
+//            }
+//        });
 
-            }
-
-            @Override
-            public void onMouseButtonEvent(MouseButtonEvent evt) {
-                // Mouse button data: MouseButton(BTN=1, RELEASED) | MouseButton(BTN=2, PRESSED)
-
-            }
-        });
+        getStateManager().attach(new MenuHotKeysState(gameControllerService));
 
         setReady(true);
     }
@@ -130,12 +85,12 @@ public class GameWindowJME extends SimpleApplication implements ActionListener, 
     // tpf большой на медленных ПК и маленький на быстрых ПК.
     @Override
     public void simpleUpdate(float tpf) {
-        if (scene != null && scene.getName().equals(NodeNames.GAME_SCENE.name())) {
-            scene.getChild("Box").rotate(0.003f * tpf, 0.003f * tpf, 0.003f * tpf);
+        if (currentModeNode != null && currentModeNode.getName().equals(NodeNames.GAME_SCENE.name())) {
+            currentModeNode.getChild("Box").rotate(0.003f * tpf, 0.003f * tpf, 0.003f * tpf);
         }
 
         // debug info:
-        if (scene != null && Constants.getGameConfig().isDebugInfoVisible()) {
+        if (currentModeNode != null && Constants.getGameConfig().isDebugInfoVisible()) {
             showDebugInfo();
         }
     }
@@ -182,17 +137,10 @@ public class GameWindowJME extends SimpleApplication implements ActionListener, 
     }
 
     public void setScene(Node scene) {
-        this.scene = scene;
+        this.currentModeNode = scene;
 
         if (scene.getName().equals(NodeNames.MENU_SCENE.name())) {
             // если загружается меню - удаляем игру и камеру:
-            stateManager.detach(stateManager.getState(FlyCamAppState.class));
-
-            flyCam.setMoveSpeed(0);
-            flyCam.setRotationSpeed(0);
-            flyCam.setZoomSpeed(0);
-            flyCam.setEnabled(true);
-
             rootNode.detachChildNamed(NodeNames.GAME_SCENE.name());
 
             // перевод курсора в режим меню:
@@ -209,30 +157,48 @@ public class GameWindowJME extends SimpleApplication implements ActionListener, 
         rootNode.attachChild(scene);
     }
 
-    private void onGameRestore() {
-        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
-            return;
-        }
+    private void setInAc() {
+        inputManager.addMapping("ExitAction", new KeyTrigger(KeyInput.KEY_ESCAPE));
+        events.add("ExitAction");
 
-        if (Controls.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
-            Controls.setPaused(false);
-            log.debug("Resume game...");
-        }
-    }
+        inputManager.addMapping("ToggleStats", new KeyTrigger(KeyInput.KEY_F4));
+        events.add("ToggleStats");
 
-    private void onGameHide() {
-        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
-            return;
-        }
+        inputManager.addMapping("ToggleFullscreen", new KeyTrigger(KeyInput.KEY_F11));
+        events.add("ToggleFullscreen");
 
-        log.debug("Hide or minimized");
-        if (!Controls.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
-            Controls.setPaused(true);
-            log.debug("Paused...");
-        }
+        inputManager.addMapping("MouseL", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+        events.add("MouseL");
+
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchPause",
+//                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
+//                    public void actionPerformed(ActionEvent e) {
+//                        log.debug("Try to switch the pause mode...");
+//                        Controls.setPaused(!Controls.isPaused());
+//                    }
+//                });
+
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchDebug",
+//                Constants.getUserConfig().getKeyDebug(), 0, new AbstractAction() {
+//                    public void actionPerformed(ActionEvent e) {
+//                        log.debug("Try to switch the debug mode...");
+//                        Constants.getGameConfig().setDebugInfoVisible(!Constants.getGameConfig().isDebugInfoVisible());
+//                    }
+//                });
+
+//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFps",
+//                Constants.getUserConfig().getKeyFps(), 0, new AbstractAction() {
+//                    public void actionPerformed(ActionEvent e) {
+//                        log.debug("Try to switch the fps mode...");
+//                        Constants.getGameConfig().setFpsInfoVisible(!Constants.getGameConfig().isFpsInfoVisible());
+//                    }
+//                });
+
+        inputManager.addListener(this, events.toArray(new String[0]));
     }
 
     public void toggleFullscreen() {
+        AppSettings settings = context.getSettings();
         DisplayMode vMode = FoxVideoMonitorUtil.getDisplayMode();
 //        GLFWVidMode videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
@@ -270,90 +236,87 @@ public class GameWindowJME extends SimpleApplication implements ActionListener, 
         }
 
         guiNode.detachChildNamed(NodeNames.UI_TEXT_NODE.name());
-        gameControllerService.getSceneController().setupText(scene);
+        gameControllerService.getSceneController().setupText(currentModeNode);
 
         Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
         restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
     }
 
-    public void setAltControlMode(boolean altMode) {
-        if (altMode) {
-//            mouseInput.setNativeCursor(new JmeCursor());
-            mouseInput.setCursorVisible(true);
-            flyCam.setDragToRotate(false);
-        } else {
-            mouseInput.setCursorVisible(false);
-            flyCam.setDragToRotate(true);
+    private void onGameRestore() {
+        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
+            return;
+        }
+
+        if (Controls.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
+            Controls.setPaused(false);
+            log.debug("Resume game...");
         }
     }
 
-    private void setInAc() {
-        inputManager.addMapping("ExitAction", new KeyTrigger(KeyInput.KEY_ESCAPE));
-        eventNames.add("ExitAction");
+    private void onGameHide() {
+        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
+            return;
+        }
 
-        inputManager.addMapping("ToggleStats", new KeyTrigger(KeyInput.KEY_F4));
-        eventNames.add("ToggleStats");
-
-        inputManager.addMapping("ToggleFullscreen", new KeyTrigger(KeyInput.KEY_F11));
-        eventNames.add("ToggleFullscreen");
-
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchPause",
-//                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
-//                    public void actionPerformed(ActionEvent e) {
-//                        log.debug("Try to switch the pause mode...");
-//                        Controls.setPaused(!Controls.isPaused());
-//                    }
-//                });
-
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchDebug",
-//                Constants.getUserConfig().getKeyDebug(), 0, new AbstractAction() {
-//                    public void actionPerformed(ActionEvent e) {
-//                        log.debug("Try to switch the debug mode...");
-//                        Constants.getGameConfig().setDebugInfoVisible(!Constants.getGameConfig().isDebugInfoVisible());
-//                    }
-//                });
-
-//        Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "switchFps",
-//                Constants.getUserConfig().getKeyFps(), 0, new AbstractAction() {
-//                    public void actionPerformed(ActionEvent e) {
-//                        log.debug("Try to switch the fps mode...");
-//                        Constants.getGameConfig().setFpsInfoVisible(!Constants.getGameConfig().isFpsInfoVisible());
-//                    }
-//                });
-    }
-
-    @Override
-    public void onAction(String name, boolean isPressed, float tpf) {
-        System.out.println("Name: " + name + "; pressed: " + isPressed + "; tpf: " + tpf);
-
-        if (isPressed) {
-            switch (name) {
-                case "ExitAction" -> onExit();
-                case "ToggleStats" -> {
-                    if (Constants.getGameWindow().getStateManager().getState(StatsAppState.class) != null) {
-                        Constants.getGameWindow().getStateManager().getState(StatsAppState.class).toggleStats();
-                    }
-                }
-                case "ToggleFullscreen" -> toggleFullscreen();
-            }
+        log.debug("Hide or minimized");
+        if (!Controls.isPaused() && Constants.getUserConfig().isPauseOnHidden()) {
+            Controls.setPaused(true);
+            log.debug("Paused...");
         }
     }
 
-    @Override
-    public void onAnalog(String name, float value, float tpf) {
-        System.out.println("Name: " + name + "; value: " + value + "; tpf: " + tpf);
-
-    }
-
-    private void onExit() {
+    public void onExit() {
         if ((int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
         ) {
-            super.stop();
+            stop();
             gameControllerService.exitTheGame(null, 0);
         } else {
             // Не закрываем окно:
             glfwSetWindowShouldClose(((LwjglWindow) context).getWindowHandle(), false);
         }
+    }
+
+    public void setAltControlMode(boolean altMode) {
+        if (altMode) {
+//            mouseInput.setNativeCursor(new JmeCursor());
+            stateManager.detach(stateManager.getState(FlyCamAppState.class));
+            mouseInput.setCursorVisible(true);
+            flyCam.setDragToRotate(false);
+        } else {
+            stateManager.attach(new FlyCamAppState());
+            mouseInput.setCursorVisible(false);
+            flyCam.setDragToRotate(true);
+        }
+    }
+
+    @Override
+    public void onAction(String name, boolean isPressed, float tpf) {
+        if (!isPressed) {
+            return;
+        }
+
+        System.err.println("\nAction: " + name + "; pressed: " + isPressed + "; tpf: " + tpf);
+
+        switch (name) {
+            case "ExitAction" -> onExit();
+            case "ToggleStats" -> {
+                if (Constants.getGameWindow().getStateManager().getState(StatsAppState.class) != null) {
+                    Constants.getGameWindow().getStateManager().getState(StatsAppState.class).toggleStats();
+                }
+            }
+            case "ToggleFullscreen" -> toggleFullscreen(); // зависает нажатое событие в слушателе!
+            case "MouseL" -> log.info("ЛКМ нажата: {}", isPressed);
+            default -> log.warn("Не релизовано действие {}", name);
+        }
+    }
+
+    @Override
+    public void onAnalog(String name, float value, float tpf) {
+//        System.out.println("Process: " + name + "; value: " + value + "; tpf: " + tpf);
+
+//        switch (name) {
+//            default -> log.warn("Не релизовано действие {}", name);
+//        }
     }
 }
