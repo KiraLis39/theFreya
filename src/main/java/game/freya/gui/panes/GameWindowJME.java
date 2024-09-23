@@ -8,6 +8,8 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.input.event.MouseButtonEvent;
+import com.jme3.input.event.MouseMotionEvent;
 import com.jme3.renderer.RenderManager;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
@@ -18,6 +20,7 @@ import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
 import game.freya.enums.NodeNames;
+import game.freya.gui.MyMouseListenerAdapter;
 import game.freya.services.GameControllerService;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,13 +30,12 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 
 @Slf4j
 @Setter
 @Getter
-public class GameWindowJME extends SimpleApplication {
+public class GameWindowJME extends SimpleApplication implements ActionListener, AnalogListener {
     private volatile boolean isReady;
     private Node scene;
     private GameControllerService gameControllerService;
@@ -106,8 +108,20 @@ public class GameWindowJME extends SimpleApplication {
 
         setInAc();
 
-        inputManager.addListener(new GameActionListener(), eventNames.toArray(new String[0]));
-        inputManager.addListener(new GameAnalogListener());
+        inputManager.addListener(this, eventNames.toArray(new String[0]));
+        mouseInput.setInputListener(new MyMouseListenerAdapter() {
+            @Override
+            public void onMouseMotionEvent(MouseMotionEvent evt) {
+                // Mouse motion data: MouseMotion(X=629, Y=516, DX=1, DY=0, Wheel=0, dWheel=0)
+
+            }
+
+            @Override
+            public void onMouseButtonEvent(MouseButtonEvent evt) {
+                // Mouse button data: MouseButton(BTN=1, RELEASED) | MouseButton(BTN=2, PRESSED)
+
+            }
+        });
 
         setReady(true);
     }
@@ -117,7 +131,7 @@ public class GameWindowJME extends SimpleApplication {
     @Override
     public void simpleUpdate(float tpf) {
         if (scene != null && scene.getName().equals(NodeNames.GAME_SCENE.name())) {
-            scene.getChild("Box").rotate(0.003f, 0.003f, 0.003f);
+            scene.getChild("Box").rotate(0.003f * tpf, 0.003f * tpf, 0.003f * tpf);
         }
 
         // debug info:
@@ -174,7 +188,6 @@ public class GameWindowJME extends SimpleApplication {
             // если загружается меню - удаляем игру и камеру:
             stateManager.detach(stateManager.getState(FlyCamAppState.class));
 
-            flyCam.setDragToRotate(false);
             flyCam.setMoveSpeed(0);
             flyCam.setRotationSpeed(0);
             flyCam.setZoomSpeed(0);
@@ -183,13 +196,13 @@ public class GameWindowJME extends SimpleApplication {
             rootNode.detachChildNamed(NodeNames.GAME_SCENE.name());
 
             // перевод курсора в режим меню:
-//            setAltControlMode(true, glfwGetPrimaryMonitor());
+            setAltControlMode(true);
         } else {
             // если загружается игра:
             rootNode.detachChildNamed(NodeNames.MENU_SCENE.name());
 
             // перевод курсора в режим игры:
-//            setAltControlMode(false, glfwGetPrimaryMonitor());
+            setAltControlMode(false);
         }
 
         log.info("Loading the scene '{}'...", scene.getName());
@@ -263,17 +276,14 @@ public class GameWindowJME extends SimpleApplication {
         restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
     }
 
-    public void setAltControlMode(boolean altMode, long window) {
-        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    public void setAltControlMode(boolean altMode) {
         if (altMode) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-//            glfwSetCursor(window, glfwCreateStandardCursor(GLFW_ARROW_CURSOR));
-//            glfwSetCursor(window, glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR));
-            glfwSetCursor(window, glfwCreateStandardCursor(GLFW_HAND_CURSOR));
+//            mouseInput.setNativeCursor(new JmeCursor());
+            mouseInput.setCursorVisible(true);
+            flyCam.setDragToRotate(false);
         } else {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-//            glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
-            glfwSetCursor(window, NULL);
+            mouseInput.setCursorVisible(false);
+            flyCam.setDragToRotate(true);
         }
     }
 
@@ -312,23 +322,27 @@ public class GameWindowJME extends SimpleApplication {
 //                });
     }
 
-    private class GameActionListener implements ActionListener {
-        @Override
-        public void onAction(String name, boolean isPressed, float tpf) {
-            System.out.println("Name: " + name + "; pressed: " + isPressed + "; tpf: " + tpf);
+    @Override
+    public void onAction(String name, boolean isPressed, float tpf) {
+        System.out.println("Name: " + name + "; pressed: " + isPressed + "; tpf: " + tpf);
 
-            if (isPressed) {
-                switch (name) {
-                    case "ExitAction" -> onExit();
-                    case "ToggleStats" -> {
-                        if (Constants.getGameWindow().getStateManager().getState(StatsAppState.class) != null) {
-                            Constants.getGameWindow().getStateManager().getState(StatsAppState.class).toggleStats();
-                        }
+        if (isPressed) {
+            switch (name) {
+                case "ExitAction" -> onExit();
+                case "ToggleStats" -> {
+                    if (Constants.getGameWindow().getStateManager().getState(StatsAppState.class) != null) {
+                        Constants.getGameWindow().getStateManager().getState(StatsAppState.class).toggleStats();
                     }
-                    case "ToggleFullscreen" -> toggleFullscreen();
                 }
+                case "ToggleFullscreen" -> toggleFullscreen();
             }
         }
+    }
+
+    @Override
+    public void onAnalog(String name, float value, float tpf) {
+        System.out.println("Name: " + name + "; value: " + value + "; tpf: " + tpf);
+
     }
 
     private void onExit() {
@@ -340,15 +354,6 @@ public class GameWindowJME extends SimpleApplication {
         } else {
             // Не закрываем окно:
             glfwSetWindowShouldClose(((LwjglWindow) context).getWindowHandle(), false);
-        }
-    }
-
-    private class GameAnalogListener implements AnalogListener {
-        @Override
-        public void onAnalog(String name, float value, float tpf) {
-            System.out.println("Name: " + name + "; value: " + value + "; tpf: " + tpf);
-
-
         }
     }
 }
