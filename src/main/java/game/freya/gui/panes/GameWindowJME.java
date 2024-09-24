@@ -102,6 +102,7 @@ public class GameWindowJME extends SimpleApplication implements ActionListener, 
     /* (optional) Make advanced modifications to frameBuffer and scene graph. */
     @Override
     public void simpleRender(RenderManager rm) {
+        //TODO: add render code
     }
 
     @Override
