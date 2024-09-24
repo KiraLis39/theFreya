@@ -2,6 +2,7 @@ package game.freya.gui.states;
 
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.AbstractAppState;
 import com.jme3.app.state.AppStateManager;
 import com.jme3.font.BitmapFont;
 import com.jme3.input.InputManager;
@@ -12,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Setter
-public class MenuHotKeysState extends ExitHandlerState {
+public class MenuHotKeysState extends AbstractAppState {
     private SimpleApplication app;
     private InputManager inputManager;
 
@@ -20,7 +21,7 @@ public class MenuHotKeysState extends ExitHandlerState {
     protected BitmapFont guiFont;
 
     public MenuHotKeysState(GameControllerService gameControllerService) {
-        super("TestState", gameControllerService);
+        super("TestState");
     }
 
     @Override

@@ -7,7 +7,6 @@ import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
-import game.freya.config.UserConfig;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.WorldDto;
 import game.freya.enums.other.ScreenType;
@@ -1401,7 +1400,9 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         final String frameName = "mainFrame";
 
         Constants.INPUT_ACTION.set(JComponent.WHEN_IN_FOCUSED_WINDOW, frameName, "backFunction",
-                Constants.getUserConfig().getKeyPause(), 0, new AbstractAction() {
+                Constants.getUserConfig().getHotkeys().getKeyPause().getSwingKey(),
+                Constants.getUserConfig().getHotkeys().getKeyPause().getSwingMask(),
+                new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         if (isVisible() && Controls.isPaused()) {
@@ -1660,29 +1661,29 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
     @Override
     public void keyPressed(KeyEvent e) {
         // hero movement:
-        if (e.getKeyCode() == UserConfig.HotKeys.MOVE_UP.event()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyMoveForward().getSwingKey()) {
             Controls.setPlayerMovingUp(true);
-        } else if (e.getKeyCode() == UserConfig.HotKeys.MOVE_BACK.event()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyMoveBack().getSwingKey()) {
             Controls.setPlayerMovingDown(true);
         }
-        if (e.getKeyCode() == UserConfig.HotKeys.MOVE_LEFT.event()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyMoveLeft().getSwingKey()) {
             Controls.setPlayerMovingLeft(true);
-        } else if (e.getKeyCode() == UserConfig.HotKeys.MOVE_RIGHT.event()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyMoveRight().getSwingKey()) {
             Controls.setPlayerMovingRight(true);
         }
 
         // camera movement:
-        if (e.getKeyCode() == UserConfig.HotKeys.CAM_UP.event()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyLookUp().getSwingKey()) {
             Controls.setMovingKeyActive(true);
             Controls.setMouseUpEdgeOver(true);
-        } else if (e.getKeyCode() == UserConfig.HotKeys.CAM_DOWN.event()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyLookDown().getSwingKey()) {
             Controls.setMovingKeyActive(true);
             Controls.setMouseDownEdgeOver(true);
         }
-        if (e.getKeyCode() == UserConfig.HotKeys.CAM_LEFT.event()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyLookLeft().getSwingKey()) {
             Controls.setMovingKeyActive(true);
             Controls.setMouseLeftEdgeOver(true);
-        } else if (e.getKeyCode() == UserConfig.HotKeys.CAM_RIGHT.event()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyLookRight().getSwingKey()) {
             Controls.setMovingKeyActive(true);
             Controls.setMouseRightEdgeOver(true);
         }
@@ -1690,30 +1691,30 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
     @Override
     public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveUp()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyMoveForward().getSwingKey()) {
             Controls.setPlayerMovingUp(false);
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveDown()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyMoveBack().getSwingKey()) {
             Controls.setPlayerMovingDown(false);
         }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveLeft()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyMoveLeft().getSwingKey()) {
             Controls.setPlayerMovingLeft(false);
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyMoveRight()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyMoveRight().getSwingKey()) {
             Controls.setPlayerMovingRight(false);
         }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookUp()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyLookUp().getSwingKey()) {
             Controls.setMovingKeyActive(false);
             Controls.setMouseUpEdgeOver(false);
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookDown()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyLookDown().getSwingKey()) {
             Controls.setMovingKeyActive(false);
             Controls.setMouseDownEdgeOver(false);
         }
 
-        if (e.getKeyCode() == Constants.getUserConfig().getKeyLookLeft()) {
+        if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyLookLeft().getSwingKey()) {
             Controls.setMovingKeyActive(false);
             Controls.setMouseLeftEdgeOver(false);
-        } else if (e.getKeyCode() == Constants.getUserConfig().getKeyLookRight()) {
+        } else if (e.getKeyCode() == Constants.getUserConfig().getHotkeys().getKeyLookRight().getSwingKey()) {
             Controls.setMovingKeyActive(false);
             Controls.setMouseRightEdgeOver(false);
         }

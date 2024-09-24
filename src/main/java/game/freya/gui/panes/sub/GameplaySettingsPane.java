@@ -3,7 +3,7 @@ package game.freya.gui.panes.sub;
 import fox.components.FOptionPane;
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
-import game.freya.config.UserConfig;
+import game.freya.enums.gui.FullscreenType;
 import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.CheckBokz;
@@ -58,7 +58,7 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
                 setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
 
                 add(new CheckBokz("fullscreenTypeCheck") {{
-                    setSelected(Constants.getUserConfig().getFullscreenType().equals(UserConfig.FullscreenType.EXCLUSIVE));
+                    setSelected(Constants.getUserConfig().getFullscreenType().equals(FullscreenType.EXCLUSIVE));
                     setAction(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
@@ -71,12 +71,12 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
                                 }
 
                                 if (accept == 0) {
-                                    Constants.getUserConfig().setFullscreenType(UserConfig.FullscreenType.EXCLUSIVE);
+                                    Constants.getUserConfig().setFullscreenType(FullscreenType.EXCLUSIVE);
                                 } else {
                                     setSelected(false);
                                 }
                             } else {
-                                Constants.getUserConfig().setFullscreenType(UserConfig.FullscreenType.MAXIMIZE_WINDOW);
+                                Constants.getUserConfig().setFullscreenType(FullscreenType.MAXIMIZE_WINDOW);
                             }
                         }
                     });

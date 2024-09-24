@@ -1,8 +1,8 @@
 package game.freya.gui;
 
 import com.jme3.asset.AssetManager;
-import com.jme3.font.BitmapFont;
-import com.jme3.font.BitmapText;
+import com.jme3.audio.AudioData;
+import com.jme3.audio.AudioNode;
 import com.jme3.input.FlyByCamera;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
@@ -17,7 +17,7 @@ import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
 import game.freya.config.Constants;
 import game.freya.dto.roots.WorldDto;
-import game.freya.enums.NodeNames;
+import game.freya.enums.gui.NodeNames;
 import game.freya.enums.other.ScreenType;
 import game.freya.gui.panes.GameWindowJME;
 import game.freya.gui.panes.handlers.UIHandler;
@@ -39,7 +39,6 @@ public class SceneController {
     private final CharacterService characterService;
     private final WorldService worldService;
     private GameControllerService gameControllerService;
-    private short lineCount;
 
     @Autowired
     public void init(@Lazy GameControllerService gameControllerService) {
@@ -65,7 +64,7 @@ public class SceneController {
         // ждём пока JME-окно не прогрузится:
         while (!Constants.getGameWindow().isReady()) {
             try {
-                Thread.sleep(200);
+                Thread.sleep(250);
             } catch (InterruptedException _) {
             }
         }
@@ -75,6 +74,14 @@ public class SceneController {
     }
 
     public void loadScene(ScreenType screenType) {
+        while (Constants.getGameWindow().getAudioRenderer() == null) {
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         WorldDto w = worldService.getCurrentWorld();
         log.info("Try to load screen '".concat(screenType.toString()).concat(w != null ? "' with World " + w.getName() : "'").concat("..."));
         Constants.getGameWindow().setScene(switch (screenType) {
@@ -91,8 +98,7 @@ public class SceneController {
 
         // content:
         AssetManager assetManager = Constants.getGameWindow().getAssetManager();
-        Box b = new Box(Vector3f.ZERO, new Vector3f(1, 1, 1));
-        Spatial menu = new Geometry("Box", b);
+        Spatial menu = new Geometry("MenuBox", new Box(Vector3f.ZERO, new Vector3f(1, 1, 1)));
         Material mat_menu = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
         mat_menu.setTexture("ColorMap", assetManager.loadTexture("images/necessary/menu.png"));
         //  mat_brick.setColor("Color", ColorRGBA.Blue);
@@ -104,9 +110,23 @@ public class SceneController {
 
         setupMenuLights(menuNode);
 
-        setupText(menuNode);
+        setupMenuAudio(menuNode);
 
         return menuNode;
+    }
+
+    private void setupMenuAudio(Node menuNode) {
+        AssetManager assetManager = Constants.getGameWindow().getAssetManager();
+
+        AudioNode audio_gun = new AudioNode(assetManager, "sound/weapon/sniper_rifle.wav", AudioData.DataType.Buffer);
+        audio_gun.setName("gun");
+        audio_gun.setPositional(false);
+        audio_gun.setReverbEnabled(true); // эффект 3D-эха, который имеет смысл только с позиционными AudioNodes
+        audio_gun.setLooping(false);
+        audio_gun.setVolume(2);
+        menuNode.attachChild(audio_gun);
+
+        menuNode.setUserData("bkgRain", "sound/weather/rain1.ogg");
     }
 
     private void setupMenuCamera(Node menuNode) {
@@ -120,7 +140,7 @@ public class SceneController {
 
     private void setupMenuLights(Node menuNode) {
         AmbientLight ambientLight = new AmbientLight();
-        ambientLight.setName("ambiLight");
+        ambientLight.setName("Ambient light");
         ambientLight.setEnabled(true);
         ambientLight.setColor(ColorRGBA.fromRGBA255(127, 127, 127, 255));
         ambientLight.setFrustumCheckNeeded(false);
@@ -171,8 +191,6 @@ public class SceneController {
 
         setupGameLights(gameNode);
 
-        setupText(gameNode);
-
         return gameNode;
     }
 
@@ -194,7 +212,7 @@ public class SceneController {
 
     private void setupGameLights(Node gameNode) {
         AmbientLight ambientLight = new AmbientLight();
-        ambientLight.setName("ambiLight");
+        ambientLight.setName("Ambient light");
         ambientLight.setEnabled(true);
         ambientLight.setColor(ColorRGBA.fromRGBA255(127, 117, 120, 255));
         ambientLight.setFrustumCheckNeeded(true);
@@ -203,158 +221,9 @@ public class SceneController {
 
         /* You must add a light to make the model visible. */
         DirectionalLight sun = new DirectionalLight();
+        sun.setName("Sun light");
+        sun.setEnabled(true);
         sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f).normalizeLocal());
         gameNode.addLight(sun);
-    }
-
-    // gui text:
-    public void setupText(Node node) {
-        log.info("UI texts reload...");
-
-        AssetManager assetManager = Constants.getGameWindow().getAssetManager();
-        BitmapFont guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt"); // Default.fnt | Console.fnt
-        Node uiTextNode = new Node(NodeNames.UI_TEXT_NODE.name());
-        AppSettings settings = Constants.getGameWindow().getContext().getSettings();
-
-        lineCount = 1;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("modeText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setText("Mode: %s".formatted(node.getName()));
-                setLocalTranslation(24, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("samplesText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("vsyncText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("fpsLimitText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("flscrnText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("mscOnText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("sndOnText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("fcamMoveSpeed");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("fcamRotSpeed");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("fcamZoomSpeed");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("camRotText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("camDirText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("camPosText");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("winWidth");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("winHeight");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("wwinWidth");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        uiTextNode.attachChild(new BitmapText(guiFont) {
-            {
-                setName("wwinHeight");
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-
-        Constants.getGameWindow().getGuiNode().attachChild(uiTextNode);
     }
 }

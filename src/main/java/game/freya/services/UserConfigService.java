@@ -61,14 +61,14 @@ public class UserConfigService {
     public void createOrSaveUserConfig() throws IOException {
         log.debug("Saving the user save file to disc...");
         try {
-            Dimension wb = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
-            double width = wb.getWidth() * 0.75d;
-            double delta = wb.getWidth() / wb.getHeight();
-
-            UserConfig uConf = UserConfig.builder()
-                    .windowWidth((int) width)
-                    .windowHeight((int) (width / delta))
-                    .build();
+            UserConfig uConf = UserConfig.builder().build();
+            if (uConf.getWindowWidth() == 0 || uConf.getWindowHeight() == 0) {
+                Dimension wb = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
+                double width = wb.getWidth() * 0.75d;
+                double delta = wb.getWidth() / wb.getHeight();
+                uConf.setWindowWidth((int) width);
+                uConf.setWindowHeight((int) (width / delta));
+            }
 
             Path saveFile = Path.of(Constants.getUserSaveFile());
             if (Files.notExists(saveFile.getParent())) {

@@ -2,7 +2,6 @@ package game.freya.gui.panes.sub;
 
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.config.UserConfig;
 import game.freya.gui.panes.handlers.RunnableCanvasPanel;
 import game.freya.gui.panes.interfaces.iSubPane;
 import game.freya.gui.panes.sub.components.FButton;
@@ -13,8 +12,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -37,25 +34,25 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPa
             add(new SubPane("Горячие клавиши:") {{
                 setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 9, 9));
 
-                for (UserConfig.HotKeys key : UserConfig.HotKeys.values()) {
-                    add(new SubPane(key.description()) {{
-                        setOpaque(false);
-                        setIgnoreRepaint(true);
-                        add(new JTextField((key.mask() != 0
-                                ? (InputEvent.getModifiersExText(key.mask()) + " + ") : "")
-                                + KeyEvent.getKeyText(key.event()), canvas.getWidth() / 3 / 24 - 6) {{
-                            setHorizontalAlignment(CENTER);
-                            setDoubleBuffered(false);
-                            setFocusable(false);
-                            setEditable(false);
-                            setBackground(Color.DARK_GRAY);
-                            setForeground(Color.WHITE);
-                            setFont(Constants.DEBUG_FONT);
-                            setBorder(BorderFactory.createRaisedSoftBevelBorder());
-                            addMouseListener(HotkeysSettingsPane.this);
-                        }});
-                    }});
-                }
+//                for (Constants.getUserConfig().DefaultHotKeys key : Constants.getUserConfig().DefaultHotKeys.values()) {
+//                    add(new SubPane(key.description()) {{
+//                        setOpaque(false);
+//                        setIgnoreRepaint(true);
+//                        add(new JTextField((key.key().getSwingMask() != 0
+//                                ? (InputEvent.getModifiersExText(key.key().getSwingMask()) + " + ") : "")
+//                                + KeyEvent.getKeyText(key.key().getSwingKey()), canvas.getWidth() / 3 / 24 - 6) {{
+//                            setHorizontalAlignment(CENTER);
+//                            setDoubleBuffered(false);
+//                            setFocusable(false);
+//                            setEditable(false);
+//                            setBackground(Color.DARK_GRAY);
+//                            setForeground(Color.WHITE);
+//                            setFont(Constants.DEBUG_FONT);
+//                            setBorder(BorderFactory.createRaisedSoftBevelBorder());
+//                            addMouseListener(HotkeysSettingsPane.this);
+//                        }});
+//                    }});
+//                }
             }});
         }}, BorderLayout.CENTER);
 
@@ -67,7 +64,7 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPa
                 addActionListener(new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        Constants.getUserConfig().resetControlKeys();
+                        Constants.getUserConfig().getHotkeys().resetControlKeys();
                     }
                 });
             }});
