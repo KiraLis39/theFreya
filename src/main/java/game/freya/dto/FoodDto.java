@@ -18,15 +18,15 @@ import lombok.extern.slf4j.Slf4j;
 public class FoodDto extends ItemDto implements iEdible {
     @Builder.Default
     @Schema(description = "Отравлена ли еда?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    public boolean isPoisoned = false;
+    private boolean isPoisoned = false;
 
     @Builder.Default
     @Schema(description = "Количество восстанавливаемого ХП", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    public int healthCompensation = 1;
+    private int healthCompensation = 1;
 
     @Builder.Default
     @Schema(description = "Количество восстанавливаемого масла", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    public int oilCompensation = 1;
+    private int oilCompensation = 1;
 
     @Override
     public void use() {

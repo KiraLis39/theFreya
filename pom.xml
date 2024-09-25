@@ -6,7 +6,7 @@
 
     <groupId>fox</groupId>
     <artifactId>FreyaTheGame2D</artifactId>
-    <version>0.1.6</version>
+    <version>0.1.7</version>
     <packaging>jar</packaging>
     <name>Freya the game 2D</name>
     <description>Freya the game</description>
@@ -31,8 +31,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <start-class>game.freya.Launcher</start-class>
-
-        <mapstruct.version>1.5.2.Final</mapstruct.version>
     </properties>
 
     <parent>
@@ -290,6 +288,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.1</version>
                 <configuration>
                     <outputDirectory>${project.build.directory}/lib</outputDirectory>
                     <excludeTransitive>false</excludeTransitive>
@@ -309,7 +308,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.4.2</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -329,7 +328,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.8</version>
+                <version>3.3.1</version>
                 <configuration>
                     <mainClass>game.freya.Launcher</mainClass>
                     <layout>JAR</layout>
@@ -352,7 +351,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.13.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -362,29 +361,23 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.4.0</version>
+                <version>3.5.0</version>
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
+                    <consoleOutput>true</consoleOutput>
+                    <failOnViolation>false</failOnViolation>
+                    <failsOnError>true</failsOnError>
+                    <enableSeveritySummary>true</enableSeveritySummary>
                 </configuration>
                 <executions>
                     <execution>
                         <id>checkstyle</id>
-                        <phase>validate</phase>
+                        <phase>process-classes</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
-                        <configuration>
-                            <failOnViolation>true</failOnViolation>
-                        </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.puppycrawl.tools</groupId>
-                        <artifactId>checkstyle</artifactId>
-                        <version>10.14.1</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
 
@@ -399,6 +392,15 @@
     </build>
 
     <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Repo</name>
+            <layout>default</layout>
+            <url>https://repo1.maven.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
         <repository>
             <id>local_repo</id>
             <name>Local_repository</name>

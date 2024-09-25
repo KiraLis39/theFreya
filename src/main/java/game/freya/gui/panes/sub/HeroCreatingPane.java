@@ -353,7 +353,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
             return;
         }
 
-        this.heroName = "Hero_%s".formatted(Constants.RANDOM.nextInt(1000));
+        this.heroName = "Hero_%s".formatted(Constants.getRandom().nextInt(1000));
         super.setVisible(isVisible);
 
         if (ntf != null) {

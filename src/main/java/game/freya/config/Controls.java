@@ -10,8 +10,8 @@ public final class Controls {
     @Setter
     private static volatile boolean isControlsMapped = false, isMovingKeyActive = false, isGameActive = false;
 
-    @Getter
-    private static volatile boolean isPaused = false;
+//    @Getter
+//    private static volatile boolean isPaused = false;
 
     @Getter
     @Setter
@@ -41,8 +41,8 @@ public final class Controls {
         return isPlayerMovingUp || isPlayerMovingDown || isPlayerMovingRight || isPlayerMovingLeft;
     }
 
-    public static void setPaused(boolean _isPaused) {
-        isPaused = _isPaused;
-        log.info("Paused: {}", isPaused);
-    }
+//    public static void setPaused(boolean _isPaused) {
+//        isPaused = _isPaused;
+//        log.info("Paused: {}", isPaused);
+//    }
 }

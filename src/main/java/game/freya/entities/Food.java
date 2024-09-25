@@ -15,11 +15,11 @@ import lombok.experimental.SuperBuilder;
 @DiscriminatorValue("food")
 public class Food extends Item {
     @Column(name = "poisoned", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    public boolean isPoisoned;
+    private boolean isPoisoned;
 
     @Column(name = "health_compensation")
-    public int healthCompensation;
+    private int healthCompensation;
 
     @Column(name = "oil_compensation")
-    public int oilCompensation;
+    private int oilCompensation;
 }

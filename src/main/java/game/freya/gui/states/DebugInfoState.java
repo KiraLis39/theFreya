@@ -3,12 +3,14 @@ package game.freya.gui.states;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.StatsView;
-import com.jme3.app.state.AbstractAppState;
 import com.jme3.app.state.AppStateManager;
+import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetManager;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.input.FlyByCamera;
+import com.jme3.input.KeyInput;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
@@ -21,68 +23,72 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
+import com.jme3.util.BufferUtils;
 import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
 import game.freya.enums.gui.UiDebugLevel;
-import game.freya.services.GameControllerService;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+import static com.jme3.app.SimpleApplication.INPUT_MAPPING_HIDE_STATS;
+
 @Slf4j
 @Setter
-public class DebugInfoState extends AbstractAppState {
+public class DebugInfoState extends BaseAppState {
     private SimpleApplication app;
-//    private InputManager inputManager;
-//    private final GameControllerService gameControllerService;
 
-    protected Node guiNode;
-    protected Renderer renderer;
-    protected BitmapFont guiFont;
-    protected JmeContext context;
-    protected AppSettings settings;
-    protected Camera cam;
-    protected FlyByCamera flyCam;
-    protected AssetManager assetManager;
+    private Renderer renderer;
+    private JmeContext context;
+    private AssetManager assetManager;
+    private AppSettings settings;
+    private FlyByCamera flyCam;
+    private BitmapFont guiFont;
+    private Camera cam;
+    private Node guiNode, infoRootNode, fullView, currentModeNode;
 
+    private Material darkenMat;
+    private BitmapText fpsText, modTitle;
+    private StatsView statsView;
+    private Geometry darkenFps, darkenBase, darkenFull;
+
+    private boolean showFps, showBase, showFull, needUpdate, isDetached;
     private short lineCount;
-    private Node infoRootNode, fullView;
-    private Node currentModeNode;
-
-    private boolean showFps;
-    private boolean showBase;
-    private boolean showFull;
-
-    protected BitmapText fpsText;
-    protected StatsView statsView;
-    protected Geometry darkenFps;
-    protected Geometry darkenBase;
-    protected Geometry darkenFull;
-
-    protected float secondCounter = 0.0f;
-    protected int frameCounter = 0;
+    private float secondCounter = 0.0f;
+    private int frameCounter = 0;
 
     @Getter
     private UiDebugLevel currentDebugLevel;
 
-    public DebugInfoState(Node currentModeNode, GameControllerService gameControllerService) {
+    public DebugInfoState(@NotNull Node currentModeNode) {
         super("DebugInfoState");
         this.currentModeNode = currentModeNode;
-//        this.gameControllerService = gameControllerService;
     }
 
     @Override
+//    @SuppressWarnings("ConstantConditions")
     public void stateAttached(AppStateManager stateManager) {
         currentDebugLevel = UiDebugLevel.FPS_ONLY;
-        showFps = currentDebugLevel.ordinal() >= UiDebugLevel.FPS_ONLY.ordinal();
-        showBase = currentDebugLevel.ordinal() >= UiDebugLevel.BASE.ordinal();
-        showFull = currentDebugLevel.ordinal() >= UiDebugLevel.FULL.ordinal();
+        showFps = true;
+        showBase = false;
+        showFull = false;
+
+        if (darkenFull != null) {
+            rebuildFullText();
+        }
+        this.isDetached = false;
     }
 
     @Override
-    public void initialize(AppStateManager stateManager, Application app) {
+    public void stateDetached(AppStateManager stateManager) {
+        this.isDetached = true;
+    }
+
+    @Override
+    protected void initialize(Application app) {
         this.app = (SimpleApplication) app;
         this.cam = this.app.getCamera();
         this.guiNode = this.app.getGuiNode();
@@ -90,7 +96,6 @@ public class DebugInfoState extends AbstractAppState {
         this.context = this.app.getContext();
         this.settings = context.getSettings();
         this.renderer = this.app.getRenderer();
-//        this.inputManager = this.app.getInputManager();
         this.assetManager = this.app.getAssetManager();
         this.guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt"); // Default.fnt | Console.fnt
         this.fpsText = new BitmapText(guiFont);
@@ -99,14 +104,34 @@ public class DebugInfoState extends AbstractAppState {
         this.fullView = new Node("fullView");
         this.fullView.setCullHint(currentDebugLevel.equals(UiDebugLevel.FULL) ? Spatial.CullHint.Never : Spatial.CullHint.Always);
 
-        setup(currentModeNode);
+        this.darkenMat = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        this.darkenMat.setColor("Color", new ColorRGBA(0, 0, 0, 0.25f));
+        this.darkenMat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+
+        setup();
 
         guiNode.attachChild(infoRootNode);
-
-        super.initialize(stateManager, app);
     }
 
-    private void setup(Node currentModeNode) {
+    @Override
+    protected void onEnable() {
+        BufferUtils.setTrackDirectMemoryEnabled(true);
+        app.getInputManager().deleteMapping(INPUT_MAPPING_HIDE_STATS); // дефолтные гор. клавиши отображения инфо.
+
+        if (!isDetached) {
+            if (darkenFull != null) {
+                rebuildFullText();
+            }
+        }
+    }
+
+    @Override
+    protected void onDisable() {
+        BufferUtils.setTrackDirectMemoryEnabled(false);
+        app.getInputManager().addMapping(INPUT_MAPPING_HIDE_STATS, new KeyTrigger(KeyInput.KEY_F5)); // дефолтные гор. клавиши отображения инфо.
+    }
+
+    private void setup() {
         // fps:
         fpsText.setLocalTranslation(1, fpsText.getLineHeight() + 2, -1);
         fpsText.setCullHint(currentDebugLevel.ordinal() >= UiDebugLevel.FPS_ONLY.ordinal() ? Spatial.CullHint.Never : Spatial.CullHint.Always);
@@ -119,41 +144,58 @@ public class DebugInfoState extends AbstractAppState {
         statsView.setEnabled(currentDebugLevel.ordinal() >= UiDebugLevel.BASE.ordinal());
         infoRootNode.attachChild(statsView);
 
-        // информация о самой игре и текущих настройках:
-        lineCount = 1;
-        infoRootNode.attachChild(new BitmapText(guiFont) {
-            {
-                setText("Mode: ".concat(currentModeNode.getName()));
-                setSize(guiFont.getCharSet().getRenderedSize());
-                setCullHint(Spatial.CullHint.Inherit);
-                setLocalTranslation(24, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
-            }
-        });
-        lineCount++;
-        attachToNode(List.of("samplesText", "vsyncText", "fpsLimitText", "flscrnText", "mscOnText", "sndOnText", "fcamMoveSpeed",
-                "fcamRotSpeed", "fcamZoomSpeed", "camRotText", "camDirText", "camPosText", "winWidth", "winHeight", "anizotropicMax", "worldLights"));
-        infoRootNode.attachChild(fullView);
-
         // затенённые задники:
-        Material mat = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", new ColorRGBA(0, 0, 0, 0.25f));
-        mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-
         darkenFps = new Geometry("StatsDarken", new Quad(60, fpsText.getLineHeight()));
-        darkenFps.setMaterial(mat);
+        darkenFps.setMaterial(darkenMat);
         darkenFps.setLocalTranslation(1, 1, -0.5f);
         darkenFps.setCullHint(currentDebugLevel.ordinal() >= UiDebugLevel.FPS_ONLY.ordinal() ? Spatial.CullHint.Never : Spatial.CullHint.Always);
         infoRootNode.attachChild(darkenFps);
 
         darkenBase = new Geometry("StatsDarken", new Quad(150, statsView.getHeight() + 4));
-        darkenBase.setMaterial(mat);
+        darkenBase.setMaterial(darkenMat);
         darkenBase.setLocalTranslation(0, fpsText.getLineHeight() * 2 - 2, -0.5f);
         darkenBase.setCullHint(currentDebugLevel.ordinal() >= UiDebugLevel.BASE.ordinal() ? Spatial.CullHint.Never : Spatial.CullHint.Always);
         infoRootNode.attachChild(darkenBase);
 
-        darkenFull = new Geometry("StatsDarken", new Quad(280, fullView.getChildren().size() * fpsText.getLineHeight() * 1.2f));
-        darkenFull.setMaterial(mat);
-        darkenFull.setLocalTranslation(0, settings.getHeight() - fullView.getChildren().size() * fpsText.getLineHeight() * 1.2f, -0.5f);
+        // информация о самой игре и текущих настройках:
+        rebuildFullText();
+    }
+
+    public void rebuildFullText() {
+        if (infoRootNode.hasChild(darkenFull)) {
+            infoRootNode.detachChild(darkenFull);
+        }
+        if (infoRootNode.hasChild(fullView)) {
+            infoRootNode.detachChild(fullView);
+        }
+        if (infoRootNode.hasChild(modTitle)) {
+            infoRootNode.detachChild(modTitle);
+        }
+
+        this.fullView = new Node("fullView");
+        this.fullView.setCullHint(currentDebugLevel.equals(UiDebugLevel.FULL) ? Spatial.CullHint.Never : Spatial.CullHint.Always);
+
+        // lineCount = 1:
+        modTitle = new BitmapText(guiFont) {
+            {
+                setName("mode_title");
+                setText("Mode: ".concat(currentModeNode.getName()));
+                setSize(guiFont.getCharSet().getRenderedSize());
+                setCullHint(Spatial.CullHint.Inherit);
+                setLocalTranslation(24, settings.getWindowHeight() - getLineHeight() - 3, -1);
+            }
+        };
+        infoRootNode.attachChild(modTitle);
+
+        lineCount = 2;
+        attachToNode(List.of("vsyncText", "fpsLimitText", "flscrnText", "mscOnText", "sndOnText", "fcamMoveSpeed",
+                "fcamRotSpeed", "fcamZoomSpeed", "camRotText", "camDirText", "camPosText", "winWidth", "winHeight", "anizotropic", "anizotropicMax", "worldLights"));
+        infoRootNode.attachChild(fullView);
+
+        float darkenFullHeight = lineCount * fpsText.getLineHeight();
+        darkenFull = new Geometry("StatsDarken", new Quad(270f, darkenFullHeight * 1.2f));
+        darkenFull.setMaterial(darkenMat);
+        darkenFull.setLocalTranslation(0f, settings.getHeight() - darkenFullHeight * 1.2f, -0.5f);
         darkenFull.setCullHint(currentDebugLevel.ordinal() >= UiDebugLevel.FULL.ordinal() ? Spatial.CullHint.Never : Spatial.CullHint.Always);
         infoRootNode.attachChild(darkenFull);
     }
@@ -165,7 +207,7 @@ public class DebugInfoState extends AbstractAppState {
                     setName(n);
                     setSize(guiFont.getCharSet().getRenderedSize());
                     setCullHint(Spatial.CullHint.Inherit);
-                    setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount, 0);
+                    setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount - 15, -1);
                 }
             });
             lineCount++;
@@ -180,6 +222,10 @@ public class DebugInfoState extends AbstractAppState {
 
     @Override
     public void postRender() {
+        if (isDetached || !isEnabled()) {
+            return;
+        }
+
         // если отображается FPS:
         if (currentDebugLevel.ordinal() >= UiDebugLevel.FPS_ONLY.ordinal()) {
             secondCounter += app.getTimer().getTimePerFrame();
@@ -187,6 +233,7 @@ public class DebugInfoState extends AbstractAppState {
             if (secondCounter >= 1.0f) {
                 fpsText.setText("FPS: %s".formatted((int) (frameCounter / secondCounter)));
                 secondCounter = frameCounter = 0;
+                needUpdate = true; // нужно обновить full-блок
             }
         }
 
@@ -233,8 +280,14 @@ public class DebugInfoState extends AbstractAppState {
                 if (!showFull) {
                     setFullStats(true);
                 }
-                showDebugInfo();
+
+                if (needUpdate) {
+                    // обновляем full-блок...
+                    needUpdate = false;
+                    showDebugInfo();
+                }
             }
+            case null, default -> log.error("Не ясен выбор уровня лога: {}", currentDebugLevel);
         }
     }
 
@@ -270,7 +323,6 @@ public class DebugInfoState extends AbstractAppState {
     }
 
     private void showDebugInfo() {
-        ((BitmapText) fullView.getChild("samplesText")).setText("MultiSamplingLevel: %s".formatted(context.getSettings().getSamples()));
         ((BitmapText) fullView.getChild("vsyncText")).setText("VSync: %s".formatted(context.getSettings().isVSync()));
         ((BitmapText) fullView.getChild("fpsLimitText")).setText("FPS limit: %s".formatted(context.getSettings().getFrameRate()));
         ((BitmapText) fullView.getChild("sndOnText")).setText("Sounds: %s".formatted(Constants.getUserConfig().isSoundEnabled()));
@@ -286,6 +338,7 @@ public class DebugInfoState extends AbstractAppState {
                         : !context.getSettings().isFullscreen() && Constants.getUserConfig().isFullscreen() ? "pseudo" : "false"));
         ((BitmapText) fullView.getChild("winWidth")).setText("Width: %s".formatted(settings.getWidth()));
         ((BitmapText) fullView.getChild("winHeight")).setText("Height: %s".formatted(settings.getHeight()));
+        ((BitmapText) fullView.getChild("anizotropic")).setText("MultiSamplingLevel: %s".formatted(context.getSettings().getSamples()));
         ((BitmapText) fullView.getChild("anizotropicMax"))
                 .setText("Anisotropy allowed: %s".formatted(renderer.getLimits().get(Limits.TextureAnisotropy)));
         ((BitmapText) fullView.getChild("worldLights")).setText("Lights: %s / %s"
@@ -293,19 +346,8 @@ public class DebugInfoState extends AbstractAppState {
     }
 
     @Override
-    public void cleanup() {
-//        if (inputManager.hasMapping(INPUT_MAPPING_CAMERA_POS))
-//            inputManager.deleteMapping(INPUT_MAPPING_CAMERA_POS);
-//        if (inputManager.hasMapping(INPUT_MAPPING_MEMORY))
-//            inputManager.deleteMapping(INPUT_MAPPING_MEMORY);
-
+    protected void cleanup(Application app) {
         guiNode.detachChild(infoRootNode);
-
-//        guiNode.detachChild(statsView);
-//        guiNode.detachChild(fpsText);
-//        guiNode.detachChild(darkenFps);
-//        guiNode.detachChild(darkenStats);
-
         super.cleanup();
     }
 }

@@ -12,7 +12,6 @@ import game.freya.dto.roots.WorldDto;
 import game.freya.enums.other.ScreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.gui.panes.GamePaneRunnable;
 import game.freya.gui.panes.MenuCanvasRunnable;
 import game.freya.gui.panes.interfaces.iCanvasRunnable;
 import game.freya.gui.panes.interfaces.iSubPane;
@@ -103,7 +102,8 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
     private Duration duration;
 
-    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane, worldsListPane, heroesListPane, networkListPane, networkCreatingPane;
+    private JPanel audiosPane, videosPane, hotkeysPane, gameplayPane, heroCreatingPane, worldCreatingPane,
+            worldsListPane, heroesListPane, networkListPane, networkCreatingPane;
 
     private short downShift = 0;
     private final short rightShift = 21;
@@ -114,6 +114,8 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
     private byte creatingSubsRetry = 0;
     private long tpf;
+
+    private volatile long currentTimePerFrame = 0;
 
     protected RunnableCanvasPanel(
             String name,
@@ -181,7 +183,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         // draw accomplished volatile image:
         bufGraphics2D.drawImage(this.backImage, 0, 0, this);
 
-        Constants.setCurrentTimePerFrame(System.currentTimeMillis() - tpf);
+        currentTimePerFrame = System.currentTimeMillis() - tpf;
     }
 
     protected void dragViewIfNeeds() {
@@ -221,7 +223,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
         createChat();
 
-        Controls.setPaused(false);
+//        Controls.setPaused(false);
         Constants.setGameStartedIn(System.currentTimeMillis());
     }
 
@@ -352,52 +354,52 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         drawMinimap(v2D);
 
         Constants.RENDER.setRender(v2D, FoxRender.RENDER.HIGH, true, true);
-        if (Controls.isPaused()) {
-            drawPauseMode(v2D);
-        }
+//        if (Controls.isPaused()) {
+//            drawPauseMode(v2D);
+//        }
     }
 
     private void drawMinimap(Graphics2D v2D) throws AWTException {
         // down left minimap:
-        if (!Controls.isPaused()) {
-            Rectangle mapButRect;
-            if (Controls.isMinimapShowed()) {
-                mapButRect = getMinimapShowRect();
+//        if (!Controls.isPaused()) {
+        Rectangle mapButRect;
+        if (Controls.isMinimapShowed()) {
+            mapButRect = getMinimapShowRect();
 
-                updateMiniMap();
+            updateMiniMap();
 
-                if (getMinimapRect() != null) {
-                    // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2));
-                    Composite cw = v2D.getComposite();
-                    v2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
-                    v2D.drawImage(this.minimapImage, getMinimapRect().x, getMinimapRect().y,
-                            getMinimapRect().width, getMinimapRect().height, this);
-                    v2D.setComposite(cw);
+            if (getMinimapRect() != null) {
+                // g2D.drawImage(minimapImage.getScaledInstance(256, 256, 2));
+                Composite cw = v2D.getComposite();
+                v2D.setComposite(AlphaComposite.SrcAtop.derive(Constants.getUserConfig().getMiniMapOpacity()));
+                v2D.drawImage(this.minimapImage, getMinimapRect().x, getMinimapRect().y,
+                        getMinimapRect().width, getMinimapRect().height, this);
+                v2D.setComposite(cw);
 
-                    if (Constants.getGameConfig().isDebugInfoVisible()) {
-                        v2D.setColor(Color.CYAN);
-                        v2D.draw(getMinimapRect());
-                    }
+                if (Constants.getGameConfig().isDebugInfoVisible()) {
+                    v2D.setColor(Color.CYAN);
+                    v2D.draw(getMinimapRect());
                 }
-            } else {
-                mapButRect = getMinimapHideRect();
-            }
-
-            if (mapButRect != null) {
-                // draw minimap button:
-                v2D.setColor(Color.YELLOW);
-                v2D.fillRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
-                v2D.setColor(Color.GRAY);
-                v2D.drawRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
-
-                v2D.setColor(Color.BLACK);
-                v2D.setStroke(new BasicStroke(2f));
-                v2D.drawPolyline(new int[]{mapButRect.x + 3, mapButRect.x + mapButRect.width / 2, mapButRect.x + mapButRect.width - 3},
-                        new int[]{mapButRect.y + 3, mapButRect.y + mapButRect.height - 3, mapButRect.y + 3}, 3);
             }
         } else {
-            drawPauseMode(v2D);
+            mapButRect = getMinimapHideRect();
         }
+
+        if (mapButRect != null) {
+            // draw minimap button:
+            v2D.setColor(Color.YELLOW);
+            v2D.fillRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
+            v2D.setColor(Color.GRAY);
+            v2D.drawRoundRect(mapButRect.x, mapButRect.y, mapButRect.width, mapButRect.height, 4, 4);
+
+            v2D.setColor(Color.BLACK);
+            v2D.setStroke(new BasicStroke(2f));
+            v2D.drawPolyline(new int[]{mapButRect.x + 3, mapButRect.x + mapButRect.width / 2, mapButRect.x + mapButRect.width - 3},
+                    new int[]{mapButRect.y + 3, mapButRect.y + mapButRect.height - 3, mapButRect.y + 3}, 3);
+        }
+//        } else {
+//            drawPauseMode(v2D);
+//        }
     }
 
     private void updateMiniMap() throws AWTException {
@@ -589,7 +591,8 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
                         Constants.MAP_CELL_DIM, Constants.MAP_CELL_DIM);
                 v2D.drawString("Hero pos: %.0fx%.0f".formatted(playerShape.getBounds2D().getCenterX(), playerShape.getBounds2D().getCenterY()),
                         getWidth() - leftShift, getHeight() - 140);
-                v2D.drawString("Hero speed: %s".formatted(gameControllerService.getCharacterService().getCurrentHero().getSpeed()), getWidth() - leftShift, getHeight() - 120);
+                v2D.drawString("Hero speed: %s".formatted(gameControllerService.getCharacterService().getCurrentHero().getSpeed()),
+                        getWidth() - leftShift, getHeight() - 120);
                 v2D.drawString("Hero vector: %s %s %s".formatted(
                                 gameControllerService.getCharacterService().getCurrentHero().getVector().getY(),
                                 gameControllerService.getCharacterService().getCurrentHero().getVector().getX(),
@@ -599,9 +602,8 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
             // gameplay info:
             if (gameControllerService.getWorldEngine().getGameMap() != null) {
-                v2D.drawString("GameMap WxH: %dx%d"
-                                .formatted(gameControllerService.getWorldEngine().getGameMap().getWidth(), gameControllerService.getWorldEngine().getGameMap().getHeight()),
-                        getWidth() - leftShift, getHeight() - 70);
+                v2D.drawString("GameMap WxH: %dx%d".formatted(gameControllerService.getWorldEngine().getGameMap().getWidth(),
+                                gameControllerService.getWorldEngine().getGameMap().getHeight()), getWidth() - leftShift, getHeight() - 70);
 
                 v2D.drawString("Canvas XxY-WxH: %dx%d-%dx%d".formatted(getBounds().x, getBounds().y, getBounds().width, getBounds().height),
                         getWidth() - leftShift, getHeight() - 50);
@@ -642,7 +644,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         }
         v2D.drawString("FPS: limit / monitor / current / tpf (%s / %s / %s / %s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), FoxVideoMonitorUtil.getRefreshRate(),
-                        Constants.getRealFreshRate(), Constants.getCurrentTimePerFrame()), rightShift - 1f, downShift + 1f);
+                        Constants.getRealFreshRate(), currentTimePerFrame), rightShift - 1f, downShift + 1f);
 
         v2D.setColor(Color.GRAY);
         if (Controls.isGameActive()
@@ -652,7 +654,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         }
         v2D.drawString("FPS: limit / monitor / current / tpf (%s / %s / %s / %s)"
                 .formatted(Constants.getUserConfig().getFpsLimit(), FoxVideoMonitorUtil.getRefreshRate(),
-                        Constants.getRealFreshRate(), Constants.getCurrentTimePerFrame()), rightShift, downShift);
+                        Constants.getRealFreshRate(), currentTimePerFrame), rightShift, downShift);
     }
 
     protected void reloadShapes(RunnableCanvasPanel canvas) {
@@ -816,9 +818,10 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
         ) {
             mcr.stop();
             gameControllerService.exitTheGame(null, 0);
-        } else if (canvas instanceof GamePaneRunnable gpr) {
-            Controls.setPaused(!Controls.isPaused());
         }
+//        else if (canvas instanceof GamePaneRunnable gpr) {
+//            Controls.setPaused(!Controls.isPaused());
+//        }
 
         // любая панель на этом месте скрывается:
         hidePanelIfNotNull(audiosPane);
@@ -846,14 +849,14 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
     }
 
     private void doScreenshot() {
-        boolean paused = Controls.isPaused();
+//        boolean paused = Controls.isPaused();
         boolean debug = Constants.getGameConfig().isDebugInfoVisible();
 
-        Controls.setPaused(false);
+//        Controls.setPaused(false);
         Constants.getGameConfig().setDebugInfoVisible(false);
         Screenshoter.doScreenshot(getBounds(),
                 Constants.getGameConfig().getWorldsImagesDir() + gameControllerService.getWorldService().getCurrentWorld().getUid());
-        Controls.setPaused(paused);
+//        Controls.setPaused(paused);
         Constants.getGameConfig().setDebugInfoVisible(debug);
     }
 
@@ -1333,7 +1336,8 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
             return;
         }
 
-        moveViewToPlayer(Constants.getGameConfig().getScrollSpeed(), (int) (Constants.getGameConfig().getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
+        moveViewToPlayer(Constants.getGameConfig().getScrollSpeed(),
+                (int) (Constants.getGameConfig().getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
     }
 
     protected void zoomOut() {
@@ -1345,7 +1349,8 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
             return;
         }
 
-        moveViewToPlayer(-Constants.getGameConfig().getScrollSpeed(), -(int) (Constants.getGameConfig().getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
+        moveViewToPlayer(-Constants.getGameConfig().getScrollSpeed(),
+                -(int) (Constants.getGameConfig().getScrollSpeed() / (getBounds().getWidth() / getBounds().getHeight())));
 
 //        double delta = getBounds().getWidth() / getBounds().getHeight();
 ////        double widthPercent = getBounds().getWidth() * Constants.getScrollSpeed();
@@ -1405,11 +1410,11 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
                 new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        if (isVisible() && Controls.isPaused()) {
-                            onExitBack(RunnableCanvasPanel.this);
-                        } else {
-                            Controls.setPaused(!Controls.isPaused());
-                        }
+//                        if (isVisible() && Controls.isPaused()) {
+//                            onExitBack(RunnableCanvasPanel.this);
+//                        } else {
+//                            Controls.setPaused(!Controls.isPaused());
+//                        }
                     }
                 });
 
@@ -1464,7 +1469,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
     public void mouseMoved(MouseEvent e) {
         Point p = e.getPoint();
 
-        if (!Controls.isGameActive() || Controls.isPaused()) {
+        if (!Controls.isGameActive() /* || Controls.isPaused() */) {
             // если мы в меню либо игра на паузе - проверяем меню:
             Controls.setFirstButtonOver(getFirstButtonRect().contains(p));
             Controls.setSecondButtonOver(getSecondButtonRect().contains(p));
@@ -1582,7 +1587,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
                 getGameplayPane().setVisible(false);
 
             } else {
-                Controls.setPaused(false);
+//                Controls.setPaused(false);
                 Controls.setOptionsMenuVisible(false);
             }
         }
@@ -1606,7 +1611,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
             } else {
                 // нет нужды в паузе здесь, просто сохраняемся:
                 gameControllerService.saveTheGame(getDuration());
-                Controls.setPaused(false);
+//                Controls.setPaused(false);
                 new FOptionPane().buildFOptionPane("Успешно", "Игра сохранена!",
                         FOptionPane.TYPE.INFO, null, Constants.getDefaultCursor(), 3, false);
             }
@@ -1647,10 +1652,11 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        if (Controls.isPaused()) {
-            // not work into pause
-            return;
-        }
+//        if (Controls.isPaused()) {
+//            // not work into pause
+//            return;
+//        }
+
         switch (e.getWheelRotation()) {
             case 1 -> zoomOut();
             case -1 -> zoomIn();

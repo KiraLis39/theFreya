@@ -141,9 +141,9 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
                 continue;
             }
 
-            if (!Controls.isPaused()) {
-                dragViewIfNeeds();
-            }
+//            if (!Controls.isPaused()) {
+//                dragViewIfNeeds();
+//            }
 
             try {
                 repaint();

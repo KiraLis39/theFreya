@@ -23,6 +23,7 @@ public final class GameConfig {
     private boolean cachePreparedStatements = true;
     private boolean isGameWindowResizable = false;
     private boolean isLinearSrgbImagesEnable = true;
+    private boolean useSwapBuffers = true;
 
     private String userCountry = SystemUtils.USER_COUNTRY;
     private String worldsImagesDir = "./worlds/img/";

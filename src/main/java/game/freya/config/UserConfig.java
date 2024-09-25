@@ -57,6 +57,7 @@ public class UserConfig implements Serializable {
     @Builder.Default
     private boolean dragGameFieldOnFrameEdgeReached = true;
 
+    @NotNull
     @Builder.Default
     private FullscreenType fullscreenType = FullscreenType.MAXIMIZE_WINDOW; // .EXCLUSIVE
 
@@ -105,9 +106,6 @@ public class UserConfig implements Serializable {
 
     @Builder.Default
     private boolean useStereo3D = false;
-
-    @Builder.Default
-    private boolean useSwapBuffers = true;
 
     @Builder.Default
     private Hotkeys hotkeys = new Hotkeys();

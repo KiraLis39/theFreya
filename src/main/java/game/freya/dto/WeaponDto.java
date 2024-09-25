@@ -17,11 +17,11 @@ import java.util.Set;
 @Setter
 @SuperBuilder
 public class WeaponDto extends ItemDto implements iWeapon {
-    public final Set<HeroType> allowedHeroTypes = new HashSet<>();
+    private final Set<HeroType> allowedHeroTypes = new HashSet<>();
 
-    public short requiredLevel;
+    private short requiredLevel;
 
-    public int attackPower;
+    private int attackPower;
 
     @Override
     public boolean isAllowed(iHero hero) {

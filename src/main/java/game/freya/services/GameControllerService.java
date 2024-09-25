@@ -119,7 +119,7 @@ public class GameControllerService {
          */
         settings.setStereo3D(Constants.getUserConfig().isUseStereo3D());
         settings.setGammaCorrection(Constants.getUserConfig().isUseGammaCorrection());
-        settings.setSwapBuffers(Constants.getUserConfig().isUseSwapBuffers());
+        settings.setSwapBuffers(Constants.getGameConfig().isUseSwapBuffers());
 
         settings.setEmulateKeyboard(false);
         settings.setEmulateMouse(false); // для устройств с сенсорным экраном

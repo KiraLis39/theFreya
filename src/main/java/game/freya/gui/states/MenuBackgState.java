@@ -1,52 +1,30 @@
 package game.freya.gui.states;
 
 import com.jme3.app.Application;
-import com.jme3.app.SimpleApplication;
-import com.jme3.app.state.AbstractAppState;
-import com.jme3.app.state.AppStateManager;
+import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetManager;
 import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
 import com.jme3.scene.Node;
-import com.jme3.system.JmeContext;
-import game.freya.services.GameControllerService;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Collection;
 
-public class MenuBackgState extends AbstractAppState {
+public class MenuBackgState extends BaseAppState {
     private final Collection<String> userData;
-    private SimpleApplication app;
-    protected JmeContext context;
-    protected AssetManager assetManager;
-    private Node currentModeNode;
+    private AssetManager assetManager;
+    private final Node currentModeNode;
     private AudioNode bkgMusic;
 
-    public MenuBackgState(Node currentModeNode, GameControllerService gameControllerService) {
+    public MenuBackgState(Node currentModeNode) {
         super("MenuBackgState");
         this.currentModeNode = currentModeNode;
         this.userData = currentModeNode.getUserDataKeys();
     }
 
     @Override
-    public void stateAttached(AppStateManager stateManager) {
-        if (bkgMusic != null) {
-            bkgMusic.play();
-        }
-    }
-
-    @Override
-    public void stateDetached(AppStateManager stateManager) {
-        if (bkgMusic != null) {
-            bkgMusic.stop();
-        }
-    }
-
-    @Override
-    public void initialize(AppStateManager stateManager, Application app) {
-        this.app = (SimpleApplication) app;
-        this.context = this.app.getContext();
-        this.assetManager = this.app.getAssetManager();
+    protected void initialize(Application app) {
+        this.assetManager = app.getAssetManager();
 
         for (String userDatum : userData) {
             if (userDatum.startsWith("bkg")) {
@@ -54,11 +32,23 @@ public class MenuBackgState extends AbstractAppState {
                 break;
             }
         }
-
-        super.initialize(stateManager, app);
     }
 
-    public void setBackg(@NotNull String localResourceUrl, boolean isPositional, boolean isDirectional, boolean isLooping, float volume) {
+    @Override
+    protected void onEnable() {
+        if (bkgMusic != null) {
+            bkgMusic.play();
+        }
+    }
+
+    @Override
+    protected void onDisable() {
+        if (bkgMusic != null) {
+            bkgMusic.stop();
+        }
+    }
+
+    protected void setBackg(@NotNull String localResourceUrl, boolean isPositional, boolean isDirectional, boolean isLooping, float volume) {
         if (bkgMusic != null) {
             bkgMusic.stop();
         }
@@ -76,7 +66,7 @@ public class MenuBackgState extends AbstractAppState {
     }
 
     @Override
-    public void cleanup() {
+    protected void cleanup(Application app) {
         if (bkgMusic != null) {
             bkgMusic.stop();
         }

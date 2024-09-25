@@ -187,12 +187,12 @@ public class WorldDto implements iWorld {
      */
     @Override
     public void generate() {
-        for (int i = 0; i < 32; ) {
+        for (int i = 0; i < 32;) {
             MockEnvironmentWithStorageDto nextMock = MockEnvironmentWithStorageDto.builder()
                     .name("mock_" + (i + 1))
-                    .cacheKey("mock_0" + Constants.RANDOM.nextInt(3))
+                    .cacheKey("mock_0" + Constants.getRandom().nextInt(3))
                     .size(new Dimension(getSize().width * Constants.MAP_CELL_DIM, getSize().height * Constants.MAP_CELL_DIM))
-                    .location(new Point2D.Double(Constants.RANDOM.nextDouble() * getSize().width, Constants.RANDOM.nextDouble() * getSize().height))
+                    .location(new Point2D.Double(Constants.getRandom().nextDouble() * getSize().width, Constants.getRandom().nextDouble() * getSize().height))
                     .createdBy(Constants.getUserConfig().getUserId())
                     .isVisible(true)
                     .build();
@@ -294,9 +294,9 @@ public class WorldDto implements iWorld {
             for (PlayCharacterDto hero : Constants.getServer().getAcceptedHeroes()) {
                 if (gameControllerService.getCharacterService().getCurrentHero().equals(hero)) {
                     // если это текущий герой:
-                    if (!Controls.isPaused()) {
-                        moveHeroIfAvailable(canvas); // узкое место!
-                    }
+//                    if (!Controls.isPaused()) {
+//                        moveHeroIfAvailable(canvas); // узкое место!
+//                    }
                     hero.draw(v2D);
                 } else if (canvas.getViewPort().getBounds().contains(hero.getLocation())) {
                     // если чужой герой в пределах видимости:
@@ -304,9 +304,9 @@ public class WorldDto implements iWorld {
                 }
             }
         } else { // если не-сетевая игра:
-            if (!Controls.isPaused()) {
-                moveHeroIfAvailable(canvas); // узкое место!
-            }
+//            if (!Controls.isPaused()) {
+//                moveHeroIfAvailable(canvas); // узкое место!
+//            }
 
             if (gameControllerService.getCharacterService().getCurrentHero() == null) {
                 log.info("Потеряли текущего игрока. Что-то случилось? Выходим...");

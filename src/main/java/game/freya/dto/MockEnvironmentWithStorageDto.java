@@ -30,11 +30,11 @@ public class MockEnvironmentWithStorageDto extends EnvironmentDto {
 
     public MockEnvironmentWithStorageDto(String name, double locationW, double locationY) {
         setName(name);
-        setCacheKey("mock_0" + Math.round(1 + Constants.RANDOM.nextDouble() * 2));
+        setCacheKey("mock_0" + Math.round(1 + Constants.getRandom().nextDouble() * 2));
         this.spriteList = Constants.SPRITES_COMBINER.getSprites(getCacheKey(),
                 Constants.CACHE.getBufferedImage(getCacheKey()), 1, 1);
 
-        setLocation(new Point2D.Double(Constants.RANDOM.nextDouble() * locationW, Constants.RANDOM.nextDouble() * locationY));
+        setLocation(new Point2D.Double(Constants.getRandom().nextDouble() * locationW, Constants.getRandom().nextDouble() * locationY));
         setSize(new Dimension(128, 128));
 
         setVisible(true);

@@ -36,7 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public final class Constants {
     // other:
-    public static Random RANDOM = new Random();
+    @Getter
+    private static Random random = new Random();
     public static final char SCOBE = ')';
     public static final int MAX_ZOOM_OUT_CELLS = 23; // максимум отдаление карты ячеек.
 
@@ -61,8 +62,7 @@ public final class Constants {
     public static final FoxSpritesCombiner SPRITES_COMBINER = new FoxSpritesCombiner();
 
     // public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.of("ru"));
-    public static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("День dd (HH:mm)", Locale.of("ru"));
-
+    // public static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("День dd (HH:mm)", Locale.of("ru"));
     public static final DateTimeFormatter DATE_FORMAT_3 = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm", Locale.of("ru"));
 
 
@@ -271,12 +271,4 @@ public final class Constants {
     public static void setConnectionAwait(boolean b) {
         isConnectionAwait.set(b);
     }
-
-    @Getter
-    @Setter
-    private volatile static long currentTimePerFrame = 0;
-
-//    @Getter
-//    @Setter
-//    private static AppSettings jmeSettings;
 }
