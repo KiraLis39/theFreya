@@ -1,4 +1,4 @@
-package game.freya.gui.states;
+package game.freya.states.substates;
 
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
@@ -13,7 +13,7 @@ public class ExitHandlerState extends BaseAppState {
     private final GameControllerService gameControllerService;
 
     public ExitHandlerState(GameControllerService gameControllerService) {
-        super("ExitHandlerState");
+        super(ExitHandlerState.class.getSimpleName());
         this.gameControllerService = gameControllerService;
     }
 
@@ -42,6 +42,5 @@ public class ExitHandlerState extends BaseAppState {
 
     @Override
     protected void cleanup(Application app) {
-        super.cleanup();
     }
 }

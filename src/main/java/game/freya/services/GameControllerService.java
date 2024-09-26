@@ -246,10 +246,10 @@ public class GameControllerService {
             Constants.getGameWindow().stop();
         }
 
-        Constants.getMusicPlayer().stop();
-        Constants.getSoundPlayer().stop();
-        Constants.getBackgPlayer().stop();
-        Constants.getVoicePlayer().stop();
+//        Constants.getMusicPlayer().stop();
+//        Constants.getSoundPlayer().stop();
+//        Constants.getBackgPlayer().stop();
+//        Constants.getVoicePlayer().stop();
 
         log.info("The game is finished with code {}!", errCode);
         System.exit(errCode);

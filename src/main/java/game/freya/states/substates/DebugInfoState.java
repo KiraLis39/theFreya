@@ -1,4 +1,4 @@
-package game.freya.gui.states;
+package game.freya.states.substates;
 
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
@@ -27,7 +27,6 @@ import com.jme3.util.BufferUtils;
 import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
 import game.freya.enums.gui.UiDebugLevel;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -48,13 +47,14 @@ public class DebugInfoState extends BaseAppState {
     private FlyByCamera flyCam;
     private BitmapFont guiFont;
     private Camera cam;
-    private Node guiNode, infoRootNode, fullView, currentModeNode;
+    private Node guiNode, infoRootNode, fullView;
 
     private Material darkenMat;
     private BitmapText fpsText, modTitle;
     private StatsView statsView;
     private Geometry darkenFps, darkenBase, darkenFull;
 
+    private String currentStateName;
     private boolean showFps, showBase, showFull, needUpdate, isDetached;
     private short lineCount;
     private float secondCounter = 0.0f;
@@ -63,9 +63,8 @@ public class DebugInfoState extends BaseAppState {
     @Getter
     private UiDebugLevel currentDebugLevel;
 
-    public DebugInfoState(@NotNull Node currentModeNode) {
-        super("DebugInfoState");
-        this.currentModeNode = currentModeNode;
+    public DebugInfoState() {
+        super(DebugInfoState.class.getSimpleName());
     }
 
     @Override
@@ -179,7 +178,7 @@ public class DebugInfoState extends BaseAppState {
         modTitle = new BitmapText(guiFont) {
             {
                 setName("mode_title");
-                setText("Mode: ".concat(currentModeNode.getName()));
+                setText("Mode: ".concat(currentStateName != null ? currentStateName : "na"));
                 setSize(guiFont.getCharSet().getRenderedSize());
                 setCullHint(Spatial.CullHint.Inherit);
                 setLocalTranslation(24, settings.getWindowHeight() - getLineHeight() - 3, -1);
@@ -341,13 +340,16 @@ public class DebugInfoState extends BaseAppState {
         ((BitmapText) fullView.getChild("anizotropic")).setText("MultiSamplingLevel: %s".formatted(context.getSettings().getSamples()));
         ((BitmapText) fullView.getChild("anizotropicMax"))
                 .setText("Anisotropy allowed: %s".formatted(renderer.getLimits().get(Limits.TextureAnisotropy)));
-        ((BitmapText) fullView.getChild("worldLights")).setText("Lights: %s / %s"
-                .formatted(currentModeNode.getLocalLightList().size(), currentModeNode.getWorldLightList().size()));
+//        ((BitmapText) fullView.getChild("worldLights")).setText("Lights: %s / %s"
+//                .formatted(currentModeNode.getLocalLightList().size(), currentModeNode.getWorldLightList().size()));
     }
 
     @Override
     protected void cleanup(Application app) {
         guiNode.detachChild(infoRootNode);
-        super.cleanup();
+    }
+
+    public void currentStateId(String name) {
+        this.currentStateName = name;
     }
 }

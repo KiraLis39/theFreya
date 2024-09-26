@@ -7,7 +7,6 @@ import fox.FoxRender;
 import fox.components.FOptionPane;
 import fox.images.FoxCursor;
 import fox.images.FoxSpritesCombiner;
-import fox.player.FoxPlayer;
 import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
@@ -139,14 +138,14 @@ public final class Constants {
 
 
     // audio:
-    @Getter
-    private static final FoxPlayer soundPlayer = new FoxPlayer("soundPlayer");
-    @Getter
-    private static final FoxPlayer musicPlayer = new FoxPlayer("musicPlayer");
-    @Getter
-    private static final FoxPlayer backgPlayer = new FoxPlayer("backgPlayer");
-    @Getter
-    private static final FoxPlayer voicePlayer = new FoxPlayer("voicePlayer");
+//    @Getter
+//    private static final FoxPlayer soundPlayer = new FoxPlayer("soundPlayer");
+//    @Getter
+//    private static final FoxPlayer musicPlayer = new FoxPlayer("musicPlayer");
+//    @Getter
+//    private static final FoxPlayer backgPlayer = new FoxPlayer("backgPlayer");
+//    @Getter
+//    private static final FoxPlayer voicePlayer = new FoxPlayer("voicePlayer");
 
 
     @Getter

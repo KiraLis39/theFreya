@@ -603,7 +603,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
             // gameplay info:
             if (gameControllerService.getWorldEngine().getGameMap() != null) {
                 v2D.drawString("GameMap WxH: %dx%d".formatted(gameControllerService.getWorldEngine().getGameMap().getWidth(),
-                                gameControllerService.getWorldEngine().getGameMap().getHeight()), getWidth() - leftShift, getHeight() - 70);
+                        gameControllerService.getWorldEngine().getGameMap().getHeight()), getWidth() - leftShift, getHeight() - 70);
 
                 v2D.drawString("Canvas XxY-WxH: %dx%d-%dx%d".formatted(getBounds().x, getBounds().y, getBounds().width, getBounds().height),
                         getWidth() - leftShift, getHeight() - 50);

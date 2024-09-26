@@ -1,4 +1,4 @@
-package game.freya.gui.states;
+package game.freya.states.substates.menu;
 
 import com.jme3.app.Application;
 import com.jme3.app.state.BaseAppState;
@@ -11,24 +11,32 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 
 public class MenuBackgState extends BaseAppState {
-    private final Collection<String> userData;
+    private final Collection<String> userDataKeys;
     private AssetManager assetManager;
     private final Node currentModeNode;
     private AudioNode bkgMusic;
 
     public MenuBackgState(Node currentModeNode) {
-        super("MenuBackgState");
+        super(MenuBackgState.class.getSimpleName());
         this.currentModeNode = currentModeNode;
-        this.userData = currentModeNode.getUserDataKeys();
+        this.userDataKeys = currentModeNode.getUserDataKeys();
+
+        // какая-то настройка аудио?
+//        float[] eax = new float[]{15, 38.0f, 0.300f, -1000, -3300, 0,
+//                1.49f, 0.54f, 1.00f, -2560, 0.162f, 0.00f, 0.00f,
+//                0.00f, -229, 0.088f, 0.00f, 0.00f, 0.00f, 0.125f, 1.000f,
+//                0.250f, 0.000f, -5.0f, 5000.0f, 250.0f, 0.00f, 0x3f};
+//        Environment env = new Environment(eax);
+//        audioRenderer.setEnvironment(env);
     }
 
     @Override
     protected void initialize(Application app) {
         this.assetManager = app.getAssetManager();
 
-        for (String userDatum : userData) {
-            if (userDatum.startsWith("bkg")) {
-                createAudioNode(currentModeNode.getUserData(userDatum), false, false, true, 3).play();
+        for (String key : userDataKeys) {
+            if (key.startsWith("bkg")) {
+                createAudioNode(currentModeNode.getUserData(key), false, false, true, 3).play();
                 break;
             }
         }
@@ -44,7 +52,7 @@ public class MenuBackgState extends BaseAppState {
     @Override
     protected void onDisable() {
         if (bkgMusic != null) {
-            bkgMusic.stop();
+            bkgMusic.pause();
         }
     }
 
@@ -70,6 +78,5 @@ public class MenuBackgState extends BaseAppState {
         if (bkgMusic != null) {
             bkgMusic.stop();
         }
-        super.cleanup();
     }
 }

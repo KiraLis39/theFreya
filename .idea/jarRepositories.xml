@@ -27,6 +27,11 @@
       <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame\lib" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Repository Switchboard" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="localRepoFt" />
       <option name="name" value="Local repository" />
       <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame\lib\FoxLib39\fox-tools\" />
@@ -90,6 +95,11 @@
       <option name="id" value="local_repo" />
       <option name="name" value="Local_repository" />
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame\lib\" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Repo" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
     </remote-repository>
     <remote-repository>
       <option name="id" value="local_store" />

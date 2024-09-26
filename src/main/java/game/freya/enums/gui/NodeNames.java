@@ -7,6 +7,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum NodeNames {
     GAME_INFO_NODE,
-    MENU_SCENE,
-    GAME_SCENE;
+    MENU_SCENE_NODE,
+    GAME_SCENE_NODE;
 }
