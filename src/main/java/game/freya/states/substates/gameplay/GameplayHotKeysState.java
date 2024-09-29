@@ -4,7 +4,10 @@ import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.app.state.RootNodeAppState;
+import com.jme3.asset.AssetManager;
 import com.jme3.audio.AudioNode;
+import com.jme3.collision.CollisionResult;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -13,7 +16,15 @@ import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Ray;
+import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
 import com.jme3.renderer.Renderer;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.system.AppSettings;
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
@@ -47,9 +58,14 @@ public class GameplayHotKeysState extends BaseAppState {
     private ActionListener actList;
     private AnalogListener anlList;
     private Renderer renderer;
+    private Camera cam;
+    private Node gameNode;
+    private Geometry mark;
+    private AssetManager assetManager;
 
-    public GameplayHotKeysState(GameControllerService gameControllerService) {
+    public GameplayHotKeysState(Node gameNode, GameControllerService gameControllerService) {
         super(GameplayHotKeysState.class.getSimpleName());
+        this.gameNode = gameNode;
         this.gameControllerService = gameControllerService;
     }
 
@@ -57,7 +73,9 @@ public class GameplayHotKeysState extends BaseAppState {
     public void initialize(Application app) {
         this.app = (SimpleApplication) app;
         this.appRef = (GameWindowJME) app;
+        this.cam = this.app.getCamera();
         this.renderer = this.app.getRenderer();
+        this.assetManager = this.app.getAssetManager();
         this.inputManager = this.app.getInputManager();
         this.actList = new MenuActionListener();
         this.anlList = new MenuAnalogListener();
@@ -71,6 +89,8 @@ public class GameplayHotKeysState extends BaseAppState {
         setInAc();
         // прописываем игровые комбо:
         initCombos();
+
+        initMark();
     }
 
     private void initCombos() {
@@ -115,6 +135,9 @@ public class GameplayHotKeysState extends BaseAppState {
 
         inputManager.addMapping("ToggleFullscreen", new KeyTrigger(hotKeys.getKeyFullscreen().getJmeKey()));
         actions.add("ToggleFullscreen");
+
+        inputManager.addMapping("CurAltMode", new KeyTrigger(hotKeys.getKeyAltCursorMode().getJmeKey()));
+        actions.add("CurAltMode");
 
         // debug:
         inputManager.addMapping("ToggleGameInfo", new KeyTrigger(hotKeys.getKeyDebugInfo().getJmeKey()));
@@ -214,6 +237,17 @@ public class GameplayHotKeysState extends BaseAppState {
         this.app.restart();
     }
 
+    /**
+     * A red ball that marks the last spot that was "hit" by the "shot".
+     */
+    private void initMark() {
+        Sphere sphere = new Sphere(30, 30, 0.2f);
+        mark = new Geometry("BOOM!", sphere);
+        Material mark_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mark_mat.setColor("Color", ColorRGBA.Red);
+        mark.setMaterial(mark_mat);
+    }
+
     @Override
     protected void cleanup(Application app) {
         inputManager.removeListener(actList);
@@ -235,6 +269,11 @@ public class GameplayHotKeysState extends BaseAppState {
 
         @Override
         public void onAction(String name, boolean isPressed, float tpf) {
+            // check cursor alt mode:
+            if (name.equals("CurAltMode")) {
+                appRef.setAltControlMode(isPressed);
+            }
+
             if (!isPressed || !isEnabled()) {
                 pressedMappings.remove(name);
                 return;
@@ -292,6 +331,34 @@ public class GameplayHotKeysState extends BaseAppState {
                     float shotMinPitch = 0.75f, shotMaxPitch = 1.25f;
                     shot.setPitch(shotMinPitch + new Random().nextFloat(shotMaxPitch));
                     shot.playInstance();
+
+                    // 1. Reset results list.
+                    CollisionResults results = new CollisionResults();
+                    // 2. Aim the ray from cam loc to cam direction.
+                    Ray ray = new Ray(cam.getLocation(), cam.getDirection());
+                    // 3. Collect intersections between Ray and Shootables in results list.
+                    gameNode.collideWith(ray, results);
+                    // 4. Print the results
+                    System.out.println("----- Collisions? " + results.size() + "-----");
+                    for (int i = 0; i < results.size(); i++) {
+                        // For each hit, we know distance, impact point, name of geometry.
+                        float dist = results.getCollision(i).getDistance();
+                        Vector3f pt = results.getCollision(i).getContactPoint();
+                        String hit = results.getCollision(i).getGeometry().getName();
+                        System.out.println("* Collision #" + i);
+                        System.out.println("  You shot " + hit + " at " + pt + ", " + dist + " wu away.");
+                    }
+                    // 5. Use the results (we mark the hit object)
+                    if (results.size() > 0) {
+                        // The closest collision point is what was truly hit:
+                        CollisionResult closest = results.getClosestCollision();
+                        // Let's interact - we mark the hit with a red dot.
+                        mark.setLocalTranslation(closest.getContactPoint());
+                        gameNode.attachChild(mark);
+                    } else {
+                        // No hits? Then remove the red mark.
+                        gameNode.detachChild(mark);
+                    }
                 }
                 default -> log.warn("Не релизовано действие [{}]", name);
             }

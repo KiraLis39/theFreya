@@ -351,5 +351,6 @@ public class DebugInfoState extends BaseAppState {
 
     public void currentStateId(String name) {
         this.currentStateName = name;
+        modTitle.setText("Mode: ".concat(currentStateName != null ? currentStateName : "na"));
     }
 }

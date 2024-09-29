@@ -6,6 +6,8 @@ import com.jme3.app.state.AppStateManager;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetManager;
 import com.jme3.audio.Listener;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
 import com.jme3.input.FlyByCamera;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
@@ -13,9 +15,13 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
+import com.jme3.scene.shape.Box;
+import com.jme3.system.AppSettings;
 import game.freya.config.Constants;
+import game.freya.enums.gui.CrosshairType;
 import game.freya.enums.gui.NodeNames;
 import game.freya.gui.panes.GameWindowJME;
 import game.freya.services.GameControllerService;
@@ -27,16 +33,21 @@ import java.util.concurrent.Executors;
 
 @Slf4j
 public class GamePlayState extends BaseAppState {
-    private Node gameNode, rootNode;
+    private CrosshairType crosshairType = CrosshairType.SIMPLE_CROSS;
+    private Node gameNode, rootNode, guiNode;
     private SimpleApplication app;
     private GameWindowJME appRef;
     private AppStateManager stateManager;
     private Listener listener;
+    private AssetManager assetManager;
     private Camera cam;
     private FlyByCamera flyCam;
     private GameControllerService gameControllerService;
     private GameplayHotKeysState hotKeysState;
     private ExecutorService executor;
+    private BitmapFont crosshairFont;
+    private BitmapText crosshair;
+    private Geometry mark;
 
     public GamePlayState(GameControllerService gameControllerService) {
         super(GamePlayState.class.getSimpleName());
@@ -51,6 +62,9 @@ public class GamePlayState extends BaseAppState {
         this.cam = this.app.getCamera();
         this.flyCam = this.app.getFlyByCamera();
         this.rootNode = this.app.getRootNode();
+        this.guiNode = this.app.getGuiNode();
+        this.stateManager = this.app.getStateManager();
+        this.assetManager = this.app.getAssetManager();
         this.listener = this.app.getListener();
         buildGame();
     }
@@ -65,7 +79,7 @@ public class GamePlayState extends BaseAppState {
         }
 
         // подключаем модуль горячих клавиш:
-        this.hotKeysState = new GameplayHotKeysState(gameControllerService);
+        this.hotKeysState = new GameplayHotKeysState(gameNode, gameControllerService);
         if (stateManager.attach(hotKeysState)) {
             executor.execute(() -> {
                 stateManager.getState(hotKeysState.getClass()).startingAwait();
@@ -106,12 +120,14 @@ public class GamePlayState extends BaseAppState {
     }
 
     private void buildGame() {
+        this.crosshairFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
+        this.crosshair = new BitmapText(crosshairFont);
+
         this.gameNode = new Node(NodeNames.GAME_SCENE_NODE.name());
 
         setupGameCamera(gameNode);
 
         // content:
-        AssetManager assetManager = Constants.getGameWindow().getAssetManager();
 //        Spatial landWithHouse = assetManager.loadModel("misc/wildhouse/main.mesh.xml"); // .j3o
 //        gameNode.attachChild(landWithHouse);
 
@@ -146,6 +162,8 @@ public class GamePlayState extends BaseAppState {
 
         setupGameLights(gameNode);
 
+        initCrossHairs();
+
         rootNode.attachChild(gameNode);
     }
 
@@ -164,20 +182,55 @@ public class GamePlayState extends BaseAppState {
     }
 
     private void setupGameLights(Node gameNode) {
-        AmbientLight ambientLight = new AmbientLight();
-        ambientLight.setName("Ambient light");
-        ambientLight.setEnabled(true);
-        ambientLight.setColor(ColorRGBA.fromRGBA255(127, 117, 120, 255));
-        ambientLight.setFrustumCheckNeeded(true);
-        ambientLight.setIntersectsFrustum(true);
-        gameNode.addLight(ambientLight);
+        gameNode.addLight(new AmbientLight() {{
+            setName("Ambient light");
+            setEnabled(true);
+            setColor(ColorRGBA.fromRGBA255(127, 117, 120, 255));
+            setFrustumCheckNeeded(true);
+            setIntersectsFrustum(true);
+        }});
 
-        /* You must add a light to make the model visible. */
-        DirectionalLight sun = new DirectionalLight();
-        sun.setName("Sun light");
-        sun.setEnabled(true);
-        sun.setDirection(new Vector3f(-0.1f, -0.7f, -1.0f).normalizeLocal());
-        gameNode.addLight(sun);
+        gameNode.addLight(new DirectionalLight() {{
+            setName("Sun light");
+            setEnabled(true);
+            setDirection(new Vector3f(-0.1f, -0.7f, -1.0f).normalizeLocal());
+        }});
+    }
+
+    /**
+     * A floor.
+     */
+    private Geometry makeFloor() {
+        Box box = new Box(15, .2f, 15);
+        Geometry floor = new Geometry("the Floor", box);
+        floor.setLocalTranslation(0, -4, -5);
+        Material mat1 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat1.setColor("Color", ColorRGBA.Gray);
+        floor.setMaterial(mat1);
+        return floor;
+    }
+
+    /**
+     * A centred plus sign to help the player aim.
+     */
+    private void initCrossHairs() {
+        if (guiNode.hasChild(crosshair)) {
+            guiNode.detachChild(crosshair);
+        }
+
+        AppSettings settings = this.app.getContext().getSettings();
+//        setDisplayStatView(false);
+        crosshair.setSize(crosshairFont.getCharSet().getRenderedSize() * 2);
+        crosshair.setText(crosshairType.getView());
+        crosshair.setLocalTranslation(
+                settings.getWidth() / 2f - crosshair.getLineWidth() / 2f,
+                settings.getHeight() / 2f + crosshair.getLineHeight() / 2f, 0);
+        guiNode.attachChild(crosshair);
+    }
+
+    public void setCrosshairType(CrosshairType crosshairType) {
+        this.crosshairType = crosshairType;
+        initCrossHairs();
     }
 
     @Override

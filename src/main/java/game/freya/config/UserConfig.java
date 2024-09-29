@@ -136,6 +136,7 @@ public class UserConfig implements Serializable {
         private UniKey keyConsole = DefaultHotKeys.CONSOLE.key;
         private UniKey keyDebugInfo = DefaultHotKeys.DEBUG.key;
         private UniKey keyFullscreen = DefaultHotKeys.FULLSCREEN.key;
+        private UniKey keyAltCursorMode = DefaultHotKeys.ALT_CUR_MODE.key;
 
         public void resetControlKeys() {
             setKeyLookUp(DefaultHotKeys.CAM_UP.key);
@@ -155,6 +156,7 @@ public class UserConfig implements Serializable {
             setKeyConsole(DefaultHotKeys.CONSOLE.key);
             setKeyDebugInfo(DefaultHotKeys.DEBUG.key);
             setKeyFullscreen(DefaultHotKeys.FULLSCREEN.key);
+            setKeyAltCursorMode(DefaultHotKeys.ALT_CUR_MODE.key);
         }
     }
 
@@ -241,6 +243,10 @@ public class UserConfig implements Serializable {
         FULLSCREEN("Переключение экрана", UniKey.builder()
                 .swingKey(KeyEvent.VK_F11)
                 .jmeKey(KeyInput.KEY_F11)
+                .build()),
+        ALT_CUR_MODE("Переключение режима курсора в игре", UniKey.builder()
+                .swingKey(KeyEvent.VK_CONTROL)
+                .jmeKey(KeyInput.KEY_LCONTROL)
                 .build());
 
         private final String description;
