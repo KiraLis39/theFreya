@@ -69,8 +69,8 @@ public class GamePlayState extends BaseAppState {
         if (stateManager.attach(hotKeysState)) {
             executor.execute(() -> {
                 stateManager.getState(hotKeysState.getClass()).startingAwait();
-                // перевод курсора в режим меню:
-                appRef.setAltControlMode(true);
+                // перевод курсора в режим игры:
+                appRef.setAltControlMode(false);
             });
 
             // отладка геометрии, шейдеров, перезагрузка материала и т.п.:
