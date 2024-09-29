@@ -9,6 +9,11 @@
     <remote-repository>
       <option name="id" value="local_repo" />
       <option name="name" value="Local_repository" />
+      <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame\FreyaTheGame3D\lib\" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="local_repo" />
+      <option name="name" value="Local_repository" />
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame3D\lib\" />
     </remote-repository>
     <remote-repository>

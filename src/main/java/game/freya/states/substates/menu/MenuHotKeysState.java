@@ -2,6 +2,7 @@ package game.freya.states.substates.menu;
 
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.AppStateManager;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.app.state.RootNodeAppState;
 import com.jme3.audio.AudioNode;
@@ -22,11 +23,12 @@ import com.jme3.system.AppSettings;
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
+import game.freya.enums.gui.FullscreenType;
 import game.freya.gui.panes.JMEApp;
 import game.freya.states.substates.DebugInfoState;
-import game.freya.states.substates.ExitHandlerState;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +46,7 @@ public class MenuHotKeysState extends BaseAppState {
     private SimpleApplication app;
     private Camera cam;
     private Node menuNode;
+    private AppStateManager stateManager;
 
     public MenuHotKeysState(Node menuNode) {
         super(MenuHotKeysState.class.getSimpleName());
@@ -55,6 +58,7 @@ public class MenuHotKeysState extends BaseAppState {
         this.app = (SimpleApplication) app;
         this.appRef = (JMEApp) this.app;
         this.inputManager = this.app.getInputManager();
+        this.stateManager = this.app.getStateManager();
         this.cam = this.app.getCamera();
 
         actList = new MenuActionListener();
@@ -112,7 +116,6 @@ public class MenuHotKeysState extends BaseAppState {
     private void toggleFullscreen() {
         AppSettings settings = getApplication().getContext().getSettings();
         DisplayMode vMode = FoxVideoMonitorUtil.getDisplayMode();
-//        GLFWVidMode videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
         if (Constants.getUserConfig().isUseVSync()) {
             settings.setFrequency(vMode.getRefreshRate()); // use VSync
@@ -123,51 +126,69 @@ public class MenuHotKeysState extends BaseAppState {
         }
 
         if (Constants.getUserConfig().isFullscreen()) {
-            settings.setResolution(settings.getMinWidth(), settings.getMinHeight());
-            //settings.setFullscreen(false);
-            settings.setCenterWindow(true);
-            FoxVideoMonitorUtil.setFullscreen(null);
-//            Constants.getGameFrame().setUndecorated(false);
-            Constants.getGameFrame().setSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight() + 30));
-//            Constants.getGameFrame().pack();
-            Constants.getGameFrame().setState(Frame.NORMAL);
-            Constants.getGameFrame().setLocationRelativeTo(null);
+            restoreToWindow(settings);
+            Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
         } else if (FoxVideoMonitorUtil.isFullScreenSupported()) {
             switch (Constants.getUserConfig().getFullscreenType()) {
-                case EXCLUSIVE -> {
-                    settings.setWindowSize(vMode.getWidth(), vMode.getHeight());
-                    settings.setBitsPerPixel(vMode.getBitDepth());
-                    settings.setFullscreen(true);
-                    FoxVideoMonitorUtil.setFullscreen(Constants.getGameFrame());
-                }
-                case MAXIMIZE_WINDOW -> {
-//                    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-//                    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-
-//                    Constants.getGameFrame().dispose();
-//                    Constants.getGameFrame().setUndecorated(true);
-//                    Constants.getGameFrame().setVisible(true);
-//                    Constants.getGameFrame().setSize(vMode.getWidth(), vMode.getHeight());
-                    Constants.getGameFrame().setLocationRelativeTo(null);
-                    Constants.getGameFrame().setState(Frame.MAXIMIZED_BOTH);
-                    settings.setResolution(vMode.getWidth(), vMode.getHeight());
-                    settings.setCenterWindow(true);
-//                    settings.setWindowXPosition(3);
-//                    settings.setWindowYPosition(15);
-//                    GLFWVidMode glMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-//                    glfwSetWindowMonitor(((LwjglWindow) context).getWindowHandle(), glfwGetPrimaryMonitor(), 0, 0, glMode.width(), glMode.height(), 60);
-//                    settings.setCenterWindow(false);
-                }
-                case null, default ->
-                        log.error("Некорректное указание режима окна '{}'", Constants.getUserConfig().getFullscreenType());
+                case EXCLUSIVE -> doExclusive(settings, vMode);
+                case MAXIMIZE_WINDOW -> doMaximaze(settings, vMode);
+                case null, default -> log.error("Некорректное указание режима окна '{}'", Constants.getUserConfig().getFullscreenType());
             }
+            Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
         }
 
-        Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-        this.app.restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
-
         // сброс расположения debug full info:
-        this.app.enqueue(() -> getStateManager().getState(DebugInfoState.class).rebuildFullText());
+        this.app.enqueue(() -> {
+            this.app.restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
+            this.app.getRenderer().setMainFrameBufferSrgb(true);
+            this.app.getRenderer().setLinearizeSrgbImages(true);
+            getStateManager().getState(DebugInfoState.class).rebuildFullText();
+        });
+    }
+
+    private void doExclusive(AppSettings settings, DisplayMode vMode) {
+        // frame:
+        FoxVideoMonitorUtil.setFullscreen(Constants.getGameFrame());
+
+        // canvas:
+        settings.setResolution(vMode.getWidth(), vMode.getHeight());
+        settings.setBitsPerPixel(vMode.getBitDepth());
+        settings.setFullscreen(true);
+    }
+
+    private void doMaximaze(AppSettings settings, DisplayMode vMode) {
+        // frame:
+        Constants.getGameFrame().dispose();
+        Constants.getGameFrame().setUndecorated(true);
+        Constants.getGameFrame().setState(Frame.MAXIMIZED_BOTH);
+        Constants.getGameFrame().setSize(vMode.getWidth(), vMode.getHeight());
+        Constants.getGameFrame().setLocationRelativeTo(null);
+        Constants.getGameFrame().setVisible(true);
+
+        // canvas:
+        settings.setResolution(vMode.getWidth(), vMode.getHeight());
+    }
+
+    private void restoreToWindow(AppSettings settings) {
+        // frame:
+        FoxVideoMonitorUtil.setFullscreen(null);
+        Constants.getGameFrame().setState(Frame.NORMAL);
+        Constants.getGameFrame().setLocationRelativeTo(null);
+        Constants.getGameFrame().setPreferredSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight() + 30));
+        Constants.getGameFrame().setSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight() + 30));
+        Constants.getGameFrame().setSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight() + 30);
+        Constants.getGameFrame().setLocationRelativeTo(null);
+
+        if (Constants.getUserConfig().getFullscreenType().equals(FullscreenType.MAXIMIZE_WINDOW)) {
+            Constants.getGameFrame().dispose();
+            Constants.getGameFrame().setUndecorated(false);
+            Constants.getGameFrame().setVisible(true);
+        }
+
+        // canvas:
+        settings.setFullscreen(false);
+        settings.setBitsPerPixel(settings.getDepthBits());
+        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
     }
 
     @Override
@@ -190,8 +211,8 @@ public class MenuHotKeysState extends BaseAppState {
             }
 
             switch (name) {
-                case "ExitAction" -> getStateManager().getState(ExitHandlerState.class).onExit();
-                case "ToggleFullscreen" -> toggleFullscreen(); // зависает нажатое событие в слушателе!
+                case "ExitAction" -> SwingUtilities.invokeLater(() -> Constants.getGameCanvas().requestClose(false));
+                case "ToggleFullscreen" -> SwingUtilities.invokeLater(MenuHotKeysState.this::toggleFullscreen);
                 case "ToggleGameInfo" -> getStateManager().getState(DebugInfoState.class).toggleStats();
                 case "ToggleAmbientLight" -> getStateManager().getState(RootNodeAppState.class).getRootNode()
                         .getWorldLightList().get(0).setEnabled(!getStateManager().getState(RootNodeAppState.class).getRootNode()

@@ -3,9 +3,11 @@ package game.freya.states.substates;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
+import com.jme3.system.lwjgl.LwjglWindow;
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.services.GameControllerService;
+import org.lwjgl.glfw.GLFW;
 
 public class ExitHandlerState extends BaseAppState {
     private final GameControllerService gameControllerService;
@@ -33,10 +35,9 @@ public class ExitHandlerState extends BaseAppState {
                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get();
         if (answer == 0) {
             gameControllerService.exitTheGame(null, 0);
+        } else {
+            GLFW.glfwSetWindowShouldClose(((LwjglWindow) getApplication().getContext()).getWindowHandle(), false);
         }
-//        else {
-//            GLFW.glfwSetWindowShouldClose(((LwjglWindow) getApplication().getContext()).getWindowHandle(), false);
-//        }
     }
 
     @Override
