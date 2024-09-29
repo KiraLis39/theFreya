@@ -59,7 +59,7 @@ public class GameplayHotKeysState extends BaseAppState {
     private AnalogListener anlList;
     private Renderer renderer;
     private Camera cam;
-    private Node gameNode;
+    private final Node gameNode;
     private Geometry mark;
     private AssetManager assetManager;
 
