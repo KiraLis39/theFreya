@@ -89,9 +89,10 @@ public class GameControllerService {
 //        settings.setMinResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
 //        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
 
-        settings.setMinWidth(Constants.getUserConfig().getWindowWidth());
-        settings.setMinHeight(Constants.getUserConfig().getWindowHeight());
-        settings.setWindowSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+//        settings.setMinWidth(Constants.getUserConfig().getWindowWidth());
+//        settings.setMinHeight(Constants.getUserConfig().getWindowHeight());
+//        settings.setWindowSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
 
         settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
         settings.setCenterWindow(true);
@@ -242,8 +243,8 @@ public class GameControllerService {
 //            e.printStackTrace();
 //        }
 
-        if (Constants.getGameWindow() != null) {
-            Constants.getGameWindow().stop();
+        if (Constants.getGameCanvas() != null) {
+            Constants.getGameCanvas().stop();
         }
 
 //        Constants.getMusicPlayer().stop();

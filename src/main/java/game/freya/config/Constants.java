@@ -10,7 +10,7 @@ import fox.images.FoxSpritesCombiner;
 import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
-import game.freya.gui.panes.GameWindowJME;
+import game.freya.gui.panes.JMEApp;
 import game.freya.net.SocketConnection;
 import game.freya.net.server.Server;
 import game.freya.utils.ExceptionUtils;
@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
@@ -150,7 +151,11 @@ public final class Constants {
 
     @Getter
     @Setter
-    private static GameWindowJME gameWindow;
+    private static JMEApp gameCanvas;
+
+    @Getter
+    @Setter
+    private static JFrame gameFrame;
 
     @Getter
     @Setter

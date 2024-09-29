@@ -8,18 +8,15 @@ import com.jme3.asset.AssetManager;
 import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
 import com.jme3.input.FlyByCamera;
-import com.jme3.light.AmbientLight;
 import com.jme3.material.Material;
-import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
-import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
-import game.freya.gui.panes.GameWindowJME;
+import game.freya.gui.panes.JMEApp;
 import game.freya.services.GameControllerService;
 import game.freya.states.substates.menu.MenuBackgState;
 import game.freya.states.substates.menu.MenuHotKeysState;
@@ -32,7 +29,7 @@ import java.util.concurrent.Executors;
 public class MainMenuState extends BaseAppState {
     private ExecutorService executor;
     private SimpleApplication app;
-    private GameWindowJME appRef;
+    private JMEApp appRef;
     private AssetManager assetManager;
     private AppStateManager stateManager;
     private GameControllerService gameControllerService;
@@ -51,12 +48,16 @@ public class MainMenuState extends BaseAppState {
     @Override
     protected void initialize(Application app) {
         this.app = (SimpleApplication) app;
-        this.appRef = (GameWindowJME) this.app;
+        this.appRef = (JMEApp) this.app;
         this.cam = this.app.getCamera();
         this.rootNode = this.app.getRootNode();
         this.flyByCamera = this.app.getFlyByCamera();
         this.assetManager = this.app.getAssetManager();
         this.stateManager = this.app.getStateManager();
+
+        this.app.getRenderer().setMainFrameBufferSrgb(true);
+        this.app.getRenderer().setLinearizeSrgbImages(true);
+
         buildMenu();
     }
 
@@ -74,7 +75,7 @@ public class MainMenuState extends BaseAppState {
         stateManager.attach(backgState);
 
         // подключаем модуль горячих клавиш:
-        hotKeysState = new MenuHotKeysState();
+        hotKeysState = new MenuHotKeysState(menuNode);
         if (stateManager.attach(hotKeysState)) {
             executor.execute(() -> {
                 stateManager.getState(hotKeysState.getClass()).startingAwait();
@@ -100,7 +101,6 @@ public class MainMenuState extends BaseAppState {
         setupMenuCamera(menuNode);
 
         // content:
-        AssetManager assetManager = Constants.getGameWindow().getAssetManager();
         Spatial menu = new Geometry("MenuBox", new Box(Vector3f.ZERO, new Vector3f(1, 1, 1)));
         Material mat_menu = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
         mat_menu.setTexture("ColorMap", assetManager.loadTexture("images/necessary/menu.png"));
@@ -111,7 +111,7 @@ public class MainMenuState extends BaseAppState {
 //        menu.setLodLevel(0);
         menuNode.attachChild(menu);
 
-        setupMenuLights(menuNode);
+//        setupMenuLights(menuNode);
 
         setupMenuAudio(menuNode);
 
@@ -138,15 +138,15 @@ public class MainMenuState extends BaseAppState {
         cam.lookAt(new Vector3f(0.f, 0.f, -1.f), Vector3f.UNIT_Y);
     }
 
-    private void setupMenuLights(Node menuNode) {
-        menuNode.addLight(new AmbientLight() {{
-            setName("Ambient light");
-            setEnabled(true);
-            setColor(ColorRGBA.fromRGBA255(127, 127, 127, 255));
-            setFrustumCheckNeeded(false);
-            setIntersectsFrustum(false);
-        }});
-    }
+//    private void setupMenuLights(Spatial aim) {
+//        aim.addLight(new AmbientLight() {{
+//            setName("Ambient light");
+//            setEnabled(true);
+//            setColor(ColorRGBA.fromRGBA255(255, 255, 255, 255));
+//            setFrustumCheckNeeded(false);
+//            setIntersectsFrustum(false);
+//        }});
+//    }
 
     @Override
     protected void cleanup(Application app) {

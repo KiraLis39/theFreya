@@ -33,7 +33,7 @@ import game.freya.config.UserConfig;
 import game.freya.controls.combo.ComboMove;
 import game.freya.controls.combo.ComboMoveExecution;
 import game.freya.dto.roots.WorldDto;
-import game.freya.gui.panes.GameWindowJME;
+import game.freya.gui.panes.JMEApp;
 import game.freya.services.GameControllerService;
 import game.freya.states.substates.DebugInfoState;
 import game.freya.states.substates.ExitHandlerState;
@@ -54,7 +54,7 @@ public class GameplayHotKeysState extends BaseAppState {
     private UserConfig.Hotkeys hotKeys;
     private InputManager inputManager;
     private SimpleApplication app;
-    private GameWindowJME appRef;
+    private JMEApp appRef;
     private ActionListener actList;
     private AnalogListener anlList;
     private Renderer renderer;
@@ -72,7 +72,7 @@ public class GameplayHotKeysState extends BaseAppState {
     @Override
     public void initialize(Application app) {
         this.app = (SimpleApplication) app;
-        this.appRef = (GameWindowJME) app;
+        this.appRef = (JMEApp) app;
         this.cam = this.app.getCamera();
         this.renderer = this.app.getRenderer();
         this.assetManager = this.app.getAssetManager();

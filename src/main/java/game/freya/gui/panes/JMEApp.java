@@ -5,7 +5,6 @@ import com.jme3.app.LostFocusBehavior;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.StatsAppState;
 import com.jme3.app.state.BaseAppState;
-import com.jme3.input.MouseInput;
 import com.jme3.renderer.RenderManager;
 import com.jme3.system.AppSettings;
 import game.freya.config.Constants;
@@ -20,17 +19,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Setter
 @Getter
-public class GameWindowJME extends SimpleApplication {
+public class JMEApp extends SimpleApplication {
     private volatile boolean isReady;
     private GameControllerService gameControllerService;
 
-    public GameWindowJME(GameControllerService gameControllerService, AppSettings settings) {
+    public JMEApp(GameControllerService gameControllerService, AppSettings settings) {
         this.gameControllerService = gameControllerService;
 
         setSettings(settings);
-        setShowSettings(true); // not works
-//        setDisplayFps(Constants.getGameConfig().isFpsInfoVisible());
-//        setDisplayStatView(Constants.getGameConfig().isStatsInfoVisible());
 
         // игра может быть сетевой, так что сами контролируем когда пауза:
         setPauseOnLostFocus(false);
@@ -38,9 +34,6 @@ public class GameWindowJME extends SimpleApplication {
         // снижаем FPS при потере фокуса окном игры (вплоть до 20 fps):
         // (хотя всё это уже кастомизировано в this.loseFocus()\this.gainFocus()...)
         setLostFocusBehavior(LostFocusBehavior.ThrottleOnLostFocus);
-
-        start(true);
-//        Constants.getSoundPlayer().play("landing");
     }
 
     /* Initialize the game scene here */
@@ -128,9 +121,5 @@ public class GameWindowJME extends SimpleApplication {
 
     public boolean isPaused() {
         return paused;
-    }
-
-    public MouseInput getMouseInput() {
-        return mouseInput;
     }
 }

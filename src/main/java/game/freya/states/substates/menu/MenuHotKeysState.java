@@ -1,9 +1,11 @@
 package game.freya.states.substates.menu;
 
 import com.jme3.app.Application;
+import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.app.state.RootNodeAppState;
 import com.jme3.audio.AudioNode;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.InputManager;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
@@ -11,11 +13,16 @@ import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.math.Ray;
+import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
-import game.freya.gui.panes.GameWindowJME;
+import game.freya.gui.panes.JMEApp;
 import game.freya.states.substates.DebugInfoState;
 import game.freya.states.substates.ExitHandlerState;
 import lombok.extern.slf4j.Slf4j;
@@ -31,18 +38,25 @@ public class MenuHotKeysState extends BaseAppState {
     private final List<String> processes = new ArrayList<>();
     private UserConfig.Hotkeys hotKeys;
     private InputManager inputManager;
-    private GameWindowJME appRef;
+    private JMEApp appRef;
     private ActionListener actList;
     private AnalogListener anlList;
+    private SimpleApplication app;
+    private Camera cam;
+    private Node menuNode;
 
-    public MenuHotKeysState() {
+    public MenuHotKeysState(Node menuNode) {
         super(MenuHotKeysState.class.getSimpleName());
+        this.menuNode = menuNode;
     }
 
     @Override
     public void initialize(Application app) {
-        this.appRef = (GameWindowJME) app;
-        this.inputManager = getApplication().getInputManager();
+        this.app = (SimpleApplication) app;
+        this.appRef = (JMEApp) this.app;
+        this.inputManager = this.app.getInputManager();
+        this.cam = this.app.getCamera();
+
         actList = new MenuActionListener();
         anlList = new MenuAnalogListener();
     }
@@ -109,26 +123,40 @@ public class MenuHotKeysState extends BaseAppState {
         }
 
         if (Constants.getUserConfig().isFullscreen()) {
-            settings.setWindowSize(settings.getMinWidth(), settings.getMinHeight());
-            settings.setFullscreen(false);
+            settings.setResolution(settings.getMinWidth(), settings.getMinHeight());
+            //settings.setFullscreen(false);
             settings.setCenterWindow(true);
+            FoxVideoMonitorUtil.setFullscreen(null);
+//            Constants.getGameFrame().setUndecorated(false);
+            Constants.getGameFrame().setSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight() + 30));
+//            Constants.getGameFrame().pack();
+            Constants.getGameFrame().setState(Frame.NORMAL);
+            Constants.getGameFrame().setLocationRelativeTo(null);
         } else if (FoxVideoMonitorUtil.isFullScreenSupported()) {
             switch (Constants.getUserConfig().getFullscreenType()) {
                 case EXCLUSIVE -> {
                     settings.setWindowSize(vMode.getWidth(), vMode.getHeight());
                     settings.setBitsPerPixel(vMode.getBitDepth());
                     settings.setFullscreen(true);
+                    FoxVideoMonitorUtil.setFullscreen(Constants.getGameFrame());
                 }
                 case MAXIMIZE_WINDOW -> {
-                    // todo
 //                    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 //                    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-                    settings.setWindowSize(vMode.getWidth(), vMode.getHeight());
+
+//                    Constants.getGameFrame().dispose();
+//                    Constants.getGameFrame().setUndecorated(true);
+//                    Constants.getGameFrame().setVisible(true);
+//                    Constants.getGameFrame().setSize(vMode.getWidth(), vMode.getHeight());
+                    Constants.getGameFrame().setLocationRelativeTo(null);
+                    Constants.getGameFrame().setState(Frame.MAXIMIZED_BOTH);
+                    settings.setResolution(vMode.getWidth(), vMode.getHeight());
+                    settings.setCenterWindow(true);
 //                    settings.setWindowXPosition(3);
-                    settings.setWindowYPosition(15);
+//                    settings.setWindowYPosition(15);
 //                    GLFWVidMode glMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 //                    glfwSetWindowMonitor(((LwjglWindow) context).getWindowHandle(), glfwGetPrimaryMonitor(), 0, 0, glMode.width(), glMode.height(), 60);
-                    settings.setCenterWindow(false);
+//                    settings.setCenterWindow(false);
                 }
                 case null, default ->
                         log.error("Некорректное указание режима окна '{}'", Constants.getUserConfig().getFullscreenType());
@@ -136,10 +164,10 @@ public class MenuHotKeysState extends BaseAppState {
         }
 
         Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-        getApplication().restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
+        this.app.restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
 
         // сброс расположения debug full info:
-        getApplication().enqueue(() -> getStateManager().getState(DebugInfoState.class).rebuildFullText());
+        this.app.enqueue(() -> getStateManager().getState(DebugInfoState.class).rebuildFullText());
     }
 
     @Override
@@ -194,7 +222,41 @@ public class MenuHotKeysState extends BaseAppState {
                 case "MoveLeft" -> log.info("Process [MoveLeftTest]: %.3f".formatted(value));
                 case "MoveBack" -> log.info("Process [MoveBackTest]: %.3f".formatted(value));
                 case "MoveRight" -> log.info("Process [MoveRightTest]: %.3f".formatted(value));
-                case "Click" -> log.info("Process [LMBTest]: %.3f".formatted(value));
+                case "Click" -> {
+                    log.info("\nProcess [LMBTest]: %.3f".formatted(value));
+
+                    // Reset results list.
+                    CollisionResults results = new CollisionResults();
+                    // Convert screen click to 3d position
+                    Vector3f click3d = cam.getWorldCoordinates(inputManager.getCursorPosition(), 0f).clone();
+                    Vector3f dir = cam.getWorldCoordinates(inputManager.getCursorPosition(), 1f)
+                            .subtractLocal(click3d).normalizeLocal();
+                    // Aim the ray from the clicked spot forwards.
+                    Ray ray = new Ray(click3d, dir);
+                    // Collect intersections between ray and all nodes in results list.
+                    menuNode.collideWith(ray, results);
+                    // (Print the results so we see what is going on:)
+                    for (int i = 0; i < results.size(); i++) {
+                        // (For each "hit", we know distance, impact point, geometry.)
+                        float dist = results.getCollision(i).getDistance();
+                        Vector3f pt = results.getCollision(i).getContactPoint();
+                        String target = results.getCollision(i).getGeometry().getName();
+                        log.info("Selection #{}: {} at {}, {} WU away.", i, target, pt, dist);
+                    }
+                    // Use the results -- we rotate the selected geometry.
+                    if (results.size() > 0) {
+                        // The closest result is the target that the player picked:
+                        Geometry target = results.getClosestCollision().getGeometry();
+                        // Here comes the action:
+                        if (target.getName().equals("Red Box")) {
+                            target.rotate(0, -tpf, 0);
+                        } else if (target.getName().equals("Blue Box")) {
+                            target.rotate(0, tpf, 0);
+                        } else {
+                            target.rotate(0, tpf * 2, 0);
+                        }
+                    }
+                }
                 case null, default -> log.warn("Не релизован процесс [{}] ({})", name, value * tpf);
             }
         }

@@ -23,7 +23,7 @@ import com.jme3.system.AppSettings;
 import game.freya.config.Constants;
 import game.freya.enums.gui.CrosshairType;
 import game.freya.enums.gui.NodeNames;
-import game.freya.gui.panes.GameWindowJME;
+import game.freya.gui.panes.JMEApp;
 import game.freya.services.GameControllerService;
 import game.freya.states.substates.gameplay.GameplayHotKeysState;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class GamePlayState extends BaseAppState {
     private CrosshairType crosshairType = CrosshairType.SIMPLE_CROSS;
     private Node gameNode, rootNode, guiNode;
     private SimpleApplication app;
-    private GameWindowJME appRef;
+    private JMEApp appRef;
     private AppStateManager stateManager;
     private Listener listener;
     private AssetManager assetManager;
@@ -58,7 +58,7 @@ public class GamePlayState extends BaseAppState {
     @Override
     protected void initialize(Application app) {
         this.app = (SimpleApplication) app;
-        this.appRef = (GameWindowJME) this.app;
+        this.appRef = (JMEApp) this.app;
         this.cam = this.app.getCamera();
         this.flyCam = this.app.getFlyByCamera();
         this.rootNode = this.app.getRootNode();
@@ -66,6 +66,10 @@ public class GamePlayState extends BaseAppState {
         this.stateManager = this.app.getStateManager();
         this.assetManager = this.app.getAssetManager();
         this.listener = this.app.getListener();
+
+        this.app.getRenderer().setMainFrameBufferSrgb(true);
+        this.app.getRenderer().setLinearizeSrgbImages(true);
+
         buildGame();
     }
 
