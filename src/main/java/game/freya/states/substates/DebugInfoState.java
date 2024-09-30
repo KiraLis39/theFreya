@@ -345,8 +345,13 @@ public class DebugInfoState extends BaseAppState {
         ((BitmapText) fullView.getChild("anizotropic")).setText("MultiSamplingLevel: %s".formatted(context.getSettings().getSamples()));
         ((BitmapText) fullView.getChild("anizotropicMax"))
                 .setText("Anisotropy allowed: %s".formatted(renderer.getLimits().get(Limits.TextureAnisotropy)));
-//        ((BitmapText) fullView.getChild("worldLights")).setText("Lights: %s / %s"
-//                .formatted(currentModeNode.getLocalLightList().size(), currentModeNode.getWorldLightList().size()));
+
+        Spatial lightsNode = app.getRootNode().getChild(NodeNames.MENU_SCENE_NODE.name());
+        if (lightsNode == null) {
+            lightsNode = app.getRootNode().getChild(NodeNames.GAME_SCENE_NODE.name());
+        }
+        ((BitmapText) fullView.getChild("worldLights")).setText("Lights: %s / %s"
+                .formatted(lightsNode.getLocalLightList().size(), lightsNode.getWorldLightList().size()));
     }
 
     @Override

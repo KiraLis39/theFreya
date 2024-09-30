@@ -115,7 +115,7 @@ public class MainMenuState extends BaseAppState {
         menuNode.attachChild(new GrayMenuCorner(assetManager));
 
         setupMenuAudio(menuNode);
-        setupMenuLights(menuNode);
+//        setupMenuLights(menuNode);
         setupGui();
 
         rootNode.attachChild(menuNode);
