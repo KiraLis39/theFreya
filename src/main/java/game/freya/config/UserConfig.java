@@ -88,7 +88,7 @@ public class UserConfig implements Serializable {
     private int fpsLimit = 60; // fps limit
 
     @Builder.Default
-    private int multiSamplingLevel = 0;
+    private int multiSamplingLevel = 4;
 
     @Builder.Default
     private boolean isMultiBufferEnabled = true;

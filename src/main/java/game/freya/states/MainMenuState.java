@@ -128,16 +128,16 @@ public class MainMenuState extends BaseAppState {
         Vector2f[] vertices = new Vector2f[4];
         // Vector2f[] texCoord = new Vector2f[4];
 
-        vertices[0] = new Vector2f(0, -0.5f);
+        vertices[0] = new Vector2f(-1, -0.57f);
         // texCoord[0] = new Vector2f(0,0);
 
-        vertices[1] = new Vector2f(0.5f, -0.5f);
+        vertices[1] = new Vector2f(-0.59f, -0.57f);
         // texCoord[1] = new Vector2f(0.5f,0);
 
-        vertices[2] = new Vector2f(0, 0.5f);
+        vertices[2] = new Vector2f(-1, 0.57f);
         // texCoord[2] = new Vector2f(0,0.5f);
 
-        vertices[3] = new Vector2f(0.5f, 0.5f);
+        vertices[3] = new Vector2f(-0.5f, 0.57f);
         // texCoord[3] = new Vector2f(0.5f,0.5f);
 
         int[] indexes = {2, 0, 1, 1, 3, 2};
@@ -153,7 +153,7 @@ public class MainMenuState extends BaseAppState {
 
         Spatial grayPane = new Geometry("GrayMenuPanel", grayCorner);
         Material mat_gp = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
-        mat_gp.setColor("Color", ColorRGBA.fromRGBA255(63, 63, 63, 223));
+        mat_gp.setColor("Color", ColorRGBA.fromRGBA255(0, 0, 0, 223));
         mat_gp.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
         grayPane.setQueueBucket(RenderQueue.Bucket.Transparent);
         grayPane.setMaterial(mat_gp);
