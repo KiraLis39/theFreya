@@ -12,23 +12,20 @@ import com.jme3.light.AmbientLight;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
-import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
-import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.VertexBuffer;
 import com.jme3.scene.shape.Quad;
-import com.jme3.util.BufferUtils;
 import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
 import game.freya.gui.panes.JMEApp;
 import game.freya.services.GameControllerService;
 import game.freya.states.substates.menu.MenuBackgState;
 import game.freya.states.substates.menu.MenuHotKeysState;
+import game.freya.states.substates.menu.meshes.GrayCorner;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -125,33 +122,7 @@ public class MainMenuState extends BaseAppState {
         menu.setCullHint(Spatial.CullHint.Dynamic);
         menuNode.attachChild(menu);
 
-        Vector2f[] vertices = new Vector2f[4];
-        // Vector2f[] texCoord = new Vector2f[4];
-
-        vertices[0] = new Vector2f(-1, -0.57f);
-        // texCoord[0] = new Vector2f(0,0);
-
-        vertices[1] = new Vector2f(-0.59f, -0.57f);
-        // texCoord[1] = new Vector2f(0.5f,0);
-
-        vertices[2] = new Vector2f(-1, 0.57f);
-        // texCoord[2] = new Vector2f(0,0.5f);
-
-        vertices[3] = new Vector2f(-0.5f, 0.57f);
-        // texCoord[3] = new Vector2f(0.5f,0.5f);
-
-        int[] indexes = {2, 0, 1, 1, 3, 2};
-        // Этот синтаксис означает:
-        //  Индексы 0,1,2,3 обозначают четыре вершины, которые вы указали для четырехугольника в vertices[].
-        //  Треугольник 2,0,1 начинается слева вверху, продолжается слева внизу и заканчивается справа внизу.
-        //  Треугольник 1,3,2 начинается внизу справа, продолжается вверху справа и заканчивается вверху слева.
-        Mesh grayCorner = new Mesh(); // menuWidth / 4, menuHeight
-        grayCorner.setBuffer(VertexBuffer.Type.Position, 2, BufferUtils.createFloatBuffer(vertices));
-//        grayCorner.setBuffer(VertexBuffer.Type.TexCoord, 2, BufferUtils.createFloatBuffer(texCoord));
-        grayCorner.setBuffer(VertexBuffer.Type.Index, 3, BufferUtils.createIntBuffer(indexes));
-        grayCorner.updateBound();
-
-        Spatial grayPane = new Geometry("GrayMenuPanel", grayCorner);
+        Spatial grayPane = new Geometry("GrayMenuPanel", new GrayCorner());
         Material mat_gp = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
         mat_gp.setColor("Color", ColorRGBA.fromRGBA255(0, 0, 0, 223));
         mat_gp.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);

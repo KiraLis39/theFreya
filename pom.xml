@@ -408,9 +408,13 @@
 
     <repositories>
         <repository>
+            <id>central-jme</id>
+            <name>jmonkeyengine</name>
+            <url>https://java-game-lib.svn.sourceforge.net/svnroot/java-game-lib</url>
+        </repository>
+        <repository>
             <id>central</id>
             <name>Maven Repo</name>
-            <layout>default</layout>
             <url>https://repo1.maven.org/maven2</url>
             <snapshots>
                 <enabled>false</enabled>
