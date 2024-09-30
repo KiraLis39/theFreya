@@ -63,11 +63,16 @@ public class UserConfigService {
         try {
             UserConfig uConf = UserConfig.builder().build();
             if (uConf.getWindowWidth() == 0 || uConf.getWindowHeight() == 0) {
-                Dimension wb = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
-                double width = wb.getWidth() * 0.75d;
-                double delta = wb.getWidth() / wb.getHeight();
+                Dimension dmode = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
+                double aspect = dmode.getWidth() / dmode.getHeight();
+
+                // запоминаем аспект разрешения монитора для дальнейших преобразований окон:
+                Constants.setCurrentScreenAspect(aspect);
+
+                double width = dmode.getWidth() * 0.75d;
+                double height = dmode.getHeight() * 0.75d;
                 uConf.setWindowWidth((int) width);
-                uConf.setWindowHeight((int) (width / delta));
+                uConf.setWindowHeight((int) height);
             }
 
             Path saveFile = Path.of(Constants.getUserSaveFile());

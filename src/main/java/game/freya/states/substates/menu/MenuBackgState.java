@@ -77,6 +77,7 @@ public class MenuBackgState extends BaseAppState {
     protected void cleanup(Application app) {
         if (bkgMusic != null) {
             bkgMusic.stop();
+            bkgMusic.getAudioData().dispose();
         }
     }
 }

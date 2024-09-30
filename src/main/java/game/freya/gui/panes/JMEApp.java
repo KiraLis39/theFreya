@@ -67,11 +67,14 @@ public class JMEApp extends SimpleApplication {
     }
 
     public void setScene(BaseAppState state) {
-        // вывод в debug info имени текущего state:
-        stateManager.getState(DebugInfoState.class).currentStateId(state.getId());
-
         log.info("Loading the scene '{}'...", state.getId());
         stateManager.attach(state);
+
+        enqueue(() -> {
+            // вывод в debug info имени текущего state:
+            stateManager.getState(DebugInfoState.class).currentStateId(state.getId());
+            stateManager.getState(DebugInfoState.class).rebuildFullText();
+        });
     }
 
     public void setAltControlMode(boolean altMode) {
@@ -89,6 +92,7 @@ public class JMEApp extends SimpleApplication {
 
     @Override
     public void gainFocus() {
+        log.info("Focus gained...");
         context.setAutoFlushFrames(true);
         if (inputManager != null) {
             inputManager.reset();
@@ -102,13 +106,15 @@ public class JMEApp extends SimpleApplication {
 
     @Override
     public void loseFocus() {
-        context.setAutoFlushFrames(false); // снижаем fps
+        log.info("Focus lost...");
+        if (!Constants.getUserConfig().isFullscreen()) {
+            context.setAutoFlushFrames(false); // снижаем fps (if fullscreen broke tabs)
+        }
 
         if (Controls.isGameActive() && gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
             return;
         }
 
-        log.debug("Hide or minimized");
         if (!paused && Constants.getUserConfig().isPauseOnHidden()) {
             paused = true;
             log.debug("Game paused...");

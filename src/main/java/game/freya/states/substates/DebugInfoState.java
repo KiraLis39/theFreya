@@ -27,6 +27,7 @@ import com.jme3.util.BufferUtils;
 import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
 import game.freya.enums.gui.UiDebugLevel;
+import game.freya.states.MainMenuState;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -103,7 +104,7 @@ public class DebugInfoState extends BaseAppState {
         this.fullView = new Node("fullView");
         this.fullView.setCullHint(currentDebugLevel.equals(UiDebugLevel.FULL) ? Spatial.CullHint.Never : Spatial.CullHint.Always);
 
-        this.darkenMat = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        this.darkenMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         this.darkenMat.setColor("Color", new ColorRGBA(0, 0, 0, 0.25f));
         this.darkenMat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
 
@@ -181,7 +182,7 @@ public class DebugInfoState extends BaseAppState {
                 setText("Mode: ".concat(currentStateName != null ? currentStateName : "na"));
                 setSize(guiFont.getCharSet().getRenderedSize());
                 setCullHint(Spatial.CullHint.Inherit);
-                setLocalTranslation(24, settings.getWindowHeight() - getLineHeight() - 3, -1);
+                setLocalTranslation(24, cam.getHeight() - getLineHeight() - 3, -1);
             }
         };
         infoRootNode.attachChild(modTitle);
@@ -194,9 +195,13 @@ public class DebugInfoState extends BaseAppState {
         float darkenFullHeight = lineCount * fpsText.getLineHeight();
         darkenFull = new Geometry("StatsDarken", new Quad(270f, darkenFullHeight * 1.2f));
         darkenFull.setMaterial(darkenMat);
-        darkenFull.setLocalTranslation(0f, settings.getHeight() - darkenFullHeight * 1.2f, -0.5f);
+        darkenFull.setLocalTranslation(0f, cam.getHeight() - darkenFullHeight * 1.2f, -0.5f);
         darkenFull.setCullHint(currentDebugLevel.ordinal() >= UiDebugLevel.FULL.ordinal() ? Spatial.CullHint.Never : Spatial.CullHint.Always);
         infoRootNode.attachChild(darkenFull);
+
+        if (getStateManager().hasState(getStateManager().getState(MainMenuState.class, false))) {
+            getStateManager().getState(MainMenuState.class).setupGui();
+        }
     }
 
     private void attachToNode(List<String> names) {
@@ -206,7 +211,7 @@ public class DebugInfoState extends BaseAppState {
                     setName(n);
                     setSize(guiFont.getCharSet().getRenderedSize());
                     setCullHint(Spatial.CullHint.Inherit);
-                    setLocalTranslation(30, settings.getWindowHeight() - getLineHeight() * lineCount - 15, -1);
+                    setLocalTranslation(30, cam.getHeight() - getLineHeight() * lineCount - 15, -1);
                 }
             });
             lineCount++;

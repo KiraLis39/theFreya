@@ -15,6 +15,7 @@ import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lwjgl.openal.AL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -92,10 +93,10 @@ public class GameControllerService {
 //        settings.setMinWidth(Constants.getUserConfig().getWindowWidth());
 //        settings.setMinHeight(Constants.getUserConfig().getWindowHeight());
 //        settings.setWindowSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
-        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+//        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
 
-        settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
-        settings.setCenterWindow(true);
+//        settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
+//        settings.setCenterWindow(true);
 //        settings.setWindowXPosition();
 //        settings.setWindowYPosition();
 
@@ -244,6 +245,10 @@ public class GameControllerService {
 //        }
 
         if (Constants.getGameCanvas() != null) {
+            try {
+                AL.destroy();
+            } catch (Exception _) {
+            }
             Constants.getGameCanvas().stop();
         }
 

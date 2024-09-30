@@ -67,11 +67,9 @@ public class UserConfig implements Serializable {
     @Builder.Default
     private boolean isPauseOnHidden = true;
 
-    @Builder.Default
-    private int windowWidth = 1440;
+    private int windowWidth;
 
-    @Builder.Default
-    private int windowHeight = 900;
+    private int windowHeight;
 
     @Builder.Default
     private float fov = 45.f; // default 45

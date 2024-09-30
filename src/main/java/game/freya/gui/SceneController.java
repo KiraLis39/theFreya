@@ -1,6 +1,7 @@
 package game.freya.gui;
 
 import com.jme3.system.AppSettings;
+import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.enums.other.ScreenType;
 import game.freya.gui.panes.JMEApp;
@@ -59,6 +60,12 @@ public class SceneController {
                     Thread.sleep(250);
                 } catch (InterruptedException _) {
                 }
+            }
+
+            if (Constants.getCurrentScreenAspect() == 0) {
+                // запоминаем аспект разрешения монитора для дальнейших преобразований окон:
+                Constants.setCurrentScreenAspect(FoxVideoMonitorUtil
+                        .getConfiguration().getBounds().getWidth() / FoxVideoMonitorUtil.getConfiguration().getBounds().getHeight());
             }
 
             log.info("Игровое окно запущено в потоке {}", Thread.currentThread().getName());

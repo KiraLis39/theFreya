@@ -31,7 +31,8 @@ public class ExitHandlerState extends BaseAppState {
     }
 
     public void onExit() {
-        int answer = (int) new FOptionPane().buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
+        // todo: когда в EXCLUSIVE - надо вместо модального диалога отображать другую панель внутри окна игры.
+        int answer = (int) new FOptionPane(Constants.getGameFrame()).buildFOptionPane("Подтвердить:", "Выйти на рабочий стол?",
                 FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get();
         if (answer == 0) {
             gameControllerService.exitTheGame(null, 0);

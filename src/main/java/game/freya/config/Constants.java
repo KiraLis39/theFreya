@@ -49,6 +49,10 @@ public final class Constants {
 
     public static final double ONE_TURN_PI = Math.PI / 4d;
 
+    @Getter
+    @Setter
+    private static double currentScreenAspect;
+
 
     // libraries objects:
     public static final FoxFontBuilder FFB = new FoxFontBuilder();

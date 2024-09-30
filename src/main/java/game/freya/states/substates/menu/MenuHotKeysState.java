@@ -25,6 +25,7 @@ import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.enums.gui.FullscreenType;
 import game.freya.gui.panes.JMEApp;
+import game.freya.states.MainMenuState;
 import game.freya.states.substates.DebugInfoState;
 import lombok.extern.slf4j.Slf4j;
 
@@ -105,8 +106,11 @@ public class MenuHotKeysState extends BaseAppState {
         inputManager.addMapping("MATTest", new MouseAxisTrigger(MouseInput.AXIS_X, true));
         processes.add("MATTest");
 
-        inputManager.addMapping("MWTTest", new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
-        actions.add("MWTTest");
+        inputManager.addMapping("MWTTestUp", new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
+        actions.add("MWTTestUp");
+
+        inputManager.addMapping("MWTTestDwn", new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
+        actions.add("MWTTestDwn");
 
         // final:
         inputManager.addListener(actList, actions.toArray(new String[0]));
@@ -116,6 +120,7 @@ public class MenuHotKeysState extends BaseAppState {
     private void toggleFullscreen() {
         AppSettings settings = getApplication().getContext().getSettings();
         DisplayMode vMode = FoxVideoMonitorUtil.getDisplayMode();
+        Dimension dDim = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
 
         if (Constants.getUserConfig().isUseVSync()) {
             settings.setFrequency(vMode.getRefreshRate()); // use VSync
@@ -130,9 +135,10 @@ public class MenuHotKeysState extends BaseAppState {
             Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
         } else if (FoxVideoMonitorUtil.isFullScreenSupported()) {
             switch (Constants.getUserConfig().getFullscreenType()) {
-                case EXCLUSIVE -> doExclusive(settings, vMode);
-                case MAXIMIZE_WINDOW -> doMaximaze(settings, vMode);
-                case null, default -> log.error("Некорректное указание режима окна '{}'", Constants.getUserConfig().getFullscreenType());
+                case EXCLUSIVE -> doExclusive(settings, vMode, dDim);
+                case MAXIMIZE_WINDOW -> doMaximize(settings, vMode, dDim);
+                case null, default ->
+                        log.error("Некорректное указание режима окна '{}'", Constants.getUserConfig().getFullscreenType());
             }
             Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
         }
@@ -142,41 +148,47 @@ public class MenuHotKeysState extends BaseAppState {
             this.app.restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
             this.app.getRenderer().setMainFrameBufferSrgb(true);
             this.app.getRenderer().setLinearizeSrgbImages(true);
+            cam.setFrustumPerspective(stateManager.getState(MainMenuState.class).getFov(), (float) Constants.getCurrentScreenAspect(), 0.25f, 1.5f);
             getStateManager().getState(DebugInfoState.class).rebuildFullText();
         });
     }
 
-    private void doExclusive(AppSettings settings, DisplayMode vMode) {
+    private void doExclusive(AppSettings settings, DisplayMode vMode, Dimension dDim) {
+        log.info("Do exclusive window fullscreen...");
         // frame:
         FoxVideoMonitorUtil.setFullscreen(Constants.getGameFrame());
 
         // canvas:
-        settings.setResolution(vMode.getWidth(), vMode.getHeight());
+        settings.setResolution(dDim.width, dDim.height);
         settings.setBitsPerPixel(vMode.getBitDepth());
         settings.setFullscreen(true);
     }
 
-    private void doMaximaze(AppSettings settings, DisplayMode vMode) {
+    private void doMaximize(AppSettings settings, DisplayMode vMode, Dimension dDim) {
+        log.info("Do pseudo maximize window fullscreen...");
         // frame:
         Constants.getGameFrame().dispose();
         Constants.getGameFrame().setUndecorated(true);
+        // +1 нужен, иначе будет переходить в блокирующий полный режим:
+        Constants.getGameFrame().setSize(dDim.width + 1, dDim.height + 1);
         Constants.getGameFrame().setState(Frame.MAXIMIZED_BOTH);
-        Constants.getGameFrame().setSize(vMode.getWidth(), vMode.getHeight());
         Constants.getGameFrame().setLocationRelativeTo(null);
         Constants.getGameFrame().setVisible(true);
 
         // canvas:
         settings.setResolution(vMode.getWidth(), vMode.getHeight());
+        settings.setFullscreen(true);
     }
 
     private void restoreToWindow(AppSettings settings) {
+        log.info("Restore from fullscreen mode...");
         // frame:
         FoxVideoMonitorUtil.setFullscreen(null);
         Constants.getGameFrame().setState(Frame.NORMAL);
         Constants.getGameFrame().setLocationRelativeTo(null);
-        Constants.getGameFrame().setPreferredSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight() + 30));
-        Constants.getGameFrame().setSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight() + 30));
-        Constants.getGameFrame().setSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight() + 30);
+        Constants.getGameFrame().setPreferredSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));
+        Constants.getGameFrame().setSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));
+        Constants.getGameFrame().setSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
         Constants.getGameFrame().setLocationRelativeTo(null);
 
         if (Constants.getUserConfig().getFullscreenType().equals(FullscreenType.MAXIMIZE_WINDOW)) {
@@ -217,6 +229,16 @@ public class MenuHotKeysState extends BaseAppState {
                 case "ToggleAmbientLight" -> getStateManager().getState(RootNodeAppState.class).getRootNode()
                         .getWorldLightList().get(0).setEnabled(!getStateManager().getState(RootNodeAppState.class).getRootNode()
                                 .getWorldLightList().get(0).isEnabled());
+                case "MWTTestUp" -> {
+                    stateManager.getState(MainMenuState.class).setFov(stateManager.getState(MainMenuState.class).getFov() + 0.25f);
+                    cam.setFrustumPerspective(stateManager.getState(MainMenuState.class).getFov(), (float) Constants.getCurrentScreenAspect(), 0.25f, 1.5f);
+                    log.info("FOV: {}", stateManager.getState(MainMenuState.class).getFov());
+                }
+                case "MWTTestDwn" -> {
+                    stateManager.getState(MainMenuState.class).setFov(stateManager.getState(MainMenuState.class).getFov() - 0.25f);
+                    cam.setFrustumPerspective(stateManager.getState(MainMenuState.class).getFov(), (float) Constants.getCurrentScreenAspect(), 0.25f, 1.5f);
+                    log.info("FOV: {}", stateManager.getState(MainMenuState.class).getFov());
+                }
                 case "Click" -> {
                     AudioNode shot = (AudioNode) appRef.getRootNode().getChild("gun");
                     shot.setTimeOffset(shot.getAudioData().getDuration() / 2);
@@ -237,14 +259,13 @@ public class MenuHotKeysState extends BaseAppState {
             }
 
             switch (name) {
-                case "MATTest" -> log.info("Process [MouseMoveLeftTest]: %.3f".formatted(value));
-                case "MWTTest" -> log.info("Process [MouseWheelDownTest]: %.3f".formatted(value));
-                case "MoveForward" -> log.info("Process [MoveForwardTest]: %.3f".formatted(value));
-                case "MoveLeft" -> log.info("Process [MoveLeftTest]: %.3f".formatted(value));
-                case "MoveBack" -> log.info("Process [MoveBackTest]: %.3f".formatted(value));
-                case "MoveRight" -> log.info("Process [MoveRightTest]: %.3f".formatted(value));
+                case "MATTest" -> log.debug("Process [MouseMoveLeftTest]: %.3f".formatted(value));
+                case "MoveForward" -> log.debug("Process [MoveForwardTest]: %.3f".formatted(value));
+                case "MoveLeft" -> log.debug("Process [MoveLeftTest]: %.3f".formatted(value));
+                case "MoveBack" -> log.debug("Process [MoveBackTest]: %.3f".formatted(value));
+                case "MoveRight" -> log.debug("Process [MoveRightTest]: %.3f".formatted(value));
                 case "Click" -> {
-                    log.info("\nProcess [LMBTest]: %.3f".formatted(value));
+                    log.debug("\nProcess [LMBTest]: %.3f".formatted(value));
 
                     // Reset results list.
                     CollisionResults results = new CollisionResults();
