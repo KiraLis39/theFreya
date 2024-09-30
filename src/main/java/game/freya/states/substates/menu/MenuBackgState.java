@@ -59,6 +59,7 @@ public class MenuBackgState extends BaseAppState {
     protected void setBackg(@NotNull String localResourceUrl, boolean isPositional, boolean isDirectional, boolean isLooping, float volume) {
         if (bkgMusic != null) {
             bkgMusic.stop();
+            bkgMusic.getAudioData().dispose();
         }
         createAudioNode(localResourceUrl, isPositional, isDirectional, isLooping, volume).play();
     }

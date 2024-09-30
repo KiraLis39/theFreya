@@ -46,7 +46,7 @@ public class MenuHotKeysState extends BaseAppState {
     private AnalogListener anlList;
     private SimpleApplication app;
     private Camera cam;
-    private Node menuNode;
+    private final Node menuNode;
     private AppStateManager stateManager;
 
     public MenuHotKeysState(Node menuNode) {
