@@ -107,9 +107,7 @@ public class JMEApp extends SimpleApplication {
     @Override
     public void loseFocus() {
         log.info("Focus lost...");
-        if (!Constants.getUserConfig().isFullscreen()) {
-            context.setAutoFlushFrames(false); // снижаем fps (if fullscreen broke tabs)
-        }
+        context.setAutoFlushFrames(false); // снижаем fps
 
         if (Controls.isGameActive() && gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
             return;
