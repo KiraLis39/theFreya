@@ -142,15 +142,6 @@ public class MenuHotKeysState extends BaseAppState {
             }
             Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
         }
-
-        // сброс расположения debug full info:
-        this.app.enqueue(() -> {
-            this.app.restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
-            this.app.getRenderer().setMainFrameBufferSrgb(true);
-            this.app.getRenderer().setLinearizeSrgbImages(true);
-            cam.setFrustumPerspective(stateManager.getState(MainMenuState.class).getFov(), (float) Constants.getCurrentScreenAspect(), 0.25f, 1.5f);
-            getStateManager().getState(DebugInfoState.class).rebuildFullText();
-        });
     }
 
     private void doExclusive(AppSettings settings, DisplayMode vMode, Dimension dDim) {

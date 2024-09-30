@@ -37,7 +37,10 @@ public class ExitHandlerState extends BaseAppState {
         if (answer == 0) {
             gameControllerService.exitTheGame(null, 0);
         } else {
-            GLFW.glfwSetWindowShouldClose(((LwjglWindow) getApplication().getContext()).getWindowHandle(), false);
+            try {
+                GLFW.glfwSetWindowShouldClose(((LwjglWindow) getApplication().getContext()).getWindowHandle(), false);
+            } catch (Exception _) {
+            }
         }
     }
 

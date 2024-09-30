@@ -12,6 +12,11 @@
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame\FreyaTheGame3D\lib\" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="central-jme" />
+      <option name="name" value="jmonkeyengine" />
+      <option name="url" value="https://repo1.maven.org/maven2/org/jmonkeyengine/lwjgl-platform/2.9.5/" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="local_repo" />
       <option name="name" value="Local_repository" />
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame3D\lib\" />
@@ -22,6 +27,11 @@
       <option name="url" value="https://jitpack.io" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="central-jme" />
+      <option name="name" value="jmonkeyengine" />
+      <option name="url" value="https://repo1.maven.org/maven2/org/jmonkeyengine/lwjgl-platform" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="local_repo" />
       <option name="name" value="Local_repository" />
       <option name="url" value="file:\\\\H:\JavaProj\Games\FreyaTheGame\FreyaTheGame2D\lib\" />
@@ -30,6 +40,16 @@
       <option name="id" value="localRepo" />
       <option name="name" value="Local repository" />
       <option name="url" value="file://H:\JavaProj\Games\FreyaTheGame/lib" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central-jme" />
+      <option name="name" value="jmonkeyengine" />
+      <option name="url" value="https://repo1.maven.org/maven2/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central-jme" />
+      <option name="name" value="jmonkeyengine" />
+      <option name="url" value="https://repo1.maven.org/maven2/org/jmonkeyengine" />
     </remote-repository>
     <remote-repository>
       <option name="id" value="local_lib_store" />
@@ -85,6 +105,16 @@
       <option name="id" value="localRepo" />
       <option name="name" value="Local repository" />
       <option name="url" value="file:H:\JavaProj\Games\FreyaTheGame/lib/FoxLib39/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central-jme" />
+      <option name="name" value="jmonkeyengine" />
+      <option name="url" value="https://repo1.maven.org/maven2/jmonkeyengine" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central-jme" />
+      <option name="name" value="jmonkeyengine" />
+      <option name="url" value="https://java-game-lib.svn.sourceforge.net/svnroot/java-game-lib" />
     </remote-repository>
     <remote-repository>
       <option name="id" value="central" />

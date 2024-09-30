@@ -10,6 +10,7 @@ import com.jme3.system.AppSettings;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
 import game.freya.services.GameControllerService;
+import game.freya.states.MainMenuState;
 import game.freya.states.substates.DebugInfoState;
 import game.freya.states.substates.ExitHandlerState;
 import lombok.Getter;
@@ -102,6 +103,16 @@ public class JMEApp extends SimpleApplication {
             paused = false;
             log.debug("Game resumed...");
         }
+
+        // сброс расположения debug full info:
+        enqueue(() -> {
+            log.info("Reloading context and UI elements...");
+            restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
+            getRenderer().setMainFrameBufferSrgb(true);
+            getRenderer().setLinearizeSrgbImages(true);
+            cam.setFrustumPerspective(stateManager.getState(MainMenuState.class).getFov(), (float) Constants.getCurrentScreenAspect(), 0.25f, 1.5f);
+            getStateManager().getState(DebugInfoState.class).rebuildFullText();
+        });
     }
 
     @Override

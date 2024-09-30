@@ -10,22 +10,22 @@ import com.jme3.audio.AudioNode;
 import com.jme3.input.FlyByCamera;
 import com.jme3.light.AmbientLight;
 import com.jme3.material.Material;
-import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
-import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
+import game.freya.annotations.DevelopOnly;
 import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
 import game.freya.gui.panes.JMEApp;
 import game.freya.services.GameControllerService;
 import game.freya.states.substates.menu.MenuBackgState;
 import game.freya.states.substates.menu.MenuHotKeysState;
-import game.freya.states.substates.menu.meshes.GrayCorner;
+import game.freya.states.substates.menu.spatials.GrayMenuCorner;
+import game.freya.states.substates.menu.spatials.MenuBackgroundImage;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +45,7 @@ public class MainMenuState extends BaseAppState {
     private MenuHotKeysState hotKeysState;
     private MenuBackgState backgState;
     private Node menuNode, rootNode, guiNode;
+    private Spatial centerMarker, cmr, cml;
 
     @Setter
     @Getter
@@ -89,7 +90,7 @@ public class MainMenuState extends BaseAppState {
         hotKeysState = new MenuHotKeysState(menuNode);
         if (stateManager.attach(hotKeysState)) {
             executor.execute(() -> {
-                stateManager.getState(hotKeysState.getClass()).startingAwait();
+                hotKeysState.startingAwait();
                 // перевод курсора в режим меню:
                 appRef.setAltControlMode(true);
             });
@@ -110,45 +111,21 @@ public class MainMenuState extends BaseAppState {
         setupMenuCamera();
 
         menuNode = new Node(NodeNames.MENU_SCENE_NODE.name());
-
-        // content:
-        float menuWidth = cam.getWidth() / 712f, menuHeight = (float) (menuWidth / Constants.getCurrentScreenAspect());
-        log.info("Camera width {}, MenuBox width: {}", cam.getWidth(), menuWidth);
-        Spatial menu = new Geometry("MenuBox", new Quad(menuWidth, menuHeight));
-        Material mat_menu = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
-        mat_menu.setTexture("ColorMap", assetManager.loadTexture("images/necessary/menu.png"));
-        menu.setMaterial(mat_menu);
-        menu.setLocalTranslation(-menuWidth / 2f, -menuHeight / 2f, 0);
-        menu.setCullHint(Spatial.CullHint.Dynamic);
-        menuNode.attachChild(menu);
-
-        Spatial grayPane = new Geometry("GrayMenuPanel", new GrayCorner());
-        Material mat_gp = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
-        mat_gp.setColor("Color", ColorRGBA.fromRGBA255(0, 0, 0, 223));
-        mat_gp.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-        grayPane.setQueueBucket(RenderQueue.Bucket.Transparent);
-        grayPane.setMaterial(mat_gp);
-//        grayPane.setLocalTranslation(-(menuWidth / 2), -menuHeight / 2, 0);
-        grayPane.setCullHint(Spatial.CullHint.Dynamic);
-//        grayPane.setLodLevel(0);
-        menuNode.attachChild(grayPane);
+        menuNode.attachChild(new MenuBackgroundImage(assetManager, cam));
+        menuNode.attachChild(new GrayMenuCorner(assetManager));
 
         setupMenuAudio(menuNode);
-
         setupMenuLights(menuNode);
-
         setupGui();
 
         rootNode.attachChild(menuNode);
     }
 
-    private Spatial centerMarker, cmr, cml;
-
+    @DevelopOnly
     public void setupGui() {
         if (guiNode == null) {
             return;
         }
-
         if (guiNode.hasChild(centerMarker)) {
             guiNode.detachChild(centerMarker);
         }
