@@ -142,19 +142,7 @@ public class MainMenuState extends BaseAppState {
         }
 
         int avatarDim = 128;
-        String playerNickName = gameControllerService.getPlayerService().getCurrentPlayer().getNickName();
-        BufferedImage avatarBImage = new BufferedImage(avatarDim + 4, avatarDim + 24, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2D = avatarBImage.createGraphics();
-        g2D.drawImage(gameControllerService.getPlayerService().getCurrentPlayer().getAvatar(), 2, 2, avatarDim, avatarDim, null);
-        g2D.setColor(Color.GREEN);
-        g2D.setStroke(new BasicStroke(3f));
-        g2D.drawRoundRect(1, 1, avatarDim - 1, avatarDim + 2, 8, 8);
-        g2D.setFont(Constants.DEBUG_FONT);
-        g2D.setColor(Color.BLACK);
-        g2D.drawString(playerNickName, (int) (avatarDim / 2 - Constants.FFB.getHalfWidthOfString(g2D, playerNickName)) + 1, avatarDim + 25);
-        g2D.setColor(Color.LIGHT_GRAY);
-        g2D.drawString(playerNickName, (int) (avatarDim / 2 - Constants.FFB.getHalfWidthOfString(g2D, playerNickName)), avatarDim + 24);
-        g2D.dispose();
+        BufferedImage avatarBImage = drawAvatarImage(avatarDim);
 //        AWTLoader imgLoader = new AWTLoader();
 //        Image load = imgLoader.load(avatarBImage, false);
 
@@ -169,6 +157,25 @@ public class MainMenuState extends BaseAppState {
         guiNode.attachChild(avatarGeo);
 
         createGreenMarkers();
+    }
+
+    private BufferedImage drawAvatarImage(int avatarDim) {
+        String playerNickName = gameControllerService.getPlayerService().getCurrentPlayer().getNickName();
+        BufferedImage result = new BufferedImage(avatarDim + 4, avatarDim + 24, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2D = result.createGraphics();
+        g2D.drawImage(gameControllerService.getPlayerService().getCurrentPlayer().getAvatar(), 2, 2, avatarDim, avatarDim, null);
+        g2D.setColor(Color.BLACK);
+        g2D.setStroke(new BasicStroke(3f));
+        g2D.drawRoundRect(1, 1, avatarDim - 1, avatarDim + 2, 8, 8);
+        g2D.setFont(Constants.DEBUG_FONT);
+        g2D.setColor(Color.BLACK);
+        g2D.drawString(playerNickName, (int) (avatarDim / 2 - Constants.FFB.getHalfWidthOfString(g2D, playerNickName)) + 1, avatarDim + 25);
+        g2D.setColor(Color.LIGHT_GRAY);
+        g2D.drawString(playerNickName, (int) (avatarDim / 2 - Constants.FFB.getHalfWidthOfString(g2D, playerNickName)), avatarDim + 24);
+        g2D.dispose();
+
+        return result;
     }
 
     private void createGreenMarkers() {

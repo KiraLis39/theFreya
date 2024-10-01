@@ -15,6 +15,7 @@ import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.renderer.Camera;
+import com.jme3.renderer.Caps;
 import com.jme3.renderer.Limits;
 import com.jme3.renderer.Renderer;
 import com.jme3.scene.Geometry;
@@ -111,6 +112,19 @@ public class DebugInfoState extends BaseAppState {
         setup();
 
         guiNode.attachChild(infoRootNode);
+
+        // todo: какой смысл в проверке возможностей рендера после запуска игры?
+        boolean isGlRendererSupported = false;
+        for (Caps cap : this.renderer.getCaps()) {
+            log.info("Render capability found: {}", cap);
+            if (Constants.getGameConfig().getDefaultGlRenderer().endsWith(cap.name())) {
+                isGlRendererSupported = true;
+                break;
+            }
+        }
+        if (!isGlRendererSupported) {
+            log.error("GL renderer from game config file is not supported on this OS ({})", Constants.getGameConfig().getDefaultGlRenderer().split("-")[1]);
+        }
     }
 
     @Override

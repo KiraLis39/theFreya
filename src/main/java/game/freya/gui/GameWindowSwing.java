@@ -29,20 +29,8 @@ public class GameWindowSwing extends JFrame {
     public GameWindowSwing(GameControllerService gameControllerService, AppSettings settings) {
         this.gameControllerService = gameControllerService;
 
-        jmeContext = (JmeCanvasContext) Constants.getGameCanvas().getContext();
-        jmeContext.setSystemListener(Constants.getGameCanvas());
-        final Canvas canvas = jmeContext.getCanvas();
-
         setTitle(settings.getTitle());
-        try {
-            // set JFrame default cursor:
-            setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
-            getRootPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
-            getGlassPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
-            getContentPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
-            getLayeredPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
-        } catch (Exception _) {
-        }
+        setDefaultCursor();
         setIconImage(Constants.CACHE.getBufferedImage("icon16"));
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setMinimumSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));
@@ -75,6 +63,52 @@ public class GameWindowSwing extends JFrame {
             }
         });
 
+        setBackground(Color.YELLOW);
+        getRootPane().setBackground(Color.GREEN);
+        getContentPane().setBackground(Color.BLACK);
+        getLayeredPane().setBackground(Color.MAGENTA);
+
+        attachJmeCanvasToFrame();
+
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
+
+        // log.info("Canvas location/size: {} / {}", canvas.getLocation(), canvas.getSize());
+    }
+
+    private void setDefaultCursor() {
+        try {
+            // set JFrame default cursor:
+            setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+            getRootPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+            getGlassPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+            getContentPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+            getLayeredPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+        } catch (Exception _) {
+        }
+    }
+
+    private void attachJmeCanvasToFrame() {
+        Constants.getGameCanvas().startCanvas();
+        // ждём пока JME-окно не прогрузится:
+        while (!Constants.getGameCanvas().isReady()) {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException _) {
+            }
+        }
+
+        final Canvas canvas = getCanvas();
+        // setLayout(null);
+        add(canvas);
+    }
+
+    private Canvas getCanvas() {
+        jmeContext = (JmeCanvasContext) Constants.getGameCanvas().getContext();
+        jmeContext.setSystemListener(Constants.getGameCanvas());
+
+        final Canvas canvas = jmeContext.getCanvas();
         canvas.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
@@ -89,29 +123,8 @@ public class GameWindowSwing extends JFrame {
             }
         });
 
-        setBackground(Color.YELLOW);
-        getRootPane().setBackground(Color.GREEN);
-        getContentPane().setBackground(Color.BLACK);
-        getLayeredPane().setBackground(Color.MAGENTA);
-//        setLayout(null);
-
-        Constants.getGameCanvas().startCanvas();
-        // ждём пока JME-окно не прогрузится:
-        while (!Constants.getGameCanvas().isReady()) {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException _) {
-            }
-        }
-
-        add(canvas);
-
-        pack();
-        setLocationRelativeTo(null);
-        setVisible(true);
-
-//        canvas.setLocation(0, -10);
-//        canvas.setSize(1470, 760);
-        log.info("Canvas location/size: {} / {}", canvas.getLocation(), canvas.getSize());
+        // canvas.setLocation(0, -10);
+        // canvas.setSize(1470, 760);
+        return canvas;
     }
 }
