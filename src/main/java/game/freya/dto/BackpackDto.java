@@ -25,10 +25,9 @@ import java.util.UUID;
 @SuperBuilder
 @RequiredArgsConstructor
 public class BackpackDto extends StorageDto implements iBackpack {
+    private final Map<CurrencyVault, Integer> balance = new HashMap<>(3);
     private ItemsService itemsService;
     private ItemsMapper itemsMapper;
-
-    private final Map<CurrencyVault, Integer> balance = new HashMap<>(3);
 
     @Autowired
     public void init(@Lazy ItemsService itemsService, @Lazy ItemsMapper itemsMapper) {

@@ -4,13 +4,12 @@ import com.jme3.system.AppSettings;
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.enums.other.ScreenType;
-import game.freya.gui.panes.JMEApp;
-import game.freya.gui.panes.handlers.UIHandler;
+import game.freya.gui.panes2d.UIHandler;
+import game.freya.gui.states.GamePlayState;
+import game.freya.gui.states.MainMenuState;
 import game.freya.services.CharacterService;
 import game.freya.services.GameControllerService;
 import game.freya.services.WorldService;
-import game.freya.states.GamePlayState;
-import game.freya.states.MainMenuState;
 import game.freya.utils.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,7 +67,8 @@ public class SceneController {
                         .getConfiguration().getBounds().getWidth() / FoxVideoMonitorUtil.getConfiguration().getBounds().getHeight());
             }
 
-            log.info("Игровое окно запущено в потоке {}", Thread.currentThread().getName());
+            if (Constants.getGameFrame() == null || Constants.getGameCanvas().isShowSettings())
+                log.info("Игровое окно запущено в потоке {}", Thread.currentThread().getName());
             loadScene(ScreenType.MENU_SCREEN);
         });
     }

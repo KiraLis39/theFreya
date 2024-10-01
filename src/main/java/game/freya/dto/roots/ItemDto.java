@@ -27,17 +27,14 @@ import java.util.Set;
 @RequiredArgsConstructor
 public abstract class ItemDto extends AbstractEntityDto implements iItem {
     @Builder.Default
-    @Schema(description = "Прочность предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private int durability = 3;
-
-    @Builder.Default
     @Schema(description = "Хранилища этого предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private final Set<StorageDto> storages = new HashSet<>(1);
-
     @Builder.Default
     @Schema(description = "Список бафов данного предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private final Set<BuffDto> buffs = new HashSet<>(3);
-
+    @Builder.Default
+    @Schema(description = "Прочность предмета", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private int durability = 3;
     @Builder.Default
     @Min(1)
     @Schema(description = "По сколько может стаковаться в ячейке", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

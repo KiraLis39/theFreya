@@ -27,17 +27,14 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PlayerDto implements iPlayer {
     @NotNull
+    @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.REQUIRED, accessMode = Schema.AccessMode.READ_ONLY)
+    private final String email;
+    @NotNull
     @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private UUID uid;
-
     @NotNull
     @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.REQUIRED)
     private String nickName;
-
-    @NotNull
-    @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.REQUIRED, accessMode = Schema.AccessMode.READ_ONLY)
-    private final String email;
-
     @Builder.Default
     @Schema(description = "Почтовый адрес игрока", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private String avatarUrl = Constants.getUserConfig().getUserAvatar();

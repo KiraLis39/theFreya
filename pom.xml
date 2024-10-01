@@ -264,11 +264,27 @@
             <artifactId>jme3-awt-dialogs</artifactId>
             <version>3.6.1-stable</version>
         </dependency>
-        <dependency>
-            <groupId>com.projectdarkstar.ext.com.jmonkeyengine</groupId>
-            <artifactId>jme-awt</artifactId>
-            <version>2.0-S1</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.jmonkeyengine</groupId>-->
+<!--            <artifactId>jme3-terrain</artifactId>-->
+<!--            <version>3.6.1-stable</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.jmonkeyengine</groupId>-->
+<!--            <artifactId>jme3-bullet</artifactId>-->
+<!--            <version>3.3.2-stable</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.opensourcebim</groupId>-->
+<!--            <artifactId>gltf</artifactId>-->
+<!--            <version>0.0.62</version>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>com.projectdarkstar.ext.com.jmonkeyengine</groupId>-->
+<!--            <artifactId>jme-awt</artifactId>-->
+<!--            <version>2.0-S1</version>-->
+<!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>org.jmonkeyengine</groupId>-->
 <!--            <artifactId>jme3-networking</artifactId>-->
@@ -281,17 +297,7 @@
 <!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>org.jmonkeyengine</groupId>-->
-<!--            <artifactId>jme3-terrain</artifactId>-->
-<!--            <version>3.6.1-stable</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.jmonkeyengine</groupId>-->
 <!--            <artifactId>jme3-blender</artifactId>-->
-<!--            <version>3.3.2-stable</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.jmonkeyengine</groupId>-->
-<!--            <artifactId>jme3-bullet</artifactId>-->
 <!--            <version>3.3.2-stable</version>-->
 <!--        </dependency>-->
 
@@ -408,17 +414,17 @@
 
     <repositories>
         <repository>
-            <id>central-jme</id>
-            <name>jmonkeyengine</name>
-            <url>https://java-game-lib.svn.sourceforge.net/svnroot/java-game-lib</url>
-        </repository>
-        <repository>
             <id>central</id>
             <name>Maven Repo</name>
             <url>https://repo1.maven.org/maven2</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
+        </repository>
+        <repository>
+            <id>sourceforge</id>
+            <name>jmonkey</name>
+            <url>https://java-game-lib.svn.sourceforge.net/svnroot/java-game-lib</url>
         </repository>
         <repository>
             <id>local_repo</id>

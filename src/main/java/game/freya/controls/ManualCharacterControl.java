@@ -5,7 +5,6 @@ import com.jme3.export.JmeImporter;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.control.Control;
 
 public abstract class ManualCharacterControl implements ManualControl {
     @Override
@@ -31,11 +30,6 @@ public abstract class ManualCharacterControl implements ManualControl {
     @Override
     public void moveZ(float value) {
 
-    }
-
-    @Override
-    public Control cloneForSpatial(Spatial spatial) {
-        return null;
     }
 
     @Override

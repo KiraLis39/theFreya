@@ -2,9 +2,10 @@ package game.freya.gui;
 
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeCanvasContext;
+import fox.images.FoxCursor;
 import game.freya.config.Constants;
+import game.freya.gui.states.substates.global.DebugInfoState;
 import game.freya.services.GameControllerService;
-import game.freya.states.substates.DebugInfoState;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,16 @@ public class GameWindowSwing extends JFrame {
         final Canvas canvas = jmeContext.getCanvas();
 
         setTitle(settings.getTitle());
+        try {
+            // set JFrame default cursor:
+            setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+            getRootPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+            getGlassPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+            getContentPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+            getLayeredPane().setCursor(FoxCursor.createCursor(Constants.CACHE.getBufferedImage("curP"), "curP"));
+        } catch (Exception _) {
+        }
+        setIconImage(Constants.CACHE.getBufferedImage("icon16"));
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setMinimumSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));
         setPreferredSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));

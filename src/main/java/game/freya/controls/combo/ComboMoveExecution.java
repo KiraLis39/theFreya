@@ -7,13 +7,11 @@ import java.util.HashSet;
 
 public class ComboMoveExecution {
     private static final float TIME_LIMIT = 0.3f;
+    @Getter
+    private final ComboMove combo;
     private int state;
     private float moveTime;
     private boolean finalState = false;
-
-    @Getter
-    private final ComboMove combo;
-
     @Getter
     private String debugString = ""; // for debug only
 

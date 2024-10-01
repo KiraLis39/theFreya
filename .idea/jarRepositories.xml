@@ -112,6 +112,11 @@
       <option name="url" value="https://repo1.maven.org/maven2/jmonkeyengine" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="sourceforge" />
+      <option name="name" value="jmonkey" />
+      <option name="url" value="https://java-game-lib.svn.sourceforge.net/svnroot/java-game-lib" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="central-jme" />
       <option name="name" value="jmonkeyengine" />
       <option name="url" value="https://java-game-lib.svn.sourceforge.net/svnroot/java-game-lib" />

@@ -1,5 +1,6 @@
 package game.freya.services;
 
+import com.jme3.awt.AWTErrorDialog;
 import com.jme3.system.AppSettings;
 import fox.FoxLogo;
 import game.freya.WorldEngine;
@@ -24,7 +25,6 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -72,10 +72,13 @@ public class GameControllerService {
 
         loadNecessaryResources();
 
-        // настраиваем JME:
-        applyJmeSettings();
-
-        sceneController.showGameWindow(applyJmeSettings());
+        try {
+            // настраиваем JME и запускаемся...:
+            sceneController.showGameWindow(applyJmeSettings());
+        } catch (Exception e) {
+            AWTErrorDialog.showDialog(ExceptionUtils.getFullExceptionMessage(e));
+            exitTheGame(null, 650);
+        }
     }
 
     private AppSettings applyJmeSettings() {
@@ -87,20 +90,19 @@ public class GameControllerService {
         settings.setFrequency(Constants.getUserConfig().getFpsLimit());
         settings.setFrameRate(Constants.getUserConfig().getFpsLimit());
 
-//        settings.setMinResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
-//        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
-
 //        settings.setMinWidth(Constants.getUserConfig().getWindowWidth());
 //        settings.setMinHeight(Constants.getUserConfig().getWindowHeight());
 //        settings.setWindowSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
-//        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
 
-//        settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
+//        settings.setMinResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+
+        settings.setResizable(Constants.getGameConfig().isGameWindowResizable());
 //        settings.setCenterWindow(true);
 //        settings.setWindowXPosition();
 //        settings.setWindowYPosition();
 
-//        settings.setFullscreen(Constants.getUserConfig().isFullscreen());
+        settings.setFullscreen(Constants.getUserConfig().isFullscreen());
 
 //        settings.setBitsPerPixel(32); // 1 bpp = черно-белый, 2 bpp = серый, 4 bpp = 16 цветов, 8 bpp = 256 цветов, 24 или 32 bpp = «truecolor».
 //        settings.setAlphaBits();
@@ -139,12 +141,12 @@ public class GameControllerService {
         settings.setAudioRenderer(AppSettings.LWJGL_OPENAL);
         settings.setRenderer(AppSettings.LWJGL_OPENGL45);
 
-        settings.setIcons(new BufferedImage[]{
-                Constants.CACHE.getBufferedImage("icon128"),
-                Constants.CACHE.getBufferedImage("icon64"),
-                Constants.CACHE.getBufferedImage("icon32"),
-                Constants.CACHE.getBufferedImage("icon16"),
-        });
+//        settings.setIcons(new BufferedImage[]{
+//                Constants.CACHE.getBufferedImage("icon128"),
+//                Constants.CACHE.getBufferedImage("icon64"),
+//                Constants.CACHE.getBufferedImage("icon32"),
+//                Constants.CACHE.getBufferedImage("icon16"),
+//        });
 
         /*
             мультисэмплинг 0 - отключить сглаживание (резкие края, более быстрая обработка).
@@ -165,7 +167,8 @@ public class GameControllerService {
         settings.setUseInput(true); // реагировать ли на клавиатуру и мышь
         settings.setUseJoysticks(false); // Активировать дополнительную поддержку джойстика
 
-        settings.setSettingsDialogImage("images/necessary/menu.png");
+        // картинка для первого окна настроек игры:
+        settings.setSettingsDialogImage("images/necessary/139.jpg");
 
         return settings;
     }

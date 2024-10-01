@@ -107,71 +107,21 @@ public class UserConfig implements Serializable {
 
     @Builder.Default
     private Hotkeys hotkeys = new Hotkeys();
+    @Builder.Default
+    private boolean showSettingsOnLaunch = true;
 
     @JsonIgnore
     public int getBufferedDeep() {
         return isMultiBufferEnabled ? Math.max(bufferedDeep, maxBufferedDeep) : 1;
     }
 
-    @Getter
-    @Setter
-    @RequiredArgsConstructor
-    public static class Hotkeys {
-        private UniKey keyLookUp = DefaultHotKeys.CAM_UP.key;
-        private UniKey keyLookLeft = DefaultHotKeys.CAM_LEFT.key;
-        private UniKey keyLookRight = DefaultHotKeys.CAM_RIGHT.key;
-        private UniKey keyLookDown = DefaultHotKeys.CAM_DOWN.key;
-
-        private UniKey keyMoveForward = DefaultHotKeys.MOVE_FORWARD.key;
-        private UniKey keyMoveLeft = DefaultHotKeys.MOVE_LEFT.key;
-        private UniKey keyMoveRight = DefaultHotKeys.MOVE_RIGHT.key;
-        private UniKey keyMoveBack = DefaultHotKeys.MOVE_BACK.key;
-
-        private UniKey keyRotateClockwise = DefaultHotKeys.ROTATE_CLOCK.key;
-        private UniKey keyRotateCounter = DefaultHotKeys.ROTATE_COUNTER.key;
-
-        private UniKey keyPause = DefaultHotKeys.PAUSE.key;
-        private UniKey keyConsole = DefaultHotKeys.CONSOLE.key;
-        private UniKey keyDebugInfo = DefaultHotKeys.DEBUG.key;
-        private UniKey keyFullscreen = DefaultHotKeys.FULLSCREEN.key;
-        private UniKey keyAltCursorMode = DefaultHotKeys.ALT_CUR_MODE.key;
-
-        public void resetControlKeys() {
-            setKeyLookUp(DefaultHotKeys.CAM_UP.key);
-            setKeyLookLeft(DefaultHotKeys.CAM_LEFT.key);
-            setKeyLookRight(DefaultHotKeys.CAM_RIGHT.key);
-            setKeyLookDown(DefaultHotKeys.CAM_DOWN.key);
-
-            setKeyMoveForward(DefaultHotKeys.MOVE_FORWARD.key);
-            setKeyMoveLeft(DefaultHotKeys.MOVE_LEFT.key);
-            setKeyMoveRight(DefaultHotKeys.MOVE_RIGHT.key);
-            setKeyMoveBack(DefaultHotKeys.MOVE_BACK.key);
-
-            setKeyRotateClockwise(DefaultHotKeys.ROTATE_CLOCK.key);
-            setKeyRotateCounter(DefaultHotKeys.ROTATE_COUNTER.key);
-
-            setKeyPause(DefaultHotKeys.PAUSE.key);
-            setKeyConsole(DefaultHotKeys.CONSOLE.key);
-            setKeyDebugInfo(DefaultHotKeys.DEBUG.key);
-            setKeyFullscreen(DefaultHotKeys.FULLSCREEN.key);
-            setKeyAltCursorMode(DefaultHotKeys.ALT_CUR_MODE.key);
-        }
-    }
-
-    @Getter
-    @Builder
-    @AllArgsConstructor
-    @RequiredArgsConstructor
-    public static class UniKey {
-        private int swingKey; // KeyEvent
-
-        @Builder.Default
-        private int swingMask = 0; // InputEvent
-
-        private int jmeKey; // KeyInput
-
-        @Builder.Default
-        private boolean jmeMask = true; // KeyInput
+    @Override
+    public String toString() {
+        return "UserConfig{"
+                + "userId=" + userId
+                + ", userName='" + userName + '\''
+                + ", userMail='" + userMail + '\''
+                + '}';
     }
 
     @Getter
@@ -251,12 +201,64 @@ public class UserConfig implements Serializable {
         private final UniKey key;
     }
 
-    @Override
-    public String toString() {
-        return "UserConfig{"
-                + "userId=" + userId
-                + ", userName='" + userName + '\''
-                + ", userMail='" + userMail + '\''
-                + '}';
+    @Getter
+    @Setter
+    @RequiredArgsConstructor
+    public static class Hotkeys {
+        private UniKey keyLookUp = DefaultHotKeys.CAM_UP.key;
+        private UniKey keyLookLeft = DefaultHotKeys.CAM_LEFT.key;
+        private UniKey keyLookRight = DefaultHotKeys.CAM_RIGHT.key;
+        private UniKey keyLookDown = DefaultHotKeys.CAM_DOWN.key;
+
+        private UniKey keyMoveForward = DefaultHotKeys.MOVE_FORWARD.key;
+        private UniKey keyMoveLeft = DefaultHotKeys.MOVE_LEFT.key;
+        private UniKey keyMoveRight = DefaultHotKeys.MOVE_RIGHT.key;
+        private UniKey keyMoveBack = DefaultHotKeys.MOVE_BACK.key;
+
+        private UniKey keyRotateClockwise = DefaultHotKeys.ROTATE_CLOCK.key;
+        private UniKey keyRotateCounter = DefaultHotKeys.ROTATE_COUNTER.key;
+
+        private UniKey keyPause = DefaultHotKeys.PAUSE.key;
+        private UniKey keyConsole = DefaultHotKeys.CONSOLE.key;
+        private UniKey keyDebugInfo = DefaultHotKeys.DEBUG.key;
+        private UniKey keyFullscreen = DefaultHotKeys.FULLSCREEN.key;
+        private UniKey keyAltCursorMode = DefaultHotKeys.ALT_CUR_MODE.key;
+
+        public void resetControlKeys() {
+            setKeyLookUp(DefaultHotKeys.CAM_UP.key);
+            setKeyLookLeft(DefaultHotKeys.CAM_LEFT.key);
+            setKeyLookRight(DefaultHotKeys.CAM_RIGHT.key);
+            setKeyLookDown(DefaultHotKeys.CAM_DOWN.key);
+
+            setKeyMoveForward(DefaultHotKeys.MOVE_FORWARD.key);
+            setKeyMoveLeft(DefaultHotKeys.MOVE_LEFT.key);
+            setKeyMoveRight(DefaultHotKeys.MOVE_RIGHT.key);
+            setKeyMoveBack(DefaultHotKeys.MOVE_BACK.key);
+
+            setKeyRotateClockwise(DefaultHotKeys.ROTATE_CLOCK.key);
+            setKeyRotateCounter(DefaultHotKeys.ROTATE_COUNTER.key);
+
+            setKeyPause(DefaultHotKeys.PAUSE.key);
+            setKeyConsole(DefaultHotKeys.CONSOLE.key);
+            setKeyDebugInfo(DefaultHotKeys.DEBUG.key);
+            setKeyFullscreen(DefaultHotKeys.FULLSCREEN.key);
+            setKeyAltCursorMode(DefaultHotKeys.ALT_CUR_MODE.key);
+        }
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @RequiredArgsConstructor
+    public static class UniKey {
+        private int swingKey; // KeyEvent
+
+        @Builder.Default
+        private int swingMask = 0; // InputEvent
+
+        private int jmeKey; // KeyInput
+
+        @Builder.Default
+        private boolean jmeMask = true; // KeyInput
     }
 }

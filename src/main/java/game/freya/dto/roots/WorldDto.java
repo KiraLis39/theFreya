@@ -10,7 +10,7 @@ import game.freya.enums.other.HardnessLevel;
 import game.freya.enums.player.MovingVector;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
-import game.freya.gui.panes.GamePaneRunnable;
+import game.freya.gui.panes2d.GamePaneRunnable;
 import game.freya.interfaces.root.iWorld;
 import game.freya.services.GameControllerService;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -42,96 +42,77 @@ import java.util.UUID;
 @JsonIgnoreProperties({"scobe", "textColor", "linesColor", "backColor", "canvas", "gameController", "gameMap", "icon"})
 public class WorldDto implements iWorld {
     @Getter
-    @Setter
-    @Schema(description = "UUID мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private UUID uid;
-
-    @Getter
-    @Builder.Default
-    @Schema(description = "Имя мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private String name = "world_demo_" + new Random(System.currentTimeMillis()).nextInt(100);
-
-    @Getter
-    @Schema(description = "UUID владельца мира (директора, хозяина, игрока)", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private UUID ownerUid;
-
-    @Getter
-    @Setter
-    @Schema(description = "UUID создателя мира", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID createdBy;
-
-    @Getter
-    @Builder.Default
-    @Schema(description = "Размеры мира", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Dimension size = new Dimension(128, 128);
-
-    @Getter
-    @Setter
-    @Builder.Default
-    @Schema(description = "Разрешены ли сетевые подключения?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private boolean isNetAvailable = false;
-
-    @Getter
-    @Setter
-    @Schema(description = "Зашифрованный пароль", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private String password; // bcrypt
-
-    @Getter
-    @Setter
-    @Builder.Default
-    @Schema(description = "Уровень сложности", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private HardnessLevel hardnessLevel = HardnessLevel.EASY;
-
-    @Getter
-    @Setter
-    @Builder.Default
-    @Schema(description = "Является ли локальным миром?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private boolean isLocal = true;
-
-    @Getter
-    @Setter
-    @Schema(description = "Сетевой адрес мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private String address;
-
-    @Getter
-    @Schema(description = "Путь к миниатюре мира (для игрового меню)", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private String cacheKey;
-
-    @Getter
-    @Schema(description = "Дата создания мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private LocalDateTime createdDate;
-
-    @Getter
-    @Schema(description = "Дата последнего изменения (последнего входа в мир)", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private LocalDateTime modifyDate;
-
-    @Getter
-    @Builder.Default
-    @Schema(description = "Список игроков мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    private Set<CharacterDto> heroes = new LinkedHashSet<>(4);
-
-    @Getter
     @Builder.Default
     @Schema(description = "Список объектов мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private final Set<EnvironmentDto> environments = HashSet.newHashSet(32);
-
-
     // custom fields:
     @JsonIgnore
     @Builder.Default
     @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, hidden = true, nullable = true)
     private final Color textColor = new Color(58, 175, 217, 191);
-
     @JsonIgnore
     @Builder.Default
     @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, hidden = true, nullable = true)
     private final Color linesColor = new Color(47, 84, 3, 64);
-
     @JsonIgnore
     @Builder.Default
     @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, hidden = true, nullable = true)
     private final Color backColor = new Color(31, 31, 31);
-
+    @Getter
+    @Setter
+    @Schema(description = "UUID мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private UUID uid;
+    @Getter
+    @Builder.Default
+    @Schema(description = "Имя мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String name = "world_demo_" + new Random(System.currentTimeMillis()).nextInt(100);
+    @Getter
+    @Schema(description = "UUID владельца мира (директора, хозяина, игрока)", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private UUID ownerUid;
+    @Getter
+    @Setter
+    @Schema(description = "UUID создателя мира", requiredMode = Schema.RequiredMode.REQUIRED)
+    private UUID createdBy;
+    @Getter
+    @Builder.Default
+    @Schema(description = "Размеры мира", requiredMode = Schema.RequiredMode.REQUIRED)
+    private Dimension size = new Dimension(128, 128);
+    @Getter
+    @Setter
+    @Builder.Default
+    @Schema(description = "Разрешены ли сетевые подключения?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private boolean isNetAvailable = false;
+    @Getter
+    @Setter
+    @Schema(description = "Зашифрованный пароль", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String password; // bcrypt
+    @Getter
+    @Setter
+    @Builder.Default
+    @Schema(description = "Уровень сложности", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private HardnessLevel hardnessLevel = HardnessLevel.EASY;
+    @Getter
+    @Setter
+    @Builder.Default
+    @Schema(description = "Является ли локальным миром?", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private boolean isLocal = true;
+    @Getter
+    @Setter
+    @Schema(description = "Сетевой адрес мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String address;
+    @Getter
+    @Schema(description = "Путь к миниатюре мира (для игрового меню)", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String cacheKey;
+    @Getter
+    @Schema(description = "Дата создания мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private LocalDateTime createdDate;
+    @Getter
+    @Schema(description = "Дата последнего изменения (последнего входа в мир)", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private LocalDateTime modifyDate;
+    @Getter
+    @Builder.Default
+    @Schema(description = "Список игроков мира", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Set<CharacterDto> heroes = new LinkedHashSet<>(4);
     @JsonIgnore
     @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, hidden = true, nullable = true)
     private GamePaneRunnable canvas;
@@ -187,7 +168,7 @@ public class WorldDto implements iWorld {
      */
     @Override
     public void generate() {
-        for (int i = 0; i < 32;) {
+        for (int i = 0; i < 32; ) {
             MockEnvironmentWithStorageDto nextMock = MockEnvironmentWithStorageDto.builder()
                     .name("mock_" + (i + 1))
                     .cacheKey("mock_0" + Constants.getRandom().nextInt(3))

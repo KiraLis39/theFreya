@@ -31,13 +31,11 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public final class Server extends Thread implements iServer {
+    private static Server server;
     private final Map<InetAddress, ConnectedPlayerThread> clients = new ConcurrentHashMap<>(4);
     private final GameControllerService gameControllerService;
     private Thread diedClientsCleaner;
     private ServerSocket serverSocket;
-
-    private static Server server;
-
     @Getter
     private String address;
 

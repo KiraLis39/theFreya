@@ -61,28 +61,30 @@ public class UserConfigService {
     public void createOrSaveUserConfig() throws IOException {
         log.debug("Saving the user save file to disc...");
         try {
-            UserConfig uConf = UserConfig.builder().build();
-            if (uConf.getWindowWidth() == 0 || uConf.getWindowHeight() == 0) {
-                Dimension dmode = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
-                double aspect = dmode.getWidth() / dmode.getHeight();
-
-                // запоминаем аспект разрешения монитора для дальнейших преобразований окон:
-                Constants.setCurrentScreenAspect(aspect);
-
-                double width = dmode.getWidth() * 0.75d;
-                double height = dmode.getHeight() * 0.75d;
-                uConf.setWindowWidth((int) width);
-                uConf.setWindowHeight((int) height);
-            }
-
             Path saveFile = Path.of(Constants.getUserSaveFile());
-            if (Files.notExists(saveFile.getParent())) {
-                Files.createDirectories(saveFile.getParent());
-                mapper.writeValue(saveFile.toFile(), uConf);
-            } else if (Files.notExists(saveFile)) {
-                mapper.writeValue(saveFile.toFile(), uConf);
+            if (Constants.getUserConfig() == null) {
+                UserConfig uConf = UserConfig.builder().build();
+                if (uConf.getWindowWidth() == 0 || uConf.getWindowHeight() == 0) {
+                    Dimension dmode = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
+                    double aspect = dmode.getWidth() / dmode.getHeight();
+
+                    // запоминаем аспект разрешения монитора для дальнейших преобразований окон:
+                    Constants.setCurrentScreenAspect(aspect);
+
+                    double width = dmode.getWidth() * 0.75d;
+                    double height = dmode.getHeight() * 0.75d;
+                    uConf.setWindowWidth((int) width);
+                    uConf.setWindowHeight((int) height);
+                }
+
+                if (Files.notExists(saveFile.getParent())) {
+                    Files.createDirectories(saveFile.getParent());
+                    mapper.writeValue(saveFile.toFile(), uConf);
+                } else if (Files.notExists(saveFile)) {
+                    mapper.writeValue(saveFile.toFile(), uConf);
+                }
+                Constants.setUserConfig(mapper.readValue(new File(Constants.getUserSaveFile()), UserConfig.class));
             }
-            Constants.setUserConfig(mapper.readValue(new File(Constants.getUserSaveFile()), UserConfig.class));
             mapper.writeValue(saveFile.toFile(), Constants.getUserConfig());
         } catch (InvalidDefinitionException ide) {
             log.error("#d012 Save all methode exception: {}", ExceptionUtils.getFullExceptionMessage(ide));
