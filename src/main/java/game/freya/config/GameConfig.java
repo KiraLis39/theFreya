@@ -1,6 +1,7 @@
 package game.freya.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.jme3.system.AppSettings;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -53,4 +54,6 @@ public final class GameConfig {
     public int getMaxConnectionWasteTime() {
         return connectionNoDataTimeout - socketPingAwaitTimeout;
     }
+
+    private String defaultGlRenderer = AppSettings.LWJGL_OPENGL45;
 }
