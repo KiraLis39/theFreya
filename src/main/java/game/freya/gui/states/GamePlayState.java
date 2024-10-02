@@ -25,9 +25,12 @@ import game.freya.enums.gui.CrosshairType;
 import game.freya.enums.gui.NodeNames;
 import game.freya.gui.JMEApp;
 import game.freya.gui.states.substates.gameplay.GameplayHotKeysState;
+import game.freya.gui.states.substates.global.OptionsState;
 import game.freya.services.GameControllerService;
+import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -44,6 +47,7 @@ public class GamePlayState extends BaseAppState {
     private FlyByCamera flyCam;
     private GameControllerService gameControllerService;
     private GameplayHotKeysState hotKeysState;
+    private OptionsState optionsState;
     private ExecutorService executor;
     private BitmapFont crosshairFont;
     private BitmapText crosshair;
@@ -70,6 +74,15 @@ public class GamePlayState extends BaseAppState {
         this.app.getRenderer().setMainFrameBufferSrgb(true);
         this.app.getRenderer().setLinearizeSrgbImages(true);
 
+        try {
+            URL necUrl = getClass().getResource("/images/game/");
+            assert necUrl != null;
+            Constants.CACHE.addAllFrom(necUrl);
+        } catch (Exception e) {
+            log.error("Game state can not initialize. Resources exception: {}", ExceptionUtils.getFullExceptionMessage(e));
+            return;
+        }
+
         buildGame();
     }
 
@@ -81,6 +94,9 @@ public class GamePlayState extends BaseAppState {
         if (this.gameNode == null || !this.rootNode.hasChild(this.gameNode)) {
             buildGame();
         }
+
+        optionsState = new OptionsState(gameNode, gameControllerService);
+        stateManager.attach(optionsState);
 
         // подключаем модуль горячих клавиш:
         this.hotKeysState = new GameplayHotKeysState(gameNode, gameControllerService);
@@ -109,6 +125,7 @@ public class GamePlayState extends BaseAppState {
         this.executor.shutdown();
         this.rootNode.detachChild(gameNode);
         this.stateManager.detach(hotKeysState);
+        this.stateManager.detach(optionsState);
         this.stateManager.detach(this);
     }
 

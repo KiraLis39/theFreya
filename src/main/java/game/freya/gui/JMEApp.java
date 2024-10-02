@@ -12,18 +12,24 @@ import com.jme3.cursors.plugins.CursorLoader;
 import com.jme3.cursors.plugins.JmeCursor;
 import com.jme3.renderer.RenderManager;
 import com.jme3.system.AppSettings;
+import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
+import game.freya.enums.gui.FullscreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.states.MainMenuState;
 import game.freya.gui.states.substates.global.DebugInfoState;
 import game.freya.gui.states.substates.global.ExitHandlerState;
+import game.freya.gui.states.substates.global.OptionsState;
+import game.freya.gui.states.substates.menu.MenuBackgState;
 import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.awt.*;
 
 @Slf4j
 @Setter
@@ -98,6 +104,88 @@ public class JMEApp extends SimpleApplication {
         });
     }
 
+    public void toggleFullscreen() {
+        AppSettings settings = Constants.getGameCanvas().getContext().getSettings();
+        DisplayMode vMode = FoxVideoMonitorUtil.getDisplayMode();
+        Dimension dDim = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
+
+        if (Constants.getUserConfig().isUseVSync()) {
+            settings.setFrequency(vMode.getRefreshRate()); // use VSync
+        } else if (Constants.getUserConfig().getFpsLimit() > 0) {
+            settings.setFrequency(Constants.getUserConfig().getFpsLimit()); // use fps limit
+        } else {
+            settings.setFrequency(-1); // unlimited
+        }
+
+        if (Constants.getUserConfig().isFullscreen()) {
+            restoreToWindow(settings);
+            Constants.getUserConfig().setFullscreen(false);
+        } else if (FoxVideoMonitorUtil.isFullScreenSupported()) {
+            switch (Constants.getUserConfig().getFullscreenType()) {
+                case EXCLUSIVE -> doExclusive(settings, vMode, dDim);
+                case MAXIMIZE_WINDOW -> doMaximize(settings, vMode, dDim);
+                case null, default ->
+                        log.error("Некорректное указание режима окна '{}'", Constants.getUserConfig().getFullscreenType());
+            }
+            Constants.getUserConfig().setFullscreen(true);
+        }
+
+        settings.setFullscreen(Constants.getUserConfig().isFullscreen());
+        log.info("Fullscreen mode now: {} ({})", Constants.getUserConfig().isFullscreen(), settings.isFullscreen());
+
+        Constants.getGameCanvas().restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
+    }
+
+    private void doExclusive(AppSettings settings, DisplayMode vMode, Dimension dDim) {
+        log.info("Do exclusive window fullscreen...");
+        // frame:
+        FoxVideoMonitorUtil.setFullscreen(Constants.getGameFrame());
+
+        // canvas:
+        settings.setResolution(dDim.width, dDim.height);
+        settings.setBitsPerPixel(vMode.getBitDepth());
+        settings.setFullscreen(true);
+    }
+
+    private void doMaximize(AppSettings settings, DisplayMode vMode, Dimension dDim) {
+        log.info("Do pseudo maximize window fullscreen...");
+        // frame:
+        Constants.getGameFrame().dispose();
+        Constants.getGameFrame().setUndecorated(true);
+        // +1 нужен, иначе будет переходить в блокирующий полный режим:
+        Constants.getGameFrame().setSize(dDim.width + 1, dDim.height + 1);
+        Constants.getGameFrame().setState(Frame.MAXIMIZED_BOTH);
+        Constants.getGameFrame().setLocationRelativeTo(null);
+        Constants.getGameFrame().setVisible(true);
+
+        // canvas:
+        settings.setResolution(vMode.getWidth(), vMode.getHeight());
+        settings.setFullscreen(true);
+    }
+
+    private void restoreToWindow(AppSettings settings) {
+        log.info("Restore from fullscreen mode...");
+        // frame:
+        FoxVideoMonitorUtil.setFullscreen(null);
+        Constants.getGameFrame().setState(Frame.NORMAL);
+        Constants.getGameFrame().setLocationRelativeTo(null);
+        Constants.getGameFrame().setPreferredSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));
+        Constants.getGameFrame().setSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));
+        Constants.getGameFrame().setSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+        Constants.getGameFrame().setLocationRelativeTo(null);
+
+        if (Constants.getUserConfig().getFullscreenType().equals(FullscreenType.MAXIMIZE_WINDOW)) {
+            Constants.getGameFrame().dispose();
+            Constants.getGameFrame().setUndecorated(false);
+            Constants.getGameFrame().setVisible(true);
+        }
+
+        // canvas:
+        settings.setFullscreen(false);
+        settings.setBitsPerPixel(settings.getDepthBits());
+        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
+    }
+
     public void setAltControlMode(boolean altMode) {
         if (altMode) {
             try {
@@ -120,6 +208,11 @@ public class JMEApp extends SimpleApplication {
         }
     }
 
+    /**
+     * В этот момент уже всё готово, инициализировано, отображено
+     * и cam имеет актуальные размеры после смены фуллскрин режима:
+     * самое время для перестройки GUI.
+     */
     @Override
     public void gainFocus() {
         log.info("Focus gained...");
@@ -133,14 +226,26 @@ public class JMEApp extends SimpleApplication {
             log.debug("Game resumed...");
         }
 
-        // сброс расположения debug full info:
+        if (Constants.getUserConfig().isMuteOnLostFocus()
+                && getStateManager().hasState(getStateManager().getState(MenuBackgState.class, false))
+        ) {
+            getStateManager().getState(MenuBackgState.class).resume();
+        }
+
+        // сброс расположения debug full info and etc UI elements:
         enqueue(() -> {
             log.info("Reloading context and UI elements...");
             restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
             getRenderer().setMainFrameBufferSrgb(true);
             getRenderer().setLinearizeSrgbImages(true);
             cam.setFrustumPerspective(stateManager.getState(MainMenuState.class).getFov(), (float) Constants.getCurrentScreenAspect(), 0.25f, 1.5f);
+
+            // пересборка расположений и размеров UI:
             getStateManager().getState(DebugInfoState.class).rebuildFullText();
+            OptionsState optState = getStateManager().getState(OptionsState.class, false);
+            if (getStateManager().hasState(optState) && optState.isInitialized()) {
+                getStateManager().getState(OptionsState.class).rebuild();
+            }
         });
     }
 
@@ -148,6 +253,10 @@ public class JMEApp extends SimpleApplication {
     public void loseFocus() {
         log.info("Focus lost...");
         context.setAutoFlushFrames(false); // снижаем fps
+
+        if (Constants.getUserConfig().isMuteOnLostFocus() && getStateManager().hasState(getStateManager().getState(MenuBackgState.class, false))) {
+            getStateManager().getState(MenuBackgState.class).pause();
+        }
 
         if (Controls.isGameActive() && gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
             return;

@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentEvent;
 import java.time.Duration;
 
 import static game.freya.config.Constants.SECOND_THREAD_SLEEP_MILLISECONDS;
@@ -175,16 +176,6 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
         reloadShapes(this);
         recalculateMenuRectangles();
 
-        // если не создан вьюпорт - создаём:
-        if (getViewPort() == null) {
-            recreateViewPort();
-        }
-
-        if (!Controls.isControlsMapped()) {
-            // назначаем горячие клавиши управления:
-            inAc();
-        }
-
         moveViewToPlayer(0, 0);
 
         requestFocus();
@@ -211,5 +202,10 @@ public class GamePaneRunnable extends RunnableCanvasPanel {
 
             sceneController.loadScene(ScreenType.MENU_SCREEN);
         }
+    }
+
+    @Override
+    public void componentShown(ComponentEvent e) {
+
     }
 }

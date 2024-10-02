@@ -1,20 +1,27 @@
 package game.freya.gui.states.substates.menu;
 
 import com.jme3.app.Application;
+import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetManager;
 import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
 import com.jme3.scene.Node;
 import jakarta.validation.constraints.NotNull;
+import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.*;
 import java.util.Collection;
 
+@Slf4j
 public class MenuBackgState extends BaseAppState {
     private final Collection<String> userDataKeys;
     private final Node currentModeNode;
+    private final float volumeFlowMod = 0.25f;
     private AssetManager assetManager;
     private AudioNode bkgMusic;
+    private SimpleApplication app;
+    private float wasLvl;
 
     public MenuBackgState(Node currentModeNode) {
         super(MenuBackgState.class.getSimpleName());
@@ -32,7 +39,8 @@ public class MenuBackgState extends BaseAppState {
 
     @Override
     protected void initialize(Application app) {
-        this.assetManager = app.getAssetManager();
+        this.app = (SimpleApplication) app;
+        this.assetManager = this.app.getAssetManager();
 
         for (String key : userDataKeys) {
             if (key.startsWith("bkg")) {
@@ -79,6 +87,41 @@ public class MenuBackgState extends BaseAppState {
         if (bkgMusic != null) {
             bkgMusic.stop();
             bkgMusic.getAudioData().dispose();
+        }
+    }
+
+    public void pause() {
+        if (bkgMusic != null) {
+            log.info("Try to pause audio...");
+            SwingUtilities.invokeLater(() -> {
+                wasLvl = bkgMusic.getVolume();
+                while (bkgMusic.getVolume() - volumeFlowMod > 0) {
+                    app.enqueue(() -> bkgMusic.setVolume(bkgMusic.getVolume() - volumeFlowMod));
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException _) {
+                    }
+                }
+                log.info("Audio paused.");
+                app.enqueue(() -> bkgMusic.pause());
+            });
+        }
+    }
+
+    public void resume() {
+        if (bkgMusic != null) {
+            log.info("Try to resume audio...");
+            bkgMusic.play();
+            SwingUtilities.invokeLater(() -> {
+                while (bkgMusic.getVolume() + volumeFlowMod < wasLvl) {
+                    app.enqueue(() -> bkgMusic.setVolume(bkgMusic.getVolume() + volumeFlowMod));
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException _) {
+                    }
+                }
+                log.info("Audio resumed...");
+            });
         }
     }
 }

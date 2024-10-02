@@ -19,18 +19,15 @@ import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.system.AppSettings;
-import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
-import game.freya.enums.gui.FullscreenType;
 import game.freya.gui.JMEApp;
 import game.freya.gui.states.MainMenuState;
 import game.freya.gui.states.substates.global.DebugInfoState;
+import game.freya.gui.states.substates.global.OptionsState;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -49,6 +46,8 @@ public class MenuHotKeysState extends BaseAppState {
     private Camera cam;
     private AppStateManager stateManager;
 
+    private OptionsState optionsState;
+
     public MenuHotKeysState(Node menuNode) {
         super(MenuHotKeysState.class.getSimpleName());
         this.menuNode = menuNode;
@@ -61,6 +60,8 @@ public class MenuHotKeysState extends BaseAppState {
         this.inputManager = this.app.getInputManager();
         this.stateManager = this.app.getStateManager();
         this.cam = this.app.getCamera();
+
+        this.optionsState = this.stateManager.getState(OptionsState.class);
 
         actList = new MenuActionListener();
         anlList = new MenuAnalogListener();
@@ -78,6 +79,12 @@ public class MenuHotKeysState extends BaseAppState {
     protected void onDisable() {
         actions.clear();
         processes.clear();
+        inputManager.removeListener(actList);
+        inputManager.removeListener(anlList);
+    }
+
+    @Override
+    protected void cleanup(Application app) {
         inputManager.removeListener(actList);
         inputManager.removeListener(anlList);
     }
@@ -103,8 +110,12 @@ public class MenuHotKeysState extends BaseAppState {
         actions.add("Click");
 
         // mouse test:
-        inputManager.addMapping("MATTest", new MouseAxisTrigger(MouseInput.AXIS_X, true));
-        processes.add("MATTest");
+        inputManager.addMapping("MouseMoved",
+                new MouseAxisTrigger(MouseInput.AXIS_X, true),
+                new MouseAxisTrigger(MouseInput.AXIS_X, false),
+                new MouseAxisTrigger(MouseInput.AXIS_Y, true),
+                new MouseAxisTrigger(MouseInput.AXIS_Y, false));
+        processes.add("MouseMoved");
 
         inputManager.addMapping("MWTTestUp", new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
         actions.add("MWTTestUp");
@@ -115,92 +126,6 @@ public class MenuHotKeysState extends BaseAppState {
         // final:
         inputManager.addListener(actList, actions.toArray(new String[0]));
         inputManager.addListener(anlList, processes.toArray(new String[0]));
-    }
-
-    public void toggleFullscreen() {
-        AppSettings settings = this.app.getContext().getSettings();
-        DisplayMode vMode = FoxVideoMonitorUtil.getDisplayMode();
-        Dimension dDim = FoxVideoMonitorUtil.getConfiguration().getBounds().getSize();
-
-        if (Constants.getUserConfig().isUseVSync()) {
-            settings.setFrequency(vMode.getRefreshRate()); // use VSync
-        } else if (Constants.getUserConfig().getFpsLimit() > 0) {
-            settings.setFrequency(Constants.getUserConfig().getFpsLimit()); // use fps limit
-        } else {
-            settings.setFrequency(-1); // unlimited
-        }
-
-        if (Constants.getUserConfig().isFullscreen()) {
-            restoreToWindow(settings);
-            Constants.getUserConfig().setFullscreen(false);
-        } else if (FoxVideoMonitorUtil.isFullScreenSupported()) {
-            switch (Constants.getUserConfig().getFullscreenType()) {
-                case EXCLUSIVE -> doExclusive(settings, vMode, dDim);
-                case MAXIMIZE_WINDOW -> doMaximize(settings, vMode, dDim);
-                case null, default ->
-                        log.error("Некорректное указание режима окна '{}'", Constants.getUserConfig().getFullscreenType());
-            }
-            Constants.getUserConfig().setFullscreen(true);
-        }
-
-        settings.setFullscreen(Constants.getUserConfig().isFullscreen());
-        log.info("Fullscreen mode now: {} ({})", Constants.getUserConfig().isFullscreen(), settings.isFullscreen());
-    }
-
-    private void doExclusive(AppSettings settings, DisplayMode vMode, Dimension dDim) {
-        log.info("Do exclusive window fullscreen...");
-        // frame:
-        FoxVideoMonitorUtil.setFullscreen(Constants.getGameFrame());
-
-        // canvas:
-        settings.setResolution(dDim.width, dDim.height);
-        settings.setBitsPerPixel(vMode.getBitDepth());
-        settings.setFullscreen(true);
-    }
-
-    private void doMaximize(AppSettings settings, DisplayMode vMode, Dimension dDim) {
-        log.info("Do pseudo maximize window fullscreen...");
-        // frame:
-        Constants.getGameFrame().dispose();
-        Constants.getGameFrame().setUndecorated(true);
-        // +1 нужен, иначе будет переходить в блокирующий полный режим:
-        Constants.getGameFrame().setSize(dDim.width + 1, dDim.height + 1);
-        Constants.getGameFrame().setState(Frame.MAXIMIZED_BOTH);
-        Constants.getGameFrame().setLocationRelativeTo(null);
-        Constants.getGameFrame().setVisible(true);
-
-        // canvas:
-        settings.setResolution(vMode.getWidth(), vMode.getHeight());
-        settings.setFullscreen(true);
-    }
-
-    private void restoreToWindow(AppSettings settings) {
-        log.info("Restore from fullscreen mode...");
-        // frame:
-        FoxVideoMonitorUtil.setFullscreen(null);
-        Constants.getGameFrame().setState(Frame.NORMAL);
-        Constants.getGameFrame().setLocationRelativeTo(null);
-        Constants.getGameFrame().setPreferredSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));
-        Constants.getGameFrame().setSize(new Dimension(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight()));
-        Constants.getGameFrame().setSize(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
-        Constants.getGameFrame().setLocationRelativeTo(null);
-
-        if (Constants.getUserConfig().getFullscreenType().equals(FullscreenType.MAXIMIZE_WINDOW)) {
-            Constants.getGameFrame().dispose();
-            Constants.getGameFrame().setUndecorated(false);
-            Constants.getGameFrame().setVisible(true);
-        }
-
-        // canvas:
-        settings.setFullscreen(false);
-        settings.setBitsPerPixel(settings.getDepthBits());
-        settings.setResolution(Constants.getUserConfig().getWindowWidth(), Constants.getUserConfig().getWindowHeight());
-    }
-
-    @Override
-    protected void cleanup(Application app) {
-        inputManager.removeListener(actList);
-        inputManager.removeListener(anlList);
     }
 
     public void startingAwait() {
@@ -218,7 +143,8 @@ public class MenuHotKeysState extends BaseAppState {
 
             switch (name) {
                 case "ExitAction" -> SwingUtilities.invokeLater(() -> Constants.getGameCanvas().requestClose(false));
-                case "ToggleFullscreen" -> SwingUtilities.invokeLater(MenuHotKeysState.this::toggleFullscreen);
+                case "ToggleFullscreen" ->
+                        SwingUtilities.invokeLater(() -> Constants.getGameCanvas().toggleFullscreen());
                 case "ToggleGameInfo" -> getStateManager().getState(DebugInfoState.class).toggleStats();
                 case "ToggleAmbientLight" -> getStateManager().getState(RootNodeAppState.class).getRootNode()
                         .getWorldLightList().get(0).setEnabled(!getStateManager().getState(RootNodeAppState.class).getRootNode()
@@ -253,6 +179,7 @@ public class MenuHotKeysState extends BaseAppState {
             }
 
             switch (name) {
+                case "MouseMoved" -> checkMouseMovement(value);
                 case "MATTest" -> log.debug("Process [MouseMoveLeftTest]: %.3f".formatted(value));
                 case "MoveForward" -> log.debug("Process [MoveForwardTest]: %.3f".formatted(value));
                 case "MoveLeft" -> log.debug("Process [MoveLeftTest]: %.3f".formatted(value));
@@ -295,6 +222,11 @@ public class MenuHotKeysState extends BaseAppState {
                 }
                 case null, default -> log.warn("Не релизован процесс [{}] ({})", name, value * tpf);
             }
+        }
+
+        private void checkMouseMovement(float value) {
+            log.debug("Mouse moved: {}", value);
+            optionsState.setGearHovered(true);
         }
     }
 }

@@ -25,8 +25,6 @@ import com.jme3.renderer.Renderer;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Sphere;
-import com.jme3.system.AppSettings;
-import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
 import game.freya.config.UserConfig;
@@ -36,10 +34,11 @@ import game.freya.dto.roots.WorldDto;
 import game.freya.gui.JMEApp;
 import game.freya.gui.states.substates.global.DebugInfoState;
 import game.freya.gui.states.substates.global.ExitHandlerState;
+import game.freya.gui.states.substates.global.OptionsState;
 import game.freya.services.GameControllerService;
 import lombok.extern.slf4j.Slf4j;
 
-import java.awt.*;
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -62,6 +61,7 @@ public class GameplayHotKeysState extends BaseAppState {
     private Camera cam;
     private Geometry mark;
     private AssetManager assetManager;
+    private OptionsState optionsState;
 
     public GameplayHotKeysState(Node gameNode, GameControllerService gameControllerService) {
         super(GameplayHotKeysState.class.getSimpleName());
@@ -79,6 +79,8 @@ public class GameplayHotKeysState extends BaseAppState {
         this.inputManager = this.app.getInputManager();
         this.actList = new MenuActionListener();
         this.anlList = new MenuAnalogListener();
+
+        this.optionsState = this.app.getStateManager().getState(OptionsState.class);
     }
 
     @Override
@@ -179,53 +181,6 @@ public class GameplayHotKeysState extends BaseAppState {
         inputManager.addListener(anlList, processes.toArray(new String[0]));
     }
 
-    private void toggleFullscreen() {
-        AppSettings settings = getApplication().getContext().getSettings();
-        DisplayMode vMode = FoxVideoMonitorUtil.getDisplayMode();
-//        GLFWVidMode videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-        if (Constants.getUserConfig().isUseVSync()) {
-            settings.setFrequency(vMode.getRefreshRate()); // use VSync
-        } else if (Constants.getUserConfig().getFpsLimit() > 0) {
-            settings.setFrequency(Constants.getUserConfig().getFpsLimit()); // use fps limit
-        } else {
-            settings.setFrequency(-1); // unlimited
-        }
-
-        if (Constants.getUserConfig().isFullscreen()) {
-            settings.setWindowSize(settings.getMinWidth(), settings.getMinHeight());
-            settings.setFullscreen(false);
-            settings.setCenterWindow(true);
-        } else if (FoxVideoMonitorUtil.isFullScreenSupported()) {
-            switch (Constants.getUserConfig().getFullscreenType()) {
-                case EXCLUSIVE -> {
-                    settings.setWindowSize(vMode.getWidth(), vMode.getHeight());
-                    settings.setBitsPerPixel(vMode.getBitDepth());
-                    settings.setFullscreen(true);
-                }
-                case MAXIMIZE_WINDOW -> {
-                    // todo
-//                    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-//                    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-                    settings.setWindowSize(vMode.getWidth(), vMode.getHeight());
-//                    settings.setWindowXPosition(3);
-                    settings.setWindowYPosition(15);
-//                    GLFWVidMode glMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-//                    glfwSetWindowMonitor(((LwjglWindow) context).getWindowHandle(), glfwGetPrimaryMonitor(), 0, 0, glMode.width(), glMode.height(), 60);
-                    settings.setCenterWindow(false);
-                }
-                case null, default ->
-                        log.error("Некорректное указание режима окна '{}'", Constants.getUserConfig().getFullscreenType());
-            }
-        }
-
-        Constants.getUserConfig().setFullscreen(!Constants.getUserConfig().isFullscreen());
-        this.app.restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
-
-        // сброс расположения debug full info:
-        this.app.enqueue(() -> getStateManager().getState(DebugInfoState.class).rebuildFullText());
-    }
-
     private void toggleLSI() {
         if (renderer.isLinearizeSrgbImages()) {
             log.info("LSI: off");
@@ -318,7 +273,8 @@ public class GameplayHotKeysState extends BaseAppState {
                         getStateManager().getState(ExitHandlerState.class).onExit();
                     }
                 }
-                case "ToggleFullscreen" -> toggleFullscreen(); // зависает нажатое событие в слушателе!
+                case "ToggleFullscreen" ->
+                        SwingUtilities.invokeLater(() -> Constants.getGameCanvas().toggleFullscreen()); // зависает нажатое событие в слушателе!
                 case "ToggleGameInfo" -> getStateManager().getState(DebugInfoState.class).toggleStats();
                 case "ToggleSLI" -> toggleLSI();
                 case "ToggleAmbientLight" -> getStateManager().getState(RootNodeAppState.class).getRootNode()

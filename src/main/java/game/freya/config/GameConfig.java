@@ -49,11 +49,10 @@ public final class GameConfig {
     private double scrollSpeed = 20;
 
     private float zoomSpeed = 10.0f; // default 1.0f
+    private String defaultGlRenderer = AppSettings.LWJGL_OPENGL45;
 
     @JsonIgnore
     public int getMaxConnectionWasteTime() {
         return connectionNoDataTimeout - socketPingAwaitTimeout;
     }
-
-    private String defaultGlRenderer = AppSettings.LWJGL_OPENGL45;
 }

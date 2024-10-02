@@ -24,6 +24,7 @@ import game.freya.annotations.DevelopOnly;
 import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
 import game.freya.gui.JMEApp;
+import game.freya.gui.states.substates.global.OptionsState;
 import game.freya.gui.states.substates.menu.MenuBackgState;
 import game.freya.gui.states.substates.menu.MenuHotKeysState;
 import game.freya.gui.states.substates.menu.spatials.GrayMenuCorner;
@@ -49,6 +50,7 @@ public class MainMenuState extends BaseAppState {
     private FlyByCamera flyByCamera;
     private MenuHotKeysState hotKeysState;
     private MenuBackgState backgState;
+    private OptionsState optionsState;
     private Node menuNode, rootNode, guiNode;
     private Spatial centerMarker, cmr, cml, avatarGeo;
     private GameControllerService gameControllerService;
@@ -82,9 +84,22 @@ public class MainMenuState extends BaseAppState {
 
     @Override
     protected void onEnable() {
+        // check network connections closed:
+        if (Constants.getServer() != null && Constants.getServer().isOpen()) {
+            gameControllerService.closeConnections();
+            log.error("Мы в меню, но Сервер ещё запущен! Закрытие Сервера...");
+        }
+        if (Constants.getLocalSocketConnection() != null && Constants.getLocalSocketConnection().isOpen()) {
+            Constants.getLocalSocketConnection().close();
+            log.error("Мы в меню, но соединение с Сервером ещё запущено! Закрытие подключения...");
+        }
+
+        // create executor:
         if (this.executor == null) {
             this.executor = Executors.newVirtualThreadPerTaskExecutor();
         }
+
+        // build the main menu:
         if (menuNode == null || !rootNode.hasChild(menuNode)) {
             buildMenu();
         }
@@ -92,6 +107,9 @@ public class MainMenuState extends BaseAppState {
         // включаем фоновую музыку меню:
         backgState = new MenuBackgState(menuNode);
         stateManager.attach(backgState);
+
+        optionsState = new OptionsState(menuNode, gameControllerService);
+        stateManager.attach(optionsState);
 
         // подключаем модуль горячих клавиш:
         hotKeysState = new MenuHotKeysState(menuNode);
@@ -101,10 +119,6 @@ public class MainMenuState extends BaseAppState {
                 // перевод курсора в режим меню:
                 appRef.setAltControlMode(true);
             });
-
-            if (Constants.getUserConfig().isFullscreen()) {
-                app.enqueue(() -> hotKeysState.toggleFullscreen());
-            }
             log.info("Запуск главного меню произведён!");
         }
     }
@@ -115,6 +129,7 @@ public class MainMenuState extends BaseAppState {
         this.rootNode.detachChild(menuNode);
         this.stateManager.detach(backgState);
         this.stateManager.detach(hotKeysState);
+        this.stateManager.detach(optionsState);
         this.stateManager.detach(this);
     }
 
@@ -130,9 +145,14 @@ public class MainMenuState extends BaseAppState {
         setupGui();
 
         rootNode.attachChild(menuNode);
+
+        preparePanes();
     }
 
-    @DevelopOnly
+    private void preparePanes() {
+
+    }
+
     public void setupGui() {
         if (guiNode == null) {
             return;
@@ -178,6 +198,7 @@ public class MainMenuState extends BaseAppState {
         return result;
     }
 
+    @DevelopOnly
     private void createGreenMarkers() {
         if (guiNode.hasChild(centerMarker)) {
             guiNode.detachChild(centerMarker);

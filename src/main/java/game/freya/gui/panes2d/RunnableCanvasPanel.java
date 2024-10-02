@@ -1094,7 +1094,7 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
                 recalculateMenuRectangles();
             }
 
-            recreateViewPort();
+//            recreateViewPort();
             moveViewToPlayer(0, 0);
 
             requestFocusInWindow();
@@ -1122,10 +1122,6 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
 
             checkOutOfFieldCorrection();
         }
-    }
-
-    protected void recreateViewPort() {
-        setViewPort(new Rectangle(0, 0, getWidth(), getHeight()));
     }
 
     public void openCreatingNewHeroPane(PlayCharacterDto template) {
@@ -1308,12 +1304,6 @@ public abstract class RunnableCanvasPanel extends JPanel implements iCanvasRunna
     @Override
     public void componentResized(ComponentEvent e) {
         onResize();
-    }
-
-    @Override
-    public void componentShown(ComponentEvent e) {
-        log.info("Возврат фокуса на холст...");
-        requestFocus();
     }
 
     @Override

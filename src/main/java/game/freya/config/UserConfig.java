@@ -107,8 +107,12 @@ public class UserConfig implements Serializable {
 
     @Builder.Default
     private Hotkeys hotkeys = new Hotkeys();
+
     @Builder.Default
     private boolean showSettingsOnLaunch = true;
+
+    @Builder.Default
+    private boolean isMuteOnLostFocus = true;
 
     @JsonIgnore
     public int getBufferedDeep() {
