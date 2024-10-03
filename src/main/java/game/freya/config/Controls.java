@@ -10,9 +10,6 @@ public final class Controls {
     @Setter
     private static volatile boolean isControlsMapped = false, isMovingKeyActive = false, isGameActive = false;
 
-//    @Getter
-//    private static volatile boolean isPaused = false;
-
     @Getter
     @Setter
     private static volatile boolean isMouseRightEdgeOver = false, isMouseLeftEdgeOver = false, isMouseUpEdgeOver = false, isMouseDownEdgeOver = false;
@@ -40,9 +37,4 @@ public final class Controls {
     public static boolean isPlayerMoving() {
         return isPlayerMovingUp || isPlayerMovingDown || isPlayerMovingRight || isPlayerMovingLeft;
     }
-
-//    public static void setPaused(boolean _isPaused) {
-//        isPaused = _isPaused;
-//        log.info("Paused: {}", isPaused);
-//    }
 }

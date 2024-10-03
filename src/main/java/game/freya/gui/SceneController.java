@@ -33,7 +33,7 @@ public class SceneController {
         this.gameControllerService = gameControllerService;
     }
 
-    public void showGameWindow(AppSettings settings) {
+    public void createGameCanvasAndWindow(AppSettings settings) {
         Constants.setGameCanvas(new JMEApp(gameControllerService, settings));
         Constants.getGameCanvas().createCanvas();
 

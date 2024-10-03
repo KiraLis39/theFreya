@@ -6,7 +6,6 @@ import com.jme3.app.state.AppStateManager;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.app.state.RootNodeAppState;
 import com.jme3.audio.AudioNode;
-import com.jme3.collision.CollisionResults;
 import com.jme3.input.InputManager;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
@@ -14,17 +13,14 @@ import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
-import com.jme3.math.Ray;
-import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
-import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import game.freya.config.Constants;
 import game.freya.config.UserConfig;
 import game.freya.gui.JMEApp;
 import game.freya.gui.states.MainMenuState;
 import game.freya.gui.states.substates.global.DebugInfoState;
-import game.freya.gui.states.substates.global.OptionsState;
+import game.freya.gui.states.substates.global.MenuAnalogListener;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -46,8 +42,6 @@ public class MenuHotKeysState extends BaseAppState {
     private Camera cam;
     private AppStateManager stateManager;
 
-    private OptionsState optionsState;
-
     public MenuHotKeysState(Node menuNode) {
         super(MenuHotKeysState.class.getSimpleName());
         this.menuNode = menuNode;
@@ -60,11 +54,6 @@ public class MenuHotKeysState extends BaseAppState {
         this.inputManager = this.app.getInputManager();
         this.stateManager = this.app.getStateManager();
         this.cam = this.app.getCamera();
-
-        this.optionsState = this.stateManager.getState(OptionsState.class);
-
-        actList = new MenuActionListener();
-        anlList = new MenuAnalogListener();
     }
 
     @Override
@@ -94,6 +83,9 @@ public class MenuHotKeysState extends BaseAppState {
     }
 
     private void setInAc() {
+        actList = new MenuActionListener();
+        anlList = new MenuAnalogListener(this.app, this.menuNode);
+
         // base game window hotkeys:
         inputManager.addMapping("ExitAction", new KeyTrigger(hotKeys.getKeyPause().getJmeKey()));
         actions.add("ExitAction");
@@ -108,6 +100,7 @@ public class MenuHotKeysState extends BaseAppState {
         // mouse actions:
         inputManager.addMapping("Click", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         actions.add("Click");
+        processes.add("Click");
 
         // mouse test:
         inputManager.addMapping("MouseMoved",
@@ -168,65 +161,6 @@ public class MenuHotKeysState extends BaseAppState {
                 }
                 default -> log.warn("Не релизовано действие [{}]", name);
             }
-        }
-    }
-
-    class MenuAnalogListener implements AnalogListener {
-        @Override
-        public void onAnalog(String name, float value, float tpf) {
-            if (!isEnabled()) {
-                return;
-            }
-
-            switch (name) {
-                case "MouseMoved" -> checkMouseMovement(value);
-                case "MATTest" -> log.debug("Process [MouseMoveLeftTest]: %.3f".formatted(value));
-                case "MoveForward" -> log.debug("Process [MoveForwardTest]: %.3f".formatted(value));
-                case "MoveLeft" -> log.debug("Process [MoveLeftTest]: %.3f".formatted(value));
-                case "MoveBack" -> log.debug("Process [MoveBackTest]: %.3f".formatted(value));
-                case "MoveRight" -> log.debug("Process [MoveRightTest]: %.3f".formatted(value));
-                case "Click" -> {
-                    log.debug("\nProcess [LMBTest]: %.3f".formatted(value));
-
-                    // Reset results list.
-                    CollisionResults results = new CollisionResults();
-                    // Convert screen click to 3d position
-                    Vector3f click3d = cam.getWorldCoordinates(inputManager.getCursorPosition(), 0f).clone();
-                    Vector3f dir = cam.getWorldCoordinates(inputManager.getCursorPosition(), 1f)
-                            .subtractLocal(click3d).normalizeLocal();
-                    // Aim the ray from the clicked spot forwards.
-                    Ray ray = new Ray(click3d, dir);
-                    // Collect intersections between ray and all nodes in results list.
-                    menuNode.collideWith(ray, results);
-                    // (Print the results so we see what is going on:)
-                    for (int i = 0; i < results.size(); i++) {
-                        // (For each "hit", we know distance, impact point, geometry.)
-                        float dist = results.getCollision(i).getDistance();
-                        Vector3f pt = results.getCollision(i).getContactPoint();
-                        String target = results.getCollision(i).getGeometry().getName();
-                        log.info("Selection #{}: {} at {}, {} WU away.", i, target, pt, dist);
-                    }
-                    // Use the results -- we rotate the selected geometry.
-                    if (results.size() > 0) {
-                        // The closest result is the target that the player picked:
-                        Geometry target = results.getClosestCollision().getGeometry();
-                        // Here comes the action:
-                        if (target.getName().equals("Red Box")) {
-                            target.rotate(0, -tpf, 0);
-                        } else if (target.getName().equals("Blue Box")) {
-                            target.rotate(0, tpf, 0);
-                        } else {
-                            target.rotate(0, tpf * 2, 0);
-                        }
-                    }
-                }
-                case null, default -> log.warn("Не релизован процесс [{}] ({})", name, value * tpf);
-            }
-        }
-
-        private void checkMouseMovement(float value) {
-            log.debug("Mouse moved: {}", value);
-            optionsState.setGearHovered(true);
         }
     }
 }

@@ -16,6 +16,7 @@ public class MenuBackgroundImage extends Geometry {
 
         Material mat_menu = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
         mat_menu.setTexture("ColorMap", assetManager.loadTexture("images/necessary/menu.png"));
+
         setMaterial(mat_menu);
         setLocalTranslation(-1f, -menuHeight / 2f, 0);
         setCullHint(Spatial.CullHint.Dynamic);

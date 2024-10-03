@@ -10,6 +10,7 @@ import fox.images.FoxSpritesCombiner;
 import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
+import fox.utils.VolumeConverter;
 import game.freya.gui.JMEApp;
 import game.freya.net.SocketConnection;
 import game.freya.net.server.Server;
@@ -113,6 +114,8 @@ public final class Constants {
 //    private static final FoxPlayer backgPlayer = new FoxPlayer("backgPlayer");
 //    @Getter
 //    private static final FoxPlayer voicePlayer = new FoxPlayer("voicePlayer");
+    @Getter
+    private static final VolumeConverter volcon = new VolumeConverter();
     @Getter
     private static final String notRealizedString = "Не реализовано ещё";
     // game:

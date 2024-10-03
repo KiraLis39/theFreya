@@ -50,6 +50,12 @@ public class UserConfig implements Serializable {
     @Builder.Default
     private int musicVolumePercent = 75;
 
+    @Builder.Default
+    private boolean isBackgEnabled = true;
+
+    @Builder.Default
+    public int backgVolumePercent = 75;
+
     // gameplay:
     @Builder.Default
     private float miniMapOpacity = 0.65f;

@@ -6,7 +6,6 @@ import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
-import com.jme3.scene.Spatial;
 import game.freya.gui.states.substates.menu.meshes.GrayCorner;
 
 public class GrayMenuCorner extends Geometry {
@@ -19,7 +18,7 @@ public class GrayMenuCorner extends Geometry {
         mat_gp.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
         setQueueBucket(RenderQueue.Bucket.Transparent);
         setMaterial(mat_gp);
-        setCullHint(Spatial.CullHint.Dynamic);
+        setCullHint(CullHint.Dynamic);
         // setLodLevel(0);
     }
 }

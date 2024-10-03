@@ -7,6 +7,7 @@ import com.jme3.asset.AssetManager;
 import com.jme3.audio.AudioData;
 import com.jme3.audio.AudioNode;
 import com.jme3.scene.Node;
+import game.freya.config.Constants;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +18,7 @@ import java.util.Collection;
 public class MenuBackgState extends BaseAppState {
     private final Collection<String> userDataKeys;
     private final Node currentModeNode;
-    private final float volumeFlowMod = 0.25f;
+    private final float volumeFlowUpMod = 0.2f, volumeFlowDownMod = 0.3f;
     private AssetManager assetManager;
     private AudioNode bkgMusic;
     private SimpleApplication app;
@@ -92,16 +93,21 @@ public class MenuBackgState extends BaseAppState {
 
     public void pause() {
         if (bkgMusic != null) {
-            log.info("Try to pause audio...");
+            wasLvl = bkgMusic.getVolume();
+
+            log.info("Try to pause audio (volume was {})...", wasLvl);
             SwingUtilities.invokeLater(() -> {
-                wasLvl = bkgMusic.getVolume();
-                while (bkgMusic.getVolume() - volumeFlowMod > 0) {
-                    app.enqueue(() -> bkgMusic.setVolume(bkgMusic.getVolume() - volumeFlowMod));
+                float nextVolumeStep = bkgMusic.getVolume() - volumeFlowDownMod;
+                while (nextVolumeStep > 0) {
+                    float finalNextVolumeStep = nextVolumeStep;
+                    app.enqueue(() -> bkgMusic.setVolume(finalNextVolumeStep));
+                    nextVolumeStep = finalNextVolumeStep - volumeFlowDownMod;
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(60);
                     } catch (InterruptedException _) {
                     }
                 }
+                app.enqueue(() -> bkgMusic.setVolume(0));
                 log.info("Audio paused.");
                 app.enqueue(() -> bkgMusic.pause());
             });
@@ -113,14 +119,19 @@ public class MenuBackgState extends BaseAppState {
             log.info("Try to resume audio...");
             bkgMusic.play();
             SwingUtilities.invokeLater(() -> {
-                while (bkgMusic.getVolume() + volumeFlowMod < wasLvl) {
-                    app.enqueue(() -> bkgMusic.setVolume(bkgMusic.getVolume() + volumeFlowMod));
+                float nextVolumeStep = bkgMusic.getVolume() + volumeFlowUpMod;
+                while (nextVolumeStep < wasLvl) {
+                    float finalNextVolumeStep = nextVolumeStep;
+                    app.enqueue(() -> bkgMusic.setVolume(finalNextVolumeStep));
+                    nextVolumeStep = finalNextVolumeStep + volumeFlowUpMod;
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(90);
                     } catch (InterruptedException _) {
                     }
                 }
-                log.info("Audio resumed...");
+                app.enqueue(() -> bkgMusic.setVolume(Constants.getVolcon()
+                        .volumePercentToGain(Constants.getUserConfig().getBackgVolumePercent())));
+                log.info("Audio resumed to volume {}...", bkgMusic.getVolume());
             });
         }
     }

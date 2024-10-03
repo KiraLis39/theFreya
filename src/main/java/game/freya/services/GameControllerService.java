@@ -72,9 +72,13 @@ public class GameControllerService {
 
         loadNecessaryResources();
 
+        // setup audio:
+        Constants.getVolcon().setMinimum(0);
+        Constants.getVolcon().setMaximum(3);
+
         try {
             // настраиваем JME и запускаемся...:
-            sceneController.showGameWindow(applyJmeSettings());
+            sceneController.createGameCanvasAndWindow(applyJmeSettings());
         } catch (Exception e) {
             AWTErrorDialog.showDialog(ExceptionUtils.getFullExceptionMessage(e));
             exitTheGame(null, 650);

@@ -48,8 +48,8 @@ public class MainMenuState extends BaseAppState {
     private AppStateManager stateManager;
     private Camera cam;
     private FlyByCamera flyByCamera;
-    private MenuHotKeysState hotKeysState;
-    private MenuBackgState backgState;
+    private MenuHotKeysState menuHotKeysState;
+    private MenuBackgState menuBackgroundMusicState;
     private OptionsState optionsState;
     private Node menuNode, rootNode, guiNode;
     private Spatial centerMarker, cmr, cml, avatarGeo;
@@ -105,17 +105,17 @@ public class MainMenuState extends BaseAppState {
         }
 
         // включаем фоновую музыку меню:
-        backgState = new MenuBackgState(menuNode);
-        stateManager.attach(backgState);
+        menuBackgroundMusicState = new MenuBackgState(menuNode);
+        stateManager.attach(menuBackgroundMusicState);
 
         optionsState = new OptionsState(menuNode, gameControllerService);
         stateManager.attach(optionsState);
 
         // подключаем модуль горячих клавиш:
-        hotKeysState = new MenuHotKeysState(menuNode);
-        if (stateManager.attach(hotKeysState)) {
+        menuHotKeysState = new MenuHotKeysState(menuNode);
+        if (stateManager.attach(menuHotKeysState)) {
             executor.execute(() -> {
-                hotKeysState.startingAwait();
+                menuHotKeysState.startingAwait();
                 // перевод курсора в режим меню:
                 appRef.setAltControlMode(true);
             });
@@ -126,11 +126,19 @@ public class MainMenuState extends BaseAppState {
     @Override
     protected void onDisable() {
         this.executor.shutdown();
+        this.menuNode.detachAllChildren();
         this.rootNode.detachChild(menuNode);
-        this.stateManager.detach(backgState);
-        this.stateManager.detach(hotKeysState);
+        this.stateManager.detach(menuBackgroundMusicState);
+        this.stateManager.detach(menuHotKeysState);
         this.stateManager.detach(optionsState);
         this.stateManager.detach(this);
+    }
+
+    @Override
+    protected void cleanup(Application app) {
+        menuNode.detachAllChildren();
+        this.rootNode.detachChild(menuNode);
+        this.executor.shutdownNow();
     }
 
     private void buildMenu() {
@@ -257,11 +265,5 @@ public class MainMenuState extends BaseAppState {
             setFrustumCheckNeeded(false);
             setIntersectsFrustum(false);
         }});
-    }
-
-    @Override
-    protected void cleanup(Application app) {
-        this.rootNode.detachChild(menuNode);
-        this.executor.shutdownNow();
     }
 }
