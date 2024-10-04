@@ -6,7 +6,6 @@ import game.freya.config.Constants;
 import game.freya.dto.PlayCharacterDto;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.dto.roots.WorldDto;
-import game.freya.gui.panes2d.MenuCanvasRunnable;
 import game.freya.gui.panes2d.RunnableCanvasPanel;
 import game.freya.gui.panes2d.sub.components.FButton;
 import game.freya.gui.panes2d.sub.components.SubPane;
@@ -232,7 +231,7 @@ public class WorldsListPane extends JPanel implements iSubPane {
                                     if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
                                             "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
                                             FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                            && canvas instanceof MenuCanvasRunnable mCanvas
+//                                            && canvas instanceof MenuCanvasRunnable mCanvas
                                     ) {
                                         deleteExistsWorldAndCloseThatPanel(world.getUid());
                                         reloadWorlds(canvas);
@@ -295,8 +294,8 @@ public class WorldsListPane extends JPanel implements iSubPane {
 
     @Override
     public void recalculate(RunnableCanvasPanel canvas) {
-        setLocation((int) (canvas.getWidth() * 0.32d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
+//        setLocation((int) (canvas.getWidth() * 0.32d), 2);
+//        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
+//        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
     }
 }

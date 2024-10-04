@@ -4,7 +4,6 @@ import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.dto.roots.WorldDto;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes2d.MenuCanvasRunnable;
 import game.freya.gui.panes2d.RunnableCanvasPanel;
 import game.freya.gui.panes2d.sub.components.CheckBokz;
 import game.freya.gui.panes2d.sub.components.FButton;
@@ -15,17 +14,14 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
-import java.util.UUID;
 
 @Slf4j
 public class WorldCreatingPane extends WorldCreator implements iSubPane {
@@ -130,24 +126,24 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
                     addActionListener(new AbstractAction() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            if (canvas instanceof MenuCanvasRunnable mCanvas) {
-                                WorldDto aNewWorld = WorldDto.builder()
-                                        .uid(UUID.randomUUID())
-                                        .createdBy(gameControllerService.getPlayerService().getCurrentPlayer().getUid())
-                                        .createdDate(LocalDateTime.now())
-                                        .name(getWorldName())
-                                        .hardnessLevel(getHardnessLevel())
-                                        .isNetAvailable(false)
-                                        .isLocal(true)
-//                                        .hasCollision()
-//                                        .isVisible()
-//                                        .collider()
-//                                        .cacheKey()
-//                                        .environments()
-//                                        .location()
-                                        .build();
-                                saveNewLocalWorldAndCreateHero(aNewWorld);
-                            }
+//                            if (canvas instanceof MenuCanvasRunnable mCanvas) {
+//                                WorldDto aNewWorld = WorldDto.builder()
+//                                        .uid(UUID.randomUUID())
+//                                        .createdBy(gameControllerService.getPlayerService().getCurrentPlayer().getUid())
+//                                        .createdDate(LocalDateTime.now())
+//                                        .name(getWorldName())
+//                                        .hardnessLevel(getHardnessLevel())
+//                                        .isNetAvailable(false)
+//                                        .isLocal(true)
+////                                        .hasCollision()
+////                                        .isVisible()
+////                                        .collider()
+////                                        .cacheKey()
+////                                        .environments()
+////                                        .location()
+//                                        .build();
+//                                saveNewLocalWorldAndCreateHero(aNewWorld);
+//                            }
                         }
                     });
                 }});
@@ -207,8 +203,8 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
 
     @Override
     public void recalculate(RunnableCanvasPanel canvas) {
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
+//        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+//        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+//        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));
     }
 }

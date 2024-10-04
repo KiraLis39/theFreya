@@ -2,9 +2,9 @@ package game.freya.gui;
 
 import com.jme3.system.AppSettings;
 import fox.utils.FoxVideoMonitorUtil;
+import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.enums.other.ScreenType;
-import game.freya.gui.panes2d.UIHandler;
 import game.freya.gui.states.GamePlayState;
 import game.freya.gui.states.MainMenuState;
 import game.freya.services.CharacterService;
@@ -23,7 +23,7 @@ import javax.swing.*;
 @Component
 @RequiredArgsConstructor
 public class SceneController {
-    private final UIHandler uIHandler;
+    private final ApplicationProperties props;
     private final CharacterService characterService;
     private final WorldService worldService;
     private GameControllerService gameControllerService;
@@ -86,8 +86,8 @@ public class SceneController {
                 .concat("..."));
 
         Constants.getGameCanvas().setScene(switch (screenType) {
-            case MENU_SCREEN -> new MainMenuState(gameControllerService);
-            case GAME_SCREEN -> new GamePlayState(gameControllerService);
+            case MENU_SCREEN -> new MainMenuState(gameControllerService, props);
+            case GAME_SCREEN -> new GamePlayState(gameControllerService, props);
         });
     }
 }

@@ -9,7 +9,6 @@ import game.freya.gui.panes2d.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
@@ -99,8 +98,8 @@ public class AudioSettingsPane extends JPanel implements ChangeListener, iSubPan
 
     @Override
     public void recalculate(RunnableCanvasPanel canvas) {
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
+//        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+//        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+//        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
     }
 }

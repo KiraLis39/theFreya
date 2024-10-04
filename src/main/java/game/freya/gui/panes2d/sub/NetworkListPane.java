@@ -5,7 +5,6 @@ import fox.components.FOptionPane;
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
 import game.freya.dto.roots.WorldDto;
-import game.freya.gui.panes2d.MenuCanvasRunnable;
 import game.freya.gui.panes2d.RunnableCanvasPanel;
 import game.freya.gui.panes2d.sub.components.FButton;
 import game.freya.gui.panes2d.sub.components.SubPane;
@@ -114,17 +113,17 @@ public class NetworkListPane extends JPanel implements iSubPane {
                         return;
                     }
                     address = address.replace(",", ".");
-                    if (canvas instanceof MenuCanvasRunnable mCanvas) {
-                        password = (String) new FOptionPane()
-                                .buildFOptionPane("Подключиться по IP:", "Пароль сервера:",
-                                        FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
-                        Constants.setConnectionAwait(true);
-                        new Thread(() -> mCanvas.connectToServer(NetConnectTemplate.builder()
-                                .address(address)
-                                .worldUid(null)
-                                .password(gameControllerService.getBcryptUtil().encode(password))
-                                .build())).start();
-                    }
+//                    if (canvas instanceof MenuCanvasRunnable mCanvas) {
+//                        password = (String) new FOptionPane()
+//                                .buildFOptionPane("Подключиться по IP:", "Пароль сервера:",
+//                                        FOptionPane.TYPE.INPUT, null, Constants.getDefaultCursor(), 0, true).get();
+//                        Constants.setConnectionAwait(true);
+//                        new Thread(() -> mCanvas.connectToServer(NetConnectTemplate.builder()
+//                                .address(address)
+//                                .worldUid(null)
+//                                .password(gameControllerService.getBcryptUtil().encode(password))
+//                                .build())).start();
+//                    }
                 }
             });
         }}, BorderLayout.SOUTH);
@@ -159,10 +158,10 @@ public class NetworkListPane extends JPanel implements iSubPane {
                     add(new JPanel() {
                         @Override
                         protected void paintComponent(Graphics g) {
-                            if (getWorld().getIcon() != null) {
-                                g.drawImage(getWorld().getIcon(), 0, 0, maxElementsDim, maxElementsDim, this);
-                                g.dispose();
-                            }
+//                            if (getWorld().getIcon() != null) {
+//                                g.drawImage(getWorld().getIcon(), 0, 0, maxElementsDim, maxElementsDim, this);
+//                                g.dispose();
+//                            }
                         }
 
                         {
@@ -238,15 +237,15 @@ public class NetworkListPane extends JPanel implements iSubPane {
                                     addActionListener(new AbstractAction() {
                                         @Override
                                         public void actionPerformed(ActionEvent e) {
-                                            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
-                                                    "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
-                                                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
-                                                    && canvas instanceof MenuCanvasRunnable mCanvas
-                                            ) {
-                                                deleteExistsWorldAndCloseThatPanel(getWorld().getUid());
-                                                reloadNet(canvas);
-                                                NetworkListPane.this.revalidate();
-                                            }
+//                                            if ((int) new FOptionPane().buildFOptionPane("Подтвердить:",
+//                                                    "Вы хотите уничтожить данный мир\nбез возможности восстановления?",
+//                                                    FOptionPane.TYPE.YES_NO_TYPE, Constants.getDefaultCursor()).get() == 0
+//                                                    && canvas instanceof MenuCanvasRunnable mCanvas
+//                                            ) {
+//                                                deleteExistsWorldAndCloseThatPanel(getWorld().getUid());
+//                                                reloadNet(canvas);
+//                                                NetworkListPane.this.revalidate();
+//                                            }
                                         }
                                     });
                                 }
@@ -398,8 +397,8 @@ public class NetworkListPane extends JPanel implements iSubPane {
 
     @Override
     public void recalculate(RunnableCanvasPanel canvas) {
-        setLocation((int) (canvas.getWidth() * 0.32d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));
+//        setLocation((int) (canvas.getWidth() * 0.32d), 2);
+//        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
+//        setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));
     }
 }

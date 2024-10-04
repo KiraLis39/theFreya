@@ -21,6 +21,7 @@ import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Texture2D;
 import com.jme3.texture.plugins.AWTLoader;
 import game.freya.annotations.DevelopOnly;
+import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
 import game.freya.gui.JMEApp;
@@ -54,15 +55,17 @@ public class MainMenuState extends BaseAppState {
     private Node menuNode, rootNode, guiNode;
     private Spatial centerMarker, cmr, cml, avatarGeo;
     private GameControllerService gameControllerService;
+    private ApplicationProperties props;
 
     @Setter
     @Getter
     private volatile float fov = 45.0f;
 
-    public MainMenuState(GameControllerService gameControllerService) {
+    public MainMenuState(GameControllerService gameControllerService, ApplicationProperties props) {
         super(MainMenuState.class.getSimpleName());
         this.gameControllerService = gameControllerService;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this.props = props;
     }
 
     @Override
@@ -108,7 +111,7 @@ public class MainMenuState extends BaseAppState {
         menuBackgroundMusicState = new MenuBackgState(menuNode);
         stateManager.attach(menuBackgroundMusicState);
 
-        optionsState = new OptionsState(menuNode, gameControllerService);
+        optionsState = new OptionsState(menuNode, gameControllerService, props);
         stateManager.attach(optionsState);
 
         // подключаем модуль горячих клавиш:
@@ -153,12 +156,6 @@ public class MainMenuState extends BaseAppState {
         setupGui();
 
         rootNode.attachChild(menuNode);
-
-        preparePanes();
-    }
-
-    private void preparePanes() {
-
     }
 
     public void setupGui() {

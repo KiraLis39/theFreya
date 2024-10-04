@@ -22,6 +22,7 @@ import com.jme3.system.AppSettings;
 import com.jme3.system.JmeContext;
 import com.jme3.texture.Texture2D;
 import com.jme3.texture.plugins.AWTLoader;
+import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
 import game.freya.enums.gui.UiDebugLevel;
@@ -61,10 +62,36 @@ public class OptionsState extends BaseAppState {
     private AnalogListener anlList;
     @Getter
     private UiDebugLevel currentDebugLevel;
+    private Vector3f mouseDestination;
+    private final String downInfoString1, downInfoString2;
+//    private final String startGameButtonText, coopPlayButtonText, optionsButtonText, randomButtonText, resetButtonText, createNewButtonText, repaintButtonText;
+//    private final String audioSettingsButtonText, videoSettingsButtonText, hotkeysSettingsButtonText, gameplaySettingsButtonText;
+//    private final String backToGameButtonText, saveButtonText, backButtonText, exitButtonText, pausedString;
 
-    public OptionsState(Node parentNode, GameControllerService gameControllerService) {
+    public OptionsState(Node parentNode, GameControllerService gameControllerService, ApplicationProperties props) {
         super(OptionsState.class.getSimpleName());
         this.gameControllerService = gameControllerService;
+
+//        this.audioSettingsButtonText = "Настройки звука";
+//        this.videoSettingsButtonText = "Настройки графики";
+//        this.hotkeysSettingsButtonText = "Управление";
+//        this.gameplaySettingsButtonText = "Геймплей";
+//        this.backToGameButtonText = "Вернуться";
+//        this.saveButtonText = "Сохранить";
+//        this.backButtonText = "← Назад";
+//        this.exitButtonText = "← Выход";
+
+//        this.startGameButtonText = "Начать игру";
+//        this.coopPlayButtonText = "Игра по сети";
+//        this.createNewButtonText = "Создать"; // героя или карту
+//        this.optionsButtonText = "Настройки";
+//        this.repaintButtonText = "Обновить"; // текущий контент (список героев, карт и т.п.)
+//        this.randomButtonText = "Случайно"; // генерация героя или карты
+//        this.resetButtonText = "Сброс"; // сброс генератора по умолчанию
+
+//        this.pausedString = "- PAUSED -";
+        this.downInfoString1 = props.getAppCompany();
+        this.downInfoString2 = props.getAppName().concat(" v.").concat(props.getAppVersion());
     }
 
     @Override
@@ -83,6 +110,33 @@ public class OptionsState extends BaseAppState {
         this.optionsRootNode = new Node("OptionsNode");
         this.optionsRootNode.setCullHint(Spatial.CullHint.Inherit);
         this.anlList = new MenuAnalogListener(this.app, this.optionsRootNode);
+
+        preparePanes();
+    }
+
+    private void preparePanes() {
+//        setAudiosPane(new AudioSettingsPane(this));
+//        setVideosPane(new VideoSettingsPane(this));
+//        setHotkeysPane(new HotkeysSettingsPane(this));
+//        setGameplayPane(new GameplaySettingsPane(this));
+//        setWorldCreatingPane(new WorldCreatingPane(this, gameControllerService));
+//        setHeroCreatingPane(new HeroCreatingPane(this, gameControllerService));
+//        setWorldsListPane(new WorldsListPane(this, gameControllerService));
+//        setHeroesListPane(new HeroesListPane(this, gameControllerService));
+//        setNetworkListPane(new NetworkListPane(this, gameControllerService));
+//        setNetworkCreatingPane(new NetCreatingPane(this, gameControllerService));
+//
+//        // добавляем панели на слой:
+//        parentFrame.getContentPane().add(getAudiosPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getVideosPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getGameplayPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getNetworkListPane(), PALETTE_LAYER, 0);
+//        parentFrame.getContentPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
     }
 
     @Override
@@ -155,8 +209,6 @@ public class OptionsState extends BaseAppState {
         }
     }
 
-    private Vector3f mouseDestination;
-
     public void checkPointer(Vector2f mousePointer) {
 //        log.info("Mouse moved: {}", mousePointer);
         mouseDestination = new Vector3f(mousePointer.x, mousePointer.y, 0);
@@ -167,8 +219,8 @@ public class OptionsState extends BaseAppState {
     }
 
     public void checkClick() {
+        log.info("Gear pressed: {}", isGearHovered);
         Controls.setOptionsMenuVisible(isGearHovered);
-        log.info("Gear pressed: {}", Controls.isOptionsMenuVisible());
         darkenOptions.setCullHint(Controls.isOptionsMenuVisible() ? Spatial.CullHint.Never : Spatial.CullHint.Always);
     }
 }

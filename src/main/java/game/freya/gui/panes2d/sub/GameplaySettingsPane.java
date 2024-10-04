@@ -13,7 +13,6 @@ import game.freya.gui.panes2d.sub.components.ZLabel;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
@@ -37,8 +36,7 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
             add(new SubPane(null) {{
-                setPreferredSize(new Dimension(canvas.getWidth() / 4, 35));
-
+//                setPreferredSize(new Dimension(canvas.getWidth() / 4, 35));
                 add(new CheckBokz("moveScreenCheck") {{
                     setSelected(Constants.getUserConfig().isDragGameFieldOnFrameEdgeReached());
                     setAction(new AbstractAction() {
@@ -54,7 +52,7 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
 
             add(Box.createVerticalStrut(6));
             add(new SubPane(null) {{
-                setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
+//                setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
 
                 add(new CheckBokz("fullscreenTypeCheck") {{
                     setSelected(Constants.getUserConfig().getFullscreenType().equals(FullscreenType.EXCLUSIVE));
@@ -95,7 +93,7 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
 
             add(Box.createVerticalStrut(6));
             add(new SubPane("Видимость миникарты") {{
-                setPreferredSize(new Dimension(canvas.getWidth() / 4, 64));
+//                setPreferredSize(new Dimension(canvas.getWidth() / 4, 64));
                 add(new JZlider("minimapOpacitySlider") {{
                     setMinimum(25);
                     setMaximum(100);
@@ -108,7 +106,7 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
                 }});
             }});
 
-            add(Box.createVerticalStrut(canvas.getHeight()));
+//            add(Box.createVerticalStrut(canvas.getHeight()));
         }});
 
         add(Box.createHorizontalStrut(16));
@@ -131,7 +129,7 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
                 add(new JTexztArea("Авто-пауза при сворачивании (не для сетевой игры)", 4, 21), BorderLayout.CENTER);
             }});
 
-            add(Box.createVerticalStrut(canvas.getHeight()));
+//            add(Box.createVerticalStrut(canvas.getHeight()));
         }});
     }
 
@@ -148,8 +146,8 @@ public class GameplaySettingsPane extends JPanel implements iSubPane {
 
     @Override
     public void recalculate(RunnableCanvasPanel canvas) {
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
+//        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+//        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+//        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
     }
 }

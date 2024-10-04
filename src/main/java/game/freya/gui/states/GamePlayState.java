@@ -20,7 +20,9 @@ import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
+import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
+import game.freya.config.Controls;
 import game.freya.enums.gui.CrosshairType;
 import game.freya.enums.gui.NodeNames;
 import game.freya.gui.JMEApp;
@@ -31,6 +33,7 @@ import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URL;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,6 +42,7 @@ public class GamePlayState extends BaseAppState {
     private CrosshairType crosshairType = CrosshairType.SIMPLE_CROSS;
     private Node gameNode, rootNode, guiNode;
     private SimpleApplication app;
+    private ApplicationProperties props;
     private JMEApp appRef;
     private AppStateManager stateManager;
     private Listener listener;
@@ -53,10 +57,11 @@ public class GamePlayState extends BaseAppState {
     private BitmapText crosshair;
     private Geometry mark;
 
-    public GamePlayState(GameControllerService gameControllerService) {
+    public GamePlayState(GameControllerService gameControllerService, ApplicationProperties props) {
         super(GamePlayState.class.getSimpleName());
         this.gameControllerService = gameControllerService;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this.props = props;
     }
 
     @Override
@@ -95,7 +100,7 @@ public class GamePlayState extends BaseAppState {
             buildGame();
         }
 
-        optionsState = new OptionsState(gameNode, gameControllerService);
+        optionsState = new OptionsState(gameNode, gameControllerService, props);
         stateManager.attach(optionsState);
 
         // подключаем модуль горячих клавиш:
@@ -127,6 +132,12 @@ public class GamePlayState extends BaseAppState {
         this.stateManager.detach(hotKeysState);
         this.stateManager.detach(optionsState);
         this.stateManager.detach(this);
+
+        // выходим из активной игры:
+        Controls.setGameActive(false);
+
+        gameControllerService.saveTheGame(Duration.ofMillis(System.currentTimeMillis() - Constants.getGameStartedIn()));
+        gameControllerService.closeConnections();
     }
 
     @Override
@@ -186,6 +197,18 @@ public class GamePlayState extends BaseAppState {
         initCrossHairs();
 
         rootNode.attachChild(gameNode);
+
+        // проводим основную инициализацию класса текущего мира:
+        gameControllerService.getWorldService().getCurrentWorld().init(gameControllerService);
+
+        // начинаем подсчёт времени в игре:
+        Constants.setGameStartedIn(System.currentTimeMillis());
+
+        // старт бродкастинга с Сервером:
+        if (gameControllerService.getWorldService().getCurrentWorld().isNetAvailable()) {
+            log.info("Начинается трансляция данных на Сервер...");
+            Constants.getLocalSocketConnection().startClientBroadcast();
+        }
     }
 
     private void setupGameCamera(Node gameNode) {

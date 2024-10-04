@@ -3,7 +3,6 @@ package game.freya.gui.panes2d.sub;
 import fox.components.FOptionPane;
 import game.freya.config.Constants;
 import game.freya.dto.PlayCharacterDto;
-import game.freya.gui.panes2d.MenuCanvasRunnable;
 import game.freya.gui.panes2d.RunnableCanvasPanel;
 import game.freya.gui.panes2d.sub.components.FButton;
 import game.freya.gui.panes2d.sub.components.SubPane;
@@ -13,7 +12,6 @@ import game.freya.services.GameControllerService;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
@@ -155,12 +153,12 @@ public class HeroesListPane extends JPanel implements iSubPane {
                                 setMaximumSize(new Dimension(24, 24));
                                 setAlignmentY(TOP_ALIGNMENT);
 
-                                addActionListener(new AbstractAction() {
-                                    @Override
-                                    public void actionPerformed(ActionEvent e) {
-                                        ((MenuCanvasRunnable) canvas).openCreatingNewHeroPane(hero);
-                                    }
-                                });
+//                                addActionListener(new AbstractAction() {
+//                                    @Override
+//                                    public void actionPerformed(ActionEvent e) {
+//                                        ((MenuCanvasRunnable) canvas).openCreatingNewHeroPane(hero);
+//                                    }
+//                                });
                             }
                         });
 
@@ -204,7 +202,7 @@ public class HeroesListPane extends JPanel implements iSubPane {
             add(Box.createVerticalStrut(6));
         }
 
-        add(Box.createVerticalStrut(canvas.getHeight()));
+//        add(Box.createVerticalStrut(canvas.getHeight()));
 
         HeroesListPane.this.revalidate();
     }
@@ -233,8 +231,8 @@ public class HeroesListPane extends JPanel implements iSubPane {
 
     @Override
     public void recalculate(RunnableCanvasPanel canvas) {
-        setLocation((int) (canvas.getWidth() * 0.32d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
+//        setLocation((int) (canvas.getWidth() * 0.32d), 2);
+//        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
+//        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));
     }
 }

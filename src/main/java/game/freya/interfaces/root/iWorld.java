@@ -4,7 +4,6 @@ import game.freya.annotations.RootInterface;
 import game.freya.dto.roots.CharacterDto;
 import game.freya.dto.roots.EnvironmentDto;
 import game.freya.enums.other.HardnessLevel;
-import game.freya.gui.panes2d.GamePaneRunnable;
 import game.freya.services.GameControllerService;
 
 import java.awt.*;
@@ -42,7 +41,7 @@ public interface iWorld extends Serializable {
 
     void generate();
 
-    void init(GamePaneRunnable canvas, GameControllerService controller);
+    void init(GameControllerService controller);
 
     void draw(Graphics2D g2D) throws AWTException;
 }

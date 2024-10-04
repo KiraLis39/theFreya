@@ -13,7 +13,6 @@ import game.freya.utils.ExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
@@ -87,7 +86,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
 
             add(Box.createVerticalStrut(12));
             add(new SubPane("Мультибуффер") {{
-                setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
+//                setPreferredSize(new Dimension(canvas.getWidth() / 4, 57));
 
                 add(new SubPane(null) {{
                     add(new ZLabel("Использовать", null) {{
@@ -167,7 +166,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
 
             add(Box.createVerticalStrut(6));
 
-            add(Box.createVerticalStrut(canvas.getHeight()));
+//            add(Box.createVerticalStrut(canvas.getHeight()));
         }});
 
         add(Box.createHorizontalStrut(16));
@@ -205,7 +204,7 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
                 add(new ZLabel("Использовать бикубическое сглаживание", null), BorderLayout.CENTER);
             }});
 
-            add(Box.createVerticalStrut(canvas.getHeight()));
+//            add(Box.createVerticalStrut(canvas.getHeight()));
         }});
     }
 
@@ -222,8 +221,8 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
 
     @Override
     public void recalculate(RunnableCanvasPanel canvas) {
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
+//        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+//        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+//        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
     }
 }

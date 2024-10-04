@@ -24,7 +24,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.RGBImageFilter;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.UUID;
 
 @Slf4j
@@ -70,7 +69,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
         recalculate(canvas);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
-        add(Box.createHorizontalStrut(canvas.getWidth() / 3));
+//        add(Box.createHorizontalStrut(canvas.getWidth() / 3));
         add(new JSeparator(SwingConstants.VERTICAL));
 //        add(Box.createHorizontalStrut(9));
         add(new SubPane("Test hero panel") {{
@@ -143,10 +142,10 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 JColorChooser bcc = new JColorChooser(baseColor);
-                                JOptionPane.showMessageDialog(canvas, Arrays.stream(bcc.getChooserPanels())
-                                                .filter(p -> p.getDisplayName().equalsIgnoreCase("rgb")).findFirst()
-                                                .orElse(bcc.getChooserPanels()[0]), "Выбор основного цвета героя:",
-                                        JOptionPane.QUESTION_MESSAGE);
+//                                JOptionPane.showMessageDialog(canvas, Arrays.stream(bcc.getChooserPanels())
+//                                                .filter(p -> p.getDisplayName().equalsIgnoreCase("rgb")).findFirst()
+//                                                .orElse(bcc.getChooserPanels()[0]), "Выбор основного цвета героя:",
+//                                        JOptionPane.QUESTION_MESSAGE);
 
                                 baseColor = bcc.getColor();
                                 setBackground(baseColor);
@@ -164,10 +163,10 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                             @Override
                             public void actionPerformed(ActionEvent e) {
                                 JColorChooser bcc = new JColorChooser(secondColor);
-                                JOptionPane.showMessageDialog(canvas, Arrays.stream(bcc.getChooserPanels())
-                                                .filter(p -> p.getDisplayName().equalsIgnoreCase("rgb")).findFirst()
-                                                .orElse(bcc.getChooserPanels()[0]), "Выбор дополнительного цвета героя:",
-                                        JOptionPane.QUESTION_MESSAGE);
+//                                JOptionPane.showMessageDialog(canvas, Arrays.stream(bcc.getChooserPanels())
+//                                                .filter(p -> p.getDisplayName().equalsIgnoreCase("rgb")).findFirst()
+//                                                .orElse(bcc.getChooserPanels()[0]), "Выбор дополнительного цвета героя:",
+//                                        JOptionPane.QUESTION_MESSAGE);
 
                                 secondColor = bcc.getColor();
                                 setBackground(secondColor);
@@ -179,7 +178,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                 }});
             }});
 
-            add(Box.createVerticalStrut(canvas.getHeight() / 3));
+//            add(Box.createVerticalStrut(canvas.getHeight() / 3));
             add(new JSeparator(SwingConstants.HORIZONTAL));
             add(Box.createVerticalStrut(6));
 
@@ -213,7 +212,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
                                 gameControllerService.getCharacterService().justSaveAnyHero(editableHero);
 
                                 HeroCreatingPane.this.setVisible(false);
-                                canvas.getHeroesListPane().setVisible(true);
+//                                canvas.getHeroesListPane().setVisible(true);
                             }
                         }
                     });
@@ -374,7 +373,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
 
     @Override
     public void recalculate(RunnableCanvasPanel canvas) {
-        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
+//        setLocation((int) (canvas.getWidth() * 0.34d), 2);
+//        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
     }
 }
