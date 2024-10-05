@@ -6,13 +6,16 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.app.StatsAppState;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetKey;
+import com.jme3.asset.AssetManager;
 import com.jme3.asset.StreamAssetInfo;
 import com.jme3.awt.AWTSettingsDialog;
 import com.jme3.cursors.plugins.CursorLoader;
 import com.jme3.cursors.plugins.JmeCursor;
+import com.jme3.math.ColorRGBA;
 import com.jme3.renderer.RenderManager;
 import com.jme3.system.AppSettings;
 import fox.utils.FoxVideoMonitorUtil;
+import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.config.Controls;
 import game.freya.enums.gui.FullscreenType;
@@ -21,6 +24,7 @@ import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.states.MainMenuState;
 import game.freya.gui.states.substates.global.DebugInfoState;
 import game.freya.gui.states.substates.global.ExitHandlerState;
+import game.freya.gui.states.substates.global.NiftyTestState;
 import game.freya.gui.states.substates.global.OptionsState;
 import game.freya.gui.states.substates.menu.MenuBackgState;
 import game.freya.services.GameControllerService;
@@ -35,11 +39,14 @@ import java.awt.*;
 @Setter
 @Getter
 public class JMEApp extends SimpleApplication {
-    private volatile boolean isReady;
+    private ApplicationProperties props;
     private GameControllerService gameControllerService;
+    private OptionsState optionsState;
+    private volatile boolean isReady;
 
-    public JMEApp(GameControllerService gameControllerService, AppSettings settings) {
+    public JMEApp(GameControllerService gameControllerService, AppSettings settings, ApplicationProperties props) {
         this.gameControllerService = gameControllerService;
+        this.props = props;
 
         // show game settings dialog:
         if (Constants.getUserConfig().isShowSettingsOnLaunch()) {
@@ -52,6 +59,10 @@ public class JMEApp extends SimpleApplication {
             Constants.getUserConfig().setMultiSamplingLevel(settings.getSamples());
             Constants.getUserConfig().setWindowWidth(settings.getWindowWidth());
             Constants.getUserConfig().setWindowHeight(settings.getHeight()); // todo: а делить на aspect?
+        }
+        if (!settings.isGammaCorrection()) {
+            log.error("Внимание! Гамма-коррекция отключена настройками приложения! Это не штатный режим работы!");
+            settings.setGammaCorrection(true);
         }
         setSettings(settings);
 
@@ -66,6 +77,28 @@ public class JMEApp extends SimpleApplication {
     /* Initialize the game scene here */
     @Override
     public void simpleInitApp() {
+        // здесь регистрируем все шрифты, статические картинки, звуки и т.п...:
+        registerAppResources(Constants.getGameCanvas().getAssetManager());
+
+        // прикручиваем общие стейты для всего процесса игры, от меню до геймплея:
+        attachBaseAppStates();
+
+        // запуск игрового окна:
+        viewPort.setBackgroundColor(ColorRGBA.DarkGray);
+
+        setReady(true);
+    }
+
+    private void registerAppResources(AssetManager assetManager) {
+        Constants.setFontDefault(assetManager.loadFont("Interface/Fonts/Default.fnt"));
+        Constants.setFontConsole(assetManager.loadFont("Interface/Fonts/Console.fnt"));
+    }
+
+    /**
+     * Здесь прикрепляем к приложению стейты, которые должны быть активны не зависимо от того,
+     * где мы находимся - в меню игры или в самом процессе геймплея. Например выход из приложения или Нифти.
+     */
+    private void attachBaseAppStates() {
         // контроллер выхода из игры:
         stateManager.attach(new ExitHandlerState(gameControllerService));
 
@@ -73,8 +106,12 @@ public class JMEApp extends SimpleApplication {
         stateManager.detach(stateManager.getState(StatsAppState.class, false));
         stateManager.attach(new DebugInfoState());
 
-        // запуск игрового окна:
-        setReady(true);
+        // the options state:
+        optionsState = new OptionsState(gameControllerService, props);
+        stateManager.attach(optionsState);
+
+        // подключаем меню настроек, опций игры для меню и геймпея:
+        stateManager.attach(new NiftyTestState());
     }
 
     // tpf большой на медленных ПК и маленький на быстрых ПК.
@@ -134,6 +171,7 @@ public class JMEApp extends SimpleApplication {
         log.info("Fullscreen mode now: {} ({})", Constants.getUserConfig().isFullscreen(), settings.isFullscreen());
 
         Constants.getGameCanvas().restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
+        Constants.getGameFrame().reloadCanvasDim();
     }
 
     private void doExclusive(AppSettings settings, DisplayMode vMode, Dimension dDim) {
@@ -198,9 +236,11 @@ public class JMEApp extends SimpleApplication {
             } catch (Exception e) {
                 log.error("Не удалось прочитать курсор: {}", ExceptionUtils.getFullExceptionMessage(e));
             }
+
+            flyCam.setEnabled(false);
+            flyCam.setDragToRotate(false);
             stateManager.detach(getStateManager().getState(FlyCamAppState.class));
             mouseInput.setCursorVisible(true);
-            flyCam.setDragToRotate(false);
         } else {
             stateManager.attach(new FlyCamAppState());
             mouseInput.setCursorVisible(false);
@@ -236,16 +276,21 @@ public class JMEApp extends SimpleApplication {
         enqueue(() -> {
             log.info("Reloading context and UI elements...");
             restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
-            getRenderer().setMainFrameBufferSrgb(true);
-            getRenderer().setLinearizeSrgbImages(true);
-            cam.setFrustumPerspective(stateManager.getState(MainMenuState.class).getFov(), (float) Constants.getCurrentScreenAspect(), 0.25f, 1.5f);
 
             // пересборка расположений и размеров UI:
             getStateManager().getState(DebugInfoState.class).rebuildFullText();
             OptionsState optState = getStateManager().getState(OptionsState.class, false);
             if (getStateManager().hasState(optState) && optState.isInitialized()) {
-                getStateManager().getState(OptionsState.class).rebuild();
+                optState.rebuild();
             }
+            MainMenuState menuState = getStateManager().getState(MainMenuState.class, false);
+            if (getStateManager().hasState(menuState) && menuState.isInitialized()) {
+                menuState.setupMenuCamera();
+            }
+
+            // коррекция гаммы:
+            renderer.setMainFrameBufferSrgb(true);
+            renderer.setLinearizeSrgbImages(true);
         });
     }
 

@@ -3,6 +3,7 @@ package game.freya.gui;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeCanvasContext;
 import fox.images.FoxCursor;
+import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.services.GameControllerService;
 import lombok.Getter;
@@ -18,13 +19,15 @@ import java.awt.event.WindowEvent;
 @Setter
 @Getter
 public class GameWindowSwing extends JFrame {
+    private final ApplicationProperties props;
     private volatile boolean isReady;
     private GameControllerService gameControllerService;
     private JmeCanvasContext jmeContext;
-    private JPanel test;
+    private Canvas canvas;
 
-    public GameWindowSwing(GameControllerService gameControllerService, AppSettings settings) {
+    public GameWindowSwing(GameControllerService gameControllerService, AppSettings settings, ApplicationProperties props) {
         this.gameControllerService = gameControllerService;
+        this.props = props;
 
         setTitle(settings.getTitle());
         setDefaultCursor();
@@ -45,13 +48,49 @@ public class GameWindowSwing extends JFrame {
         getContentPane().setBackground(Color.BLACK);
         getLayeredPane().setBackground(Color.MAGENTA);
 
-        attachJmeCanvasToFrame();
+        setLayout(null);
+        prepareMenuPanes();
+        attachJmeCanvasToFrame(settings);
 
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
 
-        // log.info("Canvas location/size: {} / {}", canvas.getLocation(), canvas.getSize());
+        reloadCanvasDim();
+    }
+
+    public void reloadCanvasDim() {
+        canvas.setSize(getContentPane().getBounds().width, getContentPane().getBounds().height);
+        canvas.setLocation(0, 0);
+    }
+
+//    @Getter
+//    private AudioSettingsPane asp;
+
+    private void prepareMenuPanes() {
+//        asp = new AudioSettingsPane(this);
+
+//        setVideosPane(new VideoSettingsPane(this));
+//        setHotkeysPane(new HotkeysSettingsPane(this));
+//        setGameplayPane(new GameplaySettingsPane(this));
+//        setWorldCreatingPane(new WorldCreatingPane(this, gameControllerService));
+//        setHeroCreatingPane(new HeroCreatingPane(this, gameControllerService));
+//        setWorldsListPane(new WorldsListPane(this, gameControllerService));
+//        setHeroesListPane(new HeroesListPane(this, gameControllerService));
+//        setNetworkListPane(new NetworkListPane(this, gameControllerService));
+//        setNetworkCreatingPane(new NetCreatingPane(this, gameControllerService));
+
+        // добавляем панели на слой:
+//        getContentPane().add(asp, PALETTE_LAYER, 0);
+//        getContentPane().add(getVideosPane(), PALETTE_LAYER, 0);
+//        getContentPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
+//        getContentPane().add(getGameplayPane(), PALETTE_LAYER, 0);
+//        getContentPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
+//        getContentPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
+//        getContentPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
+//        getContentPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
+//        getContentPane().add(getNetworkListPane(), PALETTE_LAYER, 0);
+//        getContentPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
     }
 
     private void setDefaultCursor() {
@@ -66,8 +105,11 @@ public class GameWindowSwing extends JFrame {
         }
     }
 
-    private void attachJmeCanvasToFrame() {
+    private void attachJmeCanvasToFrame(AppSettings settings) {
+        Constants.setGameCanvas(new JMEApp(gameControllerService, settings, props));
+        Constants.getGameCanvas().createCanvas();
         Constants.getGameCanvas().startCanvas();
+
         // ждём пока JME-окно не прогрузится:
         while (!Constants.getGameCanvas().isReady()) {
             try {
@@ -76,19 +118,10 @@ public class GameWindowSwing extends JFrame {
             }
         }
 
-        final Canvas canvas = getCanvas();
-        // setLayout(null);
-        add(canvas);
-    }
-
-    private Canvas getCanvas() {
         jmeContext = (JmeCanvasContext) Constants.getGameCanvas().getContext();
         jmeContext.setSystemListener(Constants.getGameCanvas());
 
-        final Canvas canvas = jmeContext.getCanvas();
-
-        // canvas.setLocation(0, -10);
-        // canvas.setSize(1470, 760);
-        return canvas;
+        canvas = jmeContext.getCanvas();
+        add(canvas);
     }
 }

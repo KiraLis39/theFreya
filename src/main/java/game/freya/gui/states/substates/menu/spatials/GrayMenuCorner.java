@@ -14,11 +14,12 @@ public class GrayMenuCorner extends Geometry {
         super("GrayMenuPanel", new GrayCorner());
 
         Material mat_gp = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
-        mat_gp.setColor("Color", ColorRGBA.fromRGBA255(0, 0, 0, 223));
+        mat_gp.setColor("Color", ColorRGBA.fromRGBA255(0, 0, 0, 158));
         mat_gp.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-        setQueueBucket(RenderQueue.Bucket.Transparent);
+
         setMaterial(mat_gp);
-        setCullHint(CullHint.Dynamic);
+        setQueueBucket(RenderQueue.Bucket.Transparent);
+        setLocalTranslation(0, 0, 0.01f);
         // setLodLevel(0);
     }
 }

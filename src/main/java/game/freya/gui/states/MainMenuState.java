@@ -14,6 +14,7 @@ import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
+import com.jme3.renderer.Renderer;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
@@ -21,14 +22,10 @@ import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Texture2D;
 import com.jme3.texture.plugins.AWTLoader;
 import game.freya.annotations.DevelopOnly;
-import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
 import game.freya.enums.gui.NodeNames;
-import game.freya.gui.JMEApp;
-import game.freya.gui.states.substates.global.OptionsState;
 import game.freya.gui.states.substates.menu.MenuBackgState;
 import game.freya.gui.states.substates.menu.MenuHotKeysState;
-import game.freya.gui.states.substates.menu.spatials.GrayMenuCorner;
 import game.freya.gui.states.substates.menu.spatials.MenuBackgroundImage;
 import game.freya.services.GameControllerService;
 import lombok.Getter;
@@ -40,49 +37,54 @@ import java.awt.image.BufferedImage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Сцена главного меню игры.
+ * Здесь собран лишь контент для главного меню - фоновая музыка меню, горячие клавиши меню, фоновый рисунок или видео,
+ * аватар.
+ */
 @Slf4j
 public class MainMenuState extends BaseAppState {
-    private ExecutorService executor;
+    private GameControllerService gameControllerService;
     private SimpleApplication app;
-    private JMEApp appRef;
+    private ExecutorService executor;
     private AssetManager assetManager;
     private AppStateManager stateManager;
     private Camera cam;
     private FlyByCamera flyByCamera;
     private MenuHotKeysState menuHotKeysState;
     private MenuBackgState menuBackgroundMusicState;
-    private OptionsState optionsState;
     private Node menuNode, rootNode, guiNode;
     private Spatial centerMarker, cmr, cml, avatarGeo;
-    private GameControllerService gameControllerService;
-    private ApplicationProperties props;
 
     @Setter
     @Getter
     private volatile float fov = 45.0f;
+    private Renderer renderer;
 
-    public MainMenuState(GameControllerService gameControllerService, ApplicationProperties props) {
+    public MainMenuState(GameControllerService gameControllerService) {
         super(MainMenuState.class.getSimpleName());
         this.gameControllerService = gameControllerService;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
-        this.props = props;
     }
 
     @Override
     protected void initialize(Application app) {
         this.app = (SimpleApplication) app;
-        this.appRef = (JMEApp) this.app;
         this.cam = this.app.getCamera();
         this.guiNode = this.app.getGuiNode();
         this.rootNode = this.app.getRootNode();
         this.flyByCamera = this.app.getFlyByCamera();
         this.assetManager = this.app.getAssetManager();
         this.stateManager = this.app.getStateManager();
+        this.renderer = this.app.getRenderer();
+    }
 
-        this.app.getRenderer().setMainFrameBufferSrgb(true);
-        this.app.getRenderer().setLinearizeSrgbImages(true);
-
-        buildMenu();
+    @Override
+    protected void cleanup(Application app) {
+        this.executor.shutdownNow();
+        this.menuNode.detachAllChildren();
+        this.rootNode.detachChild(menuNode);
+        this.stateManager.detach(this);
     }
 
     @Override
@@ -103,6 +105,9 @@ public class MainMenuState extends BaseAppState {
         }
 
         // build the main menu:
+        if (rootNode.hasChild(menuNode)) {
+            menuNode = (Node) rootNode.getChild(NodeNames.MENU_SCENE_NODE.name());
+        }
         if (menuNode == null || !rootNode.hasChild(menuNode)) {
             buildMenu();
         }
@@ -111,16 +116,13 @@ public class MainMenuState extends BaseAppState {
         menuBackgroundMusicState = new MenuBackgState(menuNode);
         stateManager.attach(menuBackgroundMusicState);
 
-        optionsState = new OptionsState(menuNode, gameControllerService, props);
-        stateManager.attach(optionsState);
-
         // подключаем модуль горячих клавиш:
         menuHotKeysState = new MenuHotKeysState(menuNode);
         if (stateManager.attach(menuHotKeysState)) {
             executor.execute(() -> {
                 menuHotKeysState.startingAwait();
                 // перевод курсора в режим меню:
-                appRef.setAltControlMode(true);
+                Constants.getGameCanvas().setAltControlMode(true);
             });
             log.info("Запуск главного меню произведён!");
         }
@@ -129,27 +131,16 @@ public class MainMenuState extends BaseAppState {
     @Override
     protected void onDisable() {
         this.executor.shutdown();
-        this.menuNode.detachAllChildren();
         this.rootNode.detachChild(menuNode);
         this.stateManager.detach(menuBackgroundMusicState);
         this.stateManager.detach(menuHotKeysState);
-        this.stateManager.detach(optionsState);
-        this.stateManager.detach(this);
-    }
-
-    @Override
-    protected void cleanup(Application app) {
-        menuNode.detachAllChildren();
-        this.rootNode.detachChild(menuNode);
-        this.executor.shutdownNow();
     }
 
     private void buildMenu() {
         setupMenuCamera();
 
         menuNode = new Node(NodeNames.MENU_SCENE_NODE.name());
-        menuNode.attachChild(new MenuBackgroundImage(assetManager, cam));
-        menuNode.attachChild(new GrayMenuCorner(assetManager));
+        menuNode.attachChild(new MenuBackgroundImage(assetManager));
 
         setupMenuAudio(menuNode);
 //        setupMenuLights(menuNode);
@@ -244,12 +235,12 @@ public class MainMenuState extends BaseAppState {
         menuNode.setUserData("bkgRain", "sound/weather/rain1.ogg");
     }
 
-    private void setupMenuCamera() {
-        // для меню отключено (иначе можно случайно сбить движением мыши при запуске игры)
+    public void setupMenuCamera() {
         flyByCamera.setEnabled(false);
 //        flyByCamera.setMoveSpeed(0.01f);
 //        flyByCamera.setZoomSpeed(0.1f);
-        cam.setFrustumPerspective(fov, (float) Constants.getCurrentScreenAspect(), 0.25f, 1.5f);
+
+        cam.setFrustumPerspective(fov, (float) Constants.getCurrentScreenAspect(), 0.01f, 1000f);
         cam.setLocation(new Vector3f(0.f, 0.f, 1.354f));
         cam.lookAt(new Vector3f(0.f, 0.f, -1.f), Vector3f.UNIT_Y);
     }

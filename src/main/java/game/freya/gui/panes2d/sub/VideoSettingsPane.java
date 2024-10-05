@@ -37,7 +37,6 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        recalculate(canvas);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
         // left panel:
@@ -220,7 +219,13 @@ public class VideoSettingsPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(RunnableCanvasPanel canvas) {
+    public void setVisible(boolean aFlag) {
+        super.setVisible(aFlag);
+        recalculate();
+    }
+
+    @Override
+    public void recalculate() {
 //        setLocation((int) (canvas.getWidth() * 0.34d), 2);
 //        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
 //        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));

@@ -100,8 +100,8 @@ public class GamePlayState extends BaseAppState {
             buildGame();
         }
 
-        optionsState = new OptionsState(gameNode, gameControllerService, props);
-        stateManager.attach(optionsState);
+//        optionsState = new OptionsState(gameNode, gameControllerService, props);
+//        stateManager.attach(optionsState);
 
         // подключаем модуль горячих клавиш:
         this.hotKeysState = new GameplayHotKeysState(gameNode, gameControllerService);
@@ -152,7 +152,7 @@ public class GamePlayState extends BaseAppState {
     }
 
     private void buildGame() {
-        this.crosshairFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
+        this.crosshairFont = Constants.getFontDefault();
         this.crosshair = new BitmapText(crosshairFont);
 
         this.gameNode = new Node(NodeNames.GAME_SCENE_NODE.name());

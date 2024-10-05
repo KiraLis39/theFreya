@@ -49,7 +49,6 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
         setDoubleBuffered(false);
         setIgnoreRepaint(true);
 
-        recalculate(canvas);
         setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
 
         add(new SubPane("Создание игрового мира") {{
@@ -193,6 +192,7 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
 
         this.worldName = "World_%s".formatted(r.nextInt(1000));
         super.setVisible(isVisible);
+        recalculate();
 
         if (ntf != null) {
             ntf.setText(this.worldName);
@@ -202,7 +202,7 @@ public class WorldCreatingPane extends WorldCreator implements iSubPane {
     }
 
     @Override
-    public void recalculate(RunnableCanvasPanel canvas) {
+    public void recalculate() {
 //        setLocation((int) (canvas.getWidth() * 0.34d), 2);
 //        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
 //        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, 0, 0));

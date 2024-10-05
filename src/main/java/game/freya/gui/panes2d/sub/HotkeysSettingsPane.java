@@ -2,7 +2,6 @@ package game.freya.gui.panes2d.sub;
 
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.gui.panes2d.RunnableCanvasPanel;
 import game.freya.gui.panes2d.sub.components.FButton;
 import game.freya.gui.panes2d.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +18,12 @@ import java.awt.image.BufferedImage;
 public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPane {
     private transient BufferedImage snap;
 
-    public HotkeysSettingsPane(RunnableCanvasPanel canvas) {
+    public HotkeysSettingsPane() {
         setName("Hotkeys settings pane");
         setVisible(false);
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        recalculate(canvas);
         setLayout(new BorderLayout(3, 3));
 
         add(new SubPane(null) {{
@@ -109,7 +107,13 @@ public class HotkeysSettingsPane extends JPanel implements MouseListener, iSubPa
     }
 
     @Override
-    public void recalculate(RunnableCanvasPanel canvas) {
+    public void setVisible(boolean aFlag) {
+        super.setVisible(aFlag);
+        recalculate();
+    }
+
+    @Override
+    public void recalculate() {
 //        setLocation((int) (canvas.getWidth() * 0.34d), 2);
 //        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
     }

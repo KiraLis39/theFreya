@@ -1,5 +1,6 @@
 package game.freya.config;
 
+import com.jme3.font.BitmapFont;
 import fox.FoxFontBuilder;
 import fox.FoxFontBuilder.FONT;
 import fox.FoxLogo;
@@ -11,6 +12,7 @@ import fox.utils.FoxVideoMonitorUtil;
 import fox.utils.InputAction;
 import fox.utils.MediaCache;
 import fox.utils.VolumeConverter;
+import game.freya.gui.GameWindowSwing;
 import game.freya.gui.JMEApp;
 import game.freya.net.SocketConnection;
 import game.freya.net.server.Server;
@@ -21,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
@@ -140,7 +141,7 @@ public final class Constants {
     private static JMEApp gameCanvas;
     @Getter
     @Setter
-    private static JFrame gameFrame;
+    private static GameWindowSwing gameFrame;
     @Getter
     @Setter
     private static DisplayMode defaultDisplayMode;
@@ -230,4 +231,8 @@ public final class Constants {
     public static void setConnectionAwait(boolean b) {
         isConnectionAwait.set(b);
     }
+
+    @Getter
+    @Setter
+    private static BitmapFont fontDefault, fontConsole;
 }

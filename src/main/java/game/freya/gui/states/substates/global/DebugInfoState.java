@@ -98,7 +98,7 @@ public class DebugInfoState extends BaseAppState {
         this.settings = context.getSettings();
         this.renderer = this.app.getRenderer();
         this.assetManager = this.app.getAssetManager();
-        this.guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt"); // Default.fnt | Console.fnt
+        this.guiFont = Constants.getFontDefault();
         this.fpsText = new BitmapText(guiFont);
         this.infoRootNode = new Node(NodeNames.GAME_INFO_NODE.name());
         this.infoRootNode.setCullHint(currentDebugLevel.equals(UiDebugLevel.NONE) ? Spatial.CullHint.Always : Spatial.CullHint.Never);

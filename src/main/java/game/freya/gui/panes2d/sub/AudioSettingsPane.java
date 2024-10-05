@@ -2,13 +2,13 @@ package game.freya.gui.panes2d.sub;
 
 import fox.components.layouts.VerticalFlowLayout;
 import game.freya.config.Constants;
-import game.freya.gui.panes2d.RunnableCanvasPanel;
 import game.freya.gui.panes2d.sub.components.CheckBokz;
 import game.freya.gui.panes2d.sub.components.JZlider;
 import game.freya.gui.panes2d.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
@@ -17,16 +17,17 @@ import java.awt.image.BufferedImage;
 
 @Slf4j
 public class AudioSettingsPane extends JPanel implements ChangeListener, iSubPane {
+    private transient JFrame parent;
     private transient BufferedImage snap;
 
-    public AudioSettingsPane(RunnableCanvasPanel canvas) {
-        setName("Audio settings pane");
-        setVisible(false);
-        setDoubleBuffered(false);
-        setIgnoreRepaint(true);
+    public AudioSettingsPane(JFrame parent) {
+        super(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12), true);
+        this.parent = parent;
 
-        setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 12, 12));
-        recalculate(canvas);
+        setName("Audio settings pane");
+        setOpaque(false);
+        setIgnoreRepaint(true);
+        setVisible(false);
 
         add(new SubPane("Звук") {{
             add(new SubPane("◑") {{
@@ -97,9 +98,17 @@ public class AudioSettingsPane extends JPanel implements ChangeListener, iSubPan
     }
 
     @Override
-    public void recalculate(RunnableCanvasPanel canvas) {
-//        setLocation((int) (canvas.getWidth() * 0.34d), 2);
-//        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
-//        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
+    public void recalculate() {
+        setLocation(parent.getContentPane().getWidth() / 2, 0);
+        setSize(new Dimension(parent.getContentPane().getWidth() / 2, parent.getContentPane().getHeight()));
+        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), (int) (getWidth() * 0.025d), (int) (getHeight() * 0.025d), 0));
+    }
+
+    @Override
+    public void setVisible(boolean aFlag) {
+        super.setVisible(aFlag);
+        if (aFlag) {
+            recalculate();
+        }
     }
 }

@@ -34,7 +34,6 @@ public class HeroesListPane extends JPanel implements iSubPane {
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        recalculate(canvas);
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         if (isVisible()) {
@@ -225,12 +224,13 @@ public class HeroesListPane extends JPanel implements iSubPane {
         }
         if (isVisible) {
             reloadHeroes(canvas);
+            recalculate();
         }
         super.setVisible(isVisible);
     }
 
     @Override
-    public void recalculate(RunnableCanvasPanel canvas) {
+    public void recalculate() {
 //        setLocation((int) (canvas.getWidth() * 0.32d), 2);
 //        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
 //        setBorder(new EmptyBorder((int) (getHeight() * 0.05d), 0, (int) (getHeight() * 0.03d), 64));

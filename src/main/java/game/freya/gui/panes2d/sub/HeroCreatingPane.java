@@ -66,7 +66,6 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        recalculate(canvas);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
 //        add(Box.createHorizontalStrut(canvas.getWidth() / 3));
@@ -346,6 +345,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
 
         if (isVisible) {
             recolorHeroView();
+            recalculate();
         }
     }
 
@@ -372,7 +372,7 @@ public class HeroCreatingPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(RunnableCanvasPanel canvas) {
+    public void recalculate() {
 //        setLocation((int) (canvas.getWidth() * 0.34d), 2);
 //        setSize(new Dimension((int) (canvas.getWidth() * 0.66d), canvas.getHeight() - 4));
     }

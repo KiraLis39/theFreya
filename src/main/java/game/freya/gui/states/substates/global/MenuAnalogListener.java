@@ -41,7 +41,7 @@ public class MenuAnalogListener implements AnalogListener {
             case "MoveRight" -> log.debug("Process [MoveRightTest]: %.3f".formatted(value));
 
             case "Click" -> {
-                log.info("\nProcess [LMBTest]: %.3f".formatted(value));
+//                log.info("\nProcess [LMBTest]: %.3f".formatted(value));
                 optionsState.checkClick();
 //                brokenExample(tpf);
             }

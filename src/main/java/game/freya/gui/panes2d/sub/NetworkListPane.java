@@ -64,7 +64,6 @@ public class NetworkListPane extends JPanel implements iSubPane {
         setDoubleBuffered(false);
 //        setIgnoreRepaint(true);
 
-        recalculate(canvas);
         setLayout(new BorderLayout(1, 1));
 
         centerList = new SubPane(null) {{
@@ -343,6 +342,7 @@ public class NetworkListPane extends JPanel implements iSubPane {
         }
         if (isVisible) {
             reloadNet(canvas);
+            recalculate();
         }
         super.setVisible(isVisible);
     }
@@ -396,7 +396,7 @@ public class NetworkListPane extends JPanel implements iSubPane {
     }
 
     @Override
-    public void recalculate(RunnableCanvasPanel canvas) {
+    public void recalculate() {
 //        setLocation((int) (canvas.getWidth() * 0.32d), 2);
 //        setSize(new Dimension((int) (canvas.getWidth() * 0.68d), canvas.getHeight() - 4));
 //        setBorder(new EmptyBorder((int) (getHeight() * 0.035d), 0, (int) (getHeight() * 0.015d), 32));

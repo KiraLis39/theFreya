@@ -16,7 +16,9 @@ logging:
     org.hibernate.orm.connections: WARN
     org.hibernate.engine.transaction.jta: WARN
     com.zaxxer.hikari: WARN
-
+    com.jme3.system: WARN
+    com.jme3.renderer.opengl: WARN
+    com.jme3.audio.openal.ALAudioRenderer: WARN
 
 server:
   port: 8080
