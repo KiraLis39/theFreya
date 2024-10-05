@@ -33,7 +33,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.awt.*;
+import java.awt.Dimension;
+import java.awt.DisplayMode;
+import java.awt.Frame;
 
 @Slf4j
 @Setter
@@ -83,9 +85,9 @@ public class JMEApp extends SimpleApplication {
         // прикручиваем общие стейты для всего процесса игры, от меню до геймплея:
         attachBaseAppStates();
 
-        // запуск игрового окна:
         viewPort.setBackgroundColor(ColorRGBA.DarkGray);
 
+        // запуск игрового окна:
         setReady(true);
     }
 

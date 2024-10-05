@@ -2,7 +2,7 @@ package game.freya.enums.amunitions;
 
 import lombok.Getter;
 
-import java.awt.*;
+import java.awt.Color;
 
 @Getter
 public enum RarityType {

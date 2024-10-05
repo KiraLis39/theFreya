@@ -4,7 +4,11 @@ import game.freya.config.Constants;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.geom.AffineTransform;
 
 @Setter

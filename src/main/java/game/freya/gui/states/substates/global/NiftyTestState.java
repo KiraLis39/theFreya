@@ -10,17 +10,19 @@ import de.lessvoid.nifty.builder.PanelBuilder;
 import de.lessvoid.nifty.builder.ScreenBuilder;
 import de.lessvoid.nifty.builder.TextBuilder;
 import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
-import de.lessvoid.nifty.controls.label.builder.LabelBuilder;
+import de.lessvoid.nifty.controls.tabs.builder.TabBuilder;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
 import game.freya.config.Constants;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 
 @Slf4j
 public class NiftyTestState extends BaseAppState implements ScreenController {
+    @Getter
     private final String gameVersion;
     private SimpleApplication app;
     private Nifty nifty;
@@ -42,19 +44,8 @@ public class NiftyTestState extends BaseAppState implements ScreenController {
         nifty = niftyDisplay.getNifty();
         nifty.loadStyleFile("nifty-default-styles.xml");
         nifty.loadControlFile("nifty-default-controls.xml");
-
-        /* Read your XML and initialize your custom ScreenController */
-//        nifty.fromXml("Interface/tutorial/step2/screen.xml", "start");
-//        nifty.fromXml("Interface/helloworld.xml", "start", new MySettingsScreen(data));
-//        nifty.addXml("Interface/mysecondscreen.xml");
-
-//        nifty.addScreen("start", new ScreenBuilder("start") {{
-//            layer(new LayerBuilder("Layer_ID") {{
-//                image(new ImageBuilder() {{
-//                    filename("Interface/background-new.png");
-//                }});
-//            }});
-//        }}.build(nifty));
+        nifty.addXml("Interface/orangeTest.xml");
+        nifty.addXml("Interface/CinematicTest.xml");
 
         nifty.addScreen("start", new ScreenBuilder("start") {{
             controller(NiftyTestState.this);
@@ -67,7 +58,7 @@ public class NiftyTestState extends BaseAppState implements ScreenController {
                     height("25%");
                     width("75%");
                     text(new TextBuilder() {{
-                        text("Freya The game v." + gameVersion);
+                        text("Freya The game v.${CALL.getGameVersion()}");
                         font("Interface/Fonts/verdana-48-regular.fnt");
                         height("100%");
                         width("100%");
@@ -94,28 +85,46 @@ public class NiftyTestState extends BaseAppState implements ScreenController {
                     height("25%");
                     width("75%");
                     panel(new PanelBuilder("panel_bottom_left") {{
-                        childLayoutCenter();
+                        childLayoutHorizontal();
                         valignCenter();
-                        height("50%");
-                        width("50%");
+                        height("30%");
+                        width("75%");
                         control(new ButtonBuilder("StartButton", "Start") {{
                             alignCenter();
                             valignCenter();
-                            height("50%");
-                            width("50%");
+                            height("100%");
+                            width("25%");
+                            visibleToMouse(true);
                             interactOnClick("gotoScreen(hud)");
+                        }});
+                        control(new ButtonBuilder("OrangeTest", "orangeTest") {{
+                            alignCenter();
+                            valignCenter();
+                            height("100%");
+                            width("25%");
+                            visibleToMouse(true);
+                            interactOnClick("gotoScreen(orangeTest)");
+                        }});
+                        control(new ButtonBuilder("CinematicTest", "CinematicTest") {{
+                            alignCenter();
+                            valignCenter();
+                            height("100%");
+                            width("25%");
+                            visibleToMouse(true);
+                            interactOnClick("gotoScreen(cinematicTest)");
                         }});
                     }});
                     panel(new PanelBuilder("panel_bottom_right") {{
                         childLayoutCenter();
                         valignCenter();
-                        height("50%");
-                        width("50%");
+                        height("30%");
+                        width("20%");
                         control(new ButtonBuilder("QuitButton", "Quit") {{
                             alignCenter();
                             valignCenter();
-                            height("50%");
-                            width("50%");
+                            height("100%");
+                            width("100%");
+                            visibleToMouse(true);
                             interactOnClick("exitGame()");
                         }});
                     }});
@@ -125,66 +134,112 @@ public class NiftyTestState extends BaseAppState implements ScreenController {
 
         nifty.addScreen("hud", new ScreenBuilder("hud") {{
             controller(NiftyTestState.this);
-            layer(new LayerBuilder("background") {{
-                childLayoutCenter();
-                backgroundColor("#000f");
-//                image(new ImageBuilder() {{
-//                    filename("Interface/overlay-credits-bottom.png");
-//                }});
-            }});
-
             layer(new LayerBuilder("foreground") {{
-                childLayoutHorizontal();
+                childLayoutVertical();
                 backgroundColor("#0000");
-                panel(new PanelBuilder("panel_left") {{
-                    childLayoutVertical();
-                    backgroundColor("#0f08");
-                    height("100%");
-                    width("80%");
-                    // <!-- spacer -->
-                }});
-
-                panel(new PanelBuilder("panel_right") {{
-                    childLayoutVertical();
-                    backgroundColor("#00f8");
-                    height("100%");
-                    width("20%");
-                    panel(new PanelBuilder("panel_top_right1") {{
-                        childLayoutCenter();
-                        backgroundColor("#00f8");
-                        height("15%");
-                        width("100%");
-                        control(new LabelBuilder() {{
-                            color("#000");
-                            text("123");
-                            width("100%");
-                            height("100%");
-                        }});
-                    }});
-
-                    panel(new PanelBuilder("panel_top_right2") {{
-                        childLayoutCenter();
-                        backgroundColor("#44f8");
-                        height("15%");
-                        width("100%");
-//                        image(new ImageBuilder() {{
-//                            filename("Interface/nifty-logo.png");
-//                            valignCenter();
-//                            alignCenter();
-//                            height("50%");
-//                            width("30%");
-//                        }});
-                    }});
-
-                    panel(new PanelBuilder("panel_bot_right") {{
-                        childLayoutCenter();
-                        valignCenter();
+                panel(new PanelBuilder("panel_tabs") {{
+                    childLayoutHorizontal();
+                    backgroundColor("#2228");
+                    height("90%");
+                    width("100%");
+                    control(new TabBuilder("tabs", "test") {{
+//                        childLayoutHorizontal();
+//                        valignCenter();
+                        backgroundColor("#8008");
                         height("70%");
-                        width("100%");
+                        width("33%");
+                    }});
+                    control(new TabBuilder("tabs2", "test2") {{
+//                        childLayoutHorizontal();
+//                        valignCenter();
+                        backgroundColor("#0808");
+                        height("70%");
+                        width("34%");
+                    }});
+                    control(new TabBuilder("tabs3", "test3") {{
+//                        childLayoutHorizontal();
+//                        valignCenter();
+                        backgroundColor("#0088");
+                        height("70%");
+                        width("33%");
+                    }});
+                }});
+                panel(new PanelBuilder("panel_bottom_back") {{
+                    childLayoutVertical();
+                    height("10%");
+                    width("100%");
+                    control(new ButtonBuilder("BackButton", "Back") {{
+                        alignCenter();
+                        height("50%");
+                        width("20%");
+                        visibleToMouse(true);
+                        interactOnClick("gotoScreen(start)");
                     }});
                 }});
             }});
         }}.build(nifty));
+//        nifty.addScreen("hud", new ScreenBuilder("hud") {{
+//            controller(NiftyTestState.this);
+//            layer(new LayerBuilder("background") {{
+//                childLayoutCenter();
+//                backgroundColor("#000f");
+////                image(new ImageBuilder() {{
+////                    filename("Interface/overlay-credits-bottom.png");
+////                }});
+//            }});
+//
+//            layer(new LayerBuilder("foreground") {{
+//                childLayoutHorizontal();
+//                backgroundColor("#0000");
+//                panel(new PanelBuilder("panel_left") {{
+//                    childLayoutVertical();
+//                    backgroundColor("#0f08");
+//                    height("100%");
+//                    width("80%");
+//                    // <!-- spacer -->
+//                }});
+//
+//                panel(new PanelBuilder("panel_right") {{
+//                    childLayoutVertical();
+//                    backgroundColor("#00f8");
+//                    height("100%");
+//                    width("20%");
+//                    panel(new PanelBuilder("panel_top_right1") {{
+//                        childLayoutCenter();
+//                        backgroundColor("#00f8");
+//                        height("15%");
+//                        width("100%");
+//                        control(new LabelBuilder() {{
+//                            color("#000");
+//                            text("123");
+//                            width("100%");
+//                            height("100%");
+//                        }});
+//                    }});
+//
+//                    panel(new PanelBuilder("panel_top_right2") {{
+//                        childLayoutCenter();
+//                        backgroundColor("#44f8");
+//                        height("15%");
+//                        width("100%");
+////                        image(new ImageBuilder() {{
+////                            filename("Interface/nifty-logo.png");
+////                            valignCenter();
+////                            alignCenter();
+////                            height("50%");
+////                            width("30%");
+////                        }});
+//                    }});
+//
+//                    panel(new PanelBuilder("panel_bot_right") {{
+//                        childLayoutCenter();
+//                        valignCenter();
+//                        height("70%");
+//                        width("100%");
+//                    }});
+//                }});
+//            }});
+//        }}.build(nifty));
     }
 
     @Override

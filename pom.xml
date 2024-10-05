@@ -232,39 +232,40 @@
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-core</artifactId>
-            <version>3.6.1-stable</version>
+            <version>3.7.0-beta1.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-desktop</artifactId>
-            <version>3.6.1-stable</version>
+            <version>3.7.0-beta1.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-lwjgl</artifactId>
-            <version>3.6.1-stable</version>
+            <version>3.7.0-beta1.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-lwjgl3</artifactId>
-            <version>3.6.1-stable</version>
+            <version>3.7.0-beta1.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-plugins</artifactId>
-            <version>3.6.1-stable</version>
+            <version>3.7.0-beta1.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-jogg</artifactId>
-            <version>3.6.1-stable</version>
+            <version>3.7.0-beta1.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-awt-dialogs</artifactId>
-            <version>3.6.1-stable</version>
+            <version>3.7.0-beta1.2.2</version>
         </dependency>
 
+        <!-- nifty -->
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-niftygui</artifactId>
@@ -272,7 +273,17 @@
         </dependency>
         <dependency>
             <groupId>com.github.nifty-gui</groupId>
+            <artifactId>nifty-default-controls</artifactId>
+            <version>1.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.nifty-gui</groupId>
             <artifactId>nifty-style-black</artifactId>
+            <version>1.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.nifty-gui</groupId>
+            <artifactId>nifty-examples</artifactId>
             <version>1.4.3</version>
         </dependency>
 

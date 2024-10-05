@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.event.KeyEvent;
 import java.io.IOException;

@@ -2,9 +2,10 @@ package game.freya.gui.panes2d.sub.components;
 
 import game.freya.config.Constants;
 
-import javax.swing.*;
+import javax.swing.Icon;
+import javax.swing.JLabel;
 import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.Color;
 
 public class ZLabel extends JLabel {
 

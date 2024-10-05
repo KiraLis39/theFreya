@@ -8,12 +8,10 @@ import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import game.freya.config.Controls;
 import game.freya.gui.states.substates.menu.meshes.GrayOptionsMesh;
-import lombok.Setter;
 
 public class GrayOptionsBack extends Geometry {
     private Material darkenMat;
     private ColorRGBA color;
-    @Setter
     private float opacity = 0;
 
     public GrayOptionsBack(AssetManager assetManager) {

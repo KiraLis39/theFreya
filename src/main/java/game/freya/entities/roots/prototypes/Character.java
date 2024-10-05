@@ -28,7 +28,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.List;
 
 @Accessors(chain = true)

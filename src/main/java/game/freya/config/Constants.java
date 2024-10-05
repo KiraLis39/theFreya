@@ -23,7 +23,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.DisplayMode;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.IOException;

@@ -2,7 +2,7 @@ package game.freya.gui.panes2d.sub.templates;
 
 import game.freya.enums.other.HardnessLevel;
 
-import javax.swing.*;
+import javax.swing.JPanel;
 
 public abstract class WorldCreator extends JPanel {
     public abstract String getWorldName();

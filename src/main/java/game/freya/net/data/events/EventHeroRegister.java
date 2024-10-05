@@ -7,7 +7,7 @@ import game.freya.enums.player.MovingVector;
 import game.freya.net.data.iClientEventData;
 import lombok.Builder;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.Objects;
 import java.util.UUID;
 

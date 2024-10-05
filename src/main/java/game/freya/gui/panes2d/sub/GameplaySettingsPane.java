@@ -12,8 +12,14 @@ import game.freya.gui.panes2d.sub.components.SubPane;
 import game.freya.gui.panes2d.sub.components.ZLabel;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.AbstractAction;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 

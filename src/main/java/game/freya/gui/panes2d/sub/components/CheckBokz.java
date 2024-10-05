@@ -2,9 +2,10 @@ package game.freya.gui.panes2d.sub.components;
 
 import game.freya.config.Constants;
 
-import javax.swing.*;
+import javax.swing.JCheckBox;
 import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
 
 public class CheckBokz extends JCheckBox {
 

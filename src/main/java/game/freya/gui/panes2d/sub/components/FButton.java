@@ -3,8 +3,9 @@ package game.freya.gui.panes2d.sub.components;
 import fox.render.fox_lfui.MyButtonUI;
 import game.freya.config.Constants;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import java.awt.Color;
 
 public class FButton extends JButton {
 

@@ -11,7 +11,7 @@ import game.freya.config.Constants;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 import java.util.Collection;
 
 @Slf4j

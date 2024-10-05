@@ -27,8 +27,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.SwingUtilities;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 /**
@@ -186,14 +186,10 @@ public class OptionsState extends BaseAppState {
             }
             return;
         }
-
-        // other place clicks:
-        if (Controls.isOptionsMenuVisible()) {
-            hideOptionsMenu();
-        }
+        // other clicks: ...
     }
 
-    private void hideOptionsMenu() {
+    public void hideOptionsMenu() {
         getState(NiftyTestState.class).setEnabled(false);
 
         SwingUtilities.invokeLater(() -> {

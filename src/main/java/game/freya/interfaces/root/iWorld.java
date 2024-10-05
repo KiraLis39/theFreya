@@ -6,7 +6,9 @@ import game.freya.dto.roots.EnvironmentDto;
 import game.freya.enums.other.HardnessLevel;
 import game.freya.services.GameControllerService;
 
-import java.awt.*;
+import java.awt.AWTException;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;

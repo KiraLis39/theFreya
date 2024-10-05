@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.awt.*;
+import java.awt.Graphics2D;
 
 @Getter
 @Setter

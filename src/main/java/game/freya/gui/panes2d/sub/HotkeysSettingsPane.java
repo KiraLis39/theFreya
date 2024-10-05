@@ -6,9 +6,12 @@ import game.freya.gui.panes2d.sub.components.FButton;
 import game.freya.gui.panes2d.sub.components.SubPane;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
+import javax.swing.AbstractAction;
+import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;

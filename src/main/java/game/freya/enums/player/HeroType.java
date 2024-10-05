@@ -2,7 +2,7 @@ package game.freya.enums.player;
 
 import lombok.Getter;
 
-import java.awt.*;
+import java.awt.Color;
 
 @Getter
 public enum HeroType {

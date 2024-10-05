@@ -16,14 +16,16 @@ import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
 import game.freya.config.Constants;
+import game.freya.config.Controls;
 import game.freya.config.UserConfig;
 import game.freya.gui.JMEApp;
 import game.freya.gui.states.MainMenuState;
 import game.freya.gui.states.substates.global.DebugInfoState;
 import game.freya.gui.states.substates.global.MenuAnalogListener;
+import game.freya.gui.states.substates.global.OptionsState;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -135,7 +137,13 @@ public class MenuHotKeysState extends BaseAppState {
             }
 
             switch (name) {
-                case "ExitAction" -> SwingUtilities.invokeLater(() -> Constants.getGameCanvas().requestClose(false));
+                case "ExitAction" -> SwingUtilities.invokeLater(() -> {
+                    if (Controls.isOptionsMenuVisible()) {
+                        getStateManager().getState(OptionsState.class).hideOptionsMenu();
+                    } else {
+                        Constants.getGameCanvas().requestClose(false);
+                    }
+                });
                 case "ToggleFullscreen" ->
                         SwingUtilities.invokeLater(() -> Constants.getGameCanvas().toggleFullscreen());
                 case "ToggleGameInfo" -> getStateManager().getState(DebugInfoState.class).toggleStats();

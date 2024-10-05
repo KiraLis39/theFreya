@@ -38,7 +38,7 @@ import game.freya.gui.states.substates.global.OptionsState;
 import game.freya.services.GameControllerService;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

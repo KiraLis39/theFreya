@@ -32,7 +32,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -147,6 +149,20 @@ public class MainMenuState extends BaseAppState {
         setupGui();
 
         rootNode.attachChild(menuNode);
+
+        // lemur test:
+        // Create a simple container for our elements
+//        com.simsilica.lemur.Container myWindow = new com.simsilica.lemur.Container();
+//        guiNode.attachChild(myWindow);
+
+        // Put it somewhere that we will see it.
+        // Note: Lemur GUI elements grow down from the upper left corner.
+//        myWindow.setLocalTranslation(300, 300, 0);
+
+        // Add some elements
+//        myWindow.addChild(new Label("Hello, World."));
+//        Button clickMe = myWindow.addChild(new Button("Click Me"));
+//        clickMe.addClickCommands(_ -> System.out.println("The world is yours."));
     }
 
     public void setupGui() {

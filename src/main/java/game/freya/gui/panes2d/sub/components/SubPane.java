@@ -5,9 +5,11 @@ import game.freya.dto.roots.WorldDto;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
 
 public class SubPane extends JPanel {
     @Setter
