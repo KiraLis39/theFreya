@@ -289,10 +289,13 @@ public class GameplayHotKeysState extends BaseAppState {
 
                     // 1. Reset results list.
                     CollisionResults results = new CollisionResults();
+
                     // 2. Aim the ray from cam loc to cam direction.
                     Ray ray = new Ray(cam.getLocation(), cam.getDirection());
+
                     // 3. Collect intersections between Ray and Shootables in results list.
                     gameNode.collideWith(ray, results);
+
                     // 4. Print the results
                     System.out.println("----- Collisions? " + results.size() + "-----");
                     for (int i = 0; i < results.size(); i++) {
@@ -303,6 +306,7 @@ public class GameplayHotKeysState extends BaseAppState {
                         System.out.println("* Collision #" + i);
                         System.out.println("  You shot " + hit + " at " + pt + ", " + dist + " wu away.");
                     }
+
                     // 5. Use the results (we mark the hit object)
                     if (results.size() > 0) {
                         // The closest collision point is what was truly hit:

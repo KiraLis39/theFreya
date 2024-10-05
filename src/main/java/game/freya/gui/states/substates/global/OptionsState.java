@@ -44,7 +44,7 @@ public class OptionsState extends BaseAppState {
     private Node gearNode, rootNode;
     private GrayOptionsBack darkenOptions;
     private Geometry optionsGear;
-    private GameControllerService gameControllerService;
+    private GrayMenuCorner gmc;
     private boolean isGearHovered;
     private float gearRotationsSpeed = 0.02f;
     @Getter
@@ -57,7 +57,6 @@ public class OptionsState extends BaseAppState {
 
     public OptionsState(GameControllerService gameControllerService, ApplicationProperties props) {
         super(OptionsState.class.getSimpleName());
-        this.gameControllerService = gameControllerService;
 
         this.audioSettingsButtonText = "Настройки звука";
         this.videoSettingsButtonText = "Настройки графики";
@@ -113,9 +112,6 @@ public class OptionsState extends BaseAppState {
         }
     }
 
-    private GrayMenuCorner gmc;
-    private float darkenOptionsWidth;
-
     public void rebuild() {
         if (rootNode.hasChild(gearNode)) {
             rootNode.detachChild(gearNode);
@@ -130,9 +126,6 @@ public class OptionsState extends BaseAppState {
         // attach left gray corner:
         gmc = new GrayMenuCorner(assetManager);
         rootNode.attachChild(gmc);
-
-        // attach center gray corner with a gear:
-        darkenOptionsWidth = cam.getWidth() * 0.75f;
 
         // шестерёнка:
         gearNode = new Node("GearNode") {{
