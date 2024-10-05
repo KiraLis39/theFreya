@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
@@ -41,7 +42,7 @@ public class OptionsState extends BaseAppState {
     private AssetManager assetManager;
     private Camera cam;
     private BitmapFont guiFont;
-    private Node gearNode, rootNode;
+    private Node rootNode, guiNode, gearNode;
     private GrayOptionsBack darkenOptions;
     private Geometry optionsGear;
     private GrayMenuCorner gmc;
@@ -85,6 +86,7 @@ public class OptionsState extends BaseAppState {
         this.app = (SimpleApplication) app;
         this.cam = this.app.getCamera();
         this.assetManager = this.app.getAssetManager();
+        this.guiNode = this.app.getGuiNode();
         this.guiFont = Constants.getFontDefault();
         this.rootNode = this.app.getRootNode();
     }
@@ -101,53 +103,54 @@ public class OptionsState extends BaseAppState {
 
     @Override
     protected void onDisable() {
-        if (rootNode.hasChild(gearNode)) {
-            rootNode.detachChild(gearNode);
-        }
         if (rootNode.hasChild(darkenOptions)) {
             rootNode.detachChild(darkenOptions);
         }
         if (rootNode.hasChild(gmc)) {
             rootNode.detachChild(gmc);
+        }
+        if (guiNode.hasChild(gearNode)) {
+            guiNode.detachChild(gearNode);
         }
     }
 
     public void rebuild() {
-        if (rootNode.hasChild(gearNode)) {
-            rootNode.detachChild(gearNode);
-        }
         if (rootNode.hasChild(darkenOptions)) {
             rootNode.detachChild(darkenOptions);
         }
         if (rootNode.hasChild(gmc)) {
             rootNode.detachChild(gmc);
+        }
+        if (guiNode.hasChild(gearNode)) {
+            guiNode.detachChild(gearNode);
         }
 
         // attach left gray corner:
         gmc = new GrayMenuCorner(assetManager);
         rootNode.attachChild(gmc);
 
+        // затенённый задник:
+        darkenOptions = new GrayOptionsBack(app.getAssetManager());
+        rootNode.attachChild(darkenOptions);
+
         // шестерёнка:
-        gearNode = new Node("GearNode") {{
-            final int gearImageDim = (int) (32 + cam.getWidth() * 0.01f);
-            BufferedImage gearBImage = drawOptionsGear(gearImageDim);
-            optionsGear = new Geometry("OptionGear", new Quad(0.07f, 0.07f)) {{
+        final int gearImageDim = (int) (32 + cam.getWidth() * 0.01f);
+        BufferedImage gearBImage = drawOptionsGear(gearImageDim);
+        gearNode = new Node() {{
+            optionsGear = new Geometry("OptionGear", new Quad(gearImageDim, gearImageDim)) {{
                 Material mat_menu = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
                 mat_menu.setTexture("ColorMap", new Texture2D(new AWTLoader().load(gearBImage, false)));
                 mat_menu.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
 
                 setMaterial(mat_menu);
-                setLocalTranslation(-0.035f, -0.035f, 0);
+                setLocalTranslation(-gearImageDim / 2f, -gearImageDim / 2f, 0);
             }};
 
             attachChild(optionsGear);
-            setLocalTranslation(0.965f, -0.525f, 0);
+            setLocalTranslation(cam.getWidth() - gearImageDim / 2f, gearImageDim / 2f, 0);
         }};
-        rootNode.attachChild(gearNode);
 
-        // затенённый задник:
-        darkenOptions = new GrayOptionsBack(app.getAssetManager());
-        rootNode.attachChild(darkenOptions);
+        guiNode.attachChild(gearNode);
     }
 
     private BufferedImage drawOptionsGear(int gearDim) {
@@ -171,7 +174,7 @@ public class OptionsState extends BaseAppState {
     public void checkPointer(Vector2f mousePointer) {
         mouseDestination = new Vector3f(mousePointer.x, mousePointer.y, 0);
         float dist = gearNode.getWorldTranslation().distance(mouseDestination);
-        log.info("Mouse moved: {}. Dist: {}", mousePointer, dist);
+//        log.info("Mouse moved: {}. Dist: {}", mousePointer, dist);
         isGearHovered = dist < 20;
     }
 
@@ -191,48 +194,43 @@ public class OptionsState extends BaseAppState {
     }
 
     private void hideOptionsMenu() {
-        // SwingUtilities.invokeLater(() -> {
-//                for (int i = 0; i < 150; i++) {
-//                    try {
-//                        app.enqueue(() -> {
-//                            darkenOptions.decreaseOpacity();
-//                            darkenOptions.move(2f, 0, 0);
-//                        });
-//                        Thread.sleep(1);
-//                    } catch (Exception _) {
-//                    }
-//                }
-//                darkenOptions.setCullHint(Spatial.CullHint.Always);
-//                Controls.setOptionsMenuVisible(false);
-//            });
-//            Constants.getGameFrame().getAsp().setVisible(false);
-
         getState(NiftyTestState.class).setEnabled(false);
-        // getStateManager().detach(getState(NiftyTestState.class));
 
-        darkenOptions.setCullHint(Spatial.CullHint.Always);
-        Controls.setOptionsMenuVisible(false);
+        SwingUtilities.invokeLater(() -> {
+            while (darkenOptions.getLocalTranslation().x < 1f) {
+                try {
+                    app.enqueue(() -> {
+                        darkenOptions.move(+0.05f, 0, 0);
+                    });
+                    darkenOptions.decreaseOpacity();
+                    Thread.sleep(3);
+                } catch (Exception _) {
+                }
+            }
+            darkenOptions.setCullHint(Spatial.CullHint.Always);
+            Controls.setOptionsMenuVisible(false);
+        });
     }
 
     private void showOptionsMenu() {
-        // darkenOptions.setLocalTranslation(300, 0, 0);
+        darkenOptions.setLocalTranslation(1, 0, 0);
+        darkenOptions.setOpacity(0);
         darkenOptions.setCullHint(Spatial.CullHint.Never);
         Controls.setOptionsMenuVisible(true);
-//                Constants.getGameFrame().getAsp().setVisible(true);
-//                SwingUtilities.invokeLater(() -> {
-//                    for (int i = 0; i < 300; i++) {
-//                        try {
-//                            app.enqueue(() -> {
-//                                darkenOptions.increaseOpacity();
-//                                darkenOptions.move(-1f, 0, 0);
-//                            });
-//                            Thread.sleep(1);
-//                        } catch (Exception _) {
-//                        }
-//                    }
-//                });
-
-        getState(NiftyTestState.class).setEnabled(true);
-        // getStateManager().attach(getState(NiftyTestState.class));
+        SwingUtilities.invokeLater(() -> {
+            while (darkenOptions.getLocalTranslation().x > 0.37f) {
+                try {
+                    app.enqueue(() -> {
+                        darkenOptions.move(-0.02f, 0, 0);
+                    });
+                    darkenOptions.increaseOpacity();
+                    Thread.sleep(5);
+                } catch (Exception _) {
+                }
+            }
+            darkenOptions.setOpacity(0.75f);
+            darkenOptions.setLocalTranslation(0.327f, 0, 0.01f);
+            getState(NiftyTestState.class).setEnabled(true);
+        });
     }
 }

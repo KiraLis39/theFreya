@@ -111,7 +111,7 @@ public class JMEApp extends SimpleApplication {
         stateManager.attach(optionsState);
 
         // подключаем меню настроек, опций игры для меню и геймпея:
-        stateManager.attach(new NiftyTestState());
+        stateManager.attach(new NiftyTestState(props.getAppVersion()));
     }
 
     // tpf большой на медленных ПК и маленький на быстрых ПК.
@@ -275,6 +275,10 @@ public class JMEApp extends SimpleApplication {
         // сброс расположения debug full info and etc UI elements:
         enqueue(() -> {
             log.info("Reloading context and UI elements...");
+            // скрываем настройки и Нифти (т.к. сломается далее):
+            Controls.setOptionsMenuVisible(false);
+            getStateManager().getState(NiftyTestState.class).setEnabled(false);
+
             restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
 
             // пересборка расположений и размеров UI:

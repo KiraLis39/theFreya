@@ -8,16 +8,18 @@ import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import game.freya.config.Controls;
 import game.freya.gui.states.substates.menu.meshes.GrayOptionsMesh;
+import lombok.Setter;
 
 public class GrayOptionsBack extends Geometry {
     private Material darkenMat;
     private ColorRGBA color;
-    private int opacity = 158;
+    @Setter
+    private float opacity = 0;
 
     public GrayOptionsBack(AssetManager assetManager) {
         super("OptionsBackDarken", new GrayOptionsMesh()); // new Quad(width, height);
 
-        color = ColorRGBA.fromRGBA255(0, 0, 0, opacity);
+        color = new ColorRGBA(0, 0, 0, opacity);
 
         darkenMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         darkenMat.setColor("Color", color);
@@ -30,21 +32,25 @@ public class GrayOptionsBack extends Geometry {
         // setLodLevel(0);
     }
 
-    public void increaseOpacity() {
-        opacity++;
-        if (opacity > 223) {
-            opacity = 223;
-        }
+    public void setOpacity(float opacity) {
+        this.opacity = opacity;
         color.setAlpha(opacity);
         darkenMat.setColor("Color", color);
     }
 
+    public void increaseOpacity() {
+        opacity += 0.015f;
+        if (opacity > 0.8f) {
+            opacity = 0.8f;
+        }
+        setOpacity(opacity);
+    }
+
     public void decreaseOpacity() {
-        opacity--;
+        opacity -= 0.02f;
         if (opacity < 0) {
             opacity = 0;
         }
-        color.setAlpha(opacity);
-        darkenMat.setColor("Color", color);
+        setOpacity(opacity);
     }
 }

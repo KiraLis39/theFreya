@@ -14,7 +14,7 @@ public class GrayMenuCorner extends Geometry {
         super("GrayMenuPanel", new GrayCorner());
 
         Material mat_gp = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md"); // ShowNormals.j3md
-        mat_gp.setColor("Color", ColorRGBA.fromRGBA255(0, 0, 0, 158));
+        mat_gp.setColor("Color", new ColorRGBA(0, 0, 0, 0.75f));
         mat_gp.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
 
         setMaterial(mat_gp);

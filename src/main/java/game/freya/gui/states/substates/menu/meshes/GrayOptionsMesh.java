@@ -15,13 +15,13 @@ public class GrayOptionsMesh extends Mesh {
         vertices[0] = new Vector2f(-0.9285f, -height);
         // texCoord[0] = new Vector2f(0,0);
 
-        vertices[1] = new Vector2f(0.66f, -height);
+        vertices[1] = new Vector2f(0.665f, -height);
         // texCoord[1] = new Vector2f(0.5f,0);
 
         vertices[2] = new Vector2f(-0.83f, height);
         // texCoord[2] = new Vector2f(0,0.5f);
 
-        vertices[3] = new Vector2f(0.66f, height);
+        vertices[3] = new Vector2f(0.665f, height);
         // texCoord[3] = new Vector2f(0.5f,0.5f);
 
         int[] indexes = {2, 0, 1, 1, 3, 2};

@@ -172,7 +172,7 @@ public class MainMenuState extends BaseAppState {
         avatarGeo.setCullHint(Spatial.CullHint.Inherit);
         guiNode.attachChild(avatarGeo);
 
-        createGreenMarkers();
+//        createGreenMarkers();
     }
 
     private BufferedImage drawAvatarImage(int avatarDim) {

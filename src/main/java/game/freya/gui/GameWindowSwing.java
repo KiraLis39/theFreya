@@ -64,12 +64,8 @@ public class GameWindowSwing extends JFrame {
         canvas.setLocation(0, 0);
     }
 
-//    @Getter
-//    private AudioSettingsPane asp;
-
     private void prepareMenuPanes() {
-//        asp = new AudioSettingsPane(this);
-
+//        setVideosPane(new AudioSettingsPane(this));
 //        setVideosPane(new VideoSettingsPane(this));
 //        setHotkeysPane(new HotkeysSettingsPane(this));
 //        setGameplayPane(new GameplaySettingsPane(this));
@@ -79,18 +75,6 @@ public class GameWindowSwing extends JFrame {
 //        setHeroesListPane(new HeroesListPane(this, gameControllerService));
 //        setNetworkListPane(new NetworkListPane(this, gameControllerService));
 //        setNetworkCreatingPane(new NetCreatingPane(this, gameControllerService));
-
-        // добавляем панели на слой:
-//        getContentPane().add(asp, PALETTE_LAYER, 0);
-//        getContentPane().add(getVideosPane(), PALETTE_LAYER, 0);
-//        getContentPane().add(getHotkeysPane(), PALETTE_LAYER, 0);
-//        getContentPane().add(getGameplayPane(), PALETTE_LAYER, 0);
-//        getContentPane().add(getHeroCreatingPane(), PALETTE_LAYER, 0);
-//        getContentPane().add(getWorldCreatingPane(), PALETTE_LAYER, 0);
-//        getContentPane().add(getWorldsListPane(), PALETTE_LAYER, 0);
-//        getContentPane().add(getHeroesListPane(), PALETTE_LAYER, 0);
-//        getContentPane().add(getNetworkListPane(), PALETTE_LAYER, 0);
-//        getContentPane().add(getNetworkCreatingPane(), PALETTE_LAYER, 0);
     }
 
     private void setDefaultCursor() {
