@@ -1,4 +1,4 @@
-package game.freya.gui.states.substates.global;
+package game.freya.gui.states.global;
 
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;

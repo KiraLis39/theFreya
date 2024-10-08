@@ -14,6 +14,8 @@ import com.jme3.cursors.plugins.JmeCursor;
 import com.jme3.math.ColorRGBA;
 import com.jme3.renderer.RenderManager;
 import com.jme3.system.AppSettings;
+import com.simsilica.lemur.GuiGlobals;
+import com.simsilica.lemur.style.BaseStyles;
 import fox.utils.FoxVideoMonitorUtil;
 import game.freya.config.ApplicationProperties;
 import game.freya.config.Constants;
@@ -22,10 +24,9 @@ import game.freya.enums.gui.FullscreenType;
 import game.freya.exceptions.ErrorMessages;
 import game.freya.exceptions.GlobalServiceException;
 import game.freya.gui.states.MainMenuState;
-import game.freya.gui.states.substates.global.DebugInfoState;
-import game.freya.gui.states.substates.global.ExitHandlerState;
-import game.freya.gui.states.substates.global.NiftyTestState;
-import game.freya.gui.states.substates.global.OptionsState;
+import game.freya.gui.states.global.DebugInfoState;
+import game.freya.gui.states.global.ExitHandlerState;
+import game.freya.gui.states.global.OptionsState;
 import game.freya.gui.states.substates.menu.MenuBackgState;
 import game.freya.services.GameControllerService;
 import game.freya.utils.ExceptionUtils;
@@ -89,6 +90,12 @@ public class JMEApp extends SimpleApplication {
 
         // запуск игрового окна:
         setReady(true);
+
+        // Инициализация Lemur
+        GuiGlobals.initialize(this);
+        BaseStyles.loadStyleResources("glass-styles.groovy");
+        // Set 'glass' as the default style when not specified
+        GuiGlobals.getInstance().getStyles().setDefaultStyle("glass");
     }
 
     private void registerAppResources(AssetManager assetManager) {
@@ -113,7 +120,7 @@ public class JMEApp extends SimpleApplication {
         stateManager.attach(optionsState);
 
         // подключаем меню настроек, опций игры для меню и геймпея:
-        stateManager.attach(new NiftyTestState(props.getAppVersion()));
+//        stateManager.attach(new NiftyTestState(props.getAppVersion()));
     }
 
     // tpf большой на медленных ПК и маленький на быстрых ПК.
@@ -279,7 +286,7 @@ public class JMEApp extends SimpleApplication {
             log.info("Reloading context and UI elements...");
             // скрываем настройки и Нифти (т.к. сломается далее):
             Controls.setOptionsMenuVisible(false);
-            getStateManager().getState(NiftyTestState.class).setEnabled(false);
+//            getStateManager().getState(NiftyTestState.class).setEnabled(false);
 
             restart(); // Это не перезапускает и не переинициализирует всю игру, перезапускает контекст и применяет обновленный объект настроек
 

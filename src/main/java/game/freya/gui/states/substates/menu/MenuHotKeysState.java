@@ -20,9 +20,9 @@ import game.freya.config.Controls;
 import game.freya.config.UserConfig;
 import game.freya.gui.JMEApp;
 import game.freya.gui.states.MainMenuState;
-import game.freya.gui.states.substates.global.DebugInfoState;
-import game.freya.gui.states.substates.global.MenuAnalogListener;
-import game.freya.gui.states.substates.global.OptionsState;
+import game.freya.gui.states.global.DebugInfoState;
+import game.freya.gui.states.global.MenuAnalogListener;
+import game.freya.gui.states.global.OptionsState;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.SwingUtilities;

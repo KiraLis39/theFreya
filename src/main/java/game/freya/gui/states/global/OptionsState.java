@@ -1,7 +1,8 @@
-package game.freya.gui.states.substates.global;
+package game.freya.gui.states.global;
 
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
+import com.jme3.app.state.AppStateManager;
 import com.jme3.app.state.BaseAppState;
 import com.jme3.asset.AssetManager;
 import com.jme3.font.BitmapFont;
@@ -40,12 +41,14 @@ import java.awt.image.BufferedImage;
 public class OptionsState extends BaseAppState {
     private SimpleApplication app;
     private AssetManager assetManager;
+    private AppStateManager stateManager;
     private Camera cam;
     private BitmapFont guiFont;
     private Node rootNode, guiNode, gearNode;
     private GrayOptionsBack darkenOptions;
     private Geometry optionsGear;
     private GrayMenuCorner gmc;
+    private LemurUiState lemurState;
     private boolean isGearHovered;
     private float gearRotationsSpeed = 0.02f;
     @Getter
@@ -89,11 +92,16 @@ public class OptionsState extends BaseAppState {
         this.guiNode = this.app.getGuiNode();
         this.guiFont = Constants.getFontDefault();
         this.rootNode = this.app.getRootNode();
+        this.stateManager = this.app.getStateManager();
+
+        // подключаем Lemur:
+        lemurState = new LemurUiState();
+        stateManager.attach(lemurState);
     }
 
     @Override
     protected void cleanup(Application app) {
-
+        stateManager.detach(lemurState);
     }
 
     @Override
@@ -175,7 +183,7 @@ public class OptionsState extends BaseAppState {
         mouseDestination = new Vector3f(mousePointer.x, mousePointer.y, 0);
         float dist = gearNode.getWorldTranslation().distance(mouseDestination);
 //        log.info("Mouse moved: {}. Dist: {}", mousePointer, dist);
-        isGearHovered = dist < 20;
+        isGearHovered = dist < 22;
     }
 
     public void checkClick() {
@@ -190,9 +198,8 @@ public class OptionsState extends BaseAppState {
     }
 
     public void hideOptionsMenu() {
-        getState(NiftyTestState.class).setEnabled(false);
-
         SwingUtilities.invokeLater(() -> {
+            lemurState.setEnabled(false);
             while (darkenOptions.getLocalTranslation().x < 1f) {
                 try {
                     app.enqueue(() -> {
@@ -226,7 +233,7 @@ public class OptionsState extends BaseAppState {
             }
             darkenOptions.setOpacity(0.75f);
             darkenOptions.setLocalTranslation(0.327f, 0, 0.01f);
-            getState(NiftyTestState.class).setEnabled(true);
+            lemurState.setEnabled(true);
         });
     }
 }

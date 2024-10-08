@@ -266,36 +266,47 @@
         </dependency>
 
         <!-- nifty -->
+<!--        <dependency>-->
+<!--            <groupId>org.jmonkeyengine</groupId>-->
+<!--            <artifactId>jme3-niftygui</artifactId>-->
+<!--            <version>3.6.1-stable</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.github.nifty-gui</groupId>-->
+<!--            <artifactId>nifty-default-controls</artifactId>-->
+<!--            <version>1.4.3</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.github.nifty-gui</groupId>-->
+<!--            <artifactId>nifty-style-black</artifactId>-->
+<!--            <version>1.4.3</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.github.nifty-gui</groupId>-->
+<!--            <artifactId>nifty-examples</artifactId>-->
+<!--            <version>1.4.3</version>-->
+<!--        </dependency>-->
+
         <dependency>
-            <groupId>org.jmonkeyengine</groupId>
-            <artifactId>jme3-niftygui</artifactId>
-            <version>3.6.1-stable</version>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy-jsr223</artifactId>
+            <version>4.0.23</version>
         </dependency>
         <dependency>
-            <groupId>com.github.nifty-gui</groupId>
-            <artifactId>nifty-default-controls</artifactId>
-            <version>1.4.3</version>
+            <groupId>com.simsilica</groupId>
+            <artifactId>lemur</artifactId>
+            <version>1.16.0</version>
         </dependency>
         <dependency>
-            <groupId>com.github.nifty-gui</groupId>
-            <artifactId>nifty-style-black</artifactId>
-            <version>1.4.3</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.nifty-gui</groupId>
-            <artifactId>nifty-examples</artifactId>
-            <version>1.4.3</version>
+            <groupId>com.simsilica</groupId>
+            <artifactId>lemur-proto</artifactId>
+            <version>1.13.0</version>
         </dependency>
 
 <!--        <dependency>-->
 <!--            <groupId>org.jmonkeyengine</groupId>-->
 <!--            <artifactId>jme3-terrain</artifactId>-->
 <!--            <version>3.6.1-stable</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.jmonkeyengine</groupId>-->
-<!--            <artifactId>jme3-bullet</artifactId>-->
-<!--            <version>3.3.2-stable</version>-->
 <!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>org.opensourcebim</groupId>-->

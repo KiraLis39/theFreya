@@ -32,9 +32,9 @@ import game.freya.controls.combo.ComboMove;
 import game.freya.controls.combo.ComboMoveExecution;
 import game.freya.dto.roots.WorldDto;
 import game.freya.gui.JMEApp;
-import game.freya.gui.states.substates.global.DebugInfoState;
-import game.freya.gui.states.substates.global.ExitHandlerState;
-import game.freya.gui.states.substates.global.OptionsState;
+import game.freya.gui.states.global.DebugInfoState;
+import game.freya.gui.states.global.ExitHandlerState;
+import game.freya.gui.states.global.OptionsState;
 import game.freya.services.GameControllerService;
 import lombok.extern.slf4j.Slf4j;
 

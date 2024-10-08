@@ -22,11 +22,15 @@ public class GrayOptionsBack extends Geometry {
         darkenMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         darkenMat.setColor("Color", color);
         darkenMat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
+        darkenMat.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Back);
 
         setMaterial(darkenMat);
         setQueueBucket(RenderQueue.Bucket.Transparent);
         setLocalTranslation(0.33f, 0, 0.01f);
         setCullHint(Controls.isOptionsMenuVisible() ? CullHint.Never : CullHint.Always);
+
+        // Вам нужно указать несколько буферов вершин, по одному для каждого желаемого
+        // уровня детализации (очень далеко с небольшим количеством деталей, близко со всеми деталями и что-то посередине)
         // setLodLevel(0);
     }
 

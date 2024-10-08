@@ -1,4 +1,4 @@
-package game.freya.gui.states.substates.global;
+package game.freya.gui.states.global;
 
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
@@ -176,6 +176,9 @@ public class DebugInfoState extends BaseAppState {
     }
 
     public void rebuildFullText() {
+        if (infoRootNode == null) {
+            return;
+        }
         if (infoRootNode.hasChild(darkenFull)) {
             infoRootNode.detachChild(darkenFull);
         }

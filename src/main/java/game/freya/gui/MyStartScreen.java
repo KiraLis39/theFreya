@@ -11,7 +11,7 @@ public class MyStartScreen extends BaseAppState { // implements ScreenController
         //onEnable()/onDisable() methods. Choosing to use initialize() and
         //cleanup() for this is a matter of performance specifics for the
         //implementor.
-        //TODO: initialize your AppState, e.g. attach spatials to rootNode
+        // todo: initialize your AppState, e.g. attach spatials to rootNode
 
 //        control(new ButtonBuilder("StartButton", "Start") {{
 //            alignCenter();
@@ -53,7 +53,7 @@ public class MyStartScreen extends BaseAppState { // implements ScreenController
 
     @Override
     protected void cleanup(Application app) {
-        //TODO: clean up what you initialized in the initialize method,
+        // todo: clean up what you initialized in the initialize method,
         //e.g. remove all spatials from rootNode
     }
 
@@ -76,10 +76,10 @@ public class MyStartScreen extends BaseAppState { // implements ScreenController
 
     @Override
     public void update(float tpf) {
-        //TODO: implement behavior during runtime
+        // todo: implement behavior during runtime
     }
 
-    /**
+    /*
      * Bind this ScreenController to a screen. This happens right before the
      * onStartScreen STARTED and only exactly once for a screen!
      * @param nifty nifty
@@ -90,7 +90,7 @@ public class MyStartScreen extends BaseAppState { // implements ScreenController
 //        throw new UnsupportedOperationException("Not supported yet.");
 //    }
 
-    /**
+    /*
      * called right after the onStartScreen event ENDED.
      */
 //    @Override
@@ -98,7 +98,7 @@ public class MyStartScreen extends BaseAppState { // implements ScreenController
 //        throw new UnsupportedOperationException("Not supported yet.");
 //    }
 
-    /**
+    /*
      * called right after the onEndScreen event ENDED.
      */
 //    @Override

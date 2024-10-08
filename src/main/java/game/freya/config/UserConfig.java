@@ -54,7 +54,7 @@ public class UserConfig implements Serializable {
     private boolean isBackgEnabled = true;
 
     @Builder.Default
-    public int backgVolumePercent = 75;
+    private int backgVolumePercent = 75;
 
     // gameplay:
     @Builder.Default

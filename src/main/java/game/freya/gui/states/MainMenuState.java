@@ -14,7 +14,6 @@ import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
-import com.jme3.renderer.Renderer;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
@@ -61,7 +60,6 @@ public class MainMenuState extends BaseAppState {
     @Setter
     @Getter
     private volatile float fov = 45.0f;
-    private Renderer renderer;
 
     public MainMenuState(GameControllerService gameControllerService) {
         super(MainMenuState.class.getSimpleName());
@@ -78,7 +76,6 @@ public class MainMenuState extends BaseAppState {
         this.flyByCamera = this.app.getFlyByCamera();
         this.assetManager = this.app.getAssetManager();
         this.stateManager = this.app.getStateManager();
-        this.renderer = this.app.getRenderer();
     }
 
     @Override
@@ -149,20 +146,6 @@ public class MainMenuState extends BaseAppState {
         setupGui();
 
         rootNode.attachChild(menuNode);
-
-        // lemur test:
-        // Create a simple container for our elements
-//        com.simsilica.lemur.Container myWindow = new com.simsilica.lemur.Container();
-//        guiNode.attachChild(myWindow);
-
-        // Put it somewhere that we will see it.
-        // Note: Lemur GUI elements grow down from the upper left corner.
-//        myWindow.setLocalTranslation(300, 300, 0);
-
-        // Add some elements
-//        myWindow.addChild(new Label("Hello, World."));
-//        Button clickMe = myWindow.addChild(new Button("Click Me"));
-//        clickMe.addClickCommands(_ -> System.out.println("The world is yours."));
     }
 
     public void setupGui() {
